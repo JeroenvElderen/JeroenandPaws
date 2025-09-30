@@ -421,6 +421,20 @@
   display: inline-block;
 }
 
+/* Make the mask scrollable horizontally */
+.w-slider-mask {
+  display: flex !important;
+  overflow-x: auto !important;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+}
+
+/* Each slide must not shrink and should snap */
+.w-slide {
+  flex: 0 0 auto !important;
+  scroll-snap-align: start;
+}
+
 .grid_2-col {
   grid-template-rows: auto;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1048,6 +1062,10 @@
 
 .margin-bottom_none {
   margin-bottom: 0 !important;
+}
+
+.text-white {
+  color: #fff;
 }
 
 .padding-bottom_none {
