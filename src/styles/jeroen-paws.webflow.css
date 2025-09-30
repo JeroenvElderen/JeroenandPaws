@@ -1929,10 +1929,17 @@
 }
 
 .image-ratio_1x1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   aspect-ratio: 1;
   border-radius: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---image--image-radius);
   overflow: clip;
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
 }
+
 
 .form_success-message {
   padding: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---spacing--2x);

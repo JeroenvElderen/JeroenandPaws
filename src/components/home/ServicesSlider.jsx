@@ -52,7 +52,7 @@ const ServicesSlider = () => {
                   <br />
                   <p>Learn more</p>
                 </div>
-                <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                <div className="image-ratio_1x1 margin-top_xsmall">
                   <img
                     width="405"
                     height="405"
@@ -76,7 +76,7 @@ const ServicesSlider = () => {
                   <br />
                   <p>Explore options</p>
                 </div>
-                <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                <div className="image-ratio_1x1 margin-top_xsmall">
                   <img
                     width="405"
                     height="405"
@@ -100,7 +100,7 @@ const ServicesSlider = () => {
                   <br />
                   <p>Book now</p>
                 </div>
-                <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                <div className="image-ratio_1x1 margin-top_xsmall">
                   <img
                     width="405"
                     height="405"
@@ -124,7 +124,7 @@ const ServicesSlider = () => {
                   <br />
                   <p>Join us</p>
                 </div>
-                <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                <div className="image-ratio_1x1 margin-top_xsmall">
                   <img
                     width="405"
                     height="405"
@@ -146,7 +146,7 @@ const ServicesSlider = () => {
                   <br />
                   <p>Schedule a visit</p>
                 </div>
-                <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                <div className="image-ratio_1x1 margin-top_xsmall">
                   <img
                     width="405"
                     height="405"
@@ -168,7 +168,7 @@ const ServicesSlider = () => {
                   <br />
                   <p>Contact us</p>
                 </div>
-                <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                <div className="image-ratio_1x1 margin-top_xsmall">
                   <img
                     width="405"
                     height="405"
