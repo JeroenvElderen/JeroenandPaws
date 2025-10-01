@@ -37,6 +37,8 @@ function WebflowReInit() {
 }
 
 function AppContent() {
+  const basePath = import.meta.env.BASE_URL;
+
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add('w-mod-js');
@@ -58,7 +60,7 @@ function AppContent() {
 
     const handleJQueryLoad = () => {
       const webflowScript = document.createElement('script');
-      webflowScript.src = '/js/webflow.js';
+      webflowScript.src = `${basePath}js/webflow.js`;
       webflowScript.async = false;
       document.body.appendChild(webflowScript);
     };
@@ -70,7 +72,7 @@ function AppContent() {
       jqueryScript.removeEventListener('load', handleJQueryLoad);
       if (jqueryScript.parentNode) jqueryScript.parentNode.removeChild(jqueryScript);
     };
-  }, []);
+  }, [basePath]);
 
   return (
     <>
@@ -87,8 +89,10 @@ function AppContent() {
 }
 
 export default function App() {
+  const basePath = import.meta.env.BASE_URL;
+
   return (
-    <Router>
+    <Router basename={basePath}>
       <AppContent />
     </Router>
   );
