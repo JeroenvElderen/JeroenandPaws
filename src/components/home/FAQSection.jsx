@@ -1,105 +1,155 @@
-const FAQSection = () => (
-  <section data-copilot="true" className="section">
-    <div className="container is-small">
-      {/* Header */}
-      <div
-        id="w-node-_1b9fe946-f76f-93ba-3eaa-8c8d6d52a282-6d52a280"
-        className="header is-align-center w-node-e5c63cf8-d464-4b5c-779f-87db4b792fc8-055fd1ce"
-      >
-        <h2>Welcome to your dog's second home</h2>
-        <p className="subheading">
-          Discover our personalized care and training services for your furry friend.
-        </p>
+import { useEffect, useMemo, useState } from "react";
+import {
+  fetchSupabaseTable,
+  isSupabaseConfigured,
+} from "../../lib/supabaseClient";
+
+const FALLBACK_FAQS = [
+  {
+    id: "services",
+    question: "What services do you offer for dogs?",
+    answer:
+      "We provide <strong>training, walking, boarding, and day care</strong> — all tailored to meet the unique needs of each dog, ensuring they get the best care possible.",
+  },
+  {
+    id: "experience",
+    question: "How experienced are you with dog care?",
+    answer:
+      "I have <strong>7+ years of experience</strong> and a certification in Animal Care, working with <strong>police, sled, and guide dogs</strong>.",
+  },
+  {
+    id: "unique",
+    question: "What makes your services unique?",
+    answer:
+      "I offer a <strong>compassionate, personalized approach</strong> — every dog is treated like family, ensuring they feel happy and secure.",
+  },
+  {
+    id: "special-needs",
+    question: "Can you accommodate special needs?",
+    answer:
+      "Absolutely — whether it's <strong>training</strong> or <strong>day care</strong>, I adapt my methods to fit each dog's individual needs and ensure a safe, loving environment.",
+  },
+];
+
+const FAQSection = () => {
+  const [faqs, setFaqs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
+    const abortController = new AbortController();
+
+    const loadFaqs = async () => {
+      try {
+        const data = await fetchSupabaseTable("faqs", {
+          signal: abortController.signal,
+          order: { column: "display_order", ascending: true },
+        });
+        setFaqs(Array.isArray(data) ? data : []);
+      } catch (fetchError) {
+        if (fetchError.name === "AbortError") return;
+        console.error("Failed to load FAQs from Supabase:", fetchError);
+        setError(fetchError);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFaqs();
+    return () => abortController.abort();
+  }, []);
+
+  const faqsToRender = useMemo(() => {
+    return faqs.length > 0 ? faqs : FALLBACK_FAQS;
+  }, [faqs]);
+
+  const shouldShowStatusMessage = error && isSupabaseConfigured;
+
+  return (
+    <section data-copilot="true" className="section">
+      <div className="container is-small">
+        <div className="header is-align-center">
+          <h2>Welcome to your dog&apos;s second home</h2>
+          <p className="subheading">
+            Discover our personalized care and training services for your furry
+            friend.
+          </p>
+          {shouldShowStatusMessage && (
+            <p className="paragraph_small margin-bottom_none" role="status">
+              We&apos;ll share new answers as soon as they&apos;re ready. Here
+              are a few of our most common questions in the meantime.
+            </p>
+          )}
+        </div>
+
+        <div className="flex_vertical">
+          {isLoading && isSupabaseConfigured ? (
+            <div className="accordion is-transparent w-dropdown">
+              <div className="accordion_toggle-transparent w-dropdown-toggle">
+                <div className="accordion_icon w-icon-dropdown-toggle" />
+                <h3 className="paragraph_large margin-bottom_none">
+                  Loading questions...
+                </h3>
+              </div>
+              <div className="accordion_content w-dropdown-list">
+                <div className="padding_xsmall padding-horizontal_none">
+                  <div className="rich-text w-richtext">
+                    <p>
+                      Please hang tight while we fetch the latest information.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            faqsToRender.map((faq, idx) => (
+              <div
+                key={faq.id ?? faq.question}
+                className={`accordion is-transparent w-dropdown ${
+                  openFaq === idx ? "w--open" : ""
+                }`}
+              >
+                {/* Toggle button */}
+                <div
+                  className="accordion_toggle-transparent w-dropdown-toggle"
+                  onClick={() =>
+                    setOpenFaq(openFaq === idx ? null : idx)
+                  }
+                  style={{ cursor: "pointer" }}
+                >
+                  <div className="accordion_icon w-icon-dropdown-toggle" />
+                  <h3 className="paragraph_large margin-bottom_none">
+                    {faq.question}
+                  </h3>
+                </div>
+
+                {/* Answer section */}
+                <div
+                  className="accordion_content w-dropdown-list"
+                  style={{
+                    display: openFaq === idx ? "block" : "none",
+                  }}
+                >
+                  <div className="padding_xsmall padding-horizontal_none">
+                    <div
+                      className="rich-text w-richtext"
+                      dangerouslySetInnerHTML={{ __html: faq.answer || "" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-
-      {/* FAQ List */}
-      <div
-        id="w-node-_1b9fe946-f76f-93ba-3eaa-8c8d6d52a287-6d52a280"
-        className="flex_vertical w-node-e5c63cf8-d464-4b5c-779f-87db4b792ff1-055fd1ce"
-      >
-        {/* FAQ Item */}
-        <div data-delay="0" data-hover="false" className="accordion is-transparent w-dropdown">
-          <div className="accordion_toggle-transparent w-dropdown-toggle">
-            <div className="accordion_icon w-icon-dropdown-toggle" />
-            <h3 className="paragraph_large margin-bottom_none">
-              What services do you offer for dogs?
-            </h3>
-          </div>
-          <nav className="accordion_content w-dropdown-list">
-            <div className="padding_xsmall padding-horizontal_none">
-              <div className="rich-text w-richtext">
-                <p>
-                  We provide <strong>training, walking, boarding, and day care</strong> — all tailored
-                  to meet the unique needs of each dog, ensuring they get the best care possible.
-                </p>
-              </div>
-            </div>
-          </nav>
-        </div>
-
-        {/* FAQ Item */}
-        <div data-delay="0" data-hover="false" className="accordion is-transparent w-dropdown">
-          <div className="accordion_toggle-transparent w-dropdown-toggle">
-            <div className="accordion_icon w-icon-dropdown-toggle" />
-            <h3 className="paragraph_large margin-bottom_none">
-              How experienced are you with dog care?
-            </h3>
-          </div>
-          <nav className="accordion_content w-dropdown-list">
-            <div className="padding_xsmall padding-horizontal_none">
-              <div className="rich-text w-richtext">
-                <p>
-                  I have <strong>7+ years of experience</strong> and a certification in Animal Care,
-                  working with <strong>police, sled, and guide dogs</strong>.
-                </p>
-              </div>
-            </div>
-          </nav>
-        </div>
-
-        {/* FAQ Item */}
-        <div data-delay="0" data-hover="false" className="accordion is-transparent w-dropdown">
-          <div className="accordion_toggle-transparent w-dropdown-toggle">
-            <div className="accordion_icon w-icon-dropdown-toggle" />
-            <h3 className="paragraph_large margin-bottom_none">
-              What makes your services unique?
-            </h3>
-          </div>
-          <nav className="accordion_content w-dropdown-list">
-            <div className="padding_xsmall padding-horizontal_none">
-              <div className="rich-text w-richtext">
-                <p>
-                  I offer a <strong>compassionate, personalized approach</strong> — every dog is
-                  treated like family, ensuring they feel happy and secure.
-                </p>
-              </div>
-            </div>
-          </nav>
-        </div>
-
-        {/* FAQ Item */}
-        <div data-delay="0" data-hover="false" className="accordion is-transparent w-dropdown">
-          <div className="accordion_toggle-transparent w-dropdown-toggle">
-            <div className="accordion_icon w-icon-dropdown-toggle" />
-            <h3 className="paragraph_large margin-bottom_none">
-              Can you accommodate special needs?
-            </h3>
-          </div>
-          <nav className="accordion_content w-dropdown-list">
-            <div className="padding_xsmall padding-horizontal_none">
-              <div className="rich-text w-richtext">
-                <p>
-                  Absolutely — whether it's <strong>training</strong> or <strong>day care</strong>,
-                  I adapt my methods to fit each dog's individual needs and ensure a safe,
-                  loving environment.
-                </p>
-              </div>
-            </div>
-          </nav>
-        </div>
-      </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default FAQSection;
