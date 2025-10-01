@@ -3,6 +3,7 @@ import './styles/normalize.css';
 import './styles/webflow.css';
 import './styles/jeroen-paws.webflow.css';
 import Home from './pages/Home.jsx';
+import About from './pages/About.jsx';
 
 function App() {
   useEffect(() => {
@@ -41,6 +42,12 @@ function App() {
     };
   }, []);
 
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+
+  if (path === '/about') {
+    return <About />;
+  }
+  
   return <Home />;
 }
 
