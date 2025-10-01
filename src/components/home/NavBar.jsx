@@ -1,16 +1,42 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 const NavBar = () => {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setServicesOpen(false);
+  }, [location.pathname]);
+
+  const handleNavLinkClick = () => {
+    setMobileOpen(false);
+    setServicesOpen(false);
+  };
+
+  const toggleServicesMenu = () => {
+    setServicesOpen((current) => !current);
+  };
+
+  const handleDropdownKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleServicesMenu();
+    }
+
+    if (event.key === 'Escape') {
+      setServicesOpen(false);
+    }
+  };
 
   return (
     <div className="nav is-accent-primary">
       <div className={`nav_container w-nav ${mobileOpen ? 'w--open' : ''}`}>
         {/* Left logo */}
         <div className="nav_left">
-          <Link to="/" className="nav_logo w-inline-block">
+          <Link to="/" className="nav_logo w-inline-block" onClick={handleNavLinkClick}>
             <div className="nav_logo-icon">
               <svg width="100%" height="100%" viewBox="0 0 33 33" preserveAspectRatio="xMidYMid meet">
                 <path
@@ -27,7 +53,11 @@ const NavBar = () => {
 
         {/* Center menu */}
         <div className="nav_center">
-          <nav role="navigation" className={`nav_menu w-nav-menu ${mobileOpen ? 'w--open' : ''}`}>
+          <nav
+            role="navigation"
+            className={`nav_menu w-nav-menu ${mobileOpen ? 'w--open' : ''}`}
+            style={{ display: mobileOpen ? 'block' : undefined }}
+          >
             <ul role="list" className="nav_menu-list w-list-unstyled">
               {/* SERVICES DROPDOWN */}
               <li className="nav_menu-list-item">
@@ -38,7 +68,11 @@ const NavBar = () => {
                 >
                   <div
                     className="nav_link on-accent-primary w-dropdown-toggle"
-                    onClick={() => setServicesOpen(!servicesOpen)}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={servicesOpen}
+                    onClick={toggleServicesMenu}
+                    onKeyDown={handleDropdownKeyDown}
                     style={{ cursor: 'pointer' }}
                   >
                     <div>Services</div>
@@ -56,7 +90,11 @@ const NavBar = () => {
                                 <div className="eyebrow">Dog walking</div>
                                 <ul className="mega-nav_list w-list-unstyled">
                                   <li>
-                                    <Link to="/services/daily-strolls" className="mega-nav_link-item w-inline-block">
+                                    <Link
+                                      to="/services/daily-strolls"
+                                      className="mega-nav_link-item w-inline-block"
+                                      onClick={handleNavLinkClick}
+                                    >
                                       <div className="icon is-medium on-accent-primary">
                                         {/* SVG omitted for brevity */}
                                       </div>
@@ -69,7 +107,11 @@ const NavBar = () => {
                                     </Link>
                                   </li>
                                   <li>
-                                    <Link to="/services/group-adventures" className="mega-nav_link-item w-inline-block">
+                                    <Link
+                                      to="/services/group-adventures"
+                                      className="mega-nav_link-item w-inline-block"
+                                      onClick={handleNavLinkClick}
+                                    >
                                       <div className="icon is-medium on-accent-primary">
                                         {/* SVG omitted for brevity */}
                                       </div>
@@ -88,7 +130,11 @@ const NavBar = () => {
                                 <div className="eyebrow">Boarding</div>
                                 <ul className="mega-nav_list w-list-unstyled">
                                   <li>
-                                    <Link to="#" className="mega-nav_link-item w-inline-block">
+                                    <Link
+                                      to="#"
+                                      className="mega-nav_link-item w-inline-block"
+                                      onClick={handleNavLinkClick}
+                                    >
                                       <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                       <div>
                                         <strong>Overnight stays</strong>
@@ -99,7 +145,11 @@ const NavBar = () => {
                                     </Link>
                                   </li>
                                   <li>
-                                    <Link to="#" className="mega-nav_link-item w-inline-block">
+                                    <Link
+                                      to="#"
+                                      className="mega-nav_link-item w-inline-block"
+                                      onClick={handleNavLinkClick}
+                                    >
                                       <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                       <div>
                                         <strong>Daytime care</strong>
@@ -116,7 +166,11 @@ const NavBar = () => {
                                 <div className="eyebrow">Other services</div>
                                 <ul className="mega-nav_list w-list-unstyled">
                                   <li>
-                                    <Link to="#" className="mega-nav_link-item w-inline-block">
+                                    <Link
+                                      to="#"
+                                      className="mega-nav_link-item w-inline-block"
+                                      onClick={handleNavLinkClick}
+                                    >
                                       <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                       <div>
                                         <strong>Pet transport</strong>
@@ -127,7 +181,11 @@ const NavBar = () => {
                                     </Link>
                                   </li>
                                   <li>
-                                    <Link to="#" className="mega-nav_link-item w-inline-block">
+                                    <Link
+                                      to="#"
+                                      className="mega-nav_link-item w-inline-block"
+                                      onClick={handleNavLinkClick}
+                                    >
                                       <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                       <div>
                                         <strong>Training help</strong>
@@ -144,7 +202,11 @@ const NavBar = () => {
 
                           {/* Adventure card on the right */}
                           <li className="flex_horizontal">
-                            <Link to="#" className="card-link is-inverse flex-child_expand w-inline-block">
+                            <Link
+                              to="#"
+                              className="card-link is-inverse flex-child_expand w-inline-block"
+                              onClick={handleNavLinkClick}
+                            >
                               <div className="card_body">
                                 <div className="heading_h3">Plan your dog's next adventure</div>
                                 <p className="paragraph_small text-color_inverse-secondary">
@@ -170,17 +232,29 @@ const NavBar = () => {
 
               {/* Other top-level links */}
               <li className="nav_menu-list-item">
-                <Link to="/about" className="nav_link on-accent-primary w-inline-block">
+                <Link
+                  to="/about"
+                  className="nav_link on-accent-primary w-inline-block"
+                  onClick={handleNavLinkClick}
+                >
                   <div>About me</div>
                 </Link>
               </li>
               <li className="nav_menu-list-item">
-                <Link to="/faq" className="nav_link on-accent-primary w-inline-block">
+                <Link
+                  to="/faq"
+                  className="nav_link on-accent-primary w-inline-block"
+                  onClick={handleNavLinkClick}
+                >
                   <div>Questions</div>
                 </Link>
               </li>
               <li className="nav_menu-list-item">
-                <Link to="/contact" className="nav_link on-accent-primary w-inline-block">
+                <Link
+                  to="/contact"
+                  className="nav_link on-accent-primary w-inline-block"
+                  onClick={handleNavLinkClick}
+                >
                   <div>Contact</div>
                 </Link>
               </li>
@@ -191,7 +265,7 @@ const NavBar = () => {
         {/* Right side reserve button */}
         <div className="nav_right">
           <div className="button-group margin-top_none">
-            <a href="#" className="button on-accent-primary w-inline-block">
+            <a href="#" className="button on-accent-primary w-inline-block" onClick={handleNavLinkClick}>
               <div className="button_label">Reserve</div>
             </a>
           </div>

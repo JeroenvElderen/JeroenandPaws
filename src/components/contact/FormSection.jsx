@@ -1,4 +1,71 @@
+import { useState } from 'react';
+
+const initialValues = {
+  'name-3': '',
+  'email-5': '',
+  'message-6': '',
+};
+
 const ContactFormSection = () => {
+  const [formValues, setFormValues] = useState(initialValues);
+  const [status, setStatus] = useState('idle'); // idle | submitting | success | error
+  const [invalidFields, setInvalidFields] = useState({});
+
+  const isSubmitting = status === 'submitting';
+  const showSuccess = status === 'success';
+  const showError = status === 'error';
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+
+    if (status !== 'idle') {
+      setStatus('idle');
+    }
+    if (invalidFields[name]) {
+      setInvalidFields((prev) => ({ ...prev, [name]: false }));
+    }
+  };
+
+  const validate = () => {
+    const errors = {};
+
+    if (!formValues['name-3'].trim()) {
+      errors['name-3'] = true;
+    }
+
+    const email = formValues['email-5'].trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors['email-5'] = true;
+    }
+
+    if (!formValues['message-6'].trim()) {
+      errors['message-6'] = true;
+    }
+
+    return errors;
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const errors = validate();
+
+    if (Object.keys(errors).length > 0) {
+      setInvalidFields(errors);
+      setStatus('error');
+      return;
+    }
+
+    setInvalidFields({});
+    setStatus('submitting');
+
+    // Simulate async submission to mimic the original Webflow behaviour
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    setFormValues({ ...initialValues });
+    setStatus('success');
+  };
+
   return (
     <section id="contact-form" className="section">
       <div className="container">
@@ -11,6 +78,9 @@ const ContactFormSection = () => {
               data-name="Contact Form"
               id="wf-form-contact-form"
               data-wf-page-id="68dd2ed176222062869f6535"
+              noValidate
+              onSubmit={handleSubmit}
+              style={{ display: showSuccess ? 'none' : 'block' }}
             >
               <div className="input">
                 <label htmlFor="name-3" className="input_label">
@@ -24,6 +94,10 @@ const ContactFormSection = () => {
                   placeholder="Your name"
                   type="text"
                   id="name-3"
+                  value={formValues['name-3']}
+                  onChange={handleChange}
+                  aria-required="true"
+                  aria-invalid={invalidFields['name-3'] ? 'true' : 'false'}
                 />
               </div>
               <div className="input">
@@ -39,6 +113,10 @@ const ContactFormSection = () => {
                   type="email"
                   id="email-5"
                   required
+                  value={formValues['email-5']}
+                  onChange={handleChange}
+                  aria-required="true"
+                  aria-invalid={invalidFields['email-5'] ? 'true' : 'false'}
                 />
               </div>
               <div className="input">
@@ -52,16 +130,34 @@ const ContactFormSection = () => {
                   data-name="Message 6"
                   placeholder="Type your message..."
                   className="input_field input_text-area margin-bottom_small w-input"
+                  value={formValues['message-6']}
+                  onChange={handleChange}
+                  aria-required="true"
+                  aria-invalid={invalidFields['message-6'] ? 'true' : 'false'}
                 ></textarea>
               </div>
               <div className="button-group">
-                <input type="submit" data-wait="Please wait..." className="button w-button" value="Submit" />
+                <input
+                  type="submit"
+                  data-wait="Please wait..."
+                  className="button w-button"
+                  value={isSubmitting ? 'Please wait...' : 'Submit'}
+                  disabled={isSubmitting}
+                />
               </div>
             </form>
-            <div className="form_success-message w-form-done">
+            <div
+              className="form_success-message w-form-done"
+              style={{ display: showSuccess ? 'block' : 'none' }}
+              role="status"
+            >
               <div>Thank you! I’ll be in touch soon.</div>
             </div>
-            <div className="form_error-message w-form-fail">
+            <div
+              className="form_error-message w-form-fail"
+              style={{ display: showError ? 'block' : 'none' }}
+              role="alert"
+            >
               <div className="form_error-message_content">
                 <img
                   width=""

@@ -56,24 +56,6 @@ const DetailServices = () => {
     fetchData();
   }, [serviceId]);
 
-  // ✅ This is what makes About page work — add here too
-  useEffect(() => {
-    const root = document.documentElement;
-    if (!root.classList.contains('w-mod-js')) root.classList.add('w-mod-js');
-    if (
-      !root.classList.contains('w-mod-touch') &&
-      ('ontouchstart' in window || (window.DocumentTouch && document instanceof window.DocumentTouch))
-    ) {
-      root.classList.add('w-mod-touch');
-    }
-
-    if (window.Webflow) {
-      window.Webflow.destroy();
-      window.Webflow.ready();
-      window.Webflow.require && window.Webflow.require('ix2').init();
-    }
-  }, []); // <-- run once on mount just like About.jsx
-
   if (loading) return <div style={{ padding: '2rem' }}>Loading service...</div>;
   if (error) return <div style={{ padding: '2rem', color: 'red' }}>Error: {error}</div>;
 
