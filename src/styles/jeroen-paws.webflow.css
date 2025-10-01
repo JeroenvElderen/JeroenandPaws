@@ -3102,6 +3102,10 @@
   position: relative;
 }
 
+.text-white {
+  color: #fff;
+}
+
 .custom_marquee-horizontal-wrapper {
   padding-right: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---gap--md-gap);
   grid-column-gap: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---gap--md-gap);
