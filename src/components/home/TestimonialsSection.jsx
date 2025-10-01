@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  fetchSupabaseTable,
-  isSupabaseConfigured,
-} from "../../lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 const FALLBACK_TESTIMONIALS = [
   {
@@ -54,29 +51,27 @@ const TestimonialsSection = () => {
   const [error, setError] = useState(null);
   const [visibleTestimonials, setVisibleTestimonials] = useState([]);
 
-  // Fetch data
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsLoading(false);
-      setVisibleTestimonials(pickRandomFour(FALLBACK_TESTIMONIALS));
-      return;
-    }
-
     const abortController = new AbortController();
 
     const loadTestimonials = async () => {
       try {
-        const data = await fetchSupabaseTable("testimonials", {
-          signal: abortController.signal,
-          order: { column: "display_order", ascending: true },
-        });
-        const source = Array.isArray(data) && data.length > 0 ? data : FALLBACK_TESTIMONIALS;
+        const { data, error: supabaseError } = await supabase
+          .from("testimonials")
+          .select("*")
+          .order("display_order", { ascending: true });
+
+        if (supabaseError) throw supabaseError;
+
+        const source =
+          Array.isArray(data) && data.length > 0 ? data : FALLBACK_TESTIMONIALS;
+
         setTestimonials(source);
         setVisibleTestimonials(pickRandomFour(source));
-      } catch (fetchError) {
-        if (fetchError.name === "AbortError") return;
-        console.error("Failed to load testimonials from Supabase:", fetchError);
-        setError(fetchError);
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("Failed to load testimonials from Supabase:", err);
+        setError(err);
         setVisibleTestimonials(pickRandomFour(FALLBACK_TESTIMONIALS));
       } finally {
         setIsLoading(false);
@@ -84,14 +79,13 @@ const TestimonialsSection = () => {
     };
 
     loadTestimonials();
+
     return () => abortController.abort();
   }, []);
 
   const testimonialsToRender = useMemo(() => {
     return testimonials.length > 0 ? testimonials : FALLBACK_TESTIMONIALS;
   }, [testimonials]);
-
-  const shouldShowStatusMessage = error && isSupabaseConfigured;
 
   // Replace one random card every 5 seconds
   useEffect(() => {
@@ -104,10 +98,10 @@ const TestimonialsSection = () => {
         const newCards = [...prev];
         const replaceIndex = getRandomIndex(prev.length);
 
-        // pick a new testimonial not currently shown if possible
         let newCard = getRandomItem(testimonialsToRender);
         const currentIds = prev.map((p) => p.id);
         let attempts = 0;
+
         while (
           currentIds.includes(newCard.id) &&
           attempts < testimonialsToRender.length
@@ -140,7 +134,7 @@ const TestimonialsSection = () => {
                 difference for pet owners like you. From training to boarding,
                 our clients share their experiences.
               </p>
-              {shouldShowStatusMessage && (
+              {error && (
                 <p className="paragraph_small margin-bottom_none" role="status">
                   We&apos;re showing our featured testimonials while we refresh
                   the latest reviews.
@@ -161,7 +155,7 @@ const TestimonialsSection = () => {
 
           {/* Testimonials grid (4 cards) */}
           <div className="w-layout-grid grid_2-col mobile-l-1-col gap-small">
-            {isLoading && isSupabaseConfigured ? (
+            {isLoading ? (
               <div className="card">
                 <div className="card_body_small">
                   <p

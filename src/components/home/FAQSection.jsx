@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  fetchSupabaseTable,
-  isSupabaseConfigured,
-} from "../../lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 const FALLBACK_FAQS = [
   {
@@ -38,38 +35,34 @@ const FAQSection = () => {
   const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsLoading(false);
-      return;
-    }
-
     const abortController = new AbortController();
 
     const loadFaqs = async () => {
       try {
-        const data = await fetchSupabaseTable("faqs", {
-          signal: abortController.signal,
-          order: { column: "display_order", ascending: true },
-        });
+        const { data, error: supabaseError } = await supabase
+          .from("faqs")
+          .select("*")
+          .order("display_order", { ascending: true });
+
+        if (supabaseError) throw supabaseError;
         setFaqs(Array.isArray(data) ? data : []);
-      } catch (fetchError) {
-        if (fetchError.name === "AbortError") return;
-        console.error("Failed to load FAQs from Supabase:", fetchError);
-        setError(fetchError);
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("Failed to load FAQs from Supabase:", err);
+        setError(err);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadFaqs();
+
     return () => abortController.abort();
   }, []);
 
   const faqsToRender = useMemo(() => {
     return faqs.length > 0 ? faqs : FALLBACK_FAQS;
   }, [faqs]);
-
-  const shouldShowStatusMessage = error && isSupabaseConfigured;
 
   return (
     <section data-copilot="true" className="section">
@@ -80,7 +73,7 @@ const FAQSection = () => {
             Discover our personalized care and training services for your furry
             friend.
           </p>
-          {shouldShowStatusMessage && (
+          {error && (
             <p className="paragraph_small margin-bottom_none" role="status">
               We&apos;ll share new answers as soon as they&apos;re ready. Here
               are a few of our most common questions in the meantime.
@@ -89,7 +82,7 @@ const FAQSection = () => {
         </div>
 
         <div className="flex_vertical">
-          {isLoading && isSupabaseConfigured ? (
+          {isLoading ? (
             <div className="accordion is-transparent w-dropdown">
               <div className="accordion_toggle-transparent w-dropdown-toggle">
                 <div className="accordion_icon w-icon-dropdown-toggle" />
@@ -100,9 +93,7 @@ const FAQSection = () => {
               <div className="accordion_content w-dropdown-list">
                 <div className="padding_xsmall padding-horizontal_none">
                   <div className="rich-text w-richtext">
-                    <p>
-                      Please hang tight while we fetch the latest information.
-                    </p>
+                    <p>Please hang tight while we fetch the latest information.</p>
                   </div>
                 </div>
               </div>
@@ -115,7 +106,6 @@ const FAQSection = () => {
                   openFaq === idx ? "w--open" : ""
                 }`}
               >
-                {/* Toggle button */}
                 <div
                   className="accordion_toggle-transparent w-dropdown-toggle"
                   onClick={() =>
@@ -129,7 +119,6 @@ const FAQSection = () => {
                   </h3>
                 </div>
 
-                {/* Answer section */}
                 <div
                   className="accordion_content w-dropdown-list"
                   style={{
