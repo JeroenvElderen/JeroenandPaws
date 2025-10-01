@@ -1,4 +1,4 @@
 export { default as AboutHeroSection } from './HeroSection.jsx';
-export { default as JourneySection } from './JourneySection.jsx';
-export { default as ValuesSection } from './ValuesSection.jsx';
-export { default as CommunitySection } from './CommunitySection.jsx';
+export { default as ServicesSection } from './ServicesSection.jsx';
+export { default as GallerySection } from './GallerySection.jsx';
+export { default as AboutFooter } from './Footer.jsx';

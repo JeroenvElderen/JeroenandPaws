@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const NavBar = () => (
   <div className="nav is-accent-primary">
     <div
@@ -11,7 +13,7 @@ const NavBar = () => (
       className="nav_container w-nav"
     >
       <div className="nav_left">
-        <a href="/" className="nav_logo w-inline-block">
+        <Link to="/" className="nav_logo w-inline-block">
           <div className="nav_logo-icon">
             <svg width="100%" height="100%" viewBox="0 0 33 33" preserveAspectRatio="xMidYMid meet">
               <path
@@ -23,7 +25,7 @@ const NavBar = () => (
           <div data-brand-name="true" className="paragraph_large margin-bottom_none">
             Welcome to a place where your dog's happiness is our top priority.
           </div>
-        </a>
+        </Link>
       </div>
       <div className="nav_center">
         <nav role="navigation" className="nav_menu w-nav-menu">
@@ -361,9 +363,9 @@ const NavBar = () => (
               </div>
             </li>
             <li className="nav_menu-list-item">
-              <a href="/about" className="nav_link on-accent-primary w-inline-block">
+              <Link to="/about" className="nav_link on-accent-primary w-inline-block">
                 <div>About me</div>
-              </a>
+              </Link>
             </li>
             <li className="nav_menu-list-item">
               <a href="#" className="nav_link on-accent-primary w-inline-block">

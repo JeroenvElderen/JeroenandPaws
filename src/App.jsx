@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './styles/normalize.css';
 import './styles/webflow.css';
 import './styles/jeroen-paws.webflow.css';
@@ -13,6 +14,7 @@ function App() {
       root.classList.add('w-mod-touch');
     }
 
+    // optional — only if you really need Webflow scripts
     const jqueryScript = document.createElement('script');
     jqueryScript.src =
       'https://d3e54v103j8qbb.cloudfront.net/js/jquery-3.5.1.min.dc5e7f18c8.js?site=68dbb5349c5fc9bb055fd17e';
@@ -42,13 +44,14 @@ function App() {
     };
   }, []);
 
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
-
-  if (path === '/about') {
-    return <About />;
-  }
-  
-  return <Home />;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;

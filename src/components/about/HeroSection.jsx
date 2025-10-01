@@ -1,57 +1,49 @@
-const AboutHeroSection = () => (
-  <header className="section padding_none text-color_on-overlay is-inverse">
-    <div className="w-layout-grid grid_1-col">
-      <div className="position_relative min-height_80dvh radius_all-0">
-        <img
-          src="images/9278f40e-3f0d-4e2a-9ef4-7c47a3908e11.avif"
-          alt="Jeroen sitting with a golden retriever in a sunny field"
-          className="image_cover position_absolute radius_all-0"
-          loading="lazy"
-        />
-        <div className="overlay_opacity-middle mask_bottom">
-          Every adventure is built on calm leadership, play, and a whole lot of heart.
-        </div>
-      </div>
-      <div className="container position_relative padding-vertical_xxlarge z-index_2">
-        <div className="w-layout-grid grid_2-col tablet-1-col gap-large align-center">
-          <div className="flex_vertical gap-small">
-            <div className="eyebrow text-white">Meet your guide</div>
-            <h1 className="heading_h1 text-white">I’m Jeroen – the person behind Jeroen &amp; Paws</h1>
-            <p className="paragraph_large text-white">
-              I help busy dog parents raise confident, fulfilled companions through structured adventures, clear communication,
-              and daily rituals that feel like second nature.
-            </p>
-            <div className="button-group">
-              <a href="#story" className="button on-inverse w-button">
-                Explore the journey
-              </a>
-              <a href="mailto:hello@jeroenandpaws.com" className="button is-secondary on-inverse w-button">
-                Book a meet &amp; greet
-              </a>
+const HeroSection = () => (
+  <header
+    data-copilot="true"
+    className="section max-height_100vh_desktop overflow_hidden flex_horizontal"
+  >
+    <div className="container">
+      <div className="w-layout-grid grid_2-col tablet-1-col gap-large">
+        <div className="rotate_-12deg tablet-straight">
+          <div className="w-layout-grid grid_1-col gap-small">
+            <div className="image-ratio_3x2">
+              <img
+                alt="image of a vet assisting an animal"
+                src="https://webflow-prod-assets.s3.amazonaws.com/image-generation-assets/adfe4de3-4bd2-485f-9f46-d2394c32d69a.avif"
+                loading="lazy"
+                data-aisg-image-id="adfe4de3-4bd2-485f-9f46-d2394c32d69a"
+                className="image_cover"
+              />
+            </div>
+            <div className="image-ratio_3x2">
+              <img
+                alt="image of volunteers helping animals"
+                src="https://webflow-prod-assets.s3.amazonaws.com/image-generation-assets/1705e9bf-d4c9-4680-8ee2-9419f7174673.avif"
+                loading="lazy"
+                data-aisg-image-id="1705e9bf-d4c9-4680-8ee2-9419f7174673"
+                className="image_cover"
+              />
             </div>
           </div>
-          <div className="card is-contrast">
-            <div className="card_body flex_vertical gap-small">
-              <div className="eyebrow text-color_secondary">Quick facts</div>
-              <div className="w-layout-grid grid_2-col tablet-1-col gap-small">
-                <div className="flex_vertical gap-xxsmall">
-                  <span className="heading_h3 margin-bottom_none">2500+</span>
-                  <p className="paragraph_small text-color_secondary margin-bottom_none">Walks led since 2017</p>
-                </div>
-                <div className="flex_vertical gap-xxsmall">
-                  <span className="heading_h3 margin-bottom_none">Certified</span>
-                  <p className="paragraph_small text-color_secondary margin-bottom_none">Dog trainer &amp; first aid</p>
-                </div>
-                <div className="flex_vertical gap-xxsmall">
-                  <span className="heading_h3 margin-bottom_none">Gentle leader</span>
-                  <p className="paragraph_small text-color_secondary margin-bottom_none">Reward-based methods</p>
-                </div>
-                <div className="flex_vertical gap-xxsmall">
-                  <span className="heading_h3 margin-bottom_none">Community</span>
-                  <p className="paragraph_small text-color_secondary margin-bottom_none">Partnered with 6 rescues</p>
-                </div>
-              </div>
-            </div>
+        </div>
+        <div
+          id="w-node-_857eff80-a064-80f6-efa6-2aa55402b17a-5402b172"
+          className="header w-node-aca1decb-952a-6d03-8948-04348d12084d-0653ac4e"
+        >
+          <h1 className="heading_h1">Care for every wagging tail</h1>
+          <p className="subheading">
+            Personalized dog training, walks, and loving care—tailored for every
+            pup. From energetic walks to cozy boarding, your dog’s happiness and
+            safety come first. Let’s make every day their best day.
+          </p>
+          <div className="button-group">
+            <a href="#" className="button w-button">
+              Book now
+            </a>
+            <a href="#" className="button is-secondary w-button">
+              See services
+            </a>
           </div>
         </div>
       </div>
@@ -59,4 +51,4 @@ const AboutHeroSection = () => (
   </header>
 );
 
-export default AboutHeroSection;
+export default HeroSection;
