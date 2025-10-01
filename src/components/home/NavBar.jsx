@@ -1,16 +1,49 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 const NavBar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navMenuId = useId();
+
+  const closeMobileMenu = () => {
+    setMobileOpen(false);
+    setIsDropdownOpen(false);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 991) {
+        setMobileOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      setIsDropdownOpen(false);
+    }
+  }, [mobileOpen]);
 
   return (
     <div className="nav is-accent-primary">
-      <div className={`nav_container w-nav ${mobileOpen ? "w--open" : ""}`}>
+      <div
+        className={`nav_container w-nav ${mobileOpen ? "w--open" : ""}`}
+        data-animation="default"
+        data-collapse="medium"
+        data-duration="400"
+        data-easing="ease"
+        data-easing2="ease"
+        data-no-scroll="1"
+        role="banner"
+        style={{ maxWidth: "none" }}
+      >
         {/* Logo */}
         <div className="nav_left">
-          <Link to="/" className="nav_logo w-inline-block" onClick={() => setMobileOpen(false)}>
+          <Link to="/" className="nav_logo w-inline-block" onClick={closeMobileMenu}>
             <div className="nav_logo-icon">
               <svg width="100%" height="100%" viewBox="0 0 33 33">
                 <path
@@ -28,7 +61,10 @@ const NavBar = () => {
         {/* Menu */}
         <div className="nav_center">
           <nav
+            id={navMenuId}
+            role="navigation"
             className={`nav_menu w-nav-menu ${mobileOpen ? "w--open" : ""}`}
+            data-nav-menu-open={mobileOpen ? "" : undefined}
             style={{ display: mobileOpen ? "block" : undefined }}
           >
             <ul className="nav_menu-list w-list-unstyled">
@@ -38,11 +74,15 @@ const NavBar = () => {
                   className={`nav_dropdown-menu w-dropdown ${isDropdownOpen ? "w--open" : ""}`}
                   onMouseEnter={() => setIsDropdownOpen(true)}
                   onMouseLeave={() => setIsDropdownOpen(false)}
+                  data-hover="false"
+                  data-delay="0"
                 >
                   <button
+                    type="button"
                     className="nav_link on-accent-primary w-dropdown-toggle"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     aria-expanded={isDropdownOpen}
+                    aria-haspopup="true"
                   >
                     <div>Services</div>
                     <div className="nav-caret w-icon-dropdown-toggle"></div>
@@ -70,7 +110,7 @@ const NavBar = () => {
                                   <Link
                                     to="/services/daily-strolls"
                                     className="mega-nav_link-item w-inline-block"
-                                    onClick={() => setIsDropdownOpen(false)}
+                                    onClick={closeMobileMenu}
                                   >
                                     <div className="icon is-medium on-accent-primary">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
@@ -89,7 +129,7 @@ const NavBar = () => {
                                   <Link
                                     to="/services/group-adventures"
                                     className="mega-nav_link-item w-inline-block"
-                                    onClick={() => setIsDropdownOpen(false)}
+                                    onClick={closeMobileMenu}
                                   >
                                     <div className="icon is-medium on-accent-primary">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
@@ -105,7 +145,7 @@ const NavBar = () => {
                                   </Link>
                                 </li>
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                         <path d="m25.7 9.3-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z"></path>
@@ -127,7 +167,7 @@ const NavBar = () => {
                               <div className="eyebrow">Boarding</div>
                               <ul className="mega-nav_list w-list-unstyled">
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                     <div>
                                       <strong>Overnight stays</strong>
@@ -138,7 +178,7 @@ const NavBar = () => {
                                   </Link>
                                 </li>
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                     <div>
                                       <strong>Daytime care</strong>
@@ -149,7 +189,7 @@ const NavBar = () => {
                                   </Link>
                                 </li>
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                     <div>
                                       <strong>Home check-ins</strong>
@@ -167,7 +207,7 @@ const NavBar = () => {
                               <div className="eyebrow">Other services</div>
                               <ul className="mega-nav_list w-list-unstyled">
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                     <div>
                                       <strong>Pet transport</strong>
@@ -178,7 +218,7 @@ const NavBar = () => {
                                   </Link>
                                 </li>
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                     <div>
                                       <strong>Training help</strong>
@@ -189,7 +229,7 @@ const NavBar = () => {
                                   </Link>
                                 </li>
                                 <li>
-                                  <Link to="#" className="mega-nav_link-item w-inline-block">
+                                  <Link to="#" className="mega-nav_link-item w-inline-block" onClick={closeMobileMenu}>
                                     <div className="icon is-medium on-accent-primary">{/* SVG */}</div>
                                     <div>
                                       <strong>Custom solutions</strong>
@@ -206,7 +246,11 @@ const NavBar = () => {
 
                         {/* CTA card */}
                         <li className="flex_horizontal">
-                          <Link to="#" className="card-link is-inverse flex-child_expand w-inline-block">
+                          <Link
+                            to="#"
+                            className="card-link is-inverse flex-child_expand w-inline-block"
+                            onClick={closeMobileMenu}
+                          >
                             <div className="card_body">
                               <div className="heading_h3">Plan your dog's next adventure</div>
                               <p className="paragraph_small text-color_inverse-secondary">
@@ -231,17 +275,29 @@ const NavBar = () => {
 
               {/* Other links */}
               <li className="nav_menu-list-item">
-                <Link to="/about" className="nav_link on-accent-primary w-inline-block">
+                <Link
+                  to="/about"
+                  className="nav_link on-accent-primary w-inline-block"
+                  onClick={closeMobileMenu}
+                >
                   About me
                 </Link>
               </li>
               <li className="nav_menu-list-item">
-                <Link to="/faq" className="nav_link on-accent-primary w-inline-block">
+                <Link
+                  to="/faq"
+                  className="nav_link on-accent-primary w-inline-block"
+                  onClick={closeMobileMenu}
+                >
                   Questions
                 </Link>
               </li>
               <li className="nav_menu-list-item">
-                <Link to="/contact" className="nav_link on-accent-primary w-inline-block">
+                <Link
+                  to="/contact"
+                  className="nav_link on-accent-primary w-inline-block"
+                  onClick={closeMobileMenu}
+                >
                   Contact
                 </Link>
               </li>
@@ -252,7 +308,7 @@ const NavBar = () => {
         {/* Right reserve */}
         <div className="nav_right">
           <div className="button-group margin-top_none">
-            <a href="#" className="button on-accent-primary w-inline-block">
+            <a href="#" className="button on-accent-primary w-inline-block" onClick={closeMobileMenu}>
               <div className="button_label">Reserve</div>
             </a>
           </div>
@@ -261,7 +317,18 @@ const NavBar = () => {
         {/* Mobile toggle */}
         <div
           className={`nav_mobile-menu-button w-nav-button ${mobileOpen ? "w--open" : ""}`}
+          aria-label="Toggle navigation menu"
+          aria-controls={navMenuId}
+          aria-expanded={mobileOpen}
           onClick={() => setMobileOpen(!mobileOpen)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setMobileOpen((prev) => !prev);
+            }
+          }}
+          role="button"
+          tabIndex={0}
         >
           <div className="icon on-accent-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
