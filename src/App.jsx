@@ -9,13 +9,13 @@ import './styles/normalize.css';
 import './styles/webflow.css';
 import './styles/jeroen-paws.webflow.css';
 
-import Home from './pages/Home.jsx';
-import About from './pages/About.jsx';
-import DetailServices from './pages/DetailServices.jsx';
-import Contact from './pages/Contact.jsx';
-import FAQ from './pages/FAQ.jsx';
+import Home from './pages/Home';
+import About from './pages/About';
+import Services from './pages/Services';
+import DetailServices from './pages/DetailServices';
+import Contact from './pages/Contact';
+import FAQ from './pages/FAQ';
 
-/** 🔥 Hook that re-inits Webflow whenever route changes */
 function WebflowReInit() {
   const location = useLocation();
 
@@ -49,7 +49,6 @@ function AppContent() {
       root.classList.add('w-mod-touch');
     }
 
-    // ✅ Dynamically load jQuery and webflow.js once
     const jqueryScript = document.createElement('script');
     jqueryScript.src =
       'https://d3e54v103j8qbb.cloudfront.net/js/jquery-3.5.1.min.dc5e7f18c8.js?site=68dbb5349c5fc9bb055fd17e';
@@ -80,6 +79,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
+        <Route path="/services" element={<Services />} />
         <Route path="/services/:serviceId" element={<DetailServices />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />

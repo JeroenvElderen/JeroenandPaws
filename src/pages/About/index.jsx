@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { NavBar, Footer } from '../components/home';
-import { ContactHeroSection, ContactFormSection } from '../components/contact';
+import { NavBar, Footer } from '../../components/layout';
+import { AboutHeroSection, ServicesSection, GallerySection } from '../../components/about';
 
-const Contact = () => {
+const About = () => {
   useEffect(() => {
     const root = document.documentElement;
     if (!root.classList.contains('w-mod-js')) root.classList.add('w-mod-js');
@@ -23,11 +23,12 @@ const Contact = () => {
   return (
     <>
       <NavBar />
-      <ContactHeroSection />
-      <ContactFormSection />
+      <AboutHeroSection />
+      <ServicesSection />
+      <GallerySection />
       <Footer />
     </>
   );
 };
 
-export default Contact;
+export default About;

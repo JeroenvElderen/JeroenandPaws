@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
-import { NavBar, Footer } from '../components/home';
+import { supabase } from '../../lib/supabaseClient';
+import { NavBar, Footer } from '../../components/layout';
 import {
   DetailServicesHeroSection,
   CarePlansSection,
   ServicesFAQSection,
-} from '../components/detailServices';
+} from '../../components/detailServices';
 
 const DetailServices = () => {
   const { serviceId } = useParams();
@@ -56,7 +56,6 @@ const DetailServices = () => {
     fetchData();
   }, [serviceId]);
 
-  // ✅ This is what makes About page work — add here too
   useEffect(() => {
     const root = document.documentElement;
     if (!root.classList.contains('w-mod-js')) root.classList.add('w-mod-js');
@@ -72,7 +71,7 @@ const DetailServices = () => {
       window.Webflow.ready();
       window.Webflow.require && window.Webflow.require('ix2').init();
     }
-  }, []); // <-- run once on mount just like About.jsx
+  }, []);
 
   if (loading) return <div style={{ padding: '2rem' }}>Loading service...</div>;
   if (error) return <div style={{ padding: '2rem', color: 'red' }}>Error: {error}</div>;

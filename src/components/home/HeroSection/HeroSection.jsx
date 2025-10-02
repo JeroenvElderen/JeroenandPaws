@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 const HeroSection = () => (
   <header className="section padding_none text-color_on-overlay is-inverse">
     <div className="w-layout-grid grid_1-col">
@@ -34,9 +35,9 @@ const HeroSection = () => (
               us for the affection and care your pet deserves.
             </p>
             <div className="button-group">
-              <a href="#" className="button on-inverse w-button">
+              <Link to="/services" className="button on-inverse w-button">
                 Discover more
-              </a>
+              </Link>
             </div>
           </div>
         </div>

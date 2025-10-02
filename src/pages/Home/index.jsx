@@ -1,5 +1,5 @@
+import { NavBar, Footer } from '../../components/layout';
 import {
-  NavBar,
   HeroSection,
   WelcomeHighlights,
   ServicesSlider,
@@ -7,8 +7,7 @@ import {
   TestimonialsSection,
   CallToAction,
   FAQSection,
-  Footer,
-} from '../components/home';
+} from '../../components/home';
 
 function Home() {
   return (

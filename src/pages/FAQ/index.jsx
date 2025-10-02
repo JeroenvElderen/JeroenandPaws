@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import NavBar from '../components/home/NavBar.jsx';
-import Footer from '../components/home/Footer.jsx';
-import { AboutHeroSection, ServicesSection, GallerySection } from '../components/about';
+import { NavBar, Footer } from '../../components/layout';
+import { FAQHeroSection, FAQCallToAction } from '../../components/faq';
 
-const About = () => {
+const FAQ = () => {
   useEffect(() => {
     const root = document.documentElement;
     if (!root.classList.contains('w-mod-js')) root.classList.add('w-mod-js');
@@ -14,7 +13,6 @@ const About = () => {
       root.classList.add('w-mod-touch');
     }
 
-    // re-run Webflow for this page in case it's first load directly to /about
     if (window.Webflow) {
       window.Webflow.destroy();
       window.Webflow.ready();
@@ -25,12 +23,11 @@ const About = () => {
   return (
     <>
       <NavBar />
-      <AboutHeroSection />
-      <ServicesSection />
-      <GallerySection />
+      <FAQHeroSection />
+      <FAQCallToAction />
       <Footer />
     </>
   );
 };
 
-export default About;
+export default FAQ;

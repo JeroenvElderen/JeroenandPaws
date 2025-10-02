@@ -1,8 +1,14 @@
 import { useEffect } from 'react';
-import { NavBar, Footer } from '../components/home';
-import { FAQHeroSection, FAQCallToAction } from '../components/faq';
+import { NavBar, Footer } from '../../components/layout';
+import {
+  ServicesHeroSection,
+  HighlightsSection,
+  PricingSection,
+  StoriesSection,
+  ServicesCtaSection,
+} from '../../components/services';
 
-const FAQ = () => {
+const Services = () => {
   useEffect(() => {
     const root = document.documentElement;
     if (!root.classList.contains('w-mod-js')) root.classList.add('w-mod-js');
@@ -23,11 +29,14 @@ const FAQ = () => {
   return (
     <>
       <NavBar />
-      <FAQHeroSection />
-      <FAQCallToAction />
+      <ServicesHeroSection />
+      <HighlightsSection />
+      <PricingSection />
+      <StoriesSection />
+      <ServicesCtaSection />
       <Footer />
     </>
   );
 };
 
-export default FAQ;
+export default Services;
