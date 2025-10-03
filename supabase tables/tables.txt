@@ -1,0 +1,63 @@
+create table public.care_plans (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  service_slug text null,
+  title text not null,
+  price text null,
+  description text null,
+  button_label text null,
+  button_url text null,
+  footnote text null,
+  sort_order integer null default 0,
+  created_at timestamp with time zone null default now(),
+  constraint care_plans_pkey primary key (id),
+  constraint care_plans_service_slug_fkey foreign KEY (service_slug) references services_hero (service_slug) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.faqs (
+  id uuid not null default gen_random_uuid (),
+  display_order integer generated always as identity not null,
+  question text not null,
+  answer text not null,
+  created_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  constraint faqs_pkey primary key (id),
+  constraint faqs_display_order_key unique (display_order)
+) TABLESPACE pg_default;
+
+create table public.services_faq (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  service_slug text null,
+  question text not null,
+  answer text not null,
+  sort_order integer null default 0,
+  created_at timestamp with time zone null default now(),
+  constraint services_faq_pkey primary key (id),
+  constraint services_faq_service_slug_fkey foreign KEY (service_slug) references services_hero (service_slug) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.services_hero (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  service_slug text not null,
+  heading text not null,
+  subheading text null,
+  primary_cta_label text null,
+  primary_cta_url text null,
+  secondary_cta_label text null,
+  secondary_cta_url text null,
+  hero_image_1_url text null,
+  hero_image_2_url text null,
+  created_at timestamp with time zone null default now(),
+  constraint services_hero_pkey primary key (id),
+  constraint services_hero_service_slug_key unique (service_slug)
+) TABLESPACE pg_default;
+
+create table public.testimonials (
+  id uuid not null default gen_random_uuid (),
+  display_order integer generated always as identity not null,
+  name text not null,
+  role text null,
+  quote text not null,
+  avatar_url text null,
+  created_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  constraint testimonials_pkey primary key (id),
+  constraint testimonials_display_order_key unique (display_order)
+) TABLESPACE pg_default;
