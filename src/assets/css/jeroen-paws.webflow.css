@@ -1,4 +1,5 @@
 :root {
+  --form-select-chevron: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 20 20%27%3E%3Cpath fill=%27none%27 stroke=%27currentColor%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M5%207l5%205%205-5%27/%3E%3C/svg%3E");
   --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---container--container-width: 1280px;
   --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---container--container-padding-horizontal: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---spacing--1x);
   --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---container--container-lg-width: 1440px;
@@ -861,7 +862,7 @@
   color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---text-color--text-primary);
   -webkit-appearance: none;
   appearance: none;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -876,7 +877,7 @@
   border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---border-color--border-primary);
   background-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a10);
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---border-color--border-primary), 0 6px 12px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -892,7 +893,7 @@
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-primary-a10), 0 4px 4px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
   color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---text-color--text-inverse-primary);
   background-color: #0000;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -903,7 +904,7 @@
   border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-primary-a10);
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-primary-a10), 0 6px 12px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
   background-color: #0000;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -916,7 +917,7 @@
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20), 0 4px 4px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
   transition: border-color .2s ease, color undefined ease, background-color undefined cubic-bezier(.165, .84, .44, 1), box-shadow undefined ease;
   color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---text-color--text-primary);
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -927,7 +928,7 @@
   border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20);
   background-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20);
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20), 0 6px 12px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -940,7 +941,7 @@
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20), 0 4px 4px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
   transition: border-color .2s ease, color undefined ease, background-color undefined cubic-bezier(.165, .84, .44, 1), box-shadow undefined ease;
   color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---text-color--text-primary);
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -951,7 +952,7 @@
   border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20);
   background-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20);
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20), 0 6px 12px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -964,7 +965,7 @@
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20), 0 4px 4px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
   transition: border-color .2s ease, color undefined ease, background-color undefined cubic-bezier(.165, .84, .44, 1), box-shadow undefined ease;
   color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---text-color--text-primary);
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
@@ -975,7 +976,7 @@
   border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20);
   background-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20);
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-inverse-a20), 0 6px 12px #00000040, 0 1px 1px #0003, 0 2px 1px #ffffff4d inset;
-  background-image: none;
+  background-image: var(--form-select-chevron);
   background-position: 97%;
   background-repeat: no-repeat;
   background-size: 14px;
