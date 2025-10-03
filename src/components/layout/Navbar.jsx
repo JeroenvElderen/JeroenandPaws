@@ -30,7 +30,10 @@ const Navbar = () => (
                             <div className="eyebrow">Dog walking</div>
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=daily-strolls" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=daily-strolls#daily-strolls"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -41,7 +44,10 @@ const Navbar = () => (
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=group-adventures" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=group-adventures#group-adventures"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -52,7 +58,10 @@ const Navbar = () => (
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=solo-journeys" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=solo-journeys#solo-journeys"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -68,7 +77,10 @@ const Navbar = () => (
                             <div className="eyebrow">Boarding</div>
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=overnight-stays" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=overnight-stays#overnight-stays"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -79,7 +91,10 @@ const Navbar = () => (
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=daytime-care" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=daytime-care#daytime-care"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -90,7 +105,10 @@ const Navbar = () => (
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=home-check-ins" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=home-check-ins#home-check-ins"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -106,7 +124,10 @@ const Navbar = () => (
                             <div className="eyebrow">Other services</div>
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=pet-transport" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=pet-transport#pet-transport"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -117,7 +138,10 @@ const Navbar = () => (
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=training-help" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=training-help#training-help"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>
@@ -128,7 +152,10 @@ const Navbar = () => (
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
-                                <Link to="/services/detail?plan=custom-solutions" className="mega-nav_link-item w-inline-block">
+                                <Link
+                                  to="/services?service=custom-solutions#custom-solutions"
+                                  className="mega-nav_link-item w-inline-block"
+                                >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
                                     </svg></div>

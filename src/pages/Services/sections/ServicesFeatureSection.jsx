@@ -12,7 +12,7 @@ const FALLBACK_ENTRIES = [
     subheading:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
     primary_cta_label: 'Button text',
-    primary_cta_url: '/services/detail',
+    primary_cta_url: '/services?service=walk-and-train#walk-and-train',
     secondary_cta_label: null,
     secondary_cta_url: null,
     hero_image_1_url: FALLBACK_IMAGE,
@@ -48,13 +48,35 @@ const CtaLink = ({ cta, variant }) => {
   );
 };
 
-const ServicesFeatureSection = ({ heroEntries = [] }) => {
-  const entries = heroEntries.length > 0 ? heroEntries : FALLBACK_ENTRIES;
+const normaliseSlug = (value) =>
+  typeof value === 'string' && value.trim().length > 0 ? value.trim().toLowerCase() : '';
+
+const ServicesFeatureSection = ({ heroEntries = [], activeServiceSlug }) => {
+  const entries = useMemo(
+    () => (heroEntries.length > 0 ? heroEntries : FALLBACK_ENTRIES),
+    [heroEntries],
+  );
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
+    if (entries.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+
+    if (activeServiceSlug) {
+      const targetIndex = entries.findIndex(
+        (entry) => normaliseSlug(entry.service_slug) === normaliseSlug(activeServiceSlug),
+      );
+
+      if (targetIndex !== -1) {
+        setActiveIndex(targetIndex);
+        return;
+      }
+    }
+
     setActiveIndex(0);
-  }, [heroEntries.length]);
+  }, [activeServiceSlug, entries]);
 
   const activeEntry = useMemo(
     () => entries[Math.min(activeIndex, entries.length - 1)] ?? entries[0],
@@ -105,12 +127,13 @@ const ServicesFeatureSection = ({ heroEntries = [] }) => {
 
                   return (
                     <React.Fragment key={entry.id || entry.service_slug || `hero-entry-${index}`}>
-                      <div>
+                      <div id={entry.service_slug || undefined}>
                         <button
                           type="button"
                           className={`custom_change-height-link w-inline-block${isActive ? ' w--current' : ''}`}
                           onClick={() => setActiveIndex(index)}
                           aria-pressed={isActive}
+                          aria-current={isActive ? 'true' : undefined}
                         ></button>
                         <div className="eyebrow">{toTitleCase(entry.service_slug)}</div>
                         <h4>{entryHeading}</h4>

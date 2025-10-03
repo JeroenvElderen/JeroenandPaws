@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import ServicesFeatureSection from './sections/ServicesFeatureSection';
 import ServicesPricingSection from './sections/ServicesPricingSection';
 import ServicesTestimonialsSection from './sections/ServicesTestimonialsSection';
@@ -28,6 +29,9 @@ const buildCta = (heroEntry) => {
   };
 };
 
+const normaliseSlug = (value) =>
+  typeof value === 'string' && value.trim().length > 0 ? value.trim().toLowerCase() : null;
+
 const Services = () => {
   const [servicesHero, setServicesHero] = useState([]);
   const [carePlans, setCarePlans] = useState([]);
@@ -35,6 +39,15 @@ const Services = () => {
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { hash, search } = useLocation();
+
+  const activeServiceSlug = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const searchSlug = normaliseSlug(params.get('service') || params.get('plan'));
+    const hashSlug = normaliseSlug(hash?.startsWith('#') ? hash.slice(1) : hash);
+
+    return searchSlug || hashSlug;
+  }, [hash, search]);
 
   useEffect(() => {
     let isMounted = true;
@@ -104,6 +117,18 @@ const Services = () => {
 
   const ctaContent = useMemo(() => buildCta(servicesHero[0]), [servicesHero]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined' || loading || !activeServiceSlug) {
+      return;
+    }
+
+    const target = document.getElementById(activeServiceSlug);
+
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [activeServiceSlug, loading, carePlans.length, servicesHero.length]);
+
   const filteredFaqs = useMemo(
     () =>
       faqs.filter(
@@ -126,7 +151,7 @@ const Services = () => {
           </div>
         </section>
       )}
-      <ServicesFeatureSection heroEntries={servicesHero} />
+      <ServicesFeatureSection heroEntries={servicesHero} activeServiceSlug={activeServiceSlug} />
       <ServicesPricingSection carePlans={carePlans} />
       <ServicesTestimonialsSection testimonials={testimonials} />
       <ServicesFaqSection faqs={filteredFaqs} />
