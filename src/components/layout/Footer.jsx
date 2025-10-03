@@ -57,27 +57,42 @@ const Footer = () => (
             <h2 className="heading_h6 text-color_secondary">Our services</h2>
           </li>
           <li>
-            <Link to="/services#walk-and-train" className="footer_link on-inverse w-inline-block">
+            <Link
+              to="/services?service=walk-and-train#walk-and-train"
+              className="footer_link on-inverse w-inline-block"
+            >
               <div>Walks</div>
             </Link>
           </li>
           <li>
-            <Link to="/services#boarding" className="footer_link on-inverse w-inline-block">
+            <Link
+              to="/services?service=boarding#boarding"
+              className="footer_link on-inverse w-inline-block"
+            >
               <div>Boarding</div>
             </Link>
           </li>
           <li>
-            <Link to="/services#day-care" className="footer_link on-inverse w-inline-block">
+            <Link
+              to="/services?service=day-care#day-care"
+              className="footer_link on-inverse w-inline-block"
+            >
               <div>Daycare</div>
             </Link>
           </li>
           <li>
-            <Link to="/services/detail?plan=training-help" className="footer_link on-inverse w-inline-block">
+            <Link
+              to="/services?service=training-help#training-help"
+              className="footer_link on-inverse w-inline-block"
+            >
               <div>Training</div>
             </Link>
           </li>
           <li>
-            <Link to="/services/detail?plan=custom-solutions" className="footer_link on-inverse w-inline-block">
+            <Link
+              to="/services?service=custom-solutions#custom-solutions"
+              className="footer_link on-inverse w-inline-block"
+            >
               <div>Grooming</div>
             </Link>
           </li>
