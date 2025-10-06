@@ -1,9 +1,51 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const Navbar = () => (
-<div className="nav is-accent-primary">
-    <div data-duration="400" data-animation="default" data-easing2="ease" data-easing="ease" data-collapse="medium" data-no-scroll="1" className="nav_container w-nav">
+const Navbar = () => {
+  const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const closeMegaNav = useCallback(() => {
+    setIsMegaNavOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        closeMegaNav();
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeMegaNav();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeMegaNav]);
+
+  const toggleMegaNav = useCallback(() => {
+    setIsMegaNavOpen((prev) => !prev);
+  }, []);
+
+  return (
+    <div className="nav is-accent-primary">
+      <div
+        data-duration="400"
+        data-animation="default"
+        data-easing2="ease"
+        data-easing="ease"
+        data-collapse="medium"
+        data-no-scroll="1"
+        className="nav_container w-nav"
+      >
       <div className="nav_left">
         <Link to="/" className="nav_logo w-inline-block">
           <div className="nav_logo-icon"><svg width="100%" height="100%" viewbox="0 0 33 33" preserveaspectratio="xMidYMid meet">
@@ -16,13 +58,33 @@ const Navbar = () => (
         <nav aria-label="Primary" className="nav_menu w-nav-menu">
           <ul className="nav_menu-list w-list-unstyled">
             <li className="nav_menu-list-item">
-              <div data-delay="0" data-hover="false" className="nav_dropdown-menu w-dropdown">
-                <div className="nav_link on-accent-primary w-dropdown-toggle">
+              <div
+                ref={dropdownRef}
+                data-delay="0"
+                data-hover="false"
+                className={`nav_dropdown-menu w-dropdown${isMegaNavOpen ? ' w--open' : ''}`}
+              >
+                <div
+                  className={`nav_link on-accent-primary w-dropdown-toggle${isMegaNavOpen ? ' w--open' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isMegaNavOpen}
+                  onClick={toggleMegaNav}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleMegaNav();
+                    }
+                  }}
+                >
                   <div>Services</div>
                   <div className="nav-caret w-icon-dropdown-toggle"></div>
                 </div>
-                <nav className="mega-nav_dropdown-list w-dropdown-list">
-                  <div className="mega-nav_dropdown-list-wrapper">
+                <nav
+                  className={`mega-nav_dropdown-list w-dropdown-list${isMegaNavOpen ? ' w--open' : ''}`}
+                  aria-hidden={!isMegaNavOpen}
+                >
+                  <div className={`mega-nav_dropdown-list-wrapper${isMegaNavOpen ? ' w--open' : ''}`}>
                     <ul className="grid_3-col tablet-1-col gap-medium margin-bottom_none w-list-unstyled">
                       <li id="w-node-_61be48fd-08da-7879-1198-67c4146a0181-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc673e-93dc6729">
                         <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
@@ -33,6 +95,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/daily-strolls"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -47,6 +110,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/group-adventures"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -61,6 +125,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/solo-journeys"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -80,6 +145,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/overnight-stays"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -94,6 +160,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/daytime-care"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -108,6 +175,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/home-check-ins"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -127,6 +195,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/training-help"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -141,6 +210,7 @@ const Navbar = () => (
                                 <Link
                                   to="/services/custom-solutions"
                                   className="mega-nav_link-item w-inline-block"
+                                  onClick={closeMegaNav}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
@@ -156,7 +226,11 @@ const Navbar = () => (
                         </div>
                       </li>
                       <li id="w-node-_61be48fd-08da-7879-1198-67c4146a01f2-d66a6ef8" className="flex_horizontal w-node-_41e4cb1a-a620-245f-7f74-dc8693dc67af-93dc6729">
-                        <Link to="/contact" className="card-link is-inverse flex-child_expand w-inline-block">
+                        <Link
+                          to="/contact"
+                          className="card-link is-inverse flex-child_expand w-inline-block"
+                          onClick={closeMegaNav}
+                        >
                           <div className="card_body">
                             <div className="heading_h3">Plan your dog&#x27;s next adventure</div>
                             <p className="paragraph_small text-color_inverse-secondary">Book a walk, boarding, or custom care today.</p>
@@ -179,17 +253,17 @@ const Navbar = () => (
               </div>
             </li>
             <li className="nav_menu-list-item">
-              <Link to="/about" className="nav_link on-accent-primary w-inline-block">
+              <Link to="/about" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>About me</div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link to="/faq" className="nav_link on-accent-primary w-inline-block">
+              <Link to="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>Questions</div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link to="/contact" className="nav_link on-accent-primary w-inline-block">
+              <Link to="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>Contact</div>
               </Link>
             </li>
@@ -198,7 +272,7 @@ const Navbar = () => (
       </div>
       <div className="nav_right">
         <div className="button-group margin-top_none">
-          <Link to="/contact" className="button on-accent-primary w-inline-block">
+          <Link to="/contact" className="button on-accent-primary w-inline-block" onClick={closeMegaNav}>
             <div className="button_label">Reserve</div>
           </Link>
         </div>
@@ -212,8 +286,9 @@ const Navbar = () => (
             </g>
           </svg></div>
       </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Navbar;
