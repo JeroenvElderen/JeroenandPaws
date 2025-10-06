@@ -31,7 +31,7 @@ const Navbar = () => (
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=daily-strolls#daily-strolls"
+                                  to="/services/daily-strolls"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -45,7 +45,7 @@ const Navbar = () => (
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=group-adventures#group-adventures"
+                                  to="/services/group-adventures"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -59,7 +59,7 @@ const Navbar = () => (
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=solo-journeys#solo-journeys"
+                                  to="/services/solo-journeys"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -78,7 +78,7 @@ const Navbar = () => (
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=overnight-stays#overnight-stays"
+                                  to="/services/overnight-stays"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -92,7 +92,7 @@ const Navbar = () => (
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=daytime-care#daytime-care"
+                                  to="/services/daytime-care"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -106,7 +106,7 @@ const Navbar = () => (
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=home-check-ins#home-check-ins"
+                                  to="/services/home-check-ins"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -125,21 +125,7 @@ const Navbar = () => (
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=pet-transport#pet-transport"
-                                  className="mega-nav_link-item w-inline-block"
-                                >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
-                                    </svg></div>
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01d6-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6793-93dc6729">
-                                    <div><strong>Pet transport</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Convenient travel for your pet.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  to="/services?service=training-help#training-help"
+                                  to="/services/training-help"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
@@ -153,7 +139,7 @@ const Navbar = () => (
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services?service=custom-solutions#custom-solutions"
+                                  to="/services/custom-solutions"
                                   className="mega-nav_link-item w-inline-block"
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
