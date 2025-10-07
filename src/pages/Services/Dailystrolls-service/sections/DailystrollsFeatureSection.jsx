@@ -10,18 +10,18 @@ const DailystrollsFeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Expert Dog Care, Tailored For You</h1>
+            <h1 className="heading_h1">Daily Dog Walks, Happy Tails</h1>
             <p className="subheading">
-              From training to daily walks, boarding, and daycare—your dog’s
-              happiness and well-being are my top priority. Let’s create a
-              routine that fits your life and your pup’s needs.
+              Reliable, safe, and tail-wagging walks — from quick potty breaks
+              to long adventures. Perfect for busy owners who want their pups
+              exercised, loved, and cared for while they’re away.
             </p>
             <div className="button-group">
               <a href="#book" className="button w-button">
-                Book a Meet &amp; Greet
+                Book Your First Walk
               </a>
               <a href="#services" className="button is-secondary w-button">
-                See Services &amp; Pricing
+                View Walk Plans & Pricing
               </a>
             </div>
           </div>
@@ -37,7 +37,7 @@ const DailystrollsFeatureSection = () => {
                 >
                   <img
                     src="/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif"
-                    alt="dog training"
+                    alt="dog walking"
                     className="image image_cover"
                   />
                 </div>
@@ -48,7 +48,7 @@ const DailystrollsFeatureSection = () => {
                 >
                   <img
                     src="/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif"
-                    alt="animal adoption"
+                    alt="happy dog on walk"
                     className="image image_cover shadow_xlarge"
                   />
                 </div>

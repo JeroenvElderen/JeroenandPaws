@@ -1,6 +1,6 @@
 import React from "react";
 
-const DailystrollsPricingSection = () => {
+const PricingSection = () => {
   return (
     <section className="section is-secondary">
       <div className="container">
@@ -77,4 +77,4 @@ const DailystrollsPricingSection = () => {
   );
 };
 
-export default DailystrollsPricingSection;
+export default PricingSection;

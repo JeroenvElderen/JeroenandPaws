@@ -3,11 +3,12 @@ import FaqSection from './sections/FaqSection';
 import FeatureSection from './sections/FeatureSection';
 import PricingSection from './sections/PricingSection';
 import TestimonialsSection from './sections/TestimonialsSection';
-
+import AboutSection from "./sections/AboutSection";
 const OvernightStays = () => {
   return (
     <>
       <FeatureSection />
+      <AboutSection />
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />

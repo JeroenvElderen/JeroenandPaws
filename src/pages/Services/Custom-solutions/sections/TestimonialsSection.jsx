@@ -1,6 +1,6 @@
 import React from "react";
 
-const DailystrollsTestimonialsSection = () => {
+const TestimonialsSection = () => {
   return (
     <section className="section testimonials">
       <div className="container text-center">
@@ -11,4 +11,4 @@ const DailystrollsTestimonialsSection = () => {
   );
 };
 
-export default DailystrollsTestimonialsSection;
+export default TestimonialsSection;

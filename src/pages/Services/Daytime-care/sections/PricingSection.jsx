@@ -1,80 +1,126 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { getCalApi } from "@calcom/embed-react";
 
-const DailystrollsPricingSection = () => {
+const PricingSection = () => {
+  useEffect(() => {
+    (async () => {
+      const cal = await getCalApi({ namespace: "daytimecare" });
+      cal("ui", {
+        theme: "light",
+        styles: { branding: { brandColor: "#5a3ec8" } },
+        layout: "month_view",
+        hideEventTypeDetails: false,
+      });
+    })();
+  }, []);
+
   return (
     <section className="section is-secondary">
       <div className="container">
         <div className="header is-align-center">
-          <h1 className="heading_h1">Care Plans for Every Pup</h1>
+          <h1 className="heading_h1">Daytime Care Plans for Happy Dogs</h1>
         </div>
-        <ul className="grid_4-col gap-xsmall text-align_center w-list-unstyled">
+
+        <ul className="grid_3-col gap-xsmall text-align_center w-list-unstyled">
+          {/* === Half-Day Hangout === */}
           <li className="card on-secondary">
             <div className="card_body is-small">
               <div className="margin_bottom-auto">
-                <div className="eyebrow">30-Min Walks</div>
-                <p className="heading_h3">€10/mo</p>
-                <p>Perfect for quick strolls</p>
+                <h4>Half-Day Hangout</h4>
+                <div className="eyebrow">Up to 4 Hours</div>
+                <p className="heading_h3">€20/day</p>
+                <p>
+                  Perfect for pups who just need a short stay — playtime,
+                  potty breaks, and some snuggles before heading home.
+                </p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#book" className="button w-button">
-                  Book a Walk
-                </a>
+                <button
+                  type="button"
+                  className="button w-button"
+                  data-cal-namespace="daytimecare"
+                  data-cal-link="jeroenandpaws/half-day"
+                  data-cal-config='{"layout":"month_view"}'
+                >
+                  Book Half-Day
+                </button>
               </div>
-              <p className="text-color_secondary">Pause or cancel anytime—no worries.</p>
             </div>
           </li>
 
+          {/* === Full-Day of Fun === */}
           <li className="card on-secondary">
             <div className="card_body is-small">
               <div className="margin_bottom-auto">
-                <div className="eyebrow">60-Min Walks</div>
-                <p className="heading_h3">€20/mo</p>
-                <p>Great for active dogs</p>
+                <h4>Full-Day of Fun</h4>
+                <div className="eyebrow">Up to 8 Hours</div>
+                <p className="heading_h3">€30/day</p>
+                <p>
+                  A whole day of play, rest, and love — ideal for keeping your
+                  dog happy and cared for while you’re at work or busy.
+                </p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#reserve" className="button w-button">
-                  Reserve Now
-                </a>
+                <button
+                  type="button"
+                  className="button w-button"
+                  data-cal-namespace="daytimecare"
+                  data-cal-link="jeroenandpaws/full-day"
+                  data-cal-config='{"layout":"month_view"}'
+                >
+                  Book Full-Day
+                </button>
               </div>
-              <p className="text-color_secondary">Flexible scheduling for busy lives.</p>
             </div>
           </li>
 
+          {/* === Custom Care === */}
           <li className="card on-secondary">
             <div className="card_body is-small">
               <div className="margin_bottom-auto">
-                <div className="eyebrow">120-min walks</div>
-                <p className="heading_h3">€30/mo</p>
-                <p>Half or full day options</p>
-              </div>
-              <div className="button-group is-align-center">
-                <a href="#daycare" className="button w-button">
-                  Join Day Care
-                </a>
-              </div>
-              <p className="text-color_secondary">Your dog’s home away from home.</p>
-            </div>
-          </li>
-
-          <li className="card on-secondary">
-            <div className="card_body is-small">
-              <div className="margin_bottom-auto">
-                <div className="eyebrow">Custom walk</div>
+                <h4>Custom Care</h4>
+                <div className="eyebrow">Flexible Options</div>
                 <p className="heading_h3">Tailored</p>
-                <p>Training, boarding &amp; more</p>
+                <p>
+                  Need special timing, a late pickup, or extra activities?
+                  Let’s design a schedule that works best for your pup.
+                </p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#chat" className="button w-button">
-                  Let’s Chat
-                </a>
+                <button
+                  type="button"
+                  className="button w-button"
+                  data-cal-namespace="daytimecare"
+                  data-cal-link="jeroenandpaws/custom-daycare"
+                  data-cal-config='{"layout":"month_view"}'
+                >
+                  Plan Together
+                </button>
               </div>
-              <p className="text-color_secondary">We’ll create the perfect plan together.</p>
             </div>
           </li>
         </ul>
       </div>
+
+      {/* ✅ Hover effect styles */}
+      <style jsx>{`
+        .card.on-secondary {
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .card.on-secondary:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        }
+        .button.w-button {
+          transition: background-color 0.25s ease, color 0.25s ease;
+        }
+        .button.w-button:hover {
+          background-color: #5a3ec8;
+          color: #fff;
+        }
+      `}</style>
     </section>
   );
 };
 
-export default DailystrollsPricingSection;
+export default PricingSection;

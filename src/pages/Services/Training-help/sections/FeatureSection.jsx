@@ -1,6 +1,6 @@
 import React from "react";
 
-const DailystrollsFeatureSection = () => {
+const FeatureSection = () => {
   return (
     <header className="section">
       <div className="container">
@@ -61,4 +61,4 @@ const DailystrollsFeatureSection = () => {
   );
 };
 
-export default DailystrollsFeatureSection;
+export default FeatureSection;

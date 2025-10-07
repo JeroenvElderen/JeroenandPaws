@@ -1,6 +1,30 @@
-import React from "react";
+import React, { useState } from "react";
 
-const DailystrollsFaqSection = () => {
+const FaqSection = () => {
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  const faqs = [
+    {
+      question: "What services do you offer for dogs?",
+      answer:
+        "We provide personalized dog training, daily walks (from 30 minutes to custom durations), boarding, day care, and drop-in visits. Every service is tailored to your dog’s unique needs.",
+    },
+    {
+      question: "How do you handle different dog personalities?",
+      answer:
+        "With years of experience and a background in animal care, I adapt my approach to each dog — whether energetic, shy, or somewhere in between.",
+    },
+    {
+      question: "Can you care for special needs or senior dogs?",
+      answer:
+        "Absolutely! I have experience with dogs of all ages and abilities, including those needing medication, extra patience, or special routines.",
+    },
+  ];
+
+  const toggleAccordion = (index) => {
+    setActiveIndex(activeIndex === index ? null : index);
+  };
+
   return (
     <section className="section">
       <div className="container is-small">
@@ -12,54 +36,30 @@ const DailystrollsFaqSection = () => {
         </div>
 
         <div className="flex_vertical">
-          <div className="accordion is-transparent w-dropdown">
-            <div className="accordion_toggle-transparent w-dropdown-toggle">
-              <div className="accordion_icon w-icon-dropdown-toggle"></div>
-              <div className="paragraph_large margin-bottom_none">
-                What services do you offer for dogs?
-              </div>
+          {faqs.map((faq, index) => (
+            <div className="accordion is-transparent" key={index}>
+              <button
+                className="accordion_toggle-transparent"
+                onClick={() => toggleAccordion(index)}
+              >
+                <div className="accordion_icon">
+                  {activeIndex === index ? "−" : "+"}
+                </div>
+                <div className="paragraph_large margin-bottom_none">
+                  {faq.question}
+                </div>
+              </button>
+              {activeIndex === index && (
+                <div className="accordion_content">
+                  <p>{faq.answer}</p>
+                </div>
+              )}
             </div>
-            <nav className="accordion_content w-dropdown-list">
-              <p>
-                We provide personalized dog training, daily walks (from 30 minutes to custom durations), boarding, day
-                care, and drop-in visits. Every service is tailored to your dog’s unique needs.
-              </p>
-            </nav>
-          </div>
-
-          <div className="accordion is-transparent w-dropdown">
-            <div className="accordion_toggle-transparent w-dropdown-toggle">
-              <div className="accordion_icon w-icon-dropdown-toggle"></div>
-              <div className="paragraph_large margin-bottom_none">
-                How do you handle different dog personalities?
-              </div>
-            </div>
-            <nav className="accordion_content w-dropdown-list">
-              <p>
-                With years of experience and a background in animal care, I adapt my approach to each dog — whether
-                energetic, shy, or somewhere in between.
-              </p>
-            </nav>
-          </div>
-
-          <div className="accordion is-transparent w-dropdown">
-            <div className="accordion_toggle-transparent w-dropdown-toggle">
-              <div className="accordion_icon w-icon-dropdown-toggle"></div>
-              <div className="paragraph_large margin-bottom_none">
-                Can you care for special needs or senior dogs?
-              </div>
-            </div>
-            <nav className="accordion_content w-dropdown-list">
-              <p>
-                Absolutely! I have experience with dogs of all ages and abilities, including those needing medication,
-                extra patience, or special routines.
-              </p>
-            </nav>
-          </div>
+          ))}
         </div>
       </div>
     </section>
   );
 };
 
-export default DailystrollsFaqSection;
+export default FaqSection;
