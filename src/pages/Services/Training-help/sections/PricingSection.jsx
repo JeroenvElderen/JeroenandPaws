@@ -45,6 +45,8 @@ const BookingModal = ({ service, onClose }) => {
   const [selectedDate, setSelectedDate] = useState("18");
   const [selectedTime, setSelectedTime] = useState("09:00");
   const [is24h, setIs24h] = useState(true);
+  const [busySlots, setBusySlots] = useState(new Set());
+  const [availabilityStatus, setAvailabilityStatus] = useState("idle");
   const calendarDays = useMemo(() => buildCalendar(), []);
 
   const timeSlots = [
@@ -69,65 +71,74 @@ const BookingModal = ({ service, onClose }) => {
     return `${adjustedHour}:${minutes} ${suffix}`;
   };
 
+  const checkOutlookAvailability = async () => {
+    setAvailabilityStatus("checking");
+    try {
+      if (process.env.REACT_APP_OUTLOOK_AVAILABILITY_URL) {
+        const response = await fetch(process.env.REACT_APP_OUTLOOK_AVAILABILITY_URL);
+        if (!response.ok) {
+          throw new Error("Outlook availability request failed");
+        }
+        const data = await response.json();
+        setBusySlots(new Set(data.busy || []));
+        setAvailabilityStatus("synced");
+      } else {
+        setBusySlots(new Set(["10:30", "12:00", "13:00"]));
+        setAvailabilityStatus("demo");
+      }
+    } catch (error) {
+      console.error(error);
+      setAvailabilityStatus("error");
+    }
+  };
+
   return (
     <div className="booking-overlay" role="dialog" aria-modal="true">
       <div className="booking-modal">
         <header className="booking-header">
-          <div className="brand-block">
-            <div className="brand-avatar" aria-hidden>
-              JP
-            </div>
-            <div>
-              <p className="eyebrow">Jeroen & Paws</p>
-              <h3>{service.title}</h3>
-              <p className="muted">{service.duration} · with Jeroen van Elderen</p>
-            </div>
+          <div>
+            <p className="muted label">Jeroen & Paws</p>
+            <h3>{service.title}</h3>
+            <p className="muted subtle">{service.duration} · Jeroen van Elderen · Europe/Dublin</p>
           </div>
           <div className="header-actions">
-            <div className="timezone-chip">Europe/Dublin</div>
+            <div className="toggle-group" role="group" aria-label="Time display format">
+              <button
+                type="button"
+                className={`pill ${!is24h ? "ghost" : ""}`}
+                onClick={() => setIs24h(false)}
+              >
+                12h
+              </button>
+              <button
+                type="button"
+                className={`pill ${is24h ? "ghost" : ""}`}
+                onClick={() => setIs24h(true)}
+              >
+                24h
+              </button>
+            </div>
             <button className="close-button" type="button" onClick={onClose} aria-label="Close booking">
               ×
             </button>
           </div>
         </header>
 
-        <div className="subheader">
-          <div>
-            <p className="muted">Full Name</p>
-            <p className="eyebrow">Jeroen van Elderen</p>
-          </div>
-          <div>
-            <p className="muted">Duration</p>
-            <p className="eyebrow">{service.duration}</p>
-          </div>
-          <div>
-            <p className="muted">Location</p>
-            <p className="eyebrow">Video call link sent after booking</p>
-          </div>
-        </div>
         <div className="booking-body">
           <div className="calendar-card">
             <div className="calendar-header">
               <div>
                 <p className="muted">November 2025</p>
-                <h4 className="month-title">Pick a date</h4>
+                <h4 className="month-title">Tue 18</h4>
               </div>
-              <div className="toggle-group" role="group" aria-label="Time display format">
-                <button
-                  type="button"
-                  className={`pill ${is24h ? "active" : ""}`}
-                  onClick={() => setIs24h(true)}
-                >
-                  24h
+              <div className="calendar-nav" aria-label="Month navigation">
+                <button type="button" className="nav-button" aria-label="Previous month">
+                  ←
                 </button>
-                <button
-                  type="button"
-                  className={`pill ${!is24h ? "active" : ""}`}
-                  onClick={() => setIs24h(false)}
-                >
-                  12h
+                <button type="button" className="nav-button" aria-label="Next month">
+                  →
                 </button>
-                </div>
+              </div>
             </div>
             <div className="weekday-row">
               {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
@@ -157,26 +168,44 @@ const BookingModal = ({ service, onClose }) => {
 
           <div className="times-card">
             <div className="times-header">
-              <span className="pill ghost">Tuesday, {selectedDate} November</span>
-              <span className="pill ghost">Time shown in your timezone</span>
+              <div>
+                <p className="muted">Time shown in your timezone</p>
+                <h4 className="month-title">Tue 18</h4>
+              </div>
+              <div className="pill ghost duration-chip">{service.duration}</div>
+            </div>
+            <button type="button" className="outlook-button" onClick={checkOutlookAvailability}>
+              Check with Outlook availability
+            </button>
+            <div className="availability-note">
+              {availabilityStatus === "synced" && "Busy times synced from Outlook"}
+              {availabilityStatus === "demo" && "Showing a sample of busy times (connect Outlook to sync)"}
+              {availabilityStatus === "checking" && "Checking your Outlook calendar..."}
+              {availabilityStatus === "error" && "Could not sync Outlook. Try again."}
             </div>
             <div className="times-list" aria-label="Time options">
-              {timeSlots.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  className={`time-slot ${selectedTime === slot ? "active" : ""}`}
-                  onClick={() => setSelectedTime(slot)}
-                  aria-pressed={selectedTime === slot}
-                >
-                  {formatTime(slot)}
-                </button>
-              ))}
-              </div>
-              <p className="muted subtle">Times shown in your timezone</p>
+              {timeSlots.map((slot) => {
+                const isBusy = busySlots.has(slot);
+                const isSelected = selectedTime === slot;
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    className={`time-slot ${isSelected ? "active" : ""} ${isBusy ? "busy" : ""}`}
+                    onClick={() => !isBusy && setSelectedTime(slot)}
+                    aria-pressed={isSelected}
+                    disabled={isBusy}
+                  >
+                    <span>{formatTime(slot)}</span>
+                    {isBusy && <span className="slot-status">Busy in Outlook</span>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
+      <p className="watermark">jeroenandpaws.com</p>
     </div>
   );
 };
@@ -232,113 +261,72 @@ const PricingSection = () => {
         .booking-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(20, 16, 37, 0.45);
-          backdrop-filter: blur(2px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          background: radial-gradient(circle at 20% 20%, rgba(124, 93, 242, 0.2), rgba(10, 4, 26, 0.95));
+          display: grid;
+          place-items: center;
           padding: 24px;
           z-index: 1000;
         }
         .booking-modal {
-          background: #fdfcff;
-          border-radius: 18px;
-          width: min(1000px, 100%);
-          color: #1a1034;
-          box-shadow: 0 18px 40px rgba(27, 16, 70, 0.22);
+          background: linear-gradient(160deg, #120c2b, #09051d);
+          border-radius: 24px;
+          width: min(1100px, 100%);
+          color: #f5eaff;
+          box-shadow: 0 18px 40px rgba(5, 0, 26, 0.65);
           overflow: hidden;
-          border: 1px solid #ece8f6;
+          border: 1px solid #2f1b59;
         }
         .booking-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 22px 28px;
-          border-bottom: 1px solid #eee8fa;
-          background: linear-gradient(120deg, rgba(110, 75, 216, 0.08), rgba(255, 255, 255, 0));
+          padding: 24px 28px;
+          border-bottom: 1px solid #1f123d;
+          background: rgba(255, 255, 255, 0.02);
         }
         .booking-header h3 {
           margin: 4px 0 2px;
         }
-        .brand-block {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-        .brand-avatar {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          background: linear-gradient(145deg, #744df0, #9b7cff);
-          color: #fff;
-          display: grid;
-          place-items: center;
-          font-weight: 800;
-          letter-spacing: 0.5px;
-          box-shadow: 0 8px 16px rgba(116, 77, 240, 0.3);
-        }
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .timezone-chip {
-          background: #f4f0ff;
-          color: #4f2da5;
-          padding: 8px 12px;
-          border-radius: 12px;
-          font-weight: 700;
-          border: 1px solid #e0d7ff;
-        }
-        .subheader {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 14px;
-          padding: 12px 28px 10px;
-          background: #fbf9ff;
-          border-bottom: 1px solid #eee8fa;
-        }
-
         .booking-body {
           display: grid;
-          grid-template-columns: 1.2fr 1fr;
+          grid-template-columns: 1.4fr 1fr;
           gap: 16px;
           padding: 20px 24px 24px;
         }
         .calendar-card,
         .times-card {
-          background: #ffffff;
-          border: 1px solid #ece8f6;
-          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid #271645;
+          border-radius: 18px;
           padding: 18px;
-          box-shadow: 0 10px 20px rgba(44, 25, 94, 0.06);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
         .calendar-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
         .month-title {
           font-size: 18px;
-          margin: 0;
-          color: #1c1238;
+          margin: 2px 0 0;
+          color: #fff;
         }
         .toggle-group {
           display: inline-flex;
-          background: #f5f2ff;
+          background: rgba(255, 255, 255, 0.06);
           border-radius: 14px;
           padding: 4px;
           gap: 6px;
-          border: 1px solid #e8e2ff;
+          border: 1px solid #2f1b59;
         }
         .weekday-row {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
           gap: 6px;
           font-size: 11px;
-          color: #7a6b9f;
+          color: #9d87c8;
           margin-bottom: 6px;
         }
         .calendar-grid {
@@ -347,27 +335,28 @@ const PricingSection = () => {
           gap: 6px;
         }
         .day {
-          height: 46px;
-          border-radius: 12px;
-          border: 1px solid #ece8f6;
-          background: #fbf9ff;
-          color: #1d123c;
+          height: 52px;
+          border-radius: 14px;
+          border: 1px solid #2f1b59;
+          background: linear-gradient(180deg, #1f123d, #140c2e);
+          color: #e4d8ff;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
+          box-shadow: 0 8px 14px rgba(0, 0, 0, 0.2);
         }
         .day:hover {
-          background: #f2ecff;
-          border-color: #c6b3ff;
+          background: linear-gradient(180deg, #2f1c57, #1a0f3a);
+          border-color: #5f37d6;
         }
         .day.selected {
-          background: linear-gradient(160deg, #6e4bd8, #9b7cff);
-          border-color: transparent;
+          background: linear-gradient(180deg, #6f35e9, #5125c8);
+          border-color: #9a6cff;
           color: #fff;
-          box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
+          box-shadow: 0 12px 22px rgba(93, 59, 219, 0.4);
         }
         .day.muted {
-          color: #c5bce3;
+          color: #6d5b95;
           border-style: dashed;
         }
         .times-header {
@@ -375,7 +364,7 @@ const PricingSection = () => {
           justify-content: space-between;
           align-items: center;
           gap: 8px;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
         .times-list {
           display: grid;
@@ -385,66 +374,122 @@ const PricingSection = () => {
         }
         .time-slot {
           width: 100%;
-          border-radius: 12px;
-          padding: 12px 10px;
-          border: 1px solid #e8e2ff;
-          background: #fbf9ff;
-          color: #1c1238;
+          border-radius: 14px;
+          padding: 14px 12px;
+          border: 1px solid #2f1b59;
+          background: linear-gradient(120deg, #1f123d, #140c2e);
+          color: #f5eaff;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
         .time-slot:hover {
-          background: #f2ecff;
-          border-color: #c6b3ff;
+          background: linear-gradient(120deg, #2f1c57, #1a0f3a);
+          border-color: #5f37d6;
         }
         .time-slot.active {
-          background: linear-gradient(160deg, #6e4bd8, #9b7cff);
+          background: linear-gradient(160deg, #6f35e9, #5125c8);
           color: #fff;
-          box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
+          box-shadow: 0 10px 18px rgba(93, 59, 219, 0.35);
+        }
+        .time-slot.busy {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .slot-status {
+          font-size: 12px;
+          color: #d6c1ff;
         }
         .pill {
-          border: none;
+          border: 1px solid transparent;
           padding: 8px 12px;
           border-radius: 12px;
           background: transparent;
-          color: #4f2da5;
+          color: #f5eaff;
           cursor: pointer;
           font-weight: 700;
-          transition: background 0.2s ease, color 0.2s ease;
-        }
-        .pill.active {
-          background: #4f2da5;
-          color: #fff;
+          transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         .pill.ghost {
-          background: #f5f2ff;
-          color: #4f2da5;
-          font-weight: 700;
-          border: 1px solid #e8e2ff;
+          background: rgba(255, 255, 255, 0.08);
+          color: #fff;
+          border-color: #5f37d6;
         }
         .close-button {
-          background: #f5f2ff;
-          border: 1px solid #e0d7ff;
-          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid #2f1b59;
+          border-radius: 12px;
           width: 40px;
           height: 40px;
-          color: #4f2da5;
+          color: #f5eaff;
           font-size: 18px;
           cursor: pointer;
           transition: background 0.2s ease, transform 0.2s ease;
         }
         .close-button:hover {
-          background: #eae1ff;
+          background: rgba(255, 255, 255, 0.12);
           transform: translateY(-1px);
         }
         .muted {
-          color: #6d5b95;
+          color: #c1b4e4;
         }
         .muted.subtle {
           font-size: 13px;
-          text-align: right;
-          color: #8270ae;
+          color: #9786be;
+        }
+        .muted.label {
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-weight: 700;
+          font-size: 12px;
+        }
+        .calendar-nav {
+          display: flex;
+          gap: 8px;
+        }
+        .nav-button {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid #2f1b59;
+          color: #f5eaff;
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          cursor: pointer;
+        }
+        .outlook-button {
+          width: 100%;
+          border-radius: 12px;
+          padding: 10px 12px;
+          background: linear-gradient(120deg, #6f35e9, #5125c8);
+          border: 1px solid #7d4cff;
+          color: #fff;
+          font-weight: 700;
+          margin-bottom: 8px;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          box-shadow: 0 8px 18px rgba(93, 59, 219, 0.35);
+        }
+        .outlook-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 22px rgba(93, 59, 219, 0.45);
+        }
+        .availability-note {
+          min-height: 22px;
+          margin-bottom: 8px;
+          color: #c1b4e4;
+          font-size: 13px;
+        }
+        .duration-chip {
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .watermark {
+          margin-top: 12px;
+          text-align: center;
+          color: #7767a1;
+          font-weight: 700;
         }
         @media (max-width: 900px) {
           .booking-body {
