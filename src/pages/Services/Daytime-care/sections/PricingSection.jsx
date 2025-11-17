@@ -1,18 +1,7 @@
-import React, { useEffect } from "react";
-import { getCalApi } from "@calcom/embed-react";
+import React from "react";
+import { Link } from "react-router-dom";
 
 const PricingSection = () => {
-  useEffect(() => {
-    (async () => {
-      const cal = await getCalApi({ namespace: "daytimecare" });
-      cal("ui", {
-        theme: "light",
-        styles: { branding: { brandColor: "#5a3ec8" } },
-        layout: "month_view",
-        hideEventTypeDetails: false,
-      });
-    })();
-  }, []);
 
   return (
     <section className="section is-secondary">
@@ -35,15 +24,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="daytimecare"
-                  data-cal-link="jeroenandpaws/half-day"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/daytime-care-4h">
                   Book Half-Day
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -61,15 +44,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="daytimecare"
-                  data-cal-link="jeroenandpaws/full-day"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/daytime-care-8h">
                   Book Full-Day
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -87,15 +64,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="daytimecare"
-                  data-cal-link="jeroenandpaws/custom-daycare"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/daytime-care-custom">
                   Plan Together
-                </button>
+                </Link>
               </div>
             </div>
           </li>

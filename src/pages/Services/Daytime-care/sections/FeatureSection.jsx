@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const FeatureSection = () => {
   return (
@@ -15,9 +16,9 @@ const FeatureSection = () => {
               While you’re away, I’ll make sure your dog feels safe, loved, and happy. From playtime and gentle exercise to cozy naps and plenty of attention, your pup will be cared for like part of the family — so you can focus on your day knowing they’re in good hands.
             </p>
             <div className="button-group">
-              <a href="#book" className="button w-button">
-                Book a Daycare Spot
-              </a>
+          <Link to="/booking/daytime-care-4h" className="button w-button">
+            Book a Daycare Spot
+          </Link>
               <a href="#services" className="button is-secondary w-button">
                 See Daycare Packages & Pricing
               </a>

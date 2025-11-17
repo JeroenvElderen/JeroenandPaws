@@ -1,19 +1,7 @@
-import React, { useEffect } from "react";
-import { getCalApi } from "@calcom/embed-react";
+import React from "react";
+import { Link } from "react-router-dom";
 
 const SoloJourneyPricingSection = () => {
-  // Initialize Cal.com's popup UI once
-  useEffect(() => {
-    (async () => {
-      const cal = await getCalApi({ namespace: "solojourney" });
-      cal("ui", {
-        theme: "light",
-        styles: { branding: { brandColor: "#5a3ec8" } },
-        layout: "month_view",
-        hideEventTypeDetails: false,
-      });
-    })();
-  }, []);
 
   return (
     <section className="section is-secondary">
@@ -33,15 +21,9 @@ const SoloJourneyPricingSection = () => {
                 <p>A private half-day adventure — long walks, sniffing trails, playtime, and plenty of breaks just for your pup.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="solojourney"
-                  data-cal-link="jeroenandpaws/half-day-explorer"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/solo-journey-180">
                   Book Half-Day
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -56,15 +38,9 @@ const SoloJourneyPricingSection = () => {
                 <p>A full day of exploring together — long walks, rest stops, and plenty of one-on-one attention for your dog’s perfect day out.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="solojourney"
-                  data-cal-link="jeroenandpaws/full-day-adventure"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/solo-journey-360">
                   Book Full-Day
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -79,15 +55,9 @@ const SoloJourneyPricingSection = () => {
                 <p>Have something special in mind? Let’s design the perfect solo day — custom timing, routes, and pace for your pup.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="solojourney"
-                  data-cal-link="jeroenandpaws/custom-journey"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/solo-journey-custom">
                   Plan Together
-                </button>
+                </Link>
               </div>
             </div>
           </li>

@@ -1,18 +1,7 @@
-import React, { useEffect } from "react";
-import { getCalApi } from "@calcom/embed-react";
+import React from "react";
+import { Link } from "react-router-dom";
 
 const PricingSection = () => {
-  useEffect(() => {
-    (async () => {
-      const cal = await getCalApi({ namespace: "dailystrolls" });
-      cal("ui", {
-        theme: "light",
-        styles: { branding: { brandColor: "#5a3ec8" } },
-        layout: "month_view",
-        hideEventTypeDetails: false,
-      });
-    })();
-  }, []);
 
   return (
     <section className="section is-secondary">
@@ -36,14 +25,9 @@ const PricingSection = () => {
                 <p>Extended group outing with play, sniffing, and exploration for active dogs.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="dailystrolls"
-                  data-cal-link="jeroenandpaws/2h-group-adventure"
-                >
+                <Link className="button w-button" to="/booking/group-adventure-120">
                   Book 2-Hour Adventure
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -58,14 +42,9 @@ const PricingSection = () => {
                 <p>More time for social play, walks, and rest with new furry friends.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="dailystrolls"
-                  data-cal-link="jeroenandpaws/half-day-group"
-                >
+                <Link className="button w-button" to="/booking/group-adventure-240">
                   Join Half-Day Adventure
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -80,14 +59,9 @@ const PricingSection = () => {
                 <p>All-day group fun: multiple walks, play sessions, and supervised downtime.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="dailystrolls"
-                  data-cal-link="jeroenandpaws/full-day-group"
-                >
+                <Link className="button w-button" to="/booking/group-adventure-480">
                   Book Full-Day Adventure
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -102,14 +76,9 @@ const PricingSection = () => {
                 <p>Want something special? We’ll create a custom group adventure for your pup’s needs.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="dailystrolls"
-                  data-cal-link="jeroenandpaws/custom-adventure"
-                >
+                <Link className="button w-button" to="/booking/group-adventure-custom">
                   Plan Custom Adventure
-                </button>
+                </Link>
               </div>
             </div>
           </li>
