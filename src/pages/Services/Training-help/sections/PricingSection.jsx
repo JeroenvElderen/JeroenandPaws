@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
 
 const services = [
   {
@@ -6,7 +6,8 @@ const services = [
     title: "Quick Sniff & Stroll",
     label: "30-Min Walks",
     price: "€7/walk",
-    description: "Perfect for potty breaks, puppy zoomies, or a little leg stretch between naps.",
+    description:
+      "Perfect for potty breaks, puppy zoomies, or a little leg stretch between naps.",
     duration: "30 Min Meeting",
   },
   {
@@ -14,7 +15,8 @@ const services = [
     title: "Daily Doggie Adventure",
     label: "60-Min Walks",
     price: "€12/walk",
-    description: "An hour of tail wags, sniffing every tree, and coming home happily tired.",
+    description:
+      "An hour of tail wags, sniffing every tree, and coming home happily tired.",
     duration: "60 Min Session",
   },
   {
@@ -22,7 +24,8 @@ const services = [
     title: "Mega Adventure Walk",
     label: "120-min walks",
     price: "€22/walk",
-    description: "Double the time, double the fun — great for big explorers or extra energy days.",
+    description:
+      "Double the time, double the fun — great for big explorers or extra energy days.",
     duration: "2 Hour Adventure",
   },
   {
@@ -30,7 +33,8 @@ const services = [
     title: "Your Walk, Your Way",
     label: "Custom walk",
     price: "Tailored",
-    description: "Need a special route or timing? Let’s make it paw-fect for your pup.",
+    description:
+      "Need a special route or timing? Let’s make it paw-fect for your pup.",
     duration: "Custom Plan",
   },
 ];
@@ -47,18 +51,27 @@ const BookingModal = ({ service, onClose }) => {
   const [is24h, setIs24h] = useState(true);
   const calendarDays = useMemo(() => buildCalendar(), []);
 
-  const timeSlots = [
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "12:00",
-    "12:30",
-    "13:00",
-    "13:30",
-  ];
+  const generateTimeSlots = (start = "09:00", end = "17:30", interval = 15) => {
+    const slots = [];
+    let [hour, minute] = start.split(":").map(Number);
+    const [endHour, endMinute] = end.split(":").map(Number);
+
+    while (hour < endHour || (hour === endHour && minute <= endMinute)) {
+      const hh = String(hour).padStart(2, "0");
+      const mm = String(minute).padStart(2, "0");
+      slots.push(`${hh}:${mm}`);
+
+      minute += interval;
+      if (minute >= 60) {
+        minute -= 60;
+        hour++;
+      }
+    }
+
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
 
   const formatTime = (slot) => {
     if (is24h) return slot;
@@ -73,46 +86,33 @@ const BookingModal = ({ service, onClose }) => {
     <div className="booking-overlay" role="dialog" aria-modal="true">
       <div className="booking-modal">
         <header className="booking-header">
-          <div className="brand-block">
-            <div className="brand-avatar" aria-hidden>
-              JP
-            </div>
-            <div>
-              <p className="eyebrow">Jeroen & Paws</p>
-              <h3>{service.title}</h3>
-              <p className="muted">{service.duration} · with Jeroen van Elderen</p>
-            </div>
+          <div>
+            <p className="eyebrow">{service.duration}</p>
+            <h3>{service.title}</h3>
+            <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
           </div>
-          <div className="header-actions">
-            <div className="timezone-chip">Europe/Dublin</div>
-            <button className="close-button" type="button" onClick={onClose} aria-label="Close booking">
-              ×
-            </button>
-          </div>
+          <button
+            className="close-button"
+            type="button"
+            onClick={onClose}
+            aria-label="Close booking"
+          >
+            ×
+          </button>
         </header>
 
-        <div className="subheader">
-          <div>
-            <p className="muted">Full Name</p>
-            <p className="eyebrow">Jeroen van Elderen</p>
-          </div>
-          <div>
-            <p className="muted">Duration</p>
-            <p className="eyebrow">{service.duration}</p>
-          </div>
-          <div>
-            <p className="muted">Location</p>
-            <p className="eyebrow">Video call link sent after booking</p>
-          </div>
-        </div>
         <div className="booking-body">
           <div className="calendar-card">
             <div className="calendar-header">
               <div>
-                <p className="muted">November 2025</p>
-                <h4 className="month-title">Pick a date</h4>
+                <p className="muted">Europe/Dublin</p>
+                <h4>November 2025</h4>
               </div>
-              <div className="toggle-group" role="group" aria-label="Time display format">
+              <div
+                className="toggle-group"
+                role="group"
+                aria-label="Time display format"
+              >
                 <button
                   type="button"
                   className={`pill ${is24h ? "active" : ""}`}
@@ -127,7 +127,7 @@ const BookingModal = ({ service, onClose }) => {
                 >
                   12h
                 </button>
-                </div>
+              </div>
             </div>
             <div className="weekday-row">
               {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
@@ -144,7 +144,9 @@ const BookingModal = ({ service, onClose }) => {
                   <button
                     key={day}
                     type="button"
-                    className={`day ${isSelected ? "selected" : ""} ${isMuted ? "muted" : ""}`}
+                    className={`day ${isSelected ? "selected" : ""} ${
+                      isMuted ? "muted" : ""
+                    }`}
                     onClick={() => setSelectedDate(day)}
                     aria-pressed={isSelected}
                   >
@@ -157,23 +159,25 @@ const BookingModal = ({ service, onClose }) => {
 
           <div className="times-card">
             <div className="times-header">
-              <span className="pill ghost">Tuesday, {selectedDate} November</span>
-              <span className="pill ghost">Time shown in your timezone</span>
+              <span className="pill ghost">Tue {selectedDate}</span>
+              <span className="pill ghost">Available slots</span>
             </div>
             <div className="times-list" aria-label="Time options">
               {timeSlots.map((slot) => (
                 <button
                   key={slot}
                   type="button"
-                  className={`time-slot ${selectedTime === slot ? "active" : ""}`}
+                  className={`time-slot ${
+                    selectedTime === slot ? "active" : ""
+                  }`}
                   onClick={() => setSelectedTime(slot)}
                   aria-pressed={selectedTime === slot}
                 >
                   {formatTime(slot)}
                 </button>
               ))}
-              </div>
-              <p className="muted subtle">Times shown in your timezone</p>
+            </div>
+            <p className="muted subtle">Times shown in your timezone</p>
           </div>
         </div>
       </div>
@@ -202,7 +206,11 @@ const PricingSection = () => {
                   <p>{service.description}</p>
                 </div>
                 <div className="button-group is-align-center">
-                  <button type="button" className="button w-button" onClick={() => setActiveService(service)}>
+                  <button
+                    type="button"
+                    className="button w-button"
+                    onClick={() => setActiveService(service)}
+                  >
                     Check availability
                   </button>
                 </div>
@@ -211,9 +219,13 @@ const PricingSection = () => {
           ))}
         </ul>
       </div>
-      
-      {activeService && <BookingModal service={activeService} onClose={() => setActiveService(null)} />}
 
+      {activeService && (
+        <BookingModal
+          service={activeService}
+          onClose={() => setActiveService(null)}
+        />
+      )}
       <style jsx>{`
         .card.on-secondary {
           transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -232,8 +244,8 @@ const PricingSection = () => {
         .booking-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(20, 16, 37, 0.45);
-          backdrop-filter: blur(2px);
+          background: rgba(9, 5, 20, 0.5);
+          backdrop-filter: blur(3px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -241,64 +253,23 @@ const PricingSection = () => {
           z-index: 1000;
         }
         .booking-modal {
-          background: #fdfcff;
-          border-radius: 18px;
-          width: min(1000px, 100%);
-          color: #1a1034;
-          box-shadow: 0 18px 40px rgba(27, 16, 70, 0.22);
+          background: linear-gradient(135deg, #1a1132, #1f0f3a);
+          border-radius: 16px;
+          width: min(1100px, 100%);
+          color: #f2ecff;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
           overflow: hidden;
-          border: 1px solid #ece8f6;
         }
         .booking-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          padding: 22px 28px;
-          border-bottom: 1px solid #eee8fa;
-          background: linear-gradient(120deg, rgba(110, 75, 216, 0.08), rgba(255, 255, 255, 0));
+          align-items: flex-start;
+          padding: 24px 28px 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .booking-header h3 {
-          margin: 4px 0 2px;
+          margin: 6px 0 4px;
         }
-        .brand-block {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-        .brand-avatar {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          background: linear-gradient(145deg, #744df0, #9b7cff);
-          color: #fff;
-          display: grid;
-          place-items: center;
-          font-weight: 800;
-          letter-spacing: 0.5px;
-          box-shadow: 0 8px 16px rgba(116, 77, 240, 0.3);
-        }
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .timezone-chip {
-          background: #f4f0ff;
-          color: #4f2da5;
-          padding: 8px 12px;
-          border-radius: 12px;
-          font-weight: 700;
-          border: 1px solid #e0d7ff;
-        }
-        .subheader {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 14px;
-          padding: 12px 28px 10px;
-          background: #fbf9ff;
-          border-bottom: 1px solid #eee8fa;
-        }
-
         .booking-body {
           display: grid;
           grid-template-columns: 1.2fr 1fr;
@@ -307,11 +278,10 @@ const PricingSection = () => {
         }
         .calendar-card,
         .times-card {
-          background: #ffffff;
-          border: 1px solid #ece8f6;
-          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
           padding: 18px;
-          box-shadow: 0 10px 20px rgba(44, 25, 94, 0.06);
         }
         .calendar-header {
           display: flex;
@@ -320,25 +290,19 @@ const PricingSection = () => {
           gap: 12px;
           margin-bottom: 12px;
         }
-        .month-title {
-          font-size: 18px;
-          margin: 0;
-          color: #1c1238;
-        }
         .toggle-group {
           display: inline-flex;
-          background: #f5f2ff;
+          background: rgba(255, 255, 255, 0.06);
           border-radius: 14px;
           padding: 4px;
           gap: 6px;
-          border: 1px solid #e8e2ff;
         }
         .weekday-row {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
           gap: 6px;
           font-size: 11px;
-          color: #7a6b9f;
+          color: #b9b3cc;
           margin-bottom: 6px;
         }
         .calendar-grid {
@@ -349,25 +313,25 @@ const PricingSection = () => {
         .day {
           height: 46px;
           border-radius: 12px;
-          border: 1px solid #ece8f6;
-          background: #fbf9ff;
-          color: #1d123c;
-          font-weight: 700;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          background: rgba(255, 255, 255, 0.03);
+          color: #f2ecff;
+          font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
         }
         .day:hover {
-          background: #f2ecff;
-          border-color: #c6b3ff;
+          background: rgba(116, 86, 255, 0.2);
+          border-color: rgba(116, 86, 255, 0.5);
         }
         .day.selected {
-          background: linear-gradient(160deg, #6e4bd8, #9b7cff);
+          background: linear-gradient(145deg, #6e4bd8, #7c5df2);
           border-color: transparent;
-          color: #fff;
-          box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
+          color: #0c061a;
+          box-shadow: 0 6px 16px rgba(124, 93, 242, 0.4);
         }
         .day.muted {
-          color: #c5bce3;
+          color: #8579a8;
           border-style: dashed;
         }
         .times-header {
@@ -378,73 +342,83 @@ const PricingSection = () => {
           margin-bottom: 10px;
         }
         .times-list {
-          display: grid;
-          grid-template-columns: repeat(1, 1fr);
-          gap: 8px;
-          margin-bottom: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          max-height: 300px; /* adjust as needed */
+          overflow-y: auto;
+          padding-right: 6px;
         }
+        .times-list::-webkit-scrollbar {
+          width: 6px;
+        }
+        .times-list::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+        }
+        .times-list::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 6px;
+        }
+
         .time-slot {
           width: 100%;
           border-radius: 12px;
           padding: 12px 10px;
-          border: 1px solid #e8e2ff;
-          background: #fbf9ff;
-          color: #1c1238;
-          font-weight: 700;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+          color: #f2ecff;
+          font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
         }
         .time-slot:hover {
-          background: #f2ecff;
-          border-color: #c6b3ff;
+          background: rgba(124, 93, 242, 0.18);
+          border-color: rgba(124, 93, 242, 0.4);
         }
         .time-slot.active {
-          background: linear-gradient(160deg, #6e4bd8, #9b7cff);
-          color: #fff;
-          box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
+          background: linear-gradient(145deg, #6e4bd8, #7c5df2);
+          color: #0c061a;
+          box-shadow: 0 6px 16px rgba(124, 93, 242, 0.4);
         }
         .pill {
           border: none;
           padding: 8px 12px;
           border-radius: 12px;
           background: transparent;
-          color: #4f2da5;
+          color: #f2ecff;
           cursor: pointer;
           font-weight: 700;
-          transition: background 0.2s ease, color 0.2s ease;
+          transition: background 0.2s ease;
         }
         .pill.active {
-          background: #4f2da5;
-          color: #fff;
+          background: #f1ddff;
+          color: #2a1349;
         }
         .pill.ghost {
-          background: #f5f2ff;
-          color: #4f2da5;
-          font-weight: 700;
-          border: 1px solid #e8e2ff;
+          background: rgba(255, 255, 255, 0.08);
+          color: #dcd4f2;
+          font-weight: 600;
         }
         .close-button {
-          background: #f5f2ff;
-          border: 1px solid #e0d7ff;
-          border-radius: 10px;
-          width: 40px;
-          height: 40px;
-          color: #4f2da5;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          color: #f2ecff;
           font-size: 18px;
           cursor: pointer;
-          transition: background 0.2s ease, transform 0.2s ease;
+          transition: background 0.2s ease;
         }
         .close-button:hover {
-          background: #eae1ff;
-          transform: translateY(-1px);
+          background: rgba(255, 255, 255, 0.18);
         }
         .muted {
-          color: #6d5b95;
+          color: #b9b3cc;
         }
         .muted.subtle {
           font-size: 13px;
           text-align: right;
-          color: #8270ae;
         }
         @media (max-width: 900px) {
           .booking-body {
