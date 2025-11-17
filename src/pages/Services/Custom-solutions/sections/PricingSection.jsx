@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const PricingSection = () => {
   return (
@@ -16,9 +17,9 @@ const PricingSection = () => {
                 <p>Perfect for quick strolls</p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#book" className="button w-button">
+                <Link to="/booking/daily-stroll-30" className="button w-button">
                   Book a Walk
-                </a>
+                </Link>
               </div>
               <p className="text-color_secondary">Pause or cancel anytime—no worries.</p>
             </div>
@@ -32,9 +33,9 @@ const PricingSection = () => {
                 <p>Great for active dogs</p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#reserve" className="button w-button">
+                <Link to="/booking/daily-stroll-60" className="button w-button">
                   Reserve Now
-                </a>
+                </Link>
               </div>
               <p className="text-color_secondary">Flexible scheduling for busy lives.</p>
             </div>
@@ -48,9 +49,9 @@ const PricingSection = () => {
                 <p>Half or full day options</p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#daycare" className="button w-button">
+                <Link to="/booking/daytime-care-8h" className="button w-button">
                   Join Day Care
-                </a>
+                </Link>
               </div>
               <p className="text-color_secondary">Your dog’s home away from home.</p>
             </div>
@@ -64,9 +65,9 @@ const PricingSection = () => {
                 <p>Training, boarding &amp; more</p>
               </div>
               <div className="button-group is-align-center">
-                <a href="#chat" className="button w-button">
+                <Link to="/booking/custom-meet-greet" className="button w-button">
                   Let’s Chat
-                </a>
+                </Link>
               </div>
               <p className="text-color_secondary">We’ll create the perfect plan together.</p>
             </div>

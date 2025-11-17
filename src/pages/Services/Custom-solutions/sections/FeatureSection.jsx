@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const FeatureSection = () => {
   return (
@@ -16,10 +17,10 @@ const FeatureSection = () => {
               happiness and well-being are my top priority. Let’s create a
               routine that fits your life and your pup’s needs.
             </p>
-            <div className="button-group">
-              <a href="#book" className="button w-button">
-                Book a Meet &amp; Greet
-              </a>
+                <div className="button-group">
+                  <Link to="/booking/custom-meet-greet" className="button w-button">
+                    Book a Meet &amp; Greet
+                  </Link>
               <a href="#services" className="button is-secondary w-button">
                 See Services &amp; Pricing
               </a>

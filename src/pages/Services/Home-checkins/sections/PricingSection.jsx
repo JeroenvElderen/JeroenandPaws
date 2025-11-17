@@ -1,19 +1,7 @@
-import React, { useEffect } from "react";
-import { getCalApi } from "@calcom/embed-react";
+import React from "react";
+import { Link } from "react-router-dom";
 
 const PricingSection = () => {
-  // Initialize Cal.com's popup UI once
-  useEffect(() => {
-    (async () => {
-      const cal = await getCalApi({ namespace: "homecheckins" });
-      cal("ui", {
-        theme: "light",
-        styles: { branding: { brandColor: "#5a3ec8" } },
-        layout: "month_view",
-        hideEventTypeDetails: false,
-      });
-    })();
-  }, []);
 
   return (
     <section className="section is-secondary">
@@ -37,15 +25,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="homecheckins"
-                  data-cal-link="jeroenandpaws/standard-checkin"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/home-check-in-30">
                   Book Check-In
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -64,15 +46,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="homecheckins"
-                  data-cal-link="jeroenandpaws/extended-checkin"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/home-check-in-60">
                   Book Extended Visit
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -91,15 +67,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="homecheckins"
-                  data-cal-link="jeroenandpaws/custom-checkin"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/home-check-in-custom">
                   Plan Together
-                </button>
+                </Link>
               </div>
             </div>
           </li>
