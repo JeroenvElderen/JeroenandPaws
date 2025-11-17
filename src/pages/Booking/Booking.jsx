@@ -341,10 +341,12 @@ const Booking = () => {
     }
   });
 
-  const bookingBaseUrl = useMemo(
-    () => (typeof window !== 'undefined' ? `${window.location.origin}/booking` : '/booking'),
-    [],
-  );
+  const bookingBaseUrl = useMemo(() => {
+    if (typeof window === 'undefined') return '/#/booking';
+
+    const { origin } = window.location;
+    return `${origin}/#/booking`;
+  }, []);
 
   const bookingShareLink = useMemo(
     () => `${bookingBaseUrl}/${selectedService.id}`,
