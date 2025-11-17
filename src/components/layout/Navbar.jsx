@@ -262,6 +262,13 @@ const Navbar = () => {
                 <div>Questions</div>
               </Link>
             </li>
+            <li className ="nav_menu-list-item">
+              <Link to="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+                  <div>
+                    Booking
+                  </div>
+              </Link>
+            </li>
             <li className="nav_menu-list-item">
               <Link to="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>Contact</div>
@@ -272,7 +279,7 @@ const Navbar = () => {
       </div>
       <div className="nav_right">
         <div className="button-group margin-top_none">
-          <Link to="/contact" className="button on-accent-primary w-inline-block" onClick={closeMegaNav}>
+          <Link to="/booking" className="button on-accent-primary w-inline-block" onClick={closeMegaNav}>
             <div className="button_label">Reserve</div>
           </Link>
         </div>

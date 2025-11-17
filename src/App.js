@@ -13,6 +13,7 @@ import HomeCheckins from './pages/Services/Home-checkins/HomeCheckins';
 import OvernightStays from './pages/Services/Overnight-stays/OvernightStays';
 import SoloJourneys from './pages/Services/Solo-journeys/SoloJourneys';
 import TrainingHelp from './pages/Services/Training-help/TrainingHelp';
+import Booking from './pages/Booking/Booking';
 
 import StyleGuide from './pages/StyleGuide/StyleGuide';
 
@@ -23,6 +24,8 @@ const App = () => (
       <Route path="/about" element={<Layout><About /></Layout>} />
       <Route path="/faq" element={<Layout><FAQ /></Layout>} />
       <Route path="/contact" element={<Layout><Contact /></Layout>} />
+      <Route path="/booking" element={<Layout><Booking /></Layout>} />
+      <Route path="/booking/:serviceId" element={<Layout><Booking /></Layout>} />
       <Route path="/style-guide" element={<StyleGuide />} />
 
       {/* Services */}
