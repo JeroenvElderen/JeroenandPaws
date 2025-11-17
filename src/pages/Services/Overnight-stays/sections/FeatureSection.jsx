@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const FeatureSection = () => {
   return (
@@ -15,9 +16,9 @@ const FeatureSection = () => {
               When you’re traveling or away overnight, your dog will stay safe and happy in my home — with plenty of love, walks, play, and cozy spots to rest. Alongside my two friendly pups, they’ll have gentle company and a calm, family-like environment where they’re never just another guest.
             </p>
             <div className="button-group">
-              <a href="#book" className="button w-button">
-                Book Boarding Stay
-              </a>
+          <Link to="/booking/overnight-stay" className="button w-button">
+            Book Boarding Stay
+          </Link>
               <a href="#services" className="button is-secondary w-button">
                 See Services &amp; Pricing
               </a>

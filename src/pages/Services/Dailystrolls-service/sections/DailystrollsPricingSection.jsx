@@ -1,19 +1,7 @@
-import React, { useEffect } from "react";
-import { getCalApi } from "@calcom/embed-react";
+import React from "react";
+import { Link } from "react-router-dom";
 
 const HomeCheckinsPricingSection = () => {
-  // Initialize Cal.com's popup UI once
-  useEffect(() => {
-    (async () => {
-      const cal = await getCalApi({ namespace: "homecheckins" });
-      cal("ui", {
-        theme: "light",
-        styles: { branding: { brandColor: "#5a3ec8" } },
-        layout: "month_view",
-        hideEventTypeDetails: false,
-      });
-    })();
-  }, []);
 
   return (
     <section className="section is-secondary">
@@ -33,15 +21,12 @@ const HomeCheckinsPricingSection = () => {
                 <p>Fresh water, feeding, potty break, playtime — everything your dog needs while you’re away.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
+                <Link
                   className="button w-button"
-                  data-cal-namespace="homecheckins"
-                  data-cal-link="jeroenandpaws/standard-checkin"
-                  data-cal-config='{"layout":"month_view"}'
+                  to="/booking/daily-stroll-30"
                 >
                   Book Check-In
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -56,15 +41,12 @@ const HomeCheckinsPricingSection = () => {
                 <p>Extra time for play, longer potty breaks, or more companionship — perfect for pups who need more love.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
+                <Link
                   className="button w-button"
-                  data-cal-namespace="homecheckins"
-                  data-cal-link="jeroenandpaws/extended-checkin"
-                  data-cal-config='{"layout":"month_view"}'
+                  to="/booking/daily-stroll-60"
                 >
                   Book Extended Visit
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -79,15 +61,12 @@ const HomeCheckinsPricingSection = () => {
                 <p>Need special timing or extra help? Let’s create the perfect plan for your dog’s day.</p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
+                <Link
                   className="button w-button"
-                  data-cal-namespace="homecheckins"
-                  data-cal-link="jeroenandpaws/custom-checkin"
-                  data-cal-config='{"layout":"month_view"}'
+                  to="/booking/daily-stroll-custom"
                 >
                   Plan Together
-                </button>
+                </Link>
               </div>
             </div>
           </li>

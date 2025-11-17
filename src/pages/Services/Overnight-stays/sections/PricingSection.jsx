@@ -1,19 +1,7 @@
-import React, { useEffect } from "react";
-import { getCalApi } from "@calcom/embed-react";
+import React from "react";
+import { Link } from "react-router-dom";
 
 const PricingSection = () => {
-  // Initialize Cal.com's popup UI once
-  useEffect(() => {
-    (async () => {
-      const cal = await getCalApi({ namespace: "boarding" });
-      cal("ui", {
-        theme: "light",
-        styles: { branding: { brandColor: "#5a3ec8" } },
-        layout: "month_view",
-        hideEventTypeDetails: false,
-      });
-    })();
-  }, []);
 
   return (
     <section className="section is-secondary">
@@ -36,15 +24,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="boarding"
-                  data-cal-link="yourname/boarding"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/overnight-stay">
                   Book Boarding
-                </button>
+                </Link>
               </div>
             </div>
           </li>
@@ -62,15 +44,9 @@ const PricingSection = () => {
                 </p>
               </div>
               <div className="button-group is-align-center">
-                <button
-                  type="button"
-                  className="button w-button"
-                  data-cal-namespace="boarding"
-                  data-cal-link="yourname/custom-boarding"
-                  data-cal-config='{"layout":"month_view"}'
-                >
+                <Link className="button w-button" to="/booking/overnight-boarding">
                   Plan Your Stay
-                </button>
+                </Link>
               </div>
             </div>
           </li>
