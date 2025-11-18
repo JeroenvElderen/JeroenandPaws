@@ -55,7 +55,12 @@ const BookingModal = ({ service, onClose }) => {
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
 
-  const parseJsonSafely = useCallback(async (response) => {
+  const apiBaseUrl = useMemo(
+    () => (process.env.REACT_APP_BACKEND_BASE_URL || "").replace(/\/$/, ""),
+    []
+  );
+
+  const parseJsonSafely = useCallback(async (response, requestUrl) => {
     const contentType = response.headers.get("content-type") || "";
     const text = await response.text();
     const trimmed = text.trim();
@@ -72,9 +77,9 @@ const BookingModal = ({ service, onClose }) => {
       trimmed.startsWith("[") ||
       trimmed === "";
     
-      if (!looksLikeJson) {
+    if (!looksLikeJson) {
       throw new Error(
-        "Received an unexpected response while loading availability. Please try again."
+       `Received an unexpected response while loading availability. Please try again or use the contact form (source: ${requestUrl}).`
       );
     }
 
@@ -92,13 +97,16 @@ const BookingModal = ({ service, onClose }) => {
     setError("");
     setSuccess("");
     try {
-      const response = await fetch(`/api/availability?serviceId=${service.id}`);
+      const requestUrl = `${apiBaseUrl}/api/availability?serviceId=${service.id}`;
+      const response = await fetch(requestUrl, {
+        headers: { Accept: "application/json" },
+      });
       if (response.status === 401) {
         window.location.href = "/api/auth/microsoft/login";
         return;
       }
 
-      const data = await parseJsonSafely(response);
+      const data = await parseJsonSafely(response, requestUrl);
       setAvailability(data);
 
       const firstOpenDate = data.dates.find((day) =>
@@ -141,7 +149,8 @@ const BookingModal = ({ service, onClose }) => {
     setError("");
     setSuccess("");
     try {
-      const response = await fetch("/api/book", {
+      const requestUrl = `${apiBaseUrl}/api/book`;
+      const response = await fetch(requestUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
