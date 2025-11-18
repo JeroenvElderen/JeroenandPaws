@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 
 const services = [
   {
@@ -39,39 +39,59 @@ const services = [
   },
 ];
 
-const buildCalendar = () => {
-  const startPadding = ["27", "28", "29", "30", "31"];
-  const monthDays = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
-  return [...startPadding, ...monthDays];
-};
-
 const BookingModal = ({ service, onClose }) => {
-  const [selectedDate, setSelectedDate] = useState("18");
-  const [selectedTime, setSelectedTime] = useState("09:00");
   const [is24h, setIs24h] = useState(true);
-  const calendarDays = useMemo(() => buildCalendar(), []);
+  const [availability, setAvailability] = useState({
+    dates: [],
+    timeZone: "UTC",
+  });
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isBooking, setIsBooking] = useState(false);
 
-  const generateTimeSlots = (start = "09:00", end = "17:30", interval = 15) => {
-    const slots = [];
-    let [hour, minute] = start.split(":").map(Number);
-    const [endHour, endMinute] = end.split(":").map(Number);
-
-    while (hour < endHour || (hour === endHour && minute <= endMinute)) {
-      const hh = String(hour).padStart(2, "0");
-      const mm = String(minute).padStart(2, "0");
-      slots.push(`${hh}:${mm}`);
-
-      minute += interval;
-      if (minute >= 60) {
-        minute -= 60;
-        hour++;
-      }
+  const loadAvailability = useCallback(async () => {
+  setLoading(true);
+  setError("");
+  setSuccess("");
+  try {
+    const response = await fetch(`/api/availability?serviceId=${service.id}`);
+    if (response.status === 401) {
+      window.location.href = "/api/auth/microsoft/login";
+      return;
     }
+    if (!response.ok) throw new Error("Unable to load availability");
 
-    return slots;
-  };
+    const data = await response.json();
+    setAvailability(data);
 
-  const timeSlots = generateTimeSlots();
+    const firstOpenDate = data.dates.find((day) =>
+      day.slots.some((slot) => slot.available)
+    );
+    if (firstOpenDate) {
+      setSelectedDate(firstOpenDate.date);
+      const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
+      setSelectedTime(firstSlot?.time || "");
+    }
+  } catch (error) {
+    setError(error.message);
+  } finally {
+    setLoading(false);
+  }
+}, [service.id]);  // only re-create when the service changes
+
+
+  useEffect(() => {
+  loadAvailability();
+}, [loadAvailability]);
+
+
+  const calendarDays = useMemo(() => availability.dates || [], [availability]);
 
   const formatTime = (slot) => {
     if (is24h) return slot;
@@ -80,6 +100,47 @@ const BookingModal = ({ service, onClose }) => {
     const suffix = hour >= 12 ? "PM" : "AM";
     const adjustedHour = hour % 12 === 0 ? 12 : hour % 12;
     return `${adjustedHour}:${minutes} ${suffix}`;
+  };
+
+  const selectedDay = calendarDays.find((day) => day.date === selectedDate);
+
+  const handleBook = async () => {
+    if (!selectedDate || !selectedTime) {
+      setError("Please pick a date and time.");
+      return;
+    }
+    setIsBooking(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch("/api/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: selectedDate,
+          time: selectedTime,
+          serviceId: service.id,
+          serviceTitle: service.title,
+          clientName,
+          clientEmail,
+          notes,
+          timeZone: availability.timeZone,
+        }),
+      });
+
+      if (response.status === 401) {
+        window.location.href = "/api/auth/microsoft/login";
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Booking failed. Please try again.");
+      }
+      setSuccess("Session booked! Check your Outlook calendar for details.");
+    } catch (bookingError) {
+      setError(bookingError.message);
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -105,8 +166,8 @@ const BookingModal = ({ service, onClose }) => {
           <div className="calendar-card">
             <div className="calendar-header">
               <div>
-                <p className="muted">Europe/Dublin</p>
-                <h4>November 2025</h4>
+                <p className="muted">{availability.timeZone}</p>
+                <h4>Pick a date</h4>
               </div>
               <div
                 className="toggle-group"
@@ -129,53 +190,110 @@ const BookingModal = ({ service, onClose }) => {
                 </button>
               </div>
             </div>
-            <div className="weekday-row">
-              {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
-                <span key={day} className="weekday">
-                  {day}
-                </span>
-              ))}
-            </div>
-            <div className="calendar-grid" aria-label="Calendar">
-              {calendarDays.map((day) => {
-                const isMuted = Number(day) <= 2;
-                const isSelected = day === selectedDate;
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    className={`day ${isSelected ? "selected" : ""} ${
-                      isMuted ? "muted" : ""
-                    }`}
-                    onClick={() => setSelectedDate(day)}
-                    aria-pressed={isSelected}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
+            {loading ? (
+              <p className="muted">Loading availability…</p>
+            ) : (
+              <div className="calendar-grid" aria-label="Calendar">
+                {calendarDays.length === 0 && (
+                  <p className="muted">No free dates returned.</p>
+                )}
+                {calendarDays.map((day) => {
+                  const dateObj = new Date(day.date);
+                  const label = dateObj.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    weekday: "short",
+                  });
+                  const isSelected = day.date === selectedDate;
+                  const hasOpenSlot = day.slots.some((slot) => slot.available);
+                  return (
+                    <button
+                      key={day.date}
+                      type="button"
+                      className={`day ${isSelected ? "selected" : ""} ${
+                        hasOpenSlot ? "" : "muted"
+                      }`}
+                      onClick={() => setSelectedDate(day.date)}
+                      aria-pressed={isSelected}
+                      disabled={!hasOpenSlot}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {error && <p className="error-banner">{error}</p>}
+            {success && <p className="success-banner">{success}</p>}
           </div>
 
           <div className="times-card">
             <div className="times-header">
-              <span className="pill ghost">Tue {selectedDate}</span>
+              <span className="pill ghost">
+                {selectedDate || "Pick a date"}
+              </span>
               <span className="pill ghost">Available slots</span>
             </div>
             <div className="times-list" aria-label="Time options">
-              {timeSlots.map((slot) => (
+              {!selectedDay && (
+                <p className="muted">Select a date to see times.</p>
+              )}
+              {selectedDay?.slots.map((slot) => (
                 <button
-                  key={slot}
+                  key={`${selectedDay.date}-${slot.time}`}
                   type="button"
                   className={`time-slot ${
-                    selectedTime === slot ? "active" : ""
+                    selectedTime === slot.time ? "active" : ""
                   }`}
-                  onClick={() => setSelectedTime(slot)}
-                  aria-pressed={selectedTime === slot}
+                  onClick={() => setSelectedTime(slot.time)}
+                  aria-pressed={selectedTime === slot.time}
+                  disabled={!slot.available}
                 >
-                  {formatTime(slot)}
+                  {formatTime(slot.time)}
+                  {!slot.available && (
+                    <span className="muted slot-label">Unavailable</span>
+                  )}
                 </button>
               ))}
+            </div>
+            <div className="form-grid">
+              <label className="input-group">
+                <span>Your name</span>
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Client name"
+                />
+              </label>
+              <label className="input-group">
+                <span>Your email</span>
+                <input
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="name@email.com"
+                />
+              </label>
+              <label className="input-group full-width">
+                <span>Notes for Jeroen</span>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Tell us about your pup or preferences"
+                  rows={3}
+                />
+              </label>
+            </div>
+            <div className="actions-row">
+              <button
+                type="button"
+                className="button w-button"
+                onClick={handleBook}
+                disabled={isBooking || loading}
+              >
+                {isBooking ? "Booking…" : "Confirm / Book"}
+              </button>
             </div>
             <p className="muted subtle">Times shown in your timezone</p>
           </div>
@@ -209,7 +327,12 @@ const PricingSection = () => {
                   <button
                     type="button"
                     className="button w-button"
-                    onClick={() => setActiveService(service)}
+                    onClick={() => {
+                      console.log("analytics: service_selected", {
+                        serviceId: service.id,
+                      });
+                      setActiveService(service);
+                    }}
                   >
                     Check availability
                   </button>
@@ -226,7 +349,7 @@ const PricingSection = () => {
           onClose={() => setActiveService(null)}
         />
       )}
-      <style jsx>{`
+      <style>{`
         .card.on-secondary {
           transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
@@ -259,6 +382,7 @@ const PricingSection = () => {
           color: #f2ecff;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
           overflow: hidden;
+          position: relative;
         }
         .booking-header {
           display: flex;
@@ -380,6 +504,10 @@ const PricingSection = () => {
           color: #0c061a;
           box-shadow: 0 6px 16px rgba(124, 93, 242, 0.4);
         }
+        .slot-label {
+          margin-left: 8px;
+          font-size: 12px;
+        }
         .pill {
           border: none;
           padding: 8px 12px;
@@ -420,6 +548,56 @@ const PricingSection = () => {
           font-size: 13px;
           text-align: right;
         }
+        .form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin: 16px 0;
+        }
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          color: #e7def9;
+          font-weight: 600;
+        }
+        .input-group input,
+        .input-group textarea {
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(0, 0, 0, 0.1);
+          padding: 10px 12px;
+          color: #f8f6ff;
+          font-size: 14px;
+        }
+        .input-group textarea {
+          resize: vertical;
+        }
+        .input-group.full-width {
+          grid-column: 1 / -1;
+        }
+        .actions-row {
+          margin-top: 4px;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .error-banner,
+        .success-banner {
+          margin-top: 10px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          font-weight: 600;
+        }
+        .error-banner {
+          background: rgba(255, 99, 132, 0.15);
+          color: #ff96a6;
+          border: 1px solid rgba(255, 99, 132, 0.35);
+        }
+        .success-banner {
+          background: rgba(52, 211, 153, 0.2);
+          color: #c2f8e4;
+          border: 1px solid rgba(52, 211, 153, 0.4);
+        }
         @media (max-width: 900px) {
           .booking-body {
             grid-template-columns: 1fr;
@@ -427,6 +605,9 @@ const PricingSection = () => {
           .times-header {
             flex-direction: column;
             align-items: flex-start;
+          }
+          .form-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
