@@ -3,6 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/services/training-help": "pages/services/training-help.js",
-  "/api/auth/microsoft/login": "pages/api/auth/microsoft/login.js",
-  "/api/availability": "pages/api/availability.js"
+  "/api/availability": "pages/api/availability.js",
+  "/api/auth/microsoft/login": "pages/api/auth/microsoft/login.js"
 }
