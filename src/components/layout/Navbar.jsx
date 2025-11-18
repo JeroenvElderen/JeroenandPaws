@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
@@ -47,7 +47,7 @@ const Navbar = () => {
         className="nav_container w-nav"
       >
       <div className="nav_left">
-        <Link to="/" className="nav_logo w-inline-block">
+        <Link href="/" className="nav_logo w-inline-block">
           <div className="nav_logo-icon"><svg width="100%" height="100%" viewbox="0 0 33 33" preserveaspectratio="xMidYMid meet">
               <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" fill="currentColor"></path>
             </svg></div>
@@ -93,7 +93,7 @@ const Navbar = () => {
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/daily-strolls"
+                                  href="/services/daily-strolls"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -108,7 +108,7 @@ const Navbar = () => {
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/group-adventures"
+                                  href="/services/group-adventures"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -123,7 +123,7 @@ const Navbar = () => {
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/solo-journeys"
+                                  href="/services/solo-journeys"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -143,7 +143,7 @@ const Navbar = () => {
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/overnight-stays"
+                                  href="/services/overnight-stays"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -158,7 +158,7 @@ const Navbar = () => {
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/daytime-care"
+                                  href="/services/daytime-care"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -173,7 +173,7 @@ const Navbar = () => {
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/home-check-ins"
+                                  href="/services/home-check-ins"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -193,7 +193,7 @@ const Navbar = () => {
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/training-help"
+                                  href="/services/training-help"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -208,7 +208,7 @@ const Navbar = () => {
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  to="/services/custom-solutions"
+                                  href="/services/custom-solutions"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
@@ -227,7 +227,7 @@ const Navbar = () => {
                       </li>
                       <li id="w-node-_61be48fd-08da-7879-1198-67c4146a01f2-d66a6ef8" className="flex_horizontal w-node-_41e4cb1a-a620-245f-7f74-dc8693dc67af-93dc6729">
                         <Link
-                          to="/contact"
+                          href="/contact"
                           className="card-link is-inverse flex-child_expand w-inline-block"
                           onClick={closeMegaNav}
                         >
@@ -253,24 +253,24 @@ const Navbar = () => {
               </div>
             </li>
             <li className="nav_menu-list-item">
-              <Link to="/about" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/about" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>About me</div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link to="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>Questions</div>
               </Link>
             </li>
             <li className ="nav_menu-list-item">
-              <Link to="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                   <div>
                     Booking
                   </div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link to="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
                 <div>Contact</div>
               </Link>
             </li>
@@ -279,7 +279,7 @@ const Navbar = () => {
       </div>
       <div className="nav_right">
         <div className="button-group margin-top_none">
-          <Link to="/booking" className="button on-accent-primary w-inline-block" onClick={closeMegaNav}>
+          <Link href="/booking" className="button on-accent-primary w-inline-block" onClick={closeMegaNav}>
             <div className="button_label">Reserve</div>
           </Link>
         </div>
@@ -299,3 +299,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

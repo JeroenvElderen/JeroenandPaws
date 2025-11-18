@@ -1,12 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const Footer = () => (
-<footer className="footer is-inverse">
+  <footer className="footer is-inverse">
     <div className="container">
       <div className="w-layout-grid grid_5-col gap-small">
         <div id="w-node-_851d61a1-1dad-400a-5b6a-92b99f998536-b17c3d94" className="flex_vertical gap-small w-node-_8489c8c1-07dc-6ab4-cde4-f5c814a2d0ce-14a2d0cb">
-          <Link to="/" className="logo w-inline-block">
+          <Link href="/" className="logo w-inline-block">
             <div className="nav_logo-icon"><svg width="100%" height="100%" viewbox="0 0 33 33" preserveaspectratio="xMidYMid meet">
                 <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" fill="currentColor"></path>
               </svg></div>
@@ -58,7 +58,7 @@ const Footer = () => (
           </li>
           <li>
             <Link
-              to="/services?service=walk-and-train#walk-and-train"
+              href="/services?service=walk-and-train#walk-and-train"
               className="footer_link on-inverse w-inline-block"
             >
               <div>Walks</div>
@@ -66,7 +66,7 @@ const Footer = () => (
           </li>
           <li>
             <Link
-              to="/services?service=boarding#boarding"
+              href="/services?service=boarding#boarding"
               className="footer_link on-inverse w-inline-block"
             >
               <div>Boarding</div>
@@ -74,7 +74,7 @@ const Footer = () => (
           </li>
           <li>
             <Link
-              to="/services?service=day-care#day-care"
+              href="/services?service=day-care#day-care"
               className="footer_link on-inverse w-inline-block"
             >
               <div>Daycare</div>
@@ -82,7 +82,7 @@ const Footer = () => (
           </li>
           <li>
             <Link
-              to="/services?service=training-help#training-help"
+              href="/services?service=training-help#training-help"
               className="footer_link on-inverse w-inline-block"
             >
               <div>Training</div>
@@ -90,7 +90,7 @@ const Footer = () => (
           </li>
           <li>
             <Link
-              to="/services?service=custom-solutions#custom-solutions"
+              href="/services?service=custom-solutions#custom-solutions"
               className="footer_link on-inverse w-inline-block"
             >
               <div>Grooming</div>
@@ -102,7 +102,7 @@ const Footer = () => (
             <h2 className="heading_h6 text-color_secondary">Company info</h2>
           </li>
           <li>
-            <Link to="/about" className="footer_link on-inverse w-inline-block">
+            <Link href="/about" className="footer_link on-inverse w-inline-block">
               <div>About</div>
             </Link>
           </li>
@@ -122,7 +122,7 @@ const Footer = () => (
             </span>
           </li>
           <li>
-            <Link to="/contact" className="footer_link on-inverse w-inline-block">
+            <Link href="/contact" className="footer_link on-inverse w-inline-block">
               <div>Contact</div>
             </Link>
           </li>
@@ -132,7 +132,7 @@ const Footer = () => (
             <h2 className="heading_h6 text-color_secondary">Support</h2>
           </li>
           <li>
-            <Link to="/faq" className="footer_link on-inverse w-inline-block">
+            <Link href="/faq" className="footer_link on-inverse w-inline-block">
               <div>FAQ</div>
             </Link>
           </li>
