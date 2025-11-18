@@ -55,41 +55,69 @@ const BookingModal = ({ service, onClose }) => {
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
 
+  const parseJsonSafely = useCallback(async (response) => {
+    const contentType = response.headers.get("content-type") || "";
+    const text = await response.text();
+    const trimmed = text.trim();
+
+    if (!response.ok) {
+      const fallbackMessage = `Unable to load availability (${response.status})`;
+      const message = trimmed && !trimmed.startsWith("<") ? trimmed : fallbackMessage;
+      throw new Error(message);
+    }
+
+    const looksLikeJson =
+      contentType.includes("application/json") ||
+      trimmed.startsWith("{") ||
+      trimmed.startsWith("[") ||
+      trimmed === "";
+    
+      if (!looksLikeJson) {
+      throw new Error(
+        "Received an unexpected response while loading availability. Please try again."
+      );
+    }
+
+    try {
+      return trimmed ? JSON.parse(trimmed) : {};
+    } catch (parseError) {
+      throw new Error(
+        "Availability response could not be read. Please refresh and try again."
+      );
+    }
+  }, []);
+
   const loadAvailability = useCallback(async () => {
-  setLoading(true);
-  setError("");
-  setSuccess("");
-  try {
-    const response = await fetch(`/api/availability?serviceId=${service.id}`);
-    if (response.status === 401) {
-      window.location.href = "/api/auth/microsoft/login";
-      return;
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`/api/availability?serviceId=${service.id}`);
+      if (response.status === 401) {
+        window.location.href = "/api/auth/microsoft/login";
+        return;
+      }
+
+      const data = await parseJsonSafely(response);
+      setAvailability(data);
+
+      const firstOpenDate = data.dates.find((day) =>
+        day.slots.some((slot) => slot.available)
+      );
+      if (firstOpenDate) {
+        setSelectedDate(firstOpenDate.date);
+        const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
+        setSelectedTime(firstSlot?.time || "");
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-    if (!response.ok) throw new Error("Unable to load availability");
-
-    const data = await response.json();
-    setAvailability(data);
-
-    const firstOpenDate = data.dates.find((day) =>
-      day.slots.some((slot) => slot.available)
-    );
-    if (firstOpenDate) {
-      setSelectedDate(firstOpenDate.date);
-      const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
-      setSelectedTime(firstSlot?.time || "");
-    }
-  } catch (error) {
-    setError(error.message);
-  } finally {
-    setLoading(false);
-  }
-}, [service.id]);  // only re-create when the service changes
-
-
+  }, [parseJsonSafely, service.id]);
   useEffect(() => {
-  loadAvailability();
-}, [loadAvailability]);
-
+    loadAvailability();
+  }, [loadAvailability]);
 
   const calendarDays = useMemo(() => availability.dates || [], [availability]);
 

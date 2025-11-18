@@ -5,7 +5,8 @@ module.exports = async (req, res) => {
   if (req.method !== "GET") {
     res.statusCode = 405;
     res.setHeader("Allow", "GET");
-    res.end("Method Not Allowed");
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ message: "Method Not Allowed" }));
     return;
   }
 
@@ -15,7 +16,10 @@ module.exports = async (req, res) => {
       res.statusCode = 401;
       res.setHeader("Content-Type", "application/json");
       res.end(
-        JSON.stringify({ message: "Unauthorized", loginUrl: "/api/auth/microsoft/login" })
+        JSON.stringify({
+          message: "Unauthorized",
+          loginUrl: "/api/auth/microsoft/login",
+        })
       );
       return;
     }
@@ -30,6 +34,7 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error("Availability error", error);
     res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json"); // ← critical fix
     res.end(JSON.stringify({ message: "Failed to fetch availability" }));
   }
 };
