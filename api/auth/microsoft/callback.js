@@ -8,8 +8,13 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const url = new URL(req.url, process.env.BACKEND_BASE_URL);
-  const code = url.searchParams.get("code");
+  const { code, error, returnTo } = req.query || {};
+
+  if (error) {
+    res.statusCode = 400;
+    res.end(`Login failed: ${error}`);
+    return;
+  }
 
   if (!code) {
     res.statusCode = 400;
@@ -21,15 +26,14 @@ module.exports = async (req, res) => {
     const tokens = await exchangeCodeForTokens(code);
     serializeTokens(res, tokens);
 
-    const redirectTo =
-      process.env.FRONTEND_REDIRECT_URI || "http://localhost:3000/auth/callback";
-
+    const redirectTarget = returnTo || "/booking";
     res.statusCode = 302;
-    res.setHeader("Location", redirectTo);
+    res.setHeader("Location", redirectTarget);
     res.end();
-  } catch (error) {
-    console.error("Auth callback error", error);
+  } catch (err) {
+    console.error("Auth callback error", err);
     res.statusCode = 500;
-    res.end("Failed to exchange authorization code");
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ message: "Failed to complete login" }));
   }
 };

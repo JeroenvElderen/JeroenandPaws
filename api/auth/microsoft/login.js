@@ -8,8 +8,15 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const authUrl = await buildAuthUrl();
-  res.statusCode = 302;
-  res.setHeader("Location", authUrl);
-  res.end();
+  try {
+    const authUrl = await buildAuthUrl();
+    res.statusCode = 302;
+    res.setHeader("Location", authUrl);
+    res.end();
+  } catch (error) {
+    console.error("Auth login error", error);
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ message: "Failed to start login" }));
+  }
 };
