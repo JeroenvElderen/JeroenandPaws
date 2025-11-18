@@ -48,7 +48,7 @@ const Navbar = () => {
       >
       <div className="nav_left">
         <Link href="/" className="nav_logo w-inline-block">
-          <div className="nav_logo-icon"><svg width="100%" height="100%" viewbox="0 0 33 33" preserveaspectratio="xMidYMid meet">
+          <div className="nav_logo-icon"><svg width="100%" height="100%" viewBox="0 0 33 33" preserveAspectRatio="xMidYMid meet">
               <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" fill="currentColor"></path>
             </svg></div>
           <div data-brand-name="true" className="paragraph_large margin-bottom_none">Welcome to a place where your dog&#x27;s happiness is our top priority.</div>
@@ -97,8 +97,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a018c-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6749-93dc6729">
                                     <div><strong>Daily strolls</strong></div>
@@ -112,8 +112,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a0197-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6754-93dc6729">
                                     <div><strong>Group adventures</strong></div>
@@ -127,8 +127,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01a2-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc675f-93dc6729">
                                     <div><strong>Solo journeys</strong></div>
@@ -147,8 +147,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01b1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc676e-93dc6729">
                                     <div><strong>Overnight stays</strong></div>
@@ -162,8 +162,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01bc-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6779-93dc6729">
                                     <div><strong>Daytime care</strong></div>
@@ -177,8 +177,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01c7-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6784-93dc6729">
                                     <div><strong>Home check-ins</strong></div>
@@ -197,8 +197,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01e1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc679e-93dc6729">
                                     <div><strong>Training help</strong></div>
@@ -212,8 +212,8 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeMegaNav}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" stroke-linejoin="round"></path>
+                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
+                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
                                     </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01ec-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc67a9-93dc6729">
                                     <div><strong>Custom solutions</strong></div>
@@ -238,8 +238,8 @@ const Navbar = () => {
                               <div className="button-group">
                                 <div className="text-button is-secondary on-accent-primary">
                                   <div>Contact us</div>
-                                  <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 16 16" fill="none">
-                                      <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                                  <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16" fill="none">
+                                      <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"></path>
                                     </svg></div>
                                 </div>
                               </div>
@@ -285,8 +285,8 @@ const Navbar = () => {
         </div>
       </div>
       <div className="nav_mobile-menu-button w-nav-button">
-        <div className="icon on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24">
-            <g className="nc-icon-wrapper" stroke-linecap="square" stroke-linejoin="miter" stroke-width="1.5" fill="none" stroke="currentColor" stroke-miterlimit="10">
+        <div className="icon on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <g className="nc-icon-wrapper" strokeLinecap="square" strokeLinejoin="miter" strokeWidth="1.5" fill="none" stroke="currentColor" strokeMiterlimit="10">
               <line x1="1" y1="12" x2="23" y2="12" stroke="currentColor"></line>
               <line x1="1" y1="5" x2="23" y2="5"></line>
               <line x1="1" y1="19" x2="23" y2="19"></line>

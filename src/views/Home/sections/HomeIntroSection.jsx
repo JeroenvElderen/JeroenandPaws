@@ -16,18 +16,18 @@ const HomeIntroSection = () => (
                   <p className="margin-bottom_xsmall">Experience personalized care and training for your furry friend, ensuring they feel loved and secure.</p>
                   <div className="w-layout-grid flex_vertical gap-xsmall">
                     <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617c7-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d19-055fd1ce">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none">
-                          <path d="M12.5 18.25C16.2279 18.25 19.25 15.2279 19.25 11.5C19.25 7.77208 16.2279 4.75 12.5 4.75C8.77208 4.75 5.75 7.77208 5.75 11.5C5.75 12.6007 6.01345 13.6398 6.48072 14.5578L5 19L9.71819 17.6519C10.5664 18.0361 11.5082 18.25 12.5 18.25Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
+                          <path d="M12.5 18.25C16.2279 18.25 19.25 15.2279 19.25 11.5C19.25 7.77208 16.2279 4.75 12.5 4.75C8.77208 4.75 5.75 7.77208 5.75 11.5C5.75 12.6007 6.01345 13.6398 6.48072 14.5578L5 19L9.71819 17.6519C10.5664 18.0361 11.5082 18.25 12.5 18.25Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Expert training</p>
                     </div>
                     <div id="w-node-_9bf402c4-a9d1-a662-f2a4-08af26ba9ae4-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d23-055fd1ce">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none">
-                          <path d="M19 12C15.134 12 12 15.134 12 19C12 15.134 8.86599 12 5 12C8.86599 12 12 8.86599 12 5C12 8.86599 15.134 12 19 12Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
-                          <path d="M8 16L5.5 18.5" stroke="currentColor" stroke-width="1.5"></path>
-                          <path d="M8 8L5.5 5.5" stroke="currentColor" stroke-width="1.5"></path>
-                          <path d="M16 16L18.5 18.5" stroke="currentColor" stroke-width="1.5"></path>
-                          <path d="M16 8L18.5 5.5" stroke="currentColor" stroke-width="1.5"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
+                          <path d="M19 12C15.134 12 12 15.134 12 19C12 15.134 8.86599 12 5 12C8.86599 12 12 8.86599 12 5C12 8.86599 15.134 12 19 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
+                          <path d="M8 16L5.5 18.5" stroke="currentColor" strokeWidth="1.5"></path>
+                          <path d="M8 8L5.5 5.5" stroke="currentColor" strokeWidth="1.5"></path>
+                          <path d="M16 16L18.5 18.5" stroke="currentColor" strokeWidth="1.5"></path>
+                          <path d="M16 8L18.5 5.5" stroke="currentColor" strokeWidth="1.5"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Flexible visits</p>
                     </div>
@@ -49,18 +49,18 @@ const HomeIntroSection = () => (
                   <p>From daily walks to boarding, we offer a range of services to meet your dog&#x27;s needs.</p>
                   <div className="w-layout-grid flex_vertical gap-xsmall">
                     <div id="w-node-_32b61d4c-dce5-52fe-303b-c98d654052ca-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d39-055fd1ce">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none">
-                          <path d="M12.5 18.25C16.2279 18.25 19.25 15.2279 19.25 11.5C19.25 7.77208 16.2279 4.75 12.5 4.75C8.77208 4.75 5.75 7.77208 5.75 11.5C5.75 12.6007 6.01345 13.6398 6.48072 14.5578L5 19L9.71819 17.6519C10.5664 18.0361 11.5082 18.25 12.5 18.25Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
+                          <path d="M12.5 18.25C16.2279 18.25 19.25 15.2279 19.25 11.5C19.25 7.77208 16.2279 4.75 12.5 4.75C8.77208 4.75 5.75 7.77208 5.75 11.5C5.75 12.6007 6.01345 13.6398 6.48072 14.5578L5 19L9.71819 17.6519C10.5664 18.0361 11.5082 18.25 12.5 18.25Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Daily walks</p>
                     </div>
                     <div id="w-node-_32b61d4c-dce5-52fe-303b-c98d654052d0-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d43-055fd1ce">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none">
-                          <path d="M19 12C15.134 12 12 15.134 12 19C12 15.134 8.86599 12 5 12C8.86599 12 12 8.86599 12 5C12 8.86599 15.134 12 19 12Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
-                          <path d="M8 16L5.5 18.5" stroke="currentColor" stroke-width="1.5"></path>
-                          <path d="M8 8L5.5 5.5" stroke="currentColor" stroke-width="1.5"></path>
-                          <path d="M16 16L18.5 18.5" stroke="currentColor" stroke-width="1.5"></path>
-                          <path d="M16 8L18.5 5.5" stroke="currentColor" stroke-width="1.5"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
+                          <path d="M19 12C15.134 12 12 15.134 12 19C12 15.134 8.86599 12 5 12C8.86599 12 12 8.86599 12 5C12 8.86599 15.134 12 19 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
+                          <path d="M8 16L5.5 18.5" stroke="currentColor" strokeWidth="1.5"></path>
+                          <path d="M8 8L5.5 5.5" stroke="currentColor" strokeWidth="1.5"></path>
+                          <path d="M16 16L18.5 18.5" stroke="currentColor" strokeWidth="1.5"></path>
+                          <path d="M16 8L18.5 5.5" stroke="currentColor" strokeWidth="1.5"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Safe boarding</p>
                     </div>

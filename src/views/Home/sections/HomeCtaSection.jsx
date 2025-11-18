@@ -13,22 +13,22 @@ const HomeCtaSection = () => (
                   <h2 className="heading_h2">Caring for your dog like family</h2>
                   <div className="flex_vertical gap-xsmall">
                     <div className="flex_horizontal gap-xxsmall">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 16 16" fill="none">
-                          <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16" fill="none">
+                          <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Personalized training tailored to your dog&#x27;s needs</p>
                     </div>
                     <div className="divider"></div>
                     <div className="flex_horizontal gap-xxsmall">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 16 16" fill="none">
-                          <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16" fill="none">
+                          <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Reliable daily walks for all energy levels</p>
                     </div>
                     <div className="divider"></div>
                     <div className="flex_horizontal gap-xxsmall">
-                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 16 16" fill="none">
-                          <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                      <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16" fill="none">
+                          <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"></path>
                         </svg></div>
                       <p className="paragraph_small margin-bottom_none">Safe and fun boarding and day care options</p>
                     </div>

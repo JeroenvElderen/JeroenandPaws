@@ -11,7 +11,7 @@ const StyleGuideMainContent = () => (
                   <div className="card card_body_small shadow_medium">
                     <div className="grid_2-col gap-small tablet-1-col">
                       <div id="w-node-_6401b070-0ac8-bcf0-2647-73725f5e5b6e-055fd1d7">
-                        <div className="eyebrow margin-bottom_xxsmall">Built with:</div><svg viewbox="0 0 951 255" width="100%" height="100%" className="logo is-medium">
+                        <div className="eyebrow margin-bottom_xxsmall">Built with:</div><svg viewBox="0 0 951 255" width="100%" height="100%" className="logo is-medium">
                           <path fill-rule="evernodd" clip-rule="evernodd" d="M206.362 24.3623H0V87.4182H206.362V24.3623Z" fill="#146EF5"></path>
                           <path fill-rule="evernodd" clip-rule="evernodd" d="M134.702 96.022H0V159.078H134.702V96.022Z" fill="#146EF5"></path>
                           <path fill-rule="evernodd" clip-rule="evernodd" d="M63.0559 167.668H0V230.724H63.0559V167.668Z" fill="#146EF5"></path>
@@ -30,7 +30,7 @@ const StyleGuideMainContent = () => (
                         </div>
                         <a href="https://developers.webflow.com/flowkit/getting-started/intro" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                           <div>Read docs</div>
-                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                               <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                             </svg></div>
                         </a>
@@ -50,7 +50,7 @@ const StyleGuideMainContent = () => (
                         </div>
                         <a href="https://developers.webflow.com/flowkit/variables/color" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                           <div>Read docs</div>
-                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                               <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                             </svg></div>
                         </a>
@@ -361,7 +361,7 @@ const StyleGuideMainContent = () => (
                       </div>
                       <a href="https://developers.webflow.com/flowkit/variables/typography" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -574,7 +574,7 @@ const StyleGuideMainContent = () => (
                       </div>
                       <a href="https://developers.webflow.com/flowkit/foundation/spacing" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -725,7 +725,7 @@ const StyleGuideMainContent = () => (
                           </div>
                           <a href="https://developers.webflow.com/flowkit/components/buttons" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                             <div>Read docs</div>
-                            <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                            <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                                 <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                               </svg></div>
                           </a>
@@ -830,14 +830,14 @@ const StyleGuideMainContent = () => (
                             <div className="grid_2-col is-x-center width_100percent">
                               <button type="button" className="text-button w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                               <button type="button" className="text-button is-secondary is-small w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                             </div>
@@ -851,14 +851,14 @@ const StyleGuideMainContent = () => (
                             <div className="grid_2-col is-x-center width_100percent">
                               <button type="button" className="text-button on-inverse w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                               <button type="button" className="text-button is-secondary is-small w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                             </div>
@@ -872,14 +872,14 @@ const StyleGuideMainContent = () => (
                             <div className="grid_2-col is-x-center width_100percent">
                               <button type="button" className="text-button on-accent-primary w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                               <button type="button" className="text-button is-secondary is-small w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                             </div>
@@ -893,14 +893,14 @@ const StyleGuideMainContent = () => (
                             <div className="grid_2-col is-x-center width_100percent">
                               <button type="button" className="text-button on-accent-secondary w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                               <button type="button" className="text-button on-accent-secondary is-small w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                             </div>
@@ -914,14 +914,14 @@ const StyleGuideMainContent = () => (
                             <div className="grid_2-col is-x-center width_100percent">
                               <button type="button" className="text-button on-accent-tertiary w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                               <button type="button" className="text-button on-accent-tertiary is-small w-inline-block">
                                 <div>Text Button</div>
-                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <div className="text-button_icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                   </svg></div>
                               </button>
                             </div>
@@ -1008,7 +1008,7 @@ const StyleGuideMainContent = () => (
                       </div>
                       <a href="https://developers.webflow.com/flowkit/reference/flowkit-v-2-0-0/components/tag" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -1077,7 +1077,7 @@ const StyleGuideMainContent = () => (
                       <h2>Images</h2>
                       <a href="https://developers.webflow.com/flowkit/components/images" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -1147,7 +1147,7 @@ const StyleGuideMainContent = () => (
                         <h2>Icons</h2>
                         <a href="https://developers.webflow.com/flowkit/components/images#icons" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                           <div>Read docs</div>
-                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                               <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                             </svg></div>
                         </a>
@@ -1161,8 +1161,8 @@ const StyleGuideMainContent = () => (
                               <div>Extra Small</div>
                             </div>
                             <div className="sg_table-cell">
-                              <div className="icon_xsmall w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                              <div className="icon_xsmall w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg></div>
                             </div>
                           </div>
@@ -1171,8 +1171,8 @@ const StyleGuideMainContent = () => (
                               <div>Small</div>
                             </div>
                             <div className="sg_table-cell">
-                              <div className="icon_small w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                              <div className="icon_small w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg></div>
                             </div>
                           </div>
@@ -1181,8 +1181,8 @@ const StyleGuideMainContent = () => (
                               <div>Default</div>
                             </div>
                             <div className="sg_table-cell">
-                              <div className="icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                              <div className="icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg></div>
                             </div>
                           </div>
@@ -1191,8 +1191,8 @@ const StyleGuideMainContent = () => (
                               <div>Large</div>
                             </div>
                             <div className="sg_table-cell">
-                              <div className="icon_large w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                              <div className="icon_large w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg></div>
                             </div>
                           </div>
@@ -1201,8 +1201,8 @@ const StyleGuideMainContent = () => (
                               <div>Extra Large</div>
                             </div>
                             <div className="sg_table-cell">
-                              <div className="icon_xlarge w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                              <div className="icon_xlarge w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg></div>
                             </div>
                           </div>
@@ -1212,22 +1212,22 @@ const StyleGuideMainContent = () => (
                         <div className="sg_table-col">
                           <div className="sg_table-cell-title">Default</div>
                           <div className="sg_preview-solid">
-                            <div className="icon w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
-                            <div className="icon is-background w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon is-background w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
                           </div>
                         </div>
                         <div className="sg_table-col">
                           <div className="sg_table-cell-title">On Inverse</div>
                           <div className="sg_preview-solid-accent sg_inverse">
-                            <div className="icon on-inverse w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon on-inverse w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
-                            <div className="icon is-background on-inverse w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon is-background on-inverse w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
                           </div>
                         </div>
@@ -1236,11 +1236,11 @@ const StyleGuideMainContent = () => (
                             <div>On Accent Primary</div>
                           </div>
                           <div className="sg_preview-solid-accent">
-                            <div className="icon on-accent-primary w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon on-accent-primary w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
-                            <div className="icon is-background on-accent-primary w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon is-background on-accent-primary w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
                           </div>
                         </div>
@@ -1249,11 +1249,11 @@ const StyleGuideMainContent = () => (
                             <div>On Accent Secondary</div>
                           </div>
                           <div className="sg_preview-solid-accent sg_accent-secondary">
-                            <div className="icon on-accent-secondary w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon on-accent-secondary w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
-                            <div className="icon is-background on-accent-secondary w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon is-background on-accent-secondary w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
                           </div>
                         </div>
@@ -1262,11 +1262,11 @@ const StyleGuideMainContent = () => (
                             <div>On Accent Tertiary</div>
                           </div>
                           <div className="sg_preview-solid-accent sg-accent-tertiary sg_preview-bordered">
-                            <div className="icon on-accent-tertiary w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon on-accent-tertiary w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
-                            <div className="icon is-background on-accent-tertiary w-embed"><svg width="100%" height="100%" viewbox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <div className="icon is-background on-accent-tertiary w-embed"><svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 24H43M43 24L24.28 5M43 24L24.28 43" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"></path>
                               </svg></div>
                           </div>
                         </div>
@@ -1282,7 +1282,7 @@ const StyleGuideMainContent = () => (
                       <h2>Forms</h2>
                       <a href="https://developers.webflow.com/flowkit/components/forms" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -1445,7 +1445,7 @@ const StyleGuideMainContent = () => (
                       <h2>Cards</h2>
                       <a href="https://developers.webflow.com/flowkit/components/cards" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -1712,7 +1712,7 @@ const StyleGuideMainContent = () => (
                       <h2>Tabs</h2>
                       <a href="https://developers.webflow.com/flowkit/components/tabs" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -1897,7 +1897,7 @@ const StyleGuideMainContent = () => (
                       <h2>Slider</h2>
                       <a href="https://developers.webflow.com/flowkit/components/slider" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -1955,7 +1955,7 @@ const StyleGuideMainContent = () => (
                         <h2>Accordion</h2>
                         <a href="https://developers.webflow.com/flowkit/components/accordion" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                           <div>Read docs</div>
-                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                          <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                               <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                             </svg></div>
                         </a>
@@ -2049,7 +2049,7 @@ const StyleGuideMainContent = () => (
                       <h2>Dropdown</h2>
                       <a href="https://developers.webflow.com/flowkit/components/dropdown" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -2112,7 +2112,7 @@ const StyleGuideMainContent = () => (
                       <h2>Rich Text</h2>
                       <a href="https://developers.webflow.com/flowkit/components/richtext" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
@@ -2166,7 +2166,7 @@ const StyleGuideMainContent = () => (
                       </div>
                       <a href="https://developers.webflow.com/flowkit/components/divider" target="_blank" rel="noreferrer noopener" className="text-button w-inline-block">
                         <div>Read docs</div>
-                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewbox="0 0 24 24" fill="none" preserveaspectratio="xMidYMid meet">
+                        <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
                             <path d="M6 6v2h8.59L5 17.59L6.41 19L16 9.41V18h2V6z" fill="currentColor"></path>
                           </svg></div>
                       </a>
