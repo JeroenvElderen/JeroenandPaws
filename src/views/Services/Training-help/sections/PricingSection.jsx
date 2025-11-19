@@ -267,6 +267,181 @@ const services = [
   },
 ];
 
+const createEmptyDogProfile = () => ({
+  name: "",
+  breed: "",
+  photoDataUrl: "",
+  photoName: "",
+});
+
+const SearchableSelect = ({ label, options, value, onChange }) => {
+  const [query, setQuery] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const [highlight, setHighlight] = React.useState(0);
+
+  const listRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  // Filter breeds
+  const filtered = React.useMemo(() => {
+    const q = query.toLowerCase();
+    return options.filter((opt) => opt.toLowerCase().includes(q));
+  }, [query, options]);
+
+  // Close dropdown on click outside
+  React.useEffect(() => {
+    const handleClick = (e) => {
+      if (
+        listRef.current &&
+        inputRef.current &&
+        !listRef.current.contains(e.target) &&
+        !inputRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+        setQuery(""); // reset search text only
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Keyboard handling
+  const handleKeyDown = (e) => {
+    if (!open) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const selected = filtered[highlight];
+      if (selected) {
+        onChange(selected);
+        setQuery("");
+        setOpen(false);
+      }
+    }
+
+    if (e.key === "Escape") {
+      setOpen(false);
+      setQuery("");
+    }
+  };
+
+  // Scroll highlighted item into view
+  React.useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const item = list.children[highlight];
+    if (item) {
+      item.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlight]);
+
+  return (
+    <div className="searchable-select">
+      <label className="input-group full-width">
+        <span>{label}</span>
+
+        <input
+          ref={inputRef}
+          type="text"
+          value={query !== "" ? query : value}
+          placeholder="Search breeds…"
+          onFocus={() => {
+            setOpen(true);
+            setHighlight(0);
+          }}
+          onKeyDown={handleKeyDown}
+          onChange={(e) => {
+            const text = e.target.value;
+            setQuery(text);
+            setOpen(true);
+
+            // If user clears the field, unset the breed
+            if (text === "") {
+              onChange("");
+            }
+          }}
+        />
+
+        {open && (
+          <ul className="options-list" ref={listRef}>
+            {filtered.length === 0 && (
+              <li className="no-results">No breeds found</li>
+            )}
+
+            {filtered.map((opt, i) => (
+              <li
+                key={opt}
+                className={`option ${i === highlight ? "highlight" : ""}`}
+                onMouseEnter={() => setHighlight(i)}
+                onClick={() => {
+                  onChange(opt);
+                  setQuery("");
+                  setOpen(false);
+                }}
+              >
+                {opt}
+              </li>
+            ))}
+          </ul>
+        )}
+      </label>
+
+      <style jsx>{`
+        .searchable-select {
+          position: relative;
+          width: 100%;
+        }
+
+        .options-list {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(100% + 4px);
+
+          max-height: 200px;
+          overflow-y: auto;
+
+          background: rgba(26, 17, 50, 0.95);
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+
+          padding: 6px 0;
+          z-index: 9999;
+        }
+
+        .option {
+          padding: 10px 12px;
+          cursor: pointer;
+          color: #f8f6ff;
+          font-size: 14px;
+        }
+
+        .option:hover,
+        .option.highlight {
+          background: rgba(124, 93, 242, 0.25);
+        }
+
+        .no-results {
+          padding: 10px 12px;
+          color: #b9b3cc;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const BookingModal = ({ service, onClose }) => {
   const [is24h, setIs24h] = useState(true);
   const [availability, setAvailability] = useState({
@@ -285,7 +460,7 @@ const BookingModal = ({ service, onClose }) => {
   const [visibleMonth, setVisibleMonth] = useState(() => new Date());
   const [availabilityNotice, setAvailabilityNotice] = useState("");
   const [dogCount, setDogCount] = useState(1);
-  const [dogs, setDogs] = useState([{ name: "", breed: "" }]);
+  const [dogs, setDogs] = useState([createEmptyDogProfile()]);
   const [breedSearch, setBreedSearch] = useState({});
 
   const apiBaseUrl = useMemo(
@@ -298,9 +473,58 @@ const BookingModal = ({ service, onClose }) => {
     // Resize array to match selected count
     setDogs((prev) => {
       const updated = [...prev];
-      while (updated.length < count) updated.push({ name: "", breed: "" });
+      while (updated.length < count) {
+        updated.push(createEmptyDogProfile());
+      }
       return updated.slice(0, count);
     });
+
+    setBreedSearch((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (Number(key) >= count) {
+          delete next[key];
+        }
+      });
+      return next;
+    });
+  };
+
+  const updateDogField = (index, key, value) => {
+    setDogs((prev) => {
+      const updated = [...prev];
+      if (!updated[index]) {
+        updated[index] = createEmptyDogProfile();
+      }
+      updated[index][key] = value;
+      return updated;
+    });
+  };
+
+  const handleDogPhotoChange = (index, file) => {
+    if (!file) {
+      updateDogField(index, "photoDataUrl", "");
+      updateDogField(index, "photoName", "");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      updateDogField(index, "photoDataUrl", result);
+      updateDogField(index, "photoName", file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleBreedSearchChange = (index, value) => {
+    setBreedSearch((prev) => ({ ...prev, [index]: value }));
+  };
+
+  const resetDogProfiles = () => {
+    setDogs([createEmptyDogProfile()]);
+    setDogCount(1);
+    setBreedSearch({});
   };
 
   const parseJsonSafely = useCallback(async (response, requestUrl) => {
@@ -451,13 +675,23 @@ const BookingModal = ({ service, onClose }) => {
       setClientName("");
       setClientEmail("");
       setNotes("");
+      resetDogProfiles();
     } catch (bookingError) {
       console.warn("Falling back to local booking", bookingError);
       const start = new Date(`${selectedDate}T${selectedTime}:00`);
       const durationMinutes = service.durationMinutes || 60;
       const end = new Date(start.getTime() + durationMinutes * 60000);
       const dogSummary = dogs
-        .map((d, i) => `Dog ${i + 1}: ${d.name} (${d.breed})`)
+        .map((d, i) => {
+          const name = d.name || "Name pending";
+          const breed = d.breed || "Breed pending";
+          const photoNote = d.photoName
+            ? ` photo: ${d.photoName}`
+            : d.photoDataUrl
+            ? " photo uploaded"
+            : "";
+          return `Dog ${i + 1}: ${name} (${breed})${photoNote}`;
+        })
         .join(", ");
 
       setSuccess(
@@ -481,6 +715,7 @@ const BookingModal = ({ service, onClose }) => {
       setClientName("");
       setClientEmail("");
       setNotes("");
+      resetDogProfiles();
       setError("");
     } finally {
       setIsBooking(false);
@@ -506,11 +741,9 @@ const BookingModal = ({ service, onClose }) => {
   }, [availabilityMap, selectedDate, selectedTime]);
 
   const filteredBreeds = (dogIndex) => {
-  const query = breedSearch[dogIndex]?.toLowerCase() || "";
-  return DOG_BREEDS.filter(breed =>
-    breed.toLowerCase().includes(query)
-  );
-};
+    const query = breedSearch[dogIndex]?.toLowerCase() || "";
+    return DOG_BREEDS.filter((breed) => breed.toLowerCase().includes(query));
+  };
 
   return (
     <div className="booking-overlay" role="dialog" aria-modal="true">
@@ -685,47 +918,51 @@ const BookingModal = ({ service, onClose }) => {
                   <option value={4}>4 dogs</option>
                 </select>
               </label>
-              {Array.from({ length: dogCount }).map((_, index) => (
-                <React.Fragment key={index}>
-                  <label className="input-group">
-                    <span>Dog {index + 1} Name</span>
-                    <input
-                      type="text"
-                      value={dogs[index].name}
-                      onChange={(e) =>
-                        setDogs((prev) => {
-                          const updated = [...prev];
-                          updated[index].name = e.target.value;
-                          return updated;
-                        })
-                      }
-                      placeholder="e.g. Bella"
-                    />
-                  </label>
+              {Array.from({ length: dogCount }).map((_, index) => {
+                const dogProfile = dogs[index] || createEmptyDogProfile();
+                return (
+                  <React.Fragment key={index}>
+                    <label className="input-group">
+                      <span>Dog {index + 1} Name</span>
+                      <input
+                        type="text"
+                        value={dogProfile.name}
+                        onChange={(e) =>
+                          updateDogField(index, "name", e.target.value)
+                        }
+                        placeholder="e.g. Bella"
+                      />
+                    </label>
 
-                  <label className="input-group">
-                    <span>Dog {index + 1} Breed</span>
-                    <select
-                      className="input-like-select"
-                      value={dogs[index].breed}
-                      onChange={(e) =>
-                        setDogs((prev) => {
-                          const updated = [...prev];
-                          updated[index].breed = e.target.value;
-                          return updated;
-                        })
+                    <SearchableSelect
+                      label={`Dog ${index + 1} Breed`}
+                      options={["Mixed breed", ...DOG_BREEDS]}
+                      value={dogProfile.breed}
+                      onChange={(value) =>
+                        updateDogField(index, "breed", value)
                       }
-                    >
-                      <option value="">Select breed…</option>
-                      {DOG_BREEDS.map((breed) => (
-                        <option key={breed} value={breed}>
-                          {breed}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </React.Fragment>
-              ))}
+                    />
+
+                    <label className="input-group">
+                      <span>Dog {index + 1} Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) =>
+                          handleDogPhotoChange(index, event.target.files?.[0])
+                        }
+                      />
+                      {dogProfile.photoDataUrl && (
+                        <img
+                          src={dogProfile.photoDataUrl}
+                          alt={`Dog ${index + 1} preview`}
+                          className="dog-photo-preview"
+                        />
+                      )}
+                    </label>
+                  </React.Fragment>
+                );
+              })}
 
               <label className="input-group">
                 <span>Your name</span>
@@ -920,6 +1157,25 @@ const PricingSection = () => {
 .input-group textarea {
   min-width: 0;
   width: 100%;
+}
+  .breed-search {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.1);
+  color: #f8f6ff;
+  font-size: 14px;
+}
+
+.dog-photo-preview {
+  margin-top: 8px;
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
   /* Make <select> look like your inputs */
 .input-like-select {

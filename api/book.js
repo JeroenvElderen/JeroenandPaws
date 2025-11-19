@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
 
     const accessToken = await getAppOnlyAccessToken();
     const body = await parseBody(req);
-    const {
+    const { 
       date,
       time,
       durationMinutes = 60,
@@ -42,6 +42,8 @@ module.exports = async (req, res) => {
       clientEmail,
       notes,
       timeZone = "UTC",
+      dogs = [],
+      dogCount,
     } = body;
 
     if (!date || !time) {
@@ -54,8 +56,29 @@ module.exports = async (req, res) => {
     const endDateTime = addMinutesToDateTime(date, time, durationMinutes);
 
     const subject = serviceTitle || `Training booking (${serviceId || "custom"})`;
-    const description =
-      notes || `Client: ${clientName || "Unknown"}\nService: ${serviceTitle || serviceId}`;
+    const formattedDogs = Array.isArray(dogs) && dogs.length
+      ? dogs
+          .map((dog, index) => {
+            const name = dog?.name || "Name pending";
+            const breed = dog?.breed || "Breed pending";
+            const photoName = dog?.photoName;
+            const photoDataUrl = dog?.photoDataUrl;
+            const photoLine = photoDataUrl
+              ? `Photo: ${photoName || "Uploaded"} (${photoDataUrl.slice(0, 80)}...)`
+              : "Photo: none";
+            return `Dog ${index + 1}: ${name} (${breed}) | ${photoLine}`;
+          })
+          .join("\n")
+      : "Dog details pending";
+
+    const description = [
+      `Client: ${clientName || "Unknown"}`,
+      `Email: ${clientEmail || "n/a"}`,
+      `Service: ${serviceTitle || serviceId}`,
+      `Dogs: ${dogCount ?? dogs.length ?? 0}`,
+      formattedDogs,
+      `Notes: ${notes || "None"}`,
+    ].join("\n");
 
     const event = await createEvent({
       accessToken,

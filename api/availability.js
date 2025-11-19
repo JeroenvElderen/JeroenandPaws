@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
 
     const accessToken = await getAppOnlyAccessToken();
     const windowDays = Number.parseInt(
-      process.env.WINDOW_DAYS ?? "21",
+      process.env.WINDOW_DAYS ?? "365",
       10
     );
 
