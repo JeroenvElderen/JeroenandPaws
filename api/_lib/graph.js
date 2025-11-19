@@ -1,5 +1,7 @@
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
+const MAX_GRAPH_WINDOW_DAYS = 62;
+
 const mapBusyIntervals = (items) =>
   items.map((item) => ({
     start: new Date(item.start.dateTime),
@@ -42,11 +44,12 @@ const buildSlots = (startDate, days, intervalMinutes, busy) => {
 const buildPrincipalPath = (calendarId) =>
   calendarId ? `/users/${encodeURIComponent(calendarId)}` : "/me";
 
-const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
-  const startTime = new Date();
-  const endTime = new Date();
-  endTime.setDate(startTime.getDate() + windowDays);
-
+const postScheduleRequest = async ({
+  accessToken,
+  calendarId,
+  startTime,
+  endTime,
+}) => {
   const principalPath = buildPrincipalPath(calendarId);
 
   const response = await fetch(`${GRAPH_BASE}${principalPath}/calendar/getSchedule`, {
@@ -68,12 +71,40 @@ const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
     throw new Error(`Graph schedule error: ${response.status} ${error}`);
   }
 
-  const data = await response.json();
-  const schedule = data.value?.[0];
-  const timeZone = schedule?.workingHours?.timeZone?.name || "UTC";
-  const busy = mapBusyIntervals(schedule?.scheduleItems || []);
-  const slotsByDate = buildSlots(startTime, windowDays, 30, busy);
+  return response.json();
+};
 
+const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
+  const totalDays = Math.max(windowDays, 1);
+  const startTime = new Date();
+  const busy = [];
+  let timeZone = "UTC";
+
+  for (let offset = 0; offset < totalDays; offset += MAX_GRAPH_WINDOW_DAYS) {
+    const chunkStart = new Date(startTime);
+    chunkStart.setDate(chunkStart.getDate() + offset);
+
+    const chunkDays = Math.min(MAX_GRAPH_WINDOW_DAYS, totalDays - offset);
+    const chunkEnd = new Date(chunkStart);
+    chunkEnd.setDate(chunkEnd.getDate() + chunkDays);
+
+    const data = await postScheduleRequest({
+      accessToken,
+      calendarId,
+      startTime: chunkStart,
+      endTime: chunkEnd,
+    });
+
+    const schedule = data.value?.[0];
+    if (schedule?.workingHours?.timeZone?.name) {
+      timeZone = schedule.workingHours.timeZone.name;
+    }
+
+    busy.push(...mapBusyIntervals(schedule?.scheduleItems || []));
+  }
+
+  const slotsByDate = buildSlots(startTime, totalDays, 30, busy);
+  
   const dates = Object.keys(slotsByDate).map((date) => ({
     date,
     slots: slotsByDate[date],

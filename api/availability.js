@@ -17,10 +17,15 @@ module.exports = async (req, res) => {
     }
 
     const accessToken = await getAppOnlyAccessToken();
+    const windowDays = Number.parseInt(
+      process.env.WINDOW_DAYS ?? "21",
+      10
+    );
+
     const availability = await getSchedule({
       accessToken,
       calendarId,
-      windowDays: 21,
+      windowDays: Number.isNaN(windowDays) ? 21 : Math.max(windowDays, 1),
     });
 
     res.setHeader("Content-Type", "application/json");

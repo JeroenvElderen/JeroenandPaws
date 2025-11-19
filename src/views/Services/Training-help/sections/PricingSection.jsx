@@ -1,5 +1,185 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 
+// ==========================
+// FULL DOG BREED LIST HERE
+// ==========================
+const DOG_BREEDS = [
+  "Affenpinscher",
+  "Afghan Hound",
+  "Airedale Terrier",
+  "Akita",
+  "Alaskan Malamute",
+  "American Bulldog",
+  "American Eskimo Dog",
+  "American Foxhound",
+  "American Pit Bull Terrier",
+  "American Staffordshire Terrier",
+  "American Water Spaniel",
+  "Anatolian Shepherd Dog",
+  "Australian Cattle Dog",
+  "Australian Kelpie",
+  "Australian Shepherd",
+  "Australian Terrier",
+  "Basenji",
+  "Basset Hound",
+  "Beagle",
+  "Bearded Collie",
+  "Beauceron",
+  "Bedlington Terrier",
+  "Belgian Malinois",
+  "Belgian Sheepdog",
+  "Belgian Tervuren",
+  "Bernese Mountain Dog",
+  "Bichon Frise",
+  "Black and Tan Coonhound",
+  "Black Russian Terrier",
+  "Bloodhound",
+  "Bluetick Coonhound",
+  "Border Collie",
+  "Border Terrier",
+  "Borzoi",
+  "Boston Terrier",
+  "Bouvier des Flandres",
+  "Boxer",
+  "Boykin Spaniel",
+  "Briard",
+  "Brittany",
+  "Brussels Griffon",
+  "Bull Terrier",
+  "Bulldog",
+  "Bullmastiff",
+  "Cairn Terrier",
+  "Cane Corso",
+  "Cardigan Welsh Corgi",
+  "Cavalier King Charles Spaniel",
+  "Chesapeake Bay Retriever",
+  "Chihuahua",
+  "Chinese Crested",
+  "Chinese Shar-Pei",
+  "Chow Chow",
+  "Clumber Spaniel",
+  "Cockapoo",
+  "Cocker Spaniel",
+  "Collie",
+  "Coton de Tulear",
+  "Dachshund",
+  "Dalmatian",
+  "Dandie Dinmont Terrier",
+  "Doberman Pinscher",
+  "Dogo Argentino",
+  "Dogue de Bordeaux",
+  "English Cocker Spaniel",
+  "English Foxhound",
+  "English Setter",
+  "English Springer Spaniel",
+  "Entlebucher Mountain Dog",
+  "Field Spaniel",
+  "Finnish Lapphund",
+  "Finnish Spitz",
+  "Flat-Coated Retriever",
+  "Fox Terrier",
+  "French Bulldog",
+  "German Pinscher",
+  "German Shepherd Dog",
+  "German Shorthaired Pointer",
+  "German Wirehaired Pointer",
+  "Giant Schnauzer",
+  "Glen of Imaal Terrier",
+  "Golden Retriever",
+  "Goldendoodle",
+  "Gordon Setter",
+  "Great Dane",
+  "Great Pyrenees",
+  "Greater Swiss Mountain Dog",
+  "Greyhound",
+  "Havanese",
+  "Ibizan Hound",
+  "Icelandic Sheepdog",
+  "Irish Setter",
+  "Irish Terrier",
+  "Irish Water Spaniel",
+  "Irish Wolfhound",
+  "Italian Greyhound",
+  "Jack Russell Terrier",
+  "Japanese Chin",
+  "Keeshond",
+  "Kerry Blue Terrier",
+  "Komondor",
+  "Kuvasz",
+  "Labradoodle",
+  "Labrador Retriever",
+  "Lakeland Terrier",
+  "Leonberger",
+  "Lhasa Apso",
+  "Lowchen",
+  "Maltese",
+  "Manchester Terrier",
+  "Mastiff",
+  "Miniature Pinscher",
+  "Miniature Schnauzer",
+  "Neapolitan Mastiff",
+  "Newfoundland",
+  "Norfolk Terrier",
+  "Norwegian Buhund",
+  "Norwegian Elkhound",
+  "Norwegian Lundehund",
+  "Norwich Terrier",
+  "Nova Scotia Duck Tolling Retriever",
+  "Old English Sheepdog",
+  "Otterhound",
+  "Papillon",
+  "Parson Russell Terrier",
+  "Pekingese",
+  "Pembroke Welsh Corgi",
+  "Petit Basset Griffon Vendéen",
+  "Pharaoh Hound",
+  "Plott",
+  "Pointer",
+  "Polish Lowland Sheepdog",
+  "Pomeranian",
+  "Poodle",
+  "Portuguese Water Dog",
+  "Pug",
+  "Puli",
+  "Pyrenean Shepherd",
+  "Rat Terrier",
+  "Redbone Coonhound",
+  "Rhodesian Ridgeback",
+  "Rottweiler",
+  "Saint Bernard",
+  "Saluki",
+  "Samoyed",
+  "Schipperke",
+  "Scottish Deerhound",
+  "Scottish Terrier",
+  "Sealyham Terrier",
+  "Shetland Sheepdog",
+  "Shiba Inu",
+  "Shih Tzu",
+  "Siberian Husky",
+  "Silky Terrier",
+  "Skye Terrier",
+  "Smooth Fox Terrier",
+  "Soft Coated Wheaten Terrier",
+  "Spanish Water Dog",
+  "Spinone Italiano",
+  "Staffordshire Bull Terrier",
+  "Standard Schnauzer",
+  "Sussex Spaniel",
+  "Swedish Vallhund",
+  "Toy Fox Terrier",
+  "Treeing Walker Coonhound",
+  "Vizsla",
+  "Weimaraner",
+  "Welsh Springer Spaniel",
+  "Welsh Terrier",
+  "West Highland White Terrier",
+  "Whippet",
+  "Wire Fox Terrier",
+  "Wirehaired Pointing Griffon",
+  "Yorkshire Terrier",
+];
+
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const buildMonthMatrix = (visibleDate) => {
@@ -104,11 +284,24 @@ const BookingModal = ({ service, onClose }) => {
   const [isBooking, setIsBooking] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => new Date());
   const [availabilityNotice, setAvailabilityNotice] = useState("");
+  const [dogCount, setDogCount] = useState(1);
+  const [dogs, setDogs] = useState([{ name: "", breed: "" }]);
+  const [breedSearch, setBreedSearch] = useState({});
 
   const apiBaseUrl = useMemo(
     () => (process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "").replace(/\/$/, ""),
     []
   );
+  const handleDogCountChange = (count) => {
+    setDogCount(count);
+
+    // Resize array to match selected count
+    setDogs((prev) => {
+      const updated = [...prev];
+      while (updated.length < count) updated.push({ name: "", breed: "" });
+      return updated.slice(0, count);
+    });
+  };
 
   const parseJsonSafely = useCallback(async (response, requestUrl) => {
     const contentType = response.headers.get("content-type") || "";
@@ -246,6 +439,8 @@ const BookingModal = ({ service, onClose }) => {
           clientEmail,
           notes,
           timeZone: availability.timeZone,
+          dogs,
+          dogCount,
         }),
       });
 
@@ -261,10 +456,14 @@ const BookingModal = ({ service, onClose }) => {
       const start = new Date(`${selectedDate}T${selectedTime}:00`);
       const durationMinutes = service.durationMinutes || 60;
       const end = new Date(start.getTime() + durationMinutes * 60000);
+      const dogSummary = dogs
+        .map((d, i) => `Dog ${i + 1}: ${d.name} (${d.breed})`)
+        .join(", ");
+
       setSuccess(
         `Request received! We'll hold ${
           service.title
-        } on ${start.toLocaleString(undefined, {
+        } for ${dogSummary} on ${start.toLocaleString(undefined, {
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -275,6 +474,7 @@ const BookingModal = ({ service, onClose }) => {
           minute: "2-digit",
         })}.`
       );
+
       setAvailabilityNotice(
         "Your booking is saved locally for now — we'll sync it manually once the live calendar is back."
       );
@@ -304,6 +504,13 @@ const BookingModal = ({ service, onClose }) => {
       }
     }
   }, [availabilityMap, selectedDate, selectedTime]);
+
+  const filteredBreeds = (dogIndex) => {
+  const query = breedSearch[dogIndex]?.toLowerCase() || "";
+  return DOG_BREEDS.filter(breed =>
+    breed.toLowerCase().includes(query)
+  );
+};
 
   return (
     <div className="booking-overlay" role="dialog" aria-modal="true">
@@ -465,6 +672,61 @@ const BookingModal = ({ service, onClose }) => {
                 )}
             </div>
             <div className="form-grid">
+              <label className="input-group full-width">
+                <span>How many dogs?</span>
+                <select
+                  value={dogCount}
+                  onChange={(e) => handleDogCountChange(Number(e.target.value))}
+                  className="input-like-select"
+                >
+                  <option value={1}>1 dog</option>
+                  <option value={2}>2 dogs</option>
+                  <option value={3}>3 dogs</option>
+                  <option value={4}>4 dogs</option>
+                </select>
+              </label>
+              {Array.from({ length: dogCount }).map((_, index) => (
+                <React.Fragment key={index}>
+                  <label className="input-group">
+                    <span>Dog {index + 1} Name</span>
+                    <input
+                      type="text"
+                      value={dogs[index].name}
+                      onChange={(e) =>
+                        setDogs((prev) => {
+                          const updated = [...prev];
+                          updated[index].name = e.target.value;
+                          return updated;
+                        })
+                      }
+                      placeholder="e.g. Bella"
+                    />
+                  </label>
+
+                  <label className="input-group">
+                    <span>Dog {index + 1} Breed</span>
+                    <select
+                      className="input-like-select"
+                      value={dogs[index].breed}
+                      onChange={(e) =>
+                        setDogs((prev) => {
+                          const updated = [...prev];
+                          updated[index].breed = e.target.value;
+                          return updated;
+                        })
+                      }
+                    >
+                      <option value="">Select breed…</option>
+                      {DOG_BREEDS.map((breed) => (
+                        <option key={breed} value={breed}>
+                          {breed}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </React.Fragment>
+              ))}
+
               <label className="input-group">
                 <span>Your name</span>
                 <input
@@ -659,6 +921,53 @@ const PricingSection = () => {
   min-width: 0;
   width: 100%;
 }
+  /* Make <select> look like your inputs */
+.input-like-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.1);
+  padding: 10px 12px;
+  color: #f8f6ff;
+  font-size: 14px;
+  width: 100%;
+  position: relative;
+  cursor: pointer;
+}
+
+/* Light purple placeholder text style like your inputs */
+.input-like-select option {
+  color: #e7def9;
+  background: rgba(26, 17, 50, 1);
+}
+
+/* Custom dropdown arrow (pure CSS, no icons) */
+.input-like-select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, #e7def9 50%),
+    linear-gradient(135deg, #e7def9 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% - 3px),
+    calc(100% - 11px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+/* Extra hover/focus polish */
+.input-like-select:hover {
+  border-color: rgba(124, 93, 242, 0.4);
+  background: rgba(124, 93, 242, 0.12);
+}
+
+.input-like-select:focus {
+  outline: none;
+  border-color: rgba(124, 93, 242, 0.6);
+  background: rgba(124, 93, 242, 0.18);
+}
+
 
         .nav-button {
         width: 32px;
@@ -912,6 +1221,8 @@ const PricingSection = () => {
           color: #c2f8e4;
           border: 1px solid rgba(52, 211, 153, 0.4);
         }
+
+
         @media (max-width: 900px) {
           .booking-body {
             grid-template-columns: 1fr;
