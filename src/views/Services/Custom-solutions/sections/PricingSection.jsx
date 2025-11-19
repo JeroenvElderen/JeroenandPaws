@@ -1,81 +1,56 @@
 import React from "react";
-import Link from "next/link";
+import DynamicPricingSection from "../../../../components/Pricing/DynamicPricingSection";
 
-const PricingSection = () => {
-  return (
-    <section className="section is-secondary">
-      <div className="container">
-        <div className="header is-align-center">
-          <h1 className="heading_h1">Care Plans for Every Pup</h1>
-        </div>
-        <ul className="grid_4-col gap-xsmall text-align_center w-list-unstyled">
-          <li className="card on-secondary">
-            <div className="card_body is-small">
-              <div className="margin_bottom-auto">
-                <div className="eyebrow">30-Min Walks</div>
-                <p className="heading_h3">€10/mo</p>
-                <p>Perfect for quick strolls</p>
-              </div>
-              <div className="button-group is-align-center">
-                <Link href="/booking/daily-stroll-30" className="button w-button">
-                  Book a Walk
-                </Link>
-              </div>
-              <p className="text-color_secondary">Pause or cancel anytime—no worries.</p>
-            </div>
-          </li>
+const services = [
+  {
+    id: "daily-stroll-30",
+    title: "30-Min Walks",
+    label: "30-Min Walks",
+    price: "€10/mo",
+    description: "Perfect for quick strolls",
+    duration: "30 Minutes",
+    durationMinutes: 30,
+    ctaText: "Book a Walk",
+  },
+  {
+    id: "daily-stroll-60",
+    title: "60-Min Walks",
+    label: "60-Min Walks",
+    price: "€20/mo",
+    description: "Great for active dogs",
+    duration: "60 Minutes",
+    durationMinutes: 60,
+    ctaText: "Reserve Now",
+  },
+  {
+    id: "daytime-care-8h",
+    title: "120-min walks",
+    label: "120-min walks",
+    price: "€30/mo",
+    description: "Half or full day options",
+    duration: "2 Hours",
+    durationMinutes: 120,
+    ctaText: "Join Day Care",
+  },
+  {
+    id: "custom-meet-greet",
+    title: "Custom walk",
+    label: "Custom walk",
+    price: "Tailored",
+    description: "Training, boarding & more",
+    duration: "Custom Plan",
+    durationMinutes: null,
+    ctaText: "Let’s Chat",
+  },
+];
 
-          <li className="card on-secondary">
-            <div className="card_body is-small">
-              <div className="margin_bottom-auto">
-                <div className="eyebrow">60-Min Walks</div>
-                <p className="heading_h3">€20/mo</p>
-                <p>Great for active dogs</p>
-              </div>
-              <div className="button-group is-align-center">
-                <Link href="/booking/daily-stroll-60" className="button w-button">
-                  Reserve Now
-                </Link>
-              </div>
-              <p className="text-color_secondary">Flexible scheduling for busy lives.</p>
-            </div>
-          </li>
-
-          <li className="card on-secondary">
-            <div className="card_body is-small">
-              <div className="margin_bottom-auto">
-                <div className="eyebrow">120-min walks</div>
-                <p className="heading_h3">€30/mo</p>
-                <p>Half or full day options</p>
-              </div>
-              <div className="button-group is-align-center">
-                <Link href="/booking/daytime-care-8h" className="button w-button">
-                  Join Day Care
-                </Link>
-              </div>
-              <p className="text-color_secondary">Your dog’s home away from home.</p>
-            </div>
-          </li>
-
-          <li className="card on-secondary">
-            <div className="card_body is-small">
-              <div className="margin_bottom-auto">
-                <div className="eyebrow">Custom walk</div>
-                <p className="heading_h3">Tailored</p>
-                <p>Training, boarding &amp; more</p>
-              </div>
-              <div className="button-group is-align-center">
-                <Link href="/booking/custom-meet-greet" className="button w-button">
-                  Let’s Chat
-                </Link>
-              </div>
-              <p className="text-color_secondary">We’ll create the perfect plan together.</p>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </section>
-  );
-};
+const PricingSection = () => (
+  <DynamicPricingSection
+    title="Care Plans for Every Pup"
+    services={services}
+    gridClassName="grid_4-col"
+    defaultCta="Check availability"
+  />
+);
 
 export default PricingSection;
