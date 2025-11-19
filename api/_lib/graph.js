@@ -39,12 +39,17 @@ const buildSlots = (startDate, days, intervalMinutes, busy) => {
   return slotsByDate;
 };
 
+const buildPrincipalPath = (calendarId) =>
+  calendarId ? `/users/${encodeURIComponent(calendarId)}` : "/me";
+
 const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
   const startTime = new Date();
   const endTime = new Date();
   endTime.setDate(startTime.getDate() + windowDays);
 
-  const response = await fetch(`${GRAPH_BASE}/me/calendar/getSchedule`, {
+  const principalPath = buildPrincipalPath(calendarId);
+
+  const response = await fetch(`${GRAPH_BASE}${principalPath}/calendar/getSchedule`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -79,6 +84,7 @@ const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
 
 const createEvent = async ({
   accessToken,
+  calendarId,
   subject,
   body,
   start,
@@ -86,7 +92,9 @@ const createEvent = async ({
   attendeeEmail,
   timeZone = "UTC",
 }) => {
-  const response = await fetch(`${GRAPH_BASE}/me/events`, {
+  const principalPath = buildPrincipalPath(calendarId);
+
+  const response = await fetch(`${GRAPH_BASE}${principalPath}/events`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

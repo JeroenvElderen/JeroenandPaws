@@ -110,14 +110,14 @@ const buildAuthUrl = async () => {
   return `${authority}/authorize?${params.toString()}`;
 };
 
-const tokenRequest = async (formData) => {
+const tokenRequest = async (formData, { includeRedirect = true } = {}) => {
   const response = await fetch(`${authority}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: process.env.AZURE_CLIENT_ID,
       client_secret: process.env.AZURE_CLIENT_SECRET,
-      redirect_uri: redirectUri,
+      ...(includeRedirect ? { redirect_uri: redirectUri } : {}),
       ...formData,
     }),
   });
@@ -151,6 +151,40 @@ const refreshTokens = async (stored) => {
   });
 };
 
+let cachedAppToken = null;
+
+const appTokenRequest = async () => {
+  const token = await tokenRequest(
+    {
+      grant_type: "client_credentials",
+      scope: "https://graph.microsoft.com/.default",
+    },
+    { includeRedirect: false }
+  );
+
+  cachedAppToken = {
+    accessToken: token.accessToken,
+    expiresAt: token.expiresAt,
+  };
+
+  return cachedAppToken;
+};
+
+const hasValidAppToken = () => {
+  if (!cachedAppToken?.expiresAt) return false;
+  const expiresAt = new Date(cachedAppToken.expiresAt);
+  return expiresAt.getTime() > Date.now() + 60 * 1000;
+};
+
+const getAppOnlyAccessToken = async () => {
+  if (hasValidAppToken()) {
+    return cachedAppToken.accessToken;
+  }
+
+  const freshToken = await appTokenRequest();
+  return freshToken.accessToken;
+};
+
 const needsRefresh = (tokens) => {
   if (!tokens?.expiresAt) return true;
   const expiresAt = new Date(tokens.expiresAt);
@@ -179,6 +213,7 @@ module.exports = {
   buildAuthUrl,
   ensureTokens,
   exchangeCodeForTokens,
+  getAppOnlyAccessToken,
   parseTokens,
   serializeTokens,
 };

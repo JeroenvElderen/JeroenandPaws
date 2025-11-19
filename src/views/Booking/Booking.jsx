@@ -613,8 +613,7 @@ const Booking = () => {
           <p className="eyebrow">Book instantly</p>
           <h1 className="booking-hero__title">Signature Jeroen &amp; Paws calendar</h1>
           <p className="booking-hero__subtitle">
-            Every service has its own link, so your buttons can jump straight into a pre-selected booking form. No
-            Cal.com or third-party scheduler—everything saves locally and exports to your own calendar.
+            logins, no Cal.com, and no third-party scheduler—everything saves locally and exports to your own calendar.
           </p>
           <div className="booking-hero__cta">
             <span className="pill pill--glow">{availabilityStatus}</span>

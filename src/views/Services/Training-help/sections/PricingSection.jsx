@@ -101,9 +101,8 @@ const BookingModal = ({ service, onClose }) => {
       const response = await fetch(requestUrl, {
         headers: { Accept: "application/json" },
       });
-      if (response.status === 401) {
-        window.location.href = "/api/auth/microsoft/login";
-        return;
+      if (!response.ok) {
+        throw new Error("Availability could not be loaded right now. Try again shortly.");
       }
 
       const data = await parseJsonSafely(response, requestUrl);
@@ -165,10 +164,6 @@ const BookingModal = ({ service, onClose }) => {
         }),
       });
 
-      if (response.status === 401) {
-        window.location.href = "/api/auth/microsoft/login";
-        return;
-      }
       if (!response.ok) {
         throw new Error("Booking failed. Please try again.");
       }

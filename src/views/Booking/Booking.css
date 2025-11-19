@@ -12,6 +12,7 @@
   padding: 4rem 1.5rem 5rem;
   background: var(--bg);
   color: #f8f5ff;
+  background-attachment: fixed;
 }
 
 .booking-hero {
@@ -292,9 +293,9 @@
 
 .booking-frame {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 320px 1fr;
   gap: 1rem;
-  max-width: 1200px;
+  max-width: 1250px;
   margin: 0 auto 1.5rem;
 }
 

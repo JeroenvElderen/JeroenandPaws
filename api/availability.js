@@ -1,4 +1,4 @@
-const { ensureTokens, parseTokens } = require("./_lib/auth");
+const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { getSchedule } = require("./_lib/graph");
 
 module.exports = async (req, res) => {
@@ -11,22 +11,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const tokens = (await ensureTokens(req, res)) || parseTokens(req);
-    if (!tokens?.accessToken) {
-      res.statusCode = 401;
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify({
-          message: "Unauthorized",
-          loginUrl: "/api/auth/microsoft/login",
-        })
-      );
-      return;
+    const calendarId = process.env.OUTLOOK_CALENDAR_ID;
+    if (!calendarId) {
+      throw new Error("Missing OUTLOOK_CALENDAR_ID env var");
     }
 
+    const accessToken = await getAppOnlyAccessToken();
     const availability = await getSchedule({
-      accessToken: tokens.accessToken,
-      calendarId: process.env.OUTLOOK_CALENDAR_ID,
+      accessToken,
+      calendarId,
+      windowDays: 21,
     });
 
     res.setHeader("Content-Type", "application/json");
