@@ -33,6 +33,11 @@ const PricingStyles = () => (
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
           overflow: hidden;
           position: relative;
+          height: calc(100vh - 64px);
+          max-height: 880px;
+          min-height: 560px;
+          display: flex;
+          flex-direction: column;
         }
         .booking-header {
           display: flex;
@@ -49,6 +54,8 @@ const PricingStyles = () => (
           grid-template-columns: 1.6fr 0.8fr;
           gap: 16px;
           padding: 20px 24px 24px;
+          flex: 1;
+          min-height: 0;
         }
         .calendar-card,
         .times-card {
@@ -56,6 +63,10 @@ const PricingStyles = () => (
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 12px;
           padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-height: 0;
         }
         .calendar-toolbar {
           display: flex;
@@ -80,7 +91,7 @@ const PricingStyles = () => (
         .month-nav {
           display: inline-flex;
           gap: 6px;
-          background: rgba(255, 255, 255,, 0.06);
+          background: rgba(255, 255, 255, 0.06);
           border-radius: 12px;
           padding: 4px;
         }
@@ -177,10 +188,10 @@ const PricingStyles = () => (
         color: #f2ecff;
         font-size: 18px;
         cursor: pointer;
-        transition: background 0.2s ease,, transform 0.,2s ease;
+        transition: background 0.2s ease, transform 0.,2s ease;
         }
         .nav button:hover {
-          background: rgba(255, 255,, 255, 0.12);
+          background: rgba(255, 255, 255, 0.12);
           transform: translateY(-1px);
         }
         .weekday-row {
@@ -278,7 +289,7 @@ const PricingStyles = () => (
           display: flex;
           flex-direction: column;
           gap: 10px;
-          max-height: 300px; /* adjust as needed */
+          max-height: 200px; /* adjust as needed */
           overflow-y: auto;
           padding-right: 6px;
         }
@@ -375,6 +386,20 @@ const PricingStyles = () => (
           grid-template-columns: 1fr 1fr;
           gap: 12px;
           margin: 16px 0;
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          padding-right: 6px;
+        }
+        .form-grid::-webkit-scrollbar {
+          width: 6px;
+        }
+        .form-grid::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+        }
+        .form-grid::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 6px;
         }
         .input-group {
           display: flex;
@@ -423,6 +448,14 @@ const PricingStyles = () => (
 
 
         @media (max-width: 900px) {
+        .booking-modal {
+            height: auto;
+            max-height: none;
+            min-height: 0;
+          }
+          .booking-body {
+            height: auto;
+          }
           .booking-body {
             grid-template-columns: 1fr;
           }
@@ -432,6 +465,76 @@ const PricingStyles = () => (
           }
           .form-grid {
             grid-template-columns: 1fr;
+            max-height: none;
+            overflow: visible;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .booking-overlay {
+            padding: 12px;
+            align-items: flex-start;
+          }
+          .booking-modal {
+            width: 100%;
+            border-radius: 14px;
+            height: calc(100vh - 24px);
+            max-height: none;
+            min-height: 0;
+            overflow: hidden;
+          }
+          .booking-header {
+            padding: 18px 18px 12px;
+            gap: 10px;
+            flex-wrap: wrap;
+          }
+          .booking-body {
+            padding: 14px 14px 18px;
+            gap: 12px;
+          }
+          .calendar-card,
+          .times-card {
+            padding: 14px;
+            gap: 10px;
+          }
+          .calendar-toolbar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+          .weekday-row {
+            font-size: 10px;
+            gap: 4px;
+          }
+          .calendar-grid {
+            gap: 4px;
+          }
+          .day {
+            height: 48px;
+            padding: 6px 8px;
+            border-radius: 12px;
+            font-size: 13px;
+          }
+          .times-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+          }
+          .times-list {
+            max-height: 240px;
+          }
+          .form-grid {
+            gap: 10px;
+          }
+          .actions-row {
+            position: sticky;
+            bottom: 0;
+            background: linear-gradient(180deg, transparent, rgba(31, 15, 58, 0.95));
+            padding-top: 8px;
+          }
+          .button.w-button.primary { /* ensure full-width CTA on mobile if present */
+            width: 100%;
+            justify-content: center;
           }
         }
       `}</style>
