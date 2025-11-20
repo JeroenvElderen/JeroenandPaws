@@ -308,12 +308,14 @@
   gap: 1rem;
   max-width: 1250px;
   margin: 0 auto 1.5rem;
+  min-width: 0;
 }
 
 .booking-frame__sidebar {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  min-width: 0;
 }
 
 .sidebar-card {
@@ -393,6 +395,7 @@
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: 1rem;
+  min-width: 0;
 }
 
 .calendar-card,
@@ -403,6 +406,7 @@
   border-radius: 16px;
   padding: 1rem;
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+  min-width: 0;
 }
 
 .calendar-header,
@@ -484,6 +488,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
 }
 
 .slot-chip {
@@ -521,9 +528,9 @@
 }
 
 .booking-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
 }
 
 .booking-form__field {
@@ -533,9 +540,18 @@
   color: #e2e8f0;
 }
 
+.booking-form__field--full {
+  grid-column: 1 / -1;
+}
+
 .booking-form__field textarea {
   min-height: 110px;
   resize: vertical;
+}
+
+.booking-form__note {
+  grid-column: 1 / -1;
+  margin: 0;
 }
 
 .booking-form__actions {
@@ -544,6 +560,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
+  grid-column: 1 / -1;
 }
 
 .submit-button {
@@ -582,8 +599,9 @@
 }
 
 .booking-card--details {
-  max-width: 1200px;
+  max-width: 1250px;
   margin: 0 auto 1rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .calendar-actions {
@@ -662,12 +680,43 @@
   }
 }
 
+@media (max-width: 900px) {
+  .booking-form {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-form__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 720px) {
+  .booking-shell {
+    padding: 3rem 1rem 4rem;
+  }
+
   .booking-hero__title {
     font-size: 2.1rem;
   }
 
+  .booking-frame__sidebar,
+  .booking-frame__main {
+    gap: 0.75rem;
+  }
+
+  .calendar-card,
+  .times-card {
+    max-height: 70vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .times-card__slots {
+    max-height: none;
+  }
+
   .calendar-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }

@@ -485,6 +485,7 @@ const PricingStyles = () => (
             flex-direction: column;
             gap: 14px;
             height: auto;
+            min-width: 0;
           }
           .calendar-card {
             grid-row: auto;
@@ -493,6 +494,9 @@ const PricingStyles = () => (
           .times-card,
           .details-card {
             width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
           }
           .times-list {
             max-height: 260px;
@@ -536,6 +540,8 @@ const PricingStyles = () => (
           .details-card {
             padding: 14px;
             gap: 10px;
+            max-height: none;
+            overflow: visible;
           }
           .calendar-toolbar {
             flex-direction: column;

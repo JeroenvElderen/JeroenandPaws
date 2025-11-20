@@ -990,7 +990,7 @@ const Booking = () => {
                 onChange={(event) => setDogName(event.target.value)}
               />
             </label>
-            <label className="booking-form__field">
+            <label className="booking-form__field booking-form__field--full">
               <span>Email</span>
               <input
                 type="email"
@@ -1000,7 +1000,7 @@ const Booking = () => {
                 onChange={(event) => setClientEmail(event.target.value)}
               />
             </label>
-            <label className="booking-form__field">
+            <label className="booking-form__field booking-form__field--full">
               <span>Notes for us</span>
               <textarea
                 value={notes}
@@ -1008,7 +1008,7 @@ const Booking = () => {
                 onChange={(event) => setNotes(event.target.value)}
               />
             </label>
-            <p className="muted">
+            <p className="muted booking-form__note">
               A lightweight in-house scheduler: pick a slot, send details, and
               we’ll confirm your booking by email.
             </p>
