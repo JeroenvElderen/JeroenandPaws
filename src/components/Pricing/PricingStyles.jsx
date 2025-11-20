@@ -52,13 +52,15 @@ const PricingStyles = () => (
         .booking-body {
           display: grid;
           grid-template-columns: 1.6fr 0.8fr;
+          grid-template-rows: auto auto;
           gap: 16px;
           padding: 20px 24px 24px;
           flex: 1;
           min-height: 0;
         }
         .calendar-card,
-        .times-card {
+        .times-card,
+        .details-card {
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 12px;
@@ -67,6 +69,29 @@ const PricingStyles = () => (
           flex-direction: column;
           gap: 12px;
           min-height: 0;
+        }
+          .calendar-card {
+          grid-row: 1 / span 2;
+        }
+        .details-card {
+          gap: 16px;
+        }
+        .selection-summary {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: flex-start;
+        }
+        .selection-summary h4 {
+          margin: 6px 0 2px;
+        }
+        .summary-tags {
+          display: flex;
+          gap: 8px;
+        }
+        .subtle-pill {
+          opacity: 0.8;
         }
         .calendar-toolbar {
           display: flex;
@@ -454,10 +479,24 @@ const PricingStyles = () => (
             min-height: 0;
           }
           .booking-body {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
             height: auto;
           }
-          .booking-body {
-            grid-template-columns: 1fr;
+          .calendar-card {
+            grid-row: auto;
+          }
+          .calendar-card,
+          .times-card,
+          .details-card {
+            width: 100%;
+          }
+          .times-list {
+            max-height: 260px;
+            overflow-y: auto;
           }
           .times-header {
             flex-direction: column;
@@ -478,10 +517,10 @@ const PricingStyles = () => (
           .booking-modal {
             width: 100%;
             border-radius: 14px;
-            height: calc(100vh - 24px);
+            height: auto;
             max-height: none;
             min-height: 0;
-            overflow: hidden;
+            overflow: visible;
           }
           .booking-header {
             padding: 18px 18px 12px;
@@ -493,7 +532,8 @@ const PricingStyles = () => (
             gap: 12px;
           }
           .calendar-card,
-          .times-card {
+          .times-card,
+          .details-card {
             padding: 14px;
             gap: 10px;
           }
@@ -522,6 +562,7 @@ const PricingStyles = () => (
           }
           .times-list {
             max-height: 240px;
+            overflow-y: auto;
           }
           .form-grid {
             gap: 10px;

@@ -383,17 +383,14 @@ const BookingModal = ({ service, onClose }) => {
                 </div>
               </>
             )}
-            {error && <p className="error-banner">{error}</p>}
-            {success && <p className="success-banner">{success}</p>}
           </div>
-
           <div className="times-card">
             <div className="times-header">
               <div>
                 <p className="muted small">{selectedDateLabel}</p>
                 <h4>Available slots</h4>
               </div>
-              <span className="pill ghost">{service.duration}</span>
+              {/* <span className="pill ghost">{service.duration}</span> */}
             </div>
             <div className="times-list" aria-label="Time options">
               {!selectedDay && (
@@ -424,6 +421,22 @@ const BookingModal = ({ service, onClose }) => {
                   <p className="muted">All slots are full for this day.</p>
                 )}
             </div>
+            </div>
+
+          <div className="details-card">
+            <div className="selection-summary">
+              <div>
+                <p className="muted small">{service.title}</p>
+                <h4>{selectedDateLabel}</h4>
+                <p className="muted">
+                  {selectedTime ? formatTime(selectedTime) : "Choose a time"}
+                </p>
+              </div>
+            </div>
+
+            {error && <p className="error-banner">{error}</p>}
+            {success && <p className="success-banner">{success}</p>}
+
             <div className="form-grid">
               <label className="input-group full-width">
                 <span>How many dogs?</span>
