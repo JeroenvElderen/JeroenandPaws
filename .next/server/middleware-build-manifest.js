@@ -19,10 +19,10 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/booking/[serviceId]": [
+    "/services/custom-solutions": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/booking/[serviceId].js"
+      "static/chunks/pages/services/custom-solutions.js"
     ],
     "/services/solo-journeys": [
       "static/chunks/webpack.js",

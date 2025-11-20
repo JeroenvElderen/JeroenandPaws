@@ -11,7 +11,6 @@ const services = [
       "A private half-day adventure — long walks, sniffing trails, playtime, and plenty of breaks just for your pup.",
     duration: "3-Hour Journey",
     durationMinutes: 180,
-    ctaHref: "/booking/solo-journey-180",
     ctaText: "Book Half-Day",
   },
   {
@@ -23,7 +22,6 @@ const services = [
       "A full day of exploring together — long walks, rest stops, and plenty of one-on-one attention for your dog’s perfect day out.",
     duration: "6-Hour Journey",
     durationMinutes: 360,
-    ctaHref: "/booking/solo-journey-360",
     ctaText: "Book Full-Day",
   },
   {
@@ -35,7 +33,6 @@ const services = [
       "Have something special in mind? Let’s design the perfect solo day — custom timing, routes, and pace for your pup.",
     duration: "Custom Journey",
     durationMinutes: null,
-    ctaHref: "/booking/solo-journey-custom",
     ctaText: "Plan Together",
   },
 ];
