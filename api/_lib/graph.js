@@ -52,19 +52,22 @@ const postScheduleRequest = async ({
 }) => {
   const principalPath = buildPrincipalPath(calendarId);
 
-  const response = await fetch(`${GRAPH_BASE}${principalPath}/calendar/getSchedule`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      schedules: [calendarId || "me"],
-      startTime: { dateTime: startTime.toISOString(), timeZone: "UTC" },
-      endTime: { dateTime: endTime.toISOString(), timeZone: "UTC" },
-      availabilityViewInterval: 30,
-    }),
-  });
+  const response = await fetch(
+    `${GRAPH_BASE}${principalPath}/calendar/getSchedule`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        schedules: [calendarId || "me"],
+        startTime: { dateTime: startTime.toISOString(), timeZone: "UTC" },
+        endTime: { dateTime: endTime.toISOString(), timeZone: "UTC" },
+        availabilityViewInterval: 30,
+      }),
+    }
+  );
 
   if (!response.ok) {
     const error = await response.text();
@@ -104,7 +107,7 @@ const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
   }
 
   const slotsByDate = buildSlots(startTime, totalDays, 30, busy);
-  
+
   const dates = Object.keys(slotsByDate).map((date) => ({
     date,
     slots: slotsByDate[date],
@@ -136,7 +139,11 @@ const createEvent = async ({
     .filter(Boolean)
     .reduce((list, address) => {
       const key = address.toLowerCase();
-      if (list.some((attendee) => attendee.emailAddress.address.toLowerCase() === key)) {
+      if (
+        list.some(
+          (attendee) => attendee.emailAddress.address.toLowerCase() === key
+        )
+      ) {
         return list;
       }
       return [
@@ -192,20 +199,22 @@ const sendMail = async ({
 
   const recipients = Array.isArray(to)
     ? to.filter(Boolean).map((address) => ({
-      emailAdress: { address },
-    }))
-    : [{
-      emailAddress: {
-        address: to,
-      },
-    }];
+        emailAddress: { address },
+      }))
+    : [
+        {
+          emailAddress: {
+            address: to,
+          },
+        },
+      ];
 
   const replyToEntries = Array.isArray(replyTo)
     ? replyTo.filter(Boolean).map((address) => ({
-      emailAddress: { address },
-    }))
+        emailAddress: { address },
+      }))
     : replyTo
-    ? [{ emailAdress: { address: replyTo } }]
+    ? [{ emailAdDress: { address: replyTo } }]
     : undefined;
 
   const principalPath = buildPrincipalPath(fromCalendarId);
@@ -225,7 +234,7 @@ const sendMail = async ({
           content: body,
         },
         toRecipients: recipients,
-        ...(replyToEntriews ? { replyTo: replyToEntries } : {}),
+        ...(replyToEntries ? { replyTo: replyToEntries } : {}),
       },
       saveToSentItems: false,
     }),

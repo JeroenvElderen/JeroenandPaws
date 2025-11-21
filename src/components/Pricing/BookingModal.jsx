@@ -33,6 +33,14 @@ const BookingModal = ({ service, onClose }) => {
     () => (process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "").replace(/\/$/, ""),
     []
   );
+
+  const isDayAvailableForService = useCallback((day) => {
+    if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
+      return false;
+    }
+
+    return day.slots.every((slot) => slot.available);
+  }, []);
   const handleDogCountChange = (count) => {
     setDogCount(count);
 
@@ -104,7 +112,7 @@ const BookingModal = ({ service, onClose }) => {
 
   const initializeSelection = useCallback((data) => {
     const firstOpenDate = data.dates.find((day) =>
-      day.slots.some((slot) => slot.available)
+      isDayAvailableForService(day)
     );
     if (firstOpenDate) {
       setSelectedDate(firstOpenDate.date);
@@ -112,7 +120,7 @@ const BookingModal = ({ service, onClose }) => {
       setSelectedTime(firstSlot?.time || "");
       setVisibleMonth(new Date(firstOpenDate.date));
     }
-  }, []);
+  }, [isDayAvailableForService]);
 
   const loadAvailability = useCallback(async () => {
     setLoading(true);
@@ -285,19 +293,41 @@ const BookingModal = ({ service, onClose }) => {
     if (selectedDate) {
       setVisibleMonth(new Date(selectedDate));
       const day = availabilityMap[selectedDate];
-      if (day) {
-        const hasSelectedSlot = day.slots.some(
-          (slot) => slot.time === selectedTime && slot.available
+      
+      if (!isDayAvailableForService(day)) {
+        const nextAvailable = calendarDays.find((entry) =>
+          isDayAvailableForService(entry)
         );
-        if (!hasSelectedSlot) {
-          const firstOpen = day.slots.find((slot) => slot.available);
-          if (firstOpen) {
-            setSelectedTime(firstOpen.time);
-          }
+        
+        if (nextAvailable) {
+          setSelectedDate(nextAvailable.date);
+          const firstSlot = nextAvailable.slots.find((slot) => slot.available);
+          setSelectedTime(firstSlot?.time || "");
+        } else {
+          setSelectedDate("");
+          setSelectedTime("");
+        }
+
+        return;
+      }
+
+      const hasSelectedSlot = day.slots.some(
+        (slot) => slot.time === selectedTime && slot.available
+      );
+      if (!hasSelectedSlot) {
+        const firstOpen = day.slots.find((slot) => slot.available);
+        if (firstOpen) {
+          setSelectedTime(firstOpen.time);
         }
       }
     }
-  }, [availabilityMap, selectedDate, selectedTime]);
+  }, [
+    availabilityMap,
+    calendarDays,
+    isDayAvailableForService,
+    selectedDate,
+    selectedTime,
+  ]);
 
   const filteredBreeds = (dogIndex) => {
     const query = breedSearch[dogIndex]?.toLowerCase() || "";
@@ -514,23 +544,24 @@ const BookingModal = ({ service, onClose }) => {
                     const isCurrentMonth =
                       dateObj.getMonth() === visibleMonth.getMonth();
                     const dayData = availabilityMap[iso];
-                    const hasOpenSlot = dayData?.slots?.some(
-                      (slot) => slot.available
-                    );
+                    const isAvailable = isDayAvailableForService(dayData);
                     const isSelected = iso === selectedDate;
+                    const isPastDate = dateObj < new Date().setHours(0, 0, 0, 0);
                     return (
                       <button
                         key={iso}
                         type="button"
                         className={`day ${isSelected ? "selected" : ""} ${
                           isCurrentMonth ? "" : "muted"
-                        } ${hasOpenSlot ? "day-has-slots" : "day-no-slots"}`}
+                        } ${
+                          isAvailable ? "day-has-slots" : "day-no-slots"
+                        }`}
                         onClick={() => setSelectedDate(iso)}
                         aria-pressed={isSelected}
-                        disabled={dateObj < new Date().setHours(0, 0, 0, 0)}
+                        disabled={isPastDate || !isAvailable}
                       >
                         <span>{dateObj.getDate()}</span>
-                        {hasOpenSlot && <span className="day-dot" />}
+                        {isAvailable && <span className="day-dot" />}
                       </button>
                     );
                   })}
@@ -561,27 +592,37 @@ const BookingModal = ({ service, onClose }) => {
               {!selectedDay && (
                 <p className="muted">Select a date to see times.</p>
               )}
-              {selectedDay?.slots
-                ?.filter((slot) => slot.available)
-                .map((slot) => {
-                  const isActive = selectedTime === slot.time;
-                  return (
-                    <button
-                      key={`${selectedDay.date}-${slot.time}`}
-                      type="button"
-                      className={`time-slot ${isActive ? "active" : ""}`}
-                      onClick={() => setSelectedTime(slot.time)}
-                      aria-pressed={isActive}
-                    >
-                      <span className="dot" />
-                      <span className="time-slot__label">
-                        {formatTime(slot.time)}
-                      </span>
-                    </button>
-                  );
-                })}
+              
+              {selectedDay && !isDayAvailableForService(selectedDay) && (
+                <p className="muted">
+                  This service needs a fully open day. There are existing bookings
+                  on this date.
+                </p>
+              )}
+
+              {selectedDay && isDayAvailableForService(selectedDay) &&
+                selectedDay.slots
+                  ?.filter((slot) => slot.available)
+                  .map((slot) => {
+                    const isActive = selectedTime === slot.time;
+                    return (
+                      <button
+                        key={`${selectedDay.date}-${slot.time}`}
+                        type="button"
+                        className={`time-slot ${isActive ? "active" : ""}`}
+                        onClick={() => setSelectedTime(slot.time)}
+                        aria-pressed={isActive}
+                      >
+                        <span className="dot" />
+                        <span className="time-slot__label">
+                          {formatTime(slot.time)}
+                        </span>
+                      </button>
+                    );
+                  })}
 
               {selectedDay &&
+              isDayAvailableForService(selectedDay) &&
                 selectedDay.slots.every((slot) => !slot.available) && (
                   <p className="muted">All slots are full for this day.</p>
                 )}
