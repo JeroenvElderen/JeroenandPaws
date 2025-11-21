@@ -1,9 +1,14 @@
 import React from 'react';
 import ContactFormSection from './sections/ContactFormSection';
+import CustomBookingFormSection from './sections/CustomBookingFormSection';
 
-const Contact = () => (
+const Contact = ({ serviceId = '' }) => (
   <main>
-    <ContactFormSection />
+    {serviceId ? (
+      <CustomBookingFormSection serviceId={serviceId} />
+    ) : (
+      <ContactFormSection />
+    )}
   </main>
 );
 

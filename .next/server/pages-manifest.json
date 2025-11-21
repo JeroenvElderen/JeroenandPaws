@@ -3,6 +3,7 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/services/daily-strolls": "pages/services/daily-strolls.js",
+  "/contact": "pages/contact.js",
   "/services/training-help": "pages/services/training-help.js",
   "/": "pages/index.js"
 }

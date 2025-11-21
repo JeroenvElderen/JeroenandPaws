@@ -20,14 +20,42 @@ const escapeHtml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-const buildMessageBody = ({ name, email, message }) => `
-  <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
-    <p style="margin: 0 0 12px;">New contact form submission from <strong>${escapeHtml(name)}</strong>.</p>
-    <p style="margin: 0 0 12px;">Reply to: <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
-    <p style="margin: 0 0 12px;"><strong>Message:</strong></p>
-    <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(message)}</p>
-  </div>
-`;
+const buildDetailRow = (label, value) =>
+  value
+    ? `<p style="margin: 0 0 8px;"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`
+    : '';
+
+const buildMessageBody = (payload) => {
+  const { name, email, message } = payload;
+  const details = [
+    ['Phone', payload.phone],
+    ['Service requested', payload.serviceType],
+    ['Preferred timing', payload.careTiming],
+    ['Pickup/visit location', payload.pickupLocation],
+    ['Dog name', payload.dogName],
+    ['Breed', payload.dogBreed],
+    ['Age', payload.dogAge],
+    ['Size/weight', payload.dogSize],
+    ['Routine & preferences', payload.preferences],
+    ['Medications or notes', payload.specialNotes],
+  ];
+
+  const detailBlock = details.map(([label, value]) => buildDetailRow(label, value)).join('');
+
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
+      <p style="margin: 0 0 12px;">New contact form submission from <strong>${escapeHtml(
+        name
+      )}</strong>.</p>
+      <p style="margin: 0 0 12px;">Reply to: <a href="mailto:${escapeHtml(email)}">${escapeHtml(
+        email
+      )}</a></p>
+      ${detailBlock ? `<div style="margin: 0 0 12px 0;">${detailBlock}</div>` : ''}
+      <p style="margin: 0 0 12px;"><strong>Message:</strong></p>
+      <p style="margin: 0; white-space: pre-wrap;">${escapeHtml(message)}</p>
+    </div>
+  `;
+};
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -64,8 +92,10 @@ module.exports = async (req, res) => {
     }
 
     const accessToken = await getAppOnlyAccessToken();
-    const subject = `New contact from ${name || 'website visitor'}`;
-    const bodyContent = buildMessageBody({ name, email, message });
+    const subject = body.serviceType
+      ? `New ${body.serviceType} request from ${name || 'website visitor'}`
+      : `New contact from ${name || 'website visitor'}`;
+    const bodyContent = buildMessageBody(body);
 
     await sendMail({
       accessToken,
