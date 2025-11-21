@@ -4,6 +4,7 @@
   "/_document": "pages/_document.js",
   "/services/training-help": "pages/services/training-help.js",
   "/services/solo-journeys": "pages/services/solo-journeys.js",
+  "/services/daily-strolls": "pages/services/daily-strolls.js",
   "/api/book": "pages/api/book.js",
   "/api/availability": "pages/api/availability.js"
 }

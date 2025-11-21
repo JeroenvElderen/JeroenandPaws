@@ -197,7 +197,7 @@ module.exports = async (req, res) => {
       process.env.NOTIFY_EMAIL ||
       process.env.JEROEN_AND_PAWS_EMAIL;
 
-    const bookintFromEmail = 
+    const bookingFromEmail = 
       process.env.BOOKING_SENDER_EMAIL || "booking@jeroenandpaws.com";
     const ownerNotificationEmail = "jeroen@jeroenandpaws.com";
 
