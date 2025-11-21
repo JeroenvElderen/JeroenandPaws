@@ -16,6 +16,9 @@ module.exports = async (req, res) => {
       throw new Error("Missing OUTLOOK_CALENDAR_ID env var");
     }
 
+    const { durationMinutes } = req.query || {};
+    const serviceDurationMinutes = Number.parseInt(durationMinutes, 10);
+
     const accessToken = await getAppOnlyAccessToken();
     const windowDays = Number.parseInt(
       process.env.WINDOW_DAYS ?? "365",
@@ -26,6 +29,9 @@ module.exports = async (req, res) => {
       accessToken,
       calendarId,
       windowDays: Number.isNaN(windowDays) ? 21 : Math.max(windowDays, 1),
+      serviceDurationMinutes: Number.isNaN(serviceDurationMinutes)
+        ? undefined
+        : serviceDurationMinutes,
     });
 
     res.setHeader("Content-Type", "application/json");

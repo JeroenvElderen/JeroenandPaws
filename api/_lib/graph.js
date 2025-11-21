@@ -12,10 +12,19 @@ const overlaps = (start, end, busy) => {
   return busy.some((interval) => start < interval.end && end > interval.start);
 };
 
-const buildSlots = (startDate, days, intervalMinutes, busy) => {
+const buildSlots = (
+  startDate,
+  days,
+  intervalMinutes,
+  busy,
+  serviceDurationMinutes
+) => {
   const slotsByDate = {};
   const workingDayStart = 9;
   const workingDayEnd = 17;
+  const durationMinutes = Number.isFinite(serviceDurationMinutes)
+    ? serviceDurationMinutes
+    : intervalMinutes;
 
   for (let i = 0; i < days; i += 1) {
     const date = new Date(startDate);
@@ -29,10 +38,14 @@ const buildSlots = (startDate, days, intervalMinutes, busy) => {
         const slotStart = new Date(date);
         slotStart.setUTCHours(hour, minute, 0, 0);
         const slotEnd = new Date(slotStart);
-        slotEnd.setMinutes(slotEnd.getMinutes() + intervalMinutes);
+        slotEnd.setMinutes(slotEnd.getMinutes() + durationMinutes);
+        const workingEndBoundary = new Date(date);
+        workingEndBoundary.setUTCHours(workingDayEnd, 0, 0, 0);
+        const withinWorkingDay = slotEnd <= workingEndBoundary;
         const time = slotStart.toISOString().slice(11, 16);
 
-        const available = !overlaps(slotStart, slotEnd, busy);
+        const available =
+          withinWorkingDay && !overlaps(slotStart, slotEnd, busy);
         slotsByDate[currentDate].push({ time, available });
       }
     }
@@ -77,7 +90,12 @@ const postScheduleRequest = async ({
   return response.json();
 };
 
-const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
+const getSchedule = async ({
+  accessToken,
+  calendarId,
+  windowDays = 7,
+  serviceDurationMinutes,
+}) => {
   const totalDays = Math.max(windowDays, 1);
   const startTime = new Date();
   const busy = [];
@@ -106,7 +124,13 @@ const getSchedule = async ({ accessToken, calendarId, windowDays = 7 }) => {
     busy.push(...mapBusyIntervals(schedule?.scheduleItems || []));
   }
 
-  const slotsByDate = buildSlots(startTime, totalDays, 30, busy);
+  const slotsByDate = buildSlots(
+    startTime,
+    totalDays,
+    30,
+    busy,
+    serviceDurationMinutes
+  );
 
   const dates = Object.keys(slotsByDate).map((date) => ({
     date,

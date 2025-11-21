@@ -39,7 +39,7 @@ const BookingModal = ({ service, onClose }) => {
       return false;
     }
 
-    return day.slots.every((slot) => slot.available);
+    return day.slots.some((slot) => slot.available);
   }, []);
   const handleDogCountChange = (count) => {
     setDogCount(count);
@@ -128,7 +128,10 @@ const BookingModal = ({ service, onClose }) => {
     setSuccess("");
     setAvailabilityNotice("");
     try {
-      const requestUrl = `${apiBaseUrl}/api/availability?serviceId=${service.id}`;
+      const durationMinutes = Number.isFinite(service.durationMinutes)
+        ? service.durationMinutes
+        : 60;
+      const requestUrl = `${apiBaseUrl}/api/availability?serviceId=${service.id}&durationMinutes=${durationMinutes}`;
       const response = await fetch(requestUrl, {
         headers: { Accept: "application/json" },
       });
@@ -595,8 +598,8 @@ const BookingModal = ({ service, onClose }) => {
               
               {selectedDay && !isDayAvailableForService(selectedDay) && (
                 <p className="muted">
-                  This service needs a fully open day. There are existing bookings
-                  on this date.
+                  No compatible start times are available for this service on this
+                  date because of other bookings.
                 </p>
               )}
 
