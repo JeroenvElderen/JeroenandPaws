@@ -3,36 +3,58 @@ import Link from 'next/link';
 
 const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const closeMegaNav = useCallback(() => {
     setIsMegaNavOpen(false);
   }, []);
 
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  const closeAllMenus = useCallback(() => {
+    closeMegaNav();
+    closeMobileMenu();
+  }, [closeMegaNav, closeMobileMenu]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        closeMegaNav();
+        closeAllMenus();
       }
     };
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        closeMegaNav();
+        closeAllMenus();
+      }
+    };
+
+    const handleResize = () => {
+      if (window.innerWidth > 991) {
+        closeMobileMenu();
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [closeMegaNav]);
+  }, [closeAllMenus, closeMobileMenu]);
 
   const toggleMegaNav = useCallback(() => {
     setIsMegaNavOpen((prev) => !prev);
+  }, []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen((prev) => !prev);
   }, []);
 
   return (
@@ -55,7 +77,12 @@ const Navbar = () => {
         </Link>
       </div>
       <div className="nav_center">
-        <nav aria-label="Primary" className="nav_menu w-nav-menu">
+        <nav
+          aria-label="Primary"
+          className={`nav_menu w-nav-menu${isMobileMenuOpen ? ' w--open' : ''}`}
+          data-nav-menu-open={isMobileMenuOpen ? '' : undefined}
+          id="primary-navigation"
+        >
           <ul className="nav_menu-list w-list-unstyled">
             <li className="nav_menu-list-item">
               <div
@@ -95,7 +122,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/daily-strolls"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -110,7 +137,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/group-adventures"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -125,7 +152,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/solo-journeys"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -145,7 +172,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/overnight-stays"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -160,7 +187,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/daytime-care"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -175,7 +202,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/home-check-ins"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -195,7 +222,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/training-help"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -210,7 +237,7 @@ const Navbar = () => {
                                 <Link
                                   href="/services/custom-solutions"
                                   className="mega-nav_link-item w-inline-block"
-                                  onClick={closeMegaNav}
+                                  onClick={closeAllMenus}
                                 >
                                   <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
                                       <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
@@ -229,7 +256,7 @@ const Navbar = () => {
                         <Link
                           href="/contact"
                           className="card-link is-inverse flex-child_expand w-inline-block"
-                          onClick={closeMegaNav}
+                          onClick={closeAllMenus}
                         >
                           <div className="card_body">
                             <div className="heading_h3">Plan your dog&#x27;s next adventure</div>
@@ -253,24 +280,24 @@ const Navbar = () => {
               </div>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/about" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/about" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                 <div>About me</div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                 <div>Questions</div>
               </Link>
             </li>
             <li className ="nav_menu-list-item">
-              <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                   <div>
                     Booking
                   </div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeMegaNav}>
+              <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                 <div>Contact</div>
               </Link>
             </li>
@@ -284,7 +311,20 @@ const Navbar = () => {
           </Link>
         </div>
       </div>
-      <div className="nav_mobile-menu-button w-nav-button">
+      <div
+        aria-controls="primary-navigation"
+        aria-expanded={isMobileMenuOpen}
+        className={`nav_mobile-menu-button w-nav-button${isMobileMenuOpen ? ' w--open' : ''}`}
+        onClick={toggleMobileMenu}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleMobileMenu();
+          }
+        }}
+      >
         <div className="icon on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
             <g className="nc-icon-wrapper" strokeLinecap="square" strokeLinejoin="miter" strokeWidth="1.5" fill="none" stroke="currentColor" strokeMiterlimit="10">
               <line x1="1" y1="12" x2="23" y2="12" stroke="currentColor"></line>

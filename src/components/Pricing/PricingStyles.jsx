@@ -23,6 +23,8 @@ const PricingStyles = () => (
           align-items: center;
           justify-content: center;
           padding: 24px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
           z-index: 1000;
         }
         .booking-modal {
@@ -59,8 +61,7 @@ const PricingStyles = () => (
           min-height: 0;
         }
         .calendar-card,
-        .times-card,
-        .details-card {
+        .times-card {
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 12px;
@@ -70,12 +71,11 @@ const PricingStyles = () => (
           gap: 12px;
           min-height: 0;
         }
-          .calendar-card {
+        .calendar-card {
           grid-row: 1 / span 2;
         }
-        .details-card {
-          gap: 16px;
-          min-height: 360px;
+        .times-card {
+          grid-row: 1 / span 2;
         }
         .actions-stack {
           display: flex;
@@ -331,11 +331,18 @@ const PricingStyles = () => (
           gap: 8px;
           margin-bottom: 12px;
         }
+        .times-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
         .times-list {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          max-height: 200px; /* adjust as needed */
+          flex: 1;
           overflow-y: auto;
           padding-right: 6px;
         }
@@ -514,8 +521,7 @@ const PricingStyles = () => (
             grid-row: auto;
           }
           .calendar-card,
-          .times-card,
-          .details-card {
+          .times-card {
             width: 100%;
             max-height: 70vh;
             overflow-y: auto;
@@ -540,6 +546,7 @@ const PricingStyles = () => (
           .booking-overlay {
             padding: 12px;
             align-items: flex-start;
+            justify-content: center;
           }
           .booking-modal {
             width: 100%;
@@ -559,8 +566,7 @@ const PricingStyles = () => (
             gap: 12px;
           }
           .calendar-card,
-          .times-card,
-          .details-card {
+          .times-card {
             padding: 14px;
             gap: 10px;
             max-height: none;

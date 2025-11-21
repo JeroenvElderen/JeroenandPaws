@@ -281,6 +281,8 @@ const BookingModal = ({ service, onClose }) => {
 
   const renderFormContent = (isPopup = false) => (
     <>
+    {error && <p className="error-banner">{error}</p>}
+      {success && <p className="success-banner">{success}</p>}
       <div className="form-grid">
         <label className="input-group full-width">
           <span>How many dogs?</span>
@@ -517,7 +519,20 @@ const BookingModal = ({ service, onClose }) => {
                 <p className="muted small">{selectedDateLabel}</p>
                 <h4>Available slots</h4>
               </div>
-              {/* <span className="pill ghost">{service.duration}</span> */}
+              <div className="times-actions">
+                <p className="muted subtle">
+                  {selectedTime
+                    ? formatTime(selectedTime)
+                    : "Choose a time"}
+                </p>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => setShowFormPopup(true)}
+                >
+                  Book time
+                </button>
+              </div>
             </div>
             <div className="times-list" aria-label="Time options">
               {!selectedDay && (
@@ -547,31 +562,8 @@ const BookingModal = ({ service, onClose }) => {
                 selectedDay.slots.every((slot) => !slot.available) && (
                   <p className="muted">All slots are full for this day.</p>
                 )}
+                <p className="muted subtle">Times shown in your timezone</p>
             </div>
-          </div>
-
-          <div className="details-card">
-            <div className="selection-summary">
-              <div>
-                <p className="muted small">{service.title}</p>
-                <h4>{selectedDateLabel}</h4>
-                <p className="muted">
-                  {selectedTime ? formatTime(selectedTime) : "Choose a time"}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={() => setShowFormPopup(true)}
-              >
-                Pop out form
-              </button>
-            </div>
-
-            {error && <p className="error-banner">{error}</p>}
-            {success && <p className="success-banner">{success}</p>}
-
-            {renderFormContent()}
           </div>
         </div>
 
