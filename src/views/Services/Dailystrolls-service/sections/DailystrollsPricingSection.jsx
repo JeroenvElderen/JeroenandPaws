@@ -34,8 +34,14 @@ const services = [
       "Need special timing or extra help? Let’s create the perfect plan for your dog’s day.",
     duration: "Custom Plan",
     durationMinutes: null,
-    ctaText: "Chat on WhatsApp",
-    ctaHref: getPreferredChatUrl(),
+    ctaText: "Build a custom visit",
+    ctaOptions: {
+      chatUrl: getPreferredChatUrl(),
+      formUrl: "/contact?service=daily-stroll-custom",
+      heading: "How would you like to plan your custom check-in?",
+      description:
+        "Tell us what you need — we can coordinate on WhatsApp or you can share details in a quick form.",
+    },
   },
 ];
 

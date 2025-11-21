@@ -195,10 +195,59 @@ const PricingStyles = () => (
 }
 
 /* Light purple placeholder text style like your inputs */
-.input-like-select option {
-  color: #e7def9;
-  background: rgba(26, 17, 50, 1);
-}
+..input-like-select option {
+          color: #e7def9;
+          background: rgba(26, 17, 50, 1);
+        }
+        .cta-choice-modal {
+          background: linear-gradient(145deg, #1a1132 0%, #1f0f3a 100%);
+          border-radius: 14px;
+          width: min(540px, 100%);
+          color: #f2ecff;
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+          padding: 24px 24px 20px;
+          position: relative;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .cta-choice-content {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .cta-choice-close {
+          position: absolute;
+          top: 10px;
+          right: 12px;
+          border: none;
+          background: transparent;
+          color: #fff;
+          font-size: 26px;
+          cursor: pointer;
+          line-height: 1;
+        }
+        .cta-choice-description {
+          opacity: 0.82;
+          margin: 6px 0 0;
+        }
+        .cta-choice-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 8px;
+        }
+        .cta-choice-actions .w-button {
+          text-align: center;
+        }
+        .cta-choice-actions .ghost-button {
+          text-align: center;
+          width: 100%;
+        }
+        .cta-choice-footnote {
+          font-size: 13px;
+          opacity: 0.78;
+          margin: 2px 0 0;
+          text-align: center;
+        }
 
 /* Custom dropdown arrow (pure CSS, no icons) */
 .input-like-select {

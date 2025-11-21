@@ -1,5 +1,6 @@
 import React from "react";
 import DynamicPricingSection from "../../../../components/Pricing/DynamicPricingSection";
+import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 
 const services = [
   {
@@ -33,7 +34,14 @@ const services = [
       "Need special timing, a late pickup, or extra activities? Let’s design a schedule that works best for your pup.",
     duration: "Custom Schedule",
     durationMinutes: null,
-    ctaText: "Plan Together",
+    ctaText: "Plan a custom schedule",
+    ctaOptions: {
+      chatUrl: getPreferredChatUrl(),
+      formUrl: "/contact?service=daytime-care-custom",
+      heading: "How do you want to plan daytime care?",
+      description:
+        "Share your dog’s needs over WhatsApp or use the request form so we can tailor pick-up, drop-off, and activities.",
+    },
   },
 ];
 

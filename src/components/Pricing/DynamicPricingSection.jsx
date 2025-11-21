@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import BookingModal from "./BookingModal";
+import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
 
 const DynamicPricingSection = ({
@@ -10,8 +11,13 @@ const DynamicPricingSection = ({
   defaultCta = "Check availability",
 }) => {
   const [activeService, setActiveService] = useState(null);
+  const [ctaChoiceService, setCtaChoiceService] = useState(null);
 
   const handleSelect = (service) => {
+    if (service.ctaOptions) {
+      setCtaChoiceService(service);
+      return;
+    }
     if (service.ctaHref) return;
     setActiveService(service);
   };
@@ -58,6 +64,12 @@ const DynamicPricingSection = ({
         <BookingModal
           service={activeService}
           onClose={() => setActiveService(null)}
+        />
+      )}
+      {ctaChoiceService?.ctaOptions && (
+        <ChatOrFormModal
+          service={ctaChoiceService}
+          onClose={() => setCtaChoiceService(null)}
         />
       )}
       <PricingStyles />
