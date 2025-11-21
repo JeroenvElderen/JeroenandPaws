@@ -32,10 +32,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/about.js"
     ],
-    "/booking": [
+    "/contact": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/booking.js"
+      "static/chunks/pages/contact.js"
+    ],
+    "/services/daily-strolls": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/services/daily-strolls.js"
     ],
     "/services/training-help": [
       "static/chunks/webpack.js",

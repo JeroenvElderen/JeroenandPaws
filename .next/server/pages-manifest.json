@@ -3,7 +3,9 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/services/training-help": "pages/services/training-help.js",
-  "/booking": "pages/booking.js",
+  "/": "pages/index.js",
   "/about": "pages/about.js",
-  "/": "pages/index.js"
+  "/contact": "pages/contact.js",
+  "/booking": "pages/booking.js",
+  "/services/daily-strolls": "pages/services/daily-strolls.js"
 }

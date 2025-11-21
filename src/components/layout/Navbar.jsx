@@ -5,6 +5,7 @@ const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navRef = useRef(null);
 
   const closeMegaNav = useCallback(() => {
     setIsMegaNavOpen(false);
@@ -21,7 +22,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (navRef.current && !navRef.current.contains(event.target)) {
         closeAllMenus();
       }
     };
@@ -58,7 +59,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <div className="nav is-accent-primary">
+    <div className="nav is-accent-primary" ref={navRef}>
       <div
         data-duration="400"
         data-animation="default"
@@ -305,11 +306,7 @@ const Navbar = () => {
         </nav>
       </div>
       <div className="nav_right">
-        <div className="button-group margin-top_none">
-          <Link href="/booking" className="button on-accent-primary w-inline-block" onClick={closeMegaNav}>
-            <div className="button_label">Reserve</div>
-          </Link>
-        </div>
+        
       </div>
       <div
         aria-controls="primary-navigation"
