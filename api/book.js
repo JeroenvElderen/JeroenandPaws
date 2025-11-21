@@ -1,5 +1,6 @@
+const { DateTime } = require("luxon");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { createEvent } = require("./_lib/graph");
+const { createEvent, sendMail } = require("./_lib/graph");
 
 const parseBody = async (req) => {
   const chunks = [];
@@ -14,6 +15,151 @@ const addMinutesToDateTime = (date, time, minutes) => {
   const start = new Date(`${date}T${time}:00Z`);
   start.setUTCMinutes(start.getUTCMinutes() + minutes);
   return start.toISOString().slice(0, 19);
+};
+
+const escapeHtml = (value = "") =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const buildFriendlyTiming = ({ date, time, durationMinutes, timeZone = "UTC" }) => {
+  const zone = timeZone || "UTC";
+  const start = DateTime.fromISO(`${date}T${time}`, { zone });
+  const safeStart = start.isValid
+    ? start
+    : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
+
+  const end = safeStart.plus({ minutes: durationMinutes });
+  const format = "cccc, LLLL d, yyyy 'at' t ZZZZ";
+
+  return {
+    start: safeStart.toFormat(format),
+    end: end.toFormat(format),
+  };
+};
+
+const buildConfirmationBody = ({
+  clientName,
+  serviceId,
+  serviceTitle,
+  timing,
+  notes,
+  dogs,
+  dogCount,
+  timeZone,
+}) => {
+  const readableService = serviceTitle || `Training booking (${serviceId || "custom"})`;
+  const dogEntries = Array.isArray(dogs) ? dogs : [];
+  const hasDogs = dogEntries.length > 0;
+
+  const dogDetails = hasDogs
+    ? `<ol style="margin: 0; padding-left: 20px;">
+        ${dogEntries
+          .map((dog, index) => {
+            const name = escapeHtml(dog?.name || "Name pending");
+            const breed = escapeHtml(dog?.breed || "Breed pending");
+            const photoName = escapeHtml(dog?.photoName || "Uploaded photo");
+            const hasPhoto = Boolean(dog?.photoDataUrl);
+
+            return `<li><strong>Dog ${index + 1}:</strong> ${name} (${breed})${
+              hasPhoto ? ` — Photo: ${photoName}` : ""
+            }</li>`;
+          })
+          .join("")}
+      </ol>`
+    : `<p style="margin: 8px 0 0;"><strong>Dogs:</strong> ${
+        dogCount ?? dogEntries.length ?? 0
+      } (details pending)</p>`;
+
+  const notesBlock = notes
+    ? `<p style="margin: 16px 0 0;"><strong>Notes from you:</strong><br>${escapeHtml(
+        notes
+      )}</p>`
+    : "";
+
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
+      <p style="margin: 0 0 12px;">Hi ${escapeHtml(clientName || "there")},</p>
+      <p style="margin: 0 0 12px;">
+        Thank you for booking <strong>${escapeHtml(readableService)}</strong>. Here are your appointment details:
+      </p>
+      <ul style="padding-left: 20px; margin: 0 0 12px;">
+        <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
+        <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
+        <li><strong>Time zone:</strong> ${escapeHtml(timeZone || "UTC")}</li>
+      </ul>
+      ${dogDetails}
+      ${notesBlock}
+      <p style="margin: 16px 0 0;">
+        If you need to reschedule or have questions, just reply to this email and we'll be happy to help.
+      </p>
+      <p style="margin: 8px 0 0;">Looking forward to seeing you soon!</p>
+    </div>
+  `;
+};
+
+const buildNotificationBody = ({
+  serviceTitle,
+  serviceId,
+  clientName,
+  clientEmail,
+  timing,
+  timeZone,
+  notes,
+  dogs,
+  dogCount,
+}) => {
+  const readableService = serviceTitle || `Training booking (${serviceId || "custom"})`;
+  const dogEntries = Array.isArray(dogs) ? dogs : [];
+  const hasDogs = dogEntries.length > 0;
+
+  const dogDetails = hasDogs
+    ? `<ol style="margin: 0; padding-left: 20px;">
+        ${dogEntries
+          .map((dog, index) => {
+            const name = escapeHtml(dog?.name || "Name pending");
+            const breed = escapeHtml(dog?.breed || "Breed pending");
+            const hasPhoto = Boolean(dog?.photoDataUrl);
+
+            return `<li><strong>Dog ${index + 1}:</strong> ${name} (${breed})${
+              hasPhoto ? " — photo uploaded" : ""
+            }</li>`;
+          })
+          .join("")}
+      </ol>`
+    : `<p style="margin: 8px 0 0;"><strong>Dogs:</strong> ${
+        dogCount ?? dogEntries.length ?? 0
+      } (details pending)</p>`;
+
+  const notesBlock = notes
+    ? `<p style="margin: 16px 0 0;"><strong>Client notes:</strong><br>${escapeHtml(
+        notes
+      )}</p>`
+    : "";
+
+  const clientLine =
+    clientName || clientEmail
+      ? `${escapeHtml(clientName || "Client")} (${escapeHtml(clientEmail || "email missing")})`
+      : "Unknown client";
+
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
+      <p style="margin: 0 0 12px;">New booking received:</p>
+      <ul style="padding-left: 20px; margin: 0 0 12px;">
+        <li><strong>Client:</strong> ${clientLine}</li>
+        <li><strong>Service:</strong> ${escapeHtml(readableService)}</li>
+        <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
+        <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
+        <li><strong>Time zone:</strong> ${escapeHtml(timeZone || "UTC")}</li>
+      </ul>
+      ${dogDetails}
+      ${notesBlock}
+      <p style="margin: 16px 0 0;">This is an internal notification for Jeroen & Paws.</p>
+    </div>
+  `;
 };
 
 module.exports = async (req, res) => {
@@ -32,7 +178,7 @@ module.exports = async (req, res) => {
 
     const accessToken = await getAppOnlyAccessToken();
     const body = await parseBody(req);
-    const { 
+    const {
       date,
       time,
       durationMinutes = 60,
@@ -46,6 +192,11 @@ module.exports = async (req, res) => {
       dogCount,
     } = body;
 
+    const teamEmail =
+      process.env.BOOKING_NOTIFICATION_EMAIL ||
+      process.env.NOTIFY_EMAIL ||
+      process.env.JEROEN_AND_PAWS_EMAIL;
+
     if (!date || !time) {
       res.statusCode = 400;
       res.end(JSON.stringify({ message: "Missing date or time" }));
@@ -56,41 +207,59 @@ module.exports = async (req, res) => {
     const endDateTime = addMinutesToDateTime(date, time, durationMinutes);
 
     const subject = serviceTitle || `Training booking (${serviceId || "custom"})`;
-    const formattedDogs = Array.isArray(dogs) && dogs.length
-      ? dogs
-          .map((dog, index) => {
-            const name = dog?.name || "Name pending";
-            const breed = dog?.breed || "Breed pending";
-            const photoName = dog?.photoName;
-            const photoDataUrl = dog?.photoDataUrl;
-            const photoLine = photoDataUrl
-              ? `Photo: ${photoName || "Uploaded"} (${photoDataUrl.slice(0, 80)}...)`
-              : "Photo: none";
-            return `Dog ${index + 1}: ${name} (${breed}) | ${photoLine}`;
-          })
-          .join("\n")
-      : "Dog details pending";
-
-    const description = [
-      `Client: ${clientName || "Unknown"}`,
-      `Email: ${clientEmail || "n/a"}`,
-      `Service: ${serviceTitle || serviceId}`,
-      `Dogs: ${dogCount ?? dogs.length ?? 0}`,
-      formattedDogs,
-      `Notes: ${notes || "None"}`,
-    ].join("\n");
+    const timing = buildFriendlyTiming({
+      date,
+      time,
+      durationMinutes,
+      timeZone,
+    });
+    const confirmationBody = buildConfirmationBody({
+      clientName,
+      serviceId,
+      serviceTitle,
+      timing,
+      notes,
+      dogs,
+      dogCount,
+      timeZone,
+    });
 
     const event = await createEvent({
       accessToken,
       calendarId,
       subject,
-      body: description,
+      body: confirmationBody,
+      bodyContentType: "HTML",
       start: startDateTime,
       end: endDateTime,
       attendeeEmail: clientEmail,
+      attendeeEmails: [],
       timeZone,
     });
 
+    if (teamEmail) {
+      const notificationBody = buildNotificationBody({
+        serviceTitle,
+        serviceId,
+        clientName,
+        clientEmail,
+        timing,
+        timeZone,
+        notes,
+        dogs,
+        dogCount,
+      });
+
+      await sendMail({
+        accessToken,
+        fromCalendarId: calendarId,
+        to: teamEmail,
+        subject: `New booking: ${subject}`,
+        body: notificationBody,
+        contentType: "HTML",
+      });
+    }
+    
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({

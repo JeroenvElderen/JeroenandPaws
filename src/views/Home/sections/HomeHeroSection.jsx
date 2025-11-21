@@ -9,9 +9,9 @@ const HomeHeroSection = () => (
       </div>
       <div id="w-node-_83130efd-cc89-3e63-e012-238651cb9c93-51cb9c8e" className="container position_relative padding-bottom_large z-index_2 w-node-_74183d39-97ba-696d-d9e0-d3e4e5d79533-055fd1ce">
         <div className="header is-2-col">
-          <h1 className="heading_h1 margin-bottom_none">Caring for your pet with expertise and love</h1>
+          <h1 className="heading_h1 margin-bottom_none text-color">Caring for your pet with expertise and love</h1>
           <div id="w-node-b44b49b5-d3e6-a05f-997e-8ac7efbac3da-51cb9c8e" className="flex_vertical gap-xsmall w-node-_74183d39-97ba-696d-d9e0-d3e4e5d79531-055fd1ce">
-            <p className="paragraph_large">Whether it&#x27;s personalized training or a fun-filled daycare, we nurture an environment where your dog thrives. Count on us for the affection and care your pet deserves.</p>
+            <p className="paragraph_large text-color">Whether it&#x27;s personalized training or a fun-filled daycare, we nurture an environment where your dog thrives. Count on us for the affection and care your pet deserves.</p>
             <div className="button-group">
               <Link href="/services" className="button on-inverse w-button">Discover more</Link>
             </div>

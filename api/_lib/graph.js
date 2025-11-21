@@ -119,11 +119,34 @@ const createEvent = async ({
   subject,
   body,
   start,
+  bodyContentType = "Text",
   end,
   attendeeEmail,
+  attendeeEmails = [],
   timeZone = "UTC",
 }) => {
   const principalPath = buildPrincipalPath(calendarId);
+
+  const attendees = [
+    ...(Array.isArray(attendeeEmails) ? attendeeEmails : []),
+    attendeeEmail,
+  ]
+    .filter(Boolean)
+    .map((address) => address.trim())
+    .filter(Boolean)
+    .reduce((list, address) => {
+      const key = address.toLowerCase();
+      if (list.some((attendee) => attendee.emailAddress.address.toLowerCase() === key)) {
+        return list;
+      }
+      return [
+        ...list,
+        {
+          emailAddress: { address },
+          type: "required",
+        },
+      ];
+    }, []);
 
   const response = await fetch(`${GRAPH_BASE}${principalPath}/events`, {
     method: "POST",
@@ -134,19 +157,12 @@ const createEvent = async ({
     body: JSON.stringify({
       subject,
       body: {
-        contentType: "Text",
+        contentType: bodyContentType,
         content: body,
       },
       start: { dateTime: start, timeZone },
       end: { dateTime: end, timeZone },
-      attendees: attendeeEmail
-        ? [
-            {
-              emailAddress: { address: attendeeEmail },
-              type: "required",
-            },
-          ]
-        : [],
+      attendees,
       isReminderOn: true,
       reminderMinutesBeforeStart: 15,
     }),
@@ -160,4 +176,49 @@ const createEvent = async ({
   return response.json();
 };
 
-module.exports = { createEvent, getSchedule };
+const sendMail = async ({
+  accessToken,
+  fromCalendarId,
+  to,
+  subject,
+  body,
+  contentType = "HTML",
+}) => {
+  if (!to) {
+    throw new Error("sendMail called without recipient email address");
+  }
+
+  const principalPath = buildPrincipalPath(fromCalendarId);
+
+  const response = await fetch(`${GRAPH_BASE}${principalPath}/sendMail`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: {
+          contentType,
+          content: body,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: to,
+            },
+          },
+        ],
+      },
+      saveToSentItems: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Graph send mail error: ${response.status} ${error}`);
+  }
+};
+
+module.exports = { createEvent, getSchedule, sendMail };
