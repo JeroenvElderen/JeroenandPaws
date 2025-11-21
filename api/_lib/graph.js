@@ -183,10 +183,30 @@ const sendMail = async ({
   subject,
   body,
   contentType = "HTML",
+  from,
+  replyTo,
 }) => {
   if (!to) {
     throw new Error("sendMail called without recipient email address");
   }
+
+  const recipients = Array.isArray(to)
+    ? to.filter(Boolean).map((address) => ({
+      emailAdress: { address },
+    }))
+    : [{
+      emailAddress: {
+        address: to,
+      },
+    }];
+
+  const replyToEntries = Array.isArray(replyTo)
+    ? replyTo.filter(Boolean).map((address) => ({
+      emailAddress: { address },
+    }))
+    : replyTo
+    ? [{ emailAdress: { address: replyTo } }]
+    : undefined;
 
   const principalPath = buildPrincipalPath(fromCalendarId);
 
@@ -198,18 +218,14 @@ const sendMail = async ({
     },
     body: JSON.stringify({
       message: {
+        ...(from ? { from: { emailAddress: { address: from } } } : {}),
         subject,
         body: {
           contentType,
           content: body,
         },
-        toRecipients: [
-          {
-            emailAddress: {
-              address: to,
-            },
-          },
-        ],
+        toRecipients: recipients,
+        ...(replyToEntriews ? { replyTo: replyToEntries } : {}),
       },
       saveToSentItems: false,
     }),

@@ -197,6 +197,10 @@ module.exports = async (req, res) => {
       process.env.NOTIFY_EMAIL ||
       process.env.JEROEN_AND_PAWS_EMAIL;
 
+    const bookintFromEmail = 
+      process.env.BOOKING_SENDER_EMAIL || "booking@jeroenandpaws.com";
+    const ownerNotificationEmail = "jeroen@jeroenandpaws.com";
+
     if (!date || !time) {
       res.statusCode = 400;
       res.end(JSON.stringify({ message: "Missing date or time" }));
@@ -237,28 +241,45 @@ module.exports = async (req, res) => {
       timeZone,
     });
 
-    if (teamEmail) {
-      const notificationBody = buildNotificationBody({
-        serviceTitle,
-        serviceId,
-        clientName,
-        clientEmail,
-        timing,
-        timeZone,
-        notes,
-        dogs,
-        dogCount,
-      });
+    const notificationBody = buildNotificationBody({
+      serviceTitle,
+      serviceId,
+      clientName,
+      clientEmail,
+      timing,
+      timeZone,
+      notes,
+      dogs,
+      dogCount,
+    });
 
+    const notificationRecipients = [teamEmail, ownerNotificationEmail].filter(
+      Boolean
+    );
+
+    if (notificationRecipients.length) {
       await sendMail({
         accessToken,
         fromCalendarId: calendarId,
-        to: teamEmail,
+        to: notificationRecipients,
         subject: `New booking: ${subject}`,
         body: notificationBody,
         contentType: "HTML",
+        from: bookingFromEmail,
+        replyTo: bookingFromEmail,
       });
     }
+    
+    await sendMail({
+      accessToken,
+      fromCalendarId: calendarId,
+      to: clientEmail,
+      subject,
+      body: confirmationBody,
+      contentType: "HTML",
+      from: bookingFromEmail,
+      replyTo: bookingFromEmail,
+    });
     
     res.setHeader("Content-Type", "application/json");
     res.end(
