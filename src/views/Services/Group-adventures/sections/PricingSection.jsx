@@ -48,7 +48,7 @@ const services = [
     ctaText: "Plan Custom Adventure",
     ctaOptions: {
       chatUrl: getPreferredChatUrl(),
-      formUrl: "/contact?service=home-check-in-custom",
+      formUrl: "/contact?service=group-adventures-custom",
       heading: "How would you like to plan your custom check-in?",
       description:
         "Tell us the timing, visit frequency, or medications — chat on WhatsApp or outline everything in the request form.",

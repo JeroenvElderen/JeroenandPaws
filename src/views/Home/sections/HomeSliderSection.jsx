@@ -49,25 +49,55 @@ const slides = [
   },
 ];
 
+const transitionDurationMs = 500;
+
 const HomeSliderSection = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const loopOffset = slides.length;
+  const [currentIndex, setCurrentIndex] = useState(loopOffset);
+  const [isTransitioning, setIsTransitioning] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
+      setCurrentIndex((prev) => prev + 1);
     }, 4000);
 
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    let resetTimeout;
+
+    if (currentIndex >= loopOffset * 2 || currentIndex < loopOffset) {
+      resetTimeout = setTimeout(() => {
+        setIsTransitioning(false);
+        setCurrentIndex((prev) => {
+          if (prev >= loopOffset * 2) return prev - loopOffset;
+          if (prev < loopOffset) return prev + loopOffset;
+          return prev;
+        });
+      }, transitionDurationMs);
+    }
+
+    return () => {
+      if (resetTimeout) clearTimeout(resetTimeout);
+    };
+  }, [currentIndex, loopOffset]);
+
+  useEffect(() => {
+    if (!isTransitioning) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsTransitioning(true);
+        });
+      });
+    }
+  }, [isTransitioning]);
+
   const goToSlide = (delta) => {
-    setCurrentIndex((prev) => {
-      const next = prev + delta;
-      if (next < 0) return slides.length - 1;
-      if (next >= slides.length) return 0;
-      return next;
-    });
+    setCurrentIndex((prev) => prev + delta);
   };
+
+  const renderedSlides = [...slides, ...slides, ...slides];
 
   return (
     <section data-copilot="true" className="section overflow_hidden">
@@ -82,18 +112,18 @@ const HomeSliderSection = () => {
             style={{
               display: 'flex',
               transform: `translateX(-${currentIndex * 100}%)`,
-              transition: 'transform 500ms ease',
+              transition: isTransitioning ? `transform ${transitionDurationMs}ms ease` : 'none',
             }}
           >
-            {slides.map((slide) => (
+            {renderedSlides.map((slide, index) => (
               <div
-                key={slide.title}
+                key={`${slide.title}-${index}`}
                 className="ix_card-deck-space height_100percent w-slide"
-                style={{ flex: '0 0 100%', maxWidth: '100%' }}
+                style={{ flex: '0 0 100%', maxWidth: '100%', display: 'flex' }}
               >
-                <div className="card overflow_hidden backdrop-filter_blur">
-                  <div>
-                    <div className="card_body padding-bottom_none">
+                <div className="card overflow_hidden backdrop-filter_blur" style={{ height: '100%' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div className="card_body padding-bottom_none" style={{ flexGrow: 1 }}>
                       <p className="heading_h4">{slide.title}</p>
                       <p>{slide.description}</p>
                       <br />

@@ -37,7 +37,7 @@ const services = [
     ctaText: "Plan a solo journey",
     ctaOptions: {
       chatUrl: getPreferredChatUrl(),
-      formUrl: "/contact?service=overnight-stay-custom",
+      formUrl: "/contact?service=solo-journey-custom",
       heading: "How should we plan your custom stay?",
       description:
         "Choose WhatsApp for a quick chat about dates and care notes, or send your full request through the form.",

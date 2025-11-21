@@ -1,11 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 const SERVICE_LABELS = {
-  'daily-stroll-custom': 'Custom check-in or walk',
-  'overnight-stay-custom': 'Custom overnight or travel care',
+  'daily-stroll-custom': 'Custom daily strolls',
+  'overnight-stay-custom': 'Custom overnight',
   'home-check-in-custom': 'Custom home check-in',
   'daytime-care-custom': 'Custom daytime care',
+  'solo-journey-custom': 'Custom solo journey',
 };
+
+const createDog = () => ({
+  name: '',
+  breed: '',
+  age: '',
+  size: '',
+});
 
 const createInitialState = (serviceLabel) => ({
   name: '',
@@ -13,10 +21,7 @@ const createInitialState = (serviceLabel) => ({
   phone: '',
   serviceType: serviceLabel || 'Custom booking',
   dogCount: '1',
-  dogName: '',
-  dogBreed: '',
-  dogAge: '',
-  dogSize: '',
+  dogs: [createDog(), createDog(), createDog(), createDog()],
   careTiming: '',
   pickupLocation: '',
   preferences: '',
@@ -25,15 +30,29 @@ const createInitialState = (serviceLabel) => ({
 });
 
 const buildBookingMessage = (state, serviceLabel) => {
+  const dogCount = Number(state.dogCount) || 1;
+  const dogDetails = (state.dogs || [])
+    .slice(0, dogCount)
+    .map((dog, index) => {
+      const parts = [
+        dog?.name && `Name: ${dog.name}`,
+        dog?.breed && `Breed: ${dog.breed}`,
+        dog?.age && `Age: ${dog.age}`,
+        dog?.size && `Size/weight: ${dog.size}`,
+      ].filter(Boolean);
+
+      return parts.length
+        ? [`Dog ${index + 1}:`, ...parts.map((detail) => `  - ${detail}`)].join('\n')
+        : '';
+    })
+    .filter(Boolean);
+
   const lines = [
     `Service: ${state.serviceType || serviceLabel || 'Custom booking'}`,
     state.dogCount && `Number of dogs: ${state.dogCount}`,
+    ...dogDetails,
     state.careTiming && `Preferred timing: ${state.careTiming}`,
     state.pickupLocation && `Pickup/visit location: ${state.pickupLocation}`,
-    state.dogName && `Dog name: ${state.dogName}`,
-    state.dogBreed && `Breed: ${state.dogBreed}`,
-    state.dogAge && `Age: ${state.dogAge}`,
-    state.dogSize && `Size/weight: ${state.dogSize}`,
     state.preferences && `Routine & preferences: ${state.preferences}`,
     state.specialNotes && `Notes or medications: ${state.specialNotes}`,
     state.message && `Extra details: ${state.message}`,
@@ -63,6 +82,20 @@ const CustomBookingFormSection = ({ serviceId }) => {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormState((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleDogChange = (index, field) => (event) => {
+    const { value } = event.target;
+
+    setFormState((current) => {
+      const updatedDogs = [...(current.dogs || [])];
+      updatedDogs[index] = { ...updatedDogs[index], [field]: value };
+
+      return {
+        ...current,
+        dogs: updatedDogs,
+      };
+    });
   };
 
   const handleSubmit = async (event) => {
@@ -96,6 +129,8 @@ const CustomBookingFormSection = ({ serviceId }) => {
   };
 
   const showForm = status !== 'success';
+  const visibleDogCount = Math.min(Number(formState.dogCount) || 1, 4);
+  const visibleDogs = (formState.dogs || []).slice(0, visibleDogCount);
 
   return (
     <section id="custom-booking" className="section">
@@ -179,90 +214,100 @@ const CustomBookingFormSection = ({ serviceId }) => {
 
                   <div className="divider margin-bottom_small" />
 
-                  <p className="eyebrow">About your dog</p>
-                  <div className="w-layout-grid grid_2-col gap-small">
-                    <div className="input">
-                      <label htmlFor="dogCount" className="input_label">
-                        How many dogs?
-                      </label>
-                      <select
-                        id="dogCount"
-                        name="dogCount"
-                        className="input_field margin-bottom_xsmall w-select"
-                        value={formState.dogCount}
-                        onChange={handleChange}
-                      >
-                        {[1, 2, 3, 4].map((count) => (
-                          <option key={count} value={count}>
-                            {count}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="input">
-                      <label htmlFor="dogName" className="input_label">
-                        Dog name
-                      </label>
-                      <input
-                        className="input_field margin-bottom_xsmall w-input"
-                        maxLength="256"
-                        name="dogName"
-                        id="dogName"
-                        placeholder="e.g., Luna"
-                        type="text"
-                        value={formState.dogName}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="input">
-                      <label htmlFor="dogBreed" className="input_label">
-                        Breed (or mix)
-                      </label>
-                      <input
-                        className="input_field margin-bottom_xsmall w-input"
-                        maxLength="256"
-                        name="dogBreed"
-                        id="dogBreed"
-                        placeholder="e.g., Border Collie mix"
-                        type="text"
-                        value={formState.dogBreed}
-                        onChange={handleChange}
-                      />
-                    </div>
+                  <p className="eyebrow">About your dog(s)</p>
+                  <div className="input">
+                    <label htmlFor="dogCount" className="input_label">
+                      How many dogs?
+                    </label>
+                    <select
+                      id="dogCount"
+                      name="dogCount"
+                      className="input_field margin-bottom_small w-select"
+                      value={formState.dogCount}
+                      onChange={handleChange}
+                    >
+                      {[1, 2, 3, 4].map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="w-layout-grid grid_2-col gap-small">
-                    <div className="input">
-                      <label htmlFor="dogAge" className="input_label">
-                        Age
-                      </label>
-                      <input
-                        className="input_field margin-bottom_xsmall w-input"
-                        maxLength="64"
-                        name="dogAge"
-                        id="dogAge"
-                        placeholder="e.g., 2 years"
-                        type="text"
-                        value={formState.dogAge}
-                        onChange={handleChange}
-                      />
+
+                  {visibleDogs.map((dog, index) => (
+                    <div key={index} className="margin-bottom_small">
+                      {index > 0 && <div className="divider margin-bottom_small" />}
+                      <p className="eyebrow">Dog {index + 1}</p>
+                      <div className="w-layout-grid grid_2-col gap-small">
+                        <div className="input">
+                          <label htmlFor={`dog-${index}-name`} className="input_label">
+                            Name
+                          </label>
+                          <input
+                            className="input_field margin-bottom_xsmall w-input"
+                            maxLength="256"
+                            name={`dog-${index}-name`}
+                            id={`dog-${index}-name`}
+                            placeholder="e.g., Luna"
+                            type="text"
+                            value={dog.name}
+                            onChange={handleDogChange(index, 'name')}
+                            required
+                          />
+                        </div>
+                        <div className="input">
+                          <label htmlFor={`dog-${index}-breed`} className="input_label">
+                            Breed (or mix)
+                          </label>
+                          <input
+                            className="input_field margin-bottom_xsmall w-input"
+                            maxLength="256"
+                            name={`dog-${index}-breed`}
+                            id={`dog-${index}-breed`}
+                            placeholder="e.g., Border Collie mix"
+                            type="text"
+                            value={dog.breed}
+                            onChange={handleDogChange(index, 'breed')}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="w-layout-grid grid_2-col gap-small">
+                        <div className="input">
+                          <label htmlFor={`dog-${index}-age`} className="input_label">
+                            Age
+                          </label>
+                          <input
+                            className="input_field margin-bottom_xsmall w-input"
+                            maxLength="64"
+                            name={`dog-${index}-age`}
+                            id={`dog-${index}-age`}
+                            placeholder="e.g., 2 years"
+                            type="text"
+                            value={dog.age}
+                            onChange={handleDogChange(index, 'age')}
+                            required
+                          />
+                        </div>
+                        <div className="input">
+                          <label htmlFor={`dog-${index}-size`} className="input_label">
+                            Size/weight
+                          </label>
+                          <input
+                            className="input_field margin-bottom_xsmall w-input"
+                            maxLength="64"
+                            name={`dog-${index}-size`}
+                            id={`dog-${index}-size`}
+                            placeholder="e.g., 12 kg"
+                            type="text"
+                            value={dog.size}
+                            onChange={handleDogChange(index, 'size')}
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="input">
-                      <label htmlFor="dogSize" className="input_label">
-                        Size/weight
-                      </label>
-                      <input
-                        className="input_field margin-bottom_xsmall w-input"
-                        maxLength="64"
-                        name="dogSize"
-                        id="dogSize"
-                        placeholder="e.g., 12 kg"
-                        type="text"
-                        value={formState.dogSize}
-                        onChange={handleChange}
-                      />
-                    </div>
-                  </div>
+                  ))}
 
                   <div className="divider margin-bottom_small" />
 

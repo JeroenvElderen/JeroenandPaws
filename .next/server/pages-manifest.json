@@ -2,8 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/services/daily-strolls": "pages/services/daily-strolls.js",
-  "/contact": "pages/contact.js",
   "/services/training-help": "pages/services/training-help.js",
+  "/services/solo-journeys": "pages/services/solo-journeys.js",
+  "/contact": "pages/contact.js",
   "/": "pages/index.js"
 }
