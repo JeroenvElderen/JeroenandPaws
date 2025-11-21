@@ -38,12 +38,12 @@ const Navbar = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
     };
@@ -73,7 +73,7 @@ const Navbar = () => {
           <div className="nav_logo-icon"><svg width="100%" height="100%" viewBox="0 0 33 33" preserveAspectRatio="xMidYMid meet">
               <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" fill="currentColor"></path>
             </svg></div>
-          <div data-brand-name="true" className="paragraph_large margin-bottom_none">Welcome to a place where your dog&#x27;s happiness is our top priority.</div>
+          <div data-brand-name="true" className="paragraph_large margin-bottom_none">Jeroen & Paws</div>
         </Link>
       </div>
       <div className="nav_center">
