@@ -132,9 +132,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a018c-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6749-93dc6729">
                                     <div><strong>Daily strolls</strong></div>
                                     <div className="paragraph_small text-color_secondary">Tailored walks for your furry friend.</div>
@@ -147,9 +144,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a0197-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6754-93dc6729">
                                     <div><strong>Group adventures</strong></div>
                                     <div className="paragraph_small text-color_secondary">Join friendly packs for social fun.</div>
@@ -162,9 +156,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01a2-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc675f-93dc6729">
                                     <div><strong>Solo journeys</strong></div>
                                     <div className="paragraph_small text-color_secondary">Dedicated care for your pet.</div>
@@ -182,9 +173,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01b1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc676e-93dc6729">
                                     <div><strong>Overnight stays</strong></div>
                                     <div className="paragraph_small text-color_secondary">Safe and cozy nights.</div>
@@ -197,9 +185,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01bc-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6779-93dc6729">
                                     <div><strong>Daytime care</strong></div>
                                     <div className="paragraph_small text-color_secondary">Engaging and secure day care.</div>
@@ -212,9 +197,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01c7-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6784-93dc6729">
                                     <div><strong>Home check-ins</strong></div>
                                     <div className="paragraph_small text-color_secondary">Quick visits for your pet&#x27;s needs.</div>
@@ -232,9 +214,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01e1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc679e-93dc6729">
                                     <div><strong>Training help</strong></div>
                                     <div className="paragraph_small text-color_secondary">Guidance for training essentials.</div>
@@ -247,9 +226,6 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div className="icon is-medium on-accent-primary"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 32 32" fill="currentColor">
-                                      <path d="m25.7 9.3l-7-7A.9.9 0 0 0 18 2H8a2.006 2.006 0 0 0-2 2v24a2.006 2.006 0 0 0 2 2h16a2.006 2.006 0 0 0 2-2V10a.9.9 0 0 0-.3-.7M18 4.4l5.6 5.6H18ZM24 28H8V4h8v6a2.006 2.006 0 0 0 2 2h6Z" strokeLinejoin="round"></path>
-                                    </svg></div>
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01ec-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc67a9-93dc6729">
                                     <div><strong>Custom solutions</strong></div>
                                     <div className="paragraph_small text-color_secondary">Personalized care plans.</div>
