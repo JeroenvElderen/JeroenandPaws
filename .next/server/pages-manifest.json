@@ -3,7 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/services/training-help": "pages/services/training-help.js",
-  "/services/solo-journeys": "pages/services/solo-journeys.js",
-  "/api/availability": "pages/api/availability.js",
-  "/": "pages/index.js"
+  "/booking": "pages/booking.js",
+  "/services/solo-journeys": "pages/services/solo-journeys.js"
 }

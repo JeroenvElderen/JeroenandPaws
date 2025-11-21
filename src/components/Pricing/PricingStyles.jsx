@@ -52,7 +52,7 @@ const PricingStyles = () => (
         .booking-body {
           display: grid;
           grid-template-columns: 1.6fr 0.8fr;
-          grid-template-rows: auto auto;
+          grid-template-rows: minmax(240px, 0.9fr) minmax(360px, 1.1fr);
           gap: 16px;
           padding: 20px 24px 24px;
           flex: 1;
@@ -75,6 +75,27 @@ const PricingStyles = () => (
         }
         .details-card {
           gap: 16px;
+          min-height: 360px;
+        }
+        .actions-stack {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: center;
+        }
+        .ghost-button {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          color: #f2ecff;
+          border-radius: 12px;
+          padding: 10px 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .ghost-button:hover {
+          background: rgba(255, 255, 255, 0.15);
+          transform: translateY(-1px);
         }
         .selection-summary {
           display: flex;
@@ -415,6 +436,7 @@ const PricingStyles = () => (
           min-height: 0;
           overflow-y: auto;
           padding-right: 6px;
+          max-height: 420px;
         }
         .form-grid::-webkit-scrollbar {
           width: 6px;
@@ -451,7 +473,8 @@ const PricingStyles = () => (
         .actions-row {
           margin-top: 4px;
           display: flex;
-          justify-content: flex-end;
+          justify-content: space-between;
+          align-items: center;
         }
         .error-banner,
         .success-banner {
@@ -572,6 +595,7 @@ const PricingStyles = () => (
           }
           .form-grid {
             gap: 10px;
+            max-height: none;
           }
           .actions-row {
             position: sticky;
@@ -583,6 +607,43 @@ const PricingStyles = () => (
             width: 100%;
             justify-content: center;
           }
+        }
+          .form-popup-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(9, 5, 20, 0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          z-index: 1200;
+          backdrop-filter: blur(3px);
+        }
+        .form-popup {
+          background: linear-gradient(145deg, #12092b, #1f0f3a);
+          border-radius: 16px;
+          width: min(780px, 100%);
+          color: #f2ecff;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+          display: flex;
+          flex-direction: column;
+          max-height: 90vh;
+        }
+        .popup-header {
+          display: flex;
+          justify-content: space-between;
+          padding: 18px 18px 12px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          gap: 12px;
+          align-items: flex-start;
+        }
+        .popup-body {
+          padding: 16px 18px 20px;
+          overflow-y: auto;
+        }
+        .popup-body .actions-row {
+          position: static;
         }
       `}</style>
 );

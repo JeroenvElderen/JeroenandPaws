@@ -27,6 +27,7 @@ const BookingModal = ({ service, onClose }) => {
   const [dogCount, setDogCount] = useState(1);
   const [dogs, setDogs] = useState([createEmptyDogProfile()]);
   const [breedSearch, setBreedSearch] = useState({});
+  const [showFormPopup, setShowFormPopup] = useState(false);
 
   const apiBaseUrl = useMemo(
     () => (process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "").replace(/\/$/, ""),
@@ -143,7 +144,13 @@ const BookingModal = ({ service, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, initializeSelection, parseJsonSafely, service.durationMinutes, service.id]);
+  }, [
+    apiBaseUrl,
+    initializeSelection,
+    parseJsonSafely,
+    service.durationMinutes,
+    service.id,
+  ]);
   useEffect(() => {
     loadAvailability();
   }, [loadAvailability]);
@@ -193,37 +200,44 @@ const BookingModal = ({ service, onClose }) => {
 
     try {
       const start = new Date(`${selectedDate}T${selectedTime}:00`);
-      const end = new Date(start.getTime() + (service.durationMinutes || 60) * 60000);
+      const end = new Date(
+        start.getTime() + (service.durationMinutes || 60) * 60000
+      );
       const dogSummary = dogs
         .slice(0, dogCount)
-        .map((dog, index) => `${index + 1}. ${dog.name || "(no name)"} (${dog.breed || "breed unknown"})`)
+        .map(
+          (dog, index) =>
+            `${index + 1}. ${dog.name || "(no name)"} (${
+              dog.breed || "breed unknown"
+            })`
+        )
         .join(" | ");
 
-      console.log(
-        "booking_submission",
-        {
-          serviceId: service.id,
-          date: selectedDate,
-          startTime: selectedTime,
-          endTime: `${end.getHours().toString().padStart(2, "0")}:${end
-            .getMinutes()
-            .toString()
-            .padStart(2, "0")}`,
-          clientName,
-          clientEmail,
-          notes,
-          dogs: dogs.slice(0, dogCount),
-        }
-      );
+      console.log("booking_submission", {
+        serviceId: service.id,
+        date: selectedDate,
+        startTime: selectedTime,
+        endTime: `${end.getHours().toString().padStart(2, "0")}:${end
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`,
+        clientName,
+        clientEmail,
+        notes,
+        dogs: dogs.slice(0, dogCount),
+      });
 
       setSuccess(
-        `Reserved ${service.title} for ${dogSummary} on ${start.toLocaleString(undefined, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })} – ${end.toLocaleTimeString(undefined, {
+        `Reserved ${service.title} for ${dogSummary} on ${start.toLocaleString(
+          undefined,
+          {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )} – ${end.toLocaleTimeString(undefined, {
           hour: "2-digit",
           minute: "2-digit",
         })}.`
@@ -264,6 +278,119 @@ const BookingModal = ({ service, onClose }) => {
     const query = breedSearch[dogIndex]?.toLowerCase() || "";
     return DOG_BREEDS.filter((breed) => breed.toLowerCase().includes(query));
   };
+
+  const renderFormContent = (isPopup = false) => (
+    <>
+      <div className="form-grid">
+        <label className="input-group full-width">
+          <span>How many dogs?</span>
+          <select
+            value={dogCount}
+            onChange={(e) => handleDogCountChange(Number(e.target.value))}
+            className="input-like-select"
+          >
+            <option value={1}>1 dog</option>
+            <option value={2}>2 dogs</option>
+            <option value={3}>3 dogs</option>
+            <option value={4}>4 dogs</option>
+          </select>
+        </label>
+        {Array.from({ length: dogCount }).map((_, index) => {
+          const dogProfile = dogs[index] || createEmptyDogProfile();
+          return (
+            <React.Fragment key={index}>
+              <label className="input-group">
+                <span>Dog {index + 1} Name</span>
+                <input
+                  type="text"
+                  value={dogProfile.name}
+                  onChange={(e) =>
+                    updateDogField(index, "name", e.target.value)
+                  }
+                  placeholder="e.g. Bella"
+                />
+              </label>
+
+              <SearchableSelect
+                label={`Dog ${index + 1} Breed`}
+                options={["Mixed breed", ...DOG_BREEDS]}
+                value={dogProfile.breed}
+                onChange={(value) => updateDogField(index, "breed", value)}
+              />
+
+              <label className="input-group">
+                <span>Dog {index + 1} Photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) =>
+                    handleDogPhotoChange(index, event.target.files?.[0])
+                  }
+                />
+                {dogProfile.photoDataUrl && (
+                  <img
+                    src={dogProfile.photoDataUrl}
+                    alt={`Dog ${index + 1} preview`}
+                    className="dog-photo-preview"
+                  />
+                )}
+              </label>
+            </React.Fragment>
+          );
+        })}
+
+        <label className="input-group">
+          <span>Your name</span>
+          <input
+            type="text"
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            placeholder="Client name"
+          />
+        </label>
+        <label className="input-group">
+          <span>Your email</span>
+          <input
+            type="email"
+            value={clientEmail}
+            onChange={(e) => setClientEmail(e.target.value)}
+            placeholder="name@email.com"
+          />
+        </label>
+        <label className="input-group full-width">
+          <span>Notes for Jeroen</span>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Tell us about your pup or preferences"
+            rows={3}
+          />
+        </label>
+      </div>
+      <div className="actions-row">
+        <div className="actions-stack">
+          <button
+            type="button"
+            className="button w-button"
+            onClick={handleBook}
+            disabled={isBooking || loading}
+          >
+            {isBooking ? "Booking…" : "Confirm / Book"}
+          </button>
+          {isPopup && (
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => setShowFormPopup(false)}
+            >
+              Close form
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="muted subtle">Times shown in your timezone</p>
+    </>
+  );
 
   return (
     <div className="booking-overlay" role="dialog" aria-modal="true">
@@ -421,7 +548,7 @@ const BookingModal = ({ service, onClose }) => {
                   <p className="muted">All slots are full for this day.</p>
                 )}
             </div>
-            </div>
+          </div>
 
           <div className="details-card">
             <div className="selection-summary">
@@ -432,112 +559,46 @@ const BookingModal = ({ service, onClose }) => {
                   {selectedTime ? formatTime(selectedTime) : "Choose a time"}
                 </p>
               </div>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setShowFormPopup(true)}
+              >
+                Pop out form
+              </button>
             </div>
 
             {error && <p className="error-banner">{error}</p>}
             {success && <p className="success-banner">{success}</p>}
 
-            <div className="form-grid">
-              <label className="input-group full-width">
-                <span>How many dogs?</span>
-                <select
-                  value={dogCount}
-                  onChange={(e) => handleDogCountChange(Number(e.target.value))}
-                  className="input-like-select"
-                >
-                  <option value={1}>1 dog</option>
-                  <option value={2}>2 dogs</option>
-                  <option value={3}>3 dogs</option>
-                  <option value={4}>4 dogs</option>
-                </select>
-              </label>
-              {Array.from({ length: dogCount }).map((_, index) => {
-                const dogProfile = dogs[index] || createEmptyDogProfile();
-                return (
-                  <React.Fragment key={index}>
-                    <label className="input-group">
-                      <span>Dog {index + 1} Name</span>
-                      <input
-                        type="text"
-                        value={dogProfile.name}
-                        onChange={(e) =>
-                          updateDogField(index, "name", e.target.value)
-                        }
-                        placeholder="e.g. Bella"
-                      />
-                    </label>
-
-                    <SearchableSelect
-                      label={`Dog ${index + 1} Breed`}
-                      options={["Mixed breed", ...DOG_BREEDS]}
-                      value={dogProfile.breed}
-                      onChange={(value) =>
-                        updateDogField(index, "breed", value)
-                      }
-                    />
-
-                    <label className="input-group">
-                      <span>Dog {index + 1} Photo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(event) =>
-                          handleDogPhotoChange(index, event.target.files?.[0])
-                        }
-                      />
-                      {dogProfile.photoDataUrl && (
-                        <img
-                          src={dogProfile.photoDataUrl}
-                          alt={`Dog ${index + 1} preview`}
-                          className="dog-photo-preview"
-                        />
-                      )}
-                    </label>
-                  </React.Fragment>
-                );
-              })}
-
-              <label className="input-group">
-                <span>Your name</span>
-                <input
-                  type="text"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Client name"
-                />
-              </label>
-              <label className="input-group">
-                <span>Your email</span>
-                <input
-                  type="email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="name@email.com"
-                />
-              </label>
-              <label className="input-group full-width">
-                <span>Notes for Jeroen</span>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Tell us about your pup or preferences"
-                  rows={3}
-                />
-              </label>
-            </div>
-            <div className="actions-row">
-              <button
-                type="button"
-                className="button w-button"
-                onClick={handleBook}
-                disabled={isBooking || loading}
-              >
-                {isBooking ? "Booking…" : "Confirm / Book"}
-              </button>
-            </div>
-            <p className="muted subtle">Times shown in your timezone</p>
+            {renderFormContent()}
           </div>
         </div>
+
+        {showFormPopup && (
+          <div className="form-popup-overlay" role="dialog" aria-modal="true">
+            <div className="form-popup">
+              <header className="popup-header">
+                <div>
+                  <p className="muted small">Complete booking</p>
+                  <h4>{service.title}</h4>
+                  <p className="muted">
+                    {selectedDateLabel} · {selectedTime || "Pick a time"}
+                  </p>
+                </div>
+                <button
+                  className="close-button"
+                  type="button"
+                  onClick={() => setShowFormPopup(false)}
+                  aria-label="Close booking form"
+                >
+                  ×
+                </button>
+              </header>
+              <div className="popup-body">{renderFormContent(true)}</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
