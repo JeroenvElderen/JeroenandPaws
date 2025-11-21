@@ -42,7 +42,7 @@ const services = [
       "Need a special route or timing? Let’s make it paw-fect for your pup.",
     duration: "Custom Plan",
     durationMinutes: null,
-    ctaText: "Plan a training schedule",
+    ctaText: "Plan a training",
     ctaOptions: {
       chatUrl: getPreferredChatUrl(),
       formUrl: "/contact?service=overnight-stay-custom",

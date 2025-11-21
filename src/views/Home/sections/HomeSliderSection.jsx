@@ -7,7 +7,7 @@ const HomeSliderSection = () => (
           <div className="eyebrow">Welcome to your dog&#x27;s second home</div>
           <h2 className="heading_h2">Tailored care for every dog</h2>
         </div>
-        <div data-delay="4000" data-animation="slide" className="slider overflow_visible w-slider" data-autoplay="false" data-easing="ease" data-hide-arrows="false" data-disable-swipe="false" data-w-id="0d14ee74-34c7-37d2-a6cb-302ae410abf1" data-autoplay-limit="0" data-nav-spacing="0" data-duration="500" data-infinite="true">
+        <div data-delay="4000" data-animation="slide" className="slider overflow_visible w-slider" data-autoplay="true" data-easing="ease" data-hide-arrows="false" data-disable-swipe="false" data-w-id="0d14ee74-34c7-37d2-a6cb-302ae410abf1" data-autoplay-limit="0" data-nav-spacing="0" data-duration="500" data-infinite="true">
           <div className="width_35percent width_100percent_tablet overflow_visible w-slider-mask">
             <div className="ix_card-deck-space height_100percent w-slide">
               <div className="card overflow_hidden backdrop-filter_blur">
@@ -82,11 +82,11 @@ const HomeSliderSection = () => (
               </div>
             </div>
           </div>
-          <div data-hide-text="true" className="slider_arrow is-previous is-bottom-center w-slider-arrow-left">
-            <div className="w-icon-slider-left">Previous</div>
+          <div data-hide-text="true" className="slider_arrow is-previous is-bottom-center w-slider-arrow-left" aria-label="Previous slide">
+            <div className="w-icon-slider-left"></div>
           </div>
-          <div className="slider_arrow is-next is-bottom-center w-slider-arrow-right">
-            <div className="w-icon-slider-right">Next</div>
+          <div className="slider_arrow is-next is-bottom-center w-slider-arrow-right" aria-label="Next slide">
+            <div className="w-icon-slider-right"></div>
           </div>
           <div className="display_none w-slider-nav w-slider-nav-invert w-round">Navigate</div>
         </div>
