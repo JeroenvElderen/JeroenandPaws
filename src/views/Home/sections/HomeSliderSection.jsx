@@ -1,51 +1,62 @@
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 
 const slides = [
   {
-    title: 'Personalized Training',
-    description:
-      "Our training sessions are designed to meet your dog's unique needs, ensuring they learn in a way that's both effective and enjoyable.",
-    cta: 'Learn more',
-    imageSrc: '/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif',
-    imageAlt: 'Animal training session for a welfare nonprofit',
-  },
-  {
-    title: 'Daily Walks',
-    description:
-      'From short strolls to extended adventures, our walks are perfect for keeping your dog happy and healthy.',
-    cta: 'Explore options',
+    title: 'Daily strolls',
+    description: 'Tailored walks for your furry friend.',
+    href: '/services/daily-strolls',
     imageSrc: '/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif',
-    imageAlt: 'Animal adoption event',
+    imageAlt: 'Dog enjoying a neighborhood walk',
   },
   {
-    title: 'Boarding Services',
-    description:
-      "A safe and loving environment for your dog while you're away, with all the comforts of home.",
-    cta: 'Book now',
+    title: 'Group adventures',
+    description: 'Join friendly packs for social fun.',
+    href: '/services/group-adventures',
+    imageSrc: '/images/1a2eb736-6cd3-4d5b-9798-f040dc1d80b9.avif',
+    imageAlt: 'Group of dogs playing together outdoors',
+  },
+  {
+    title: 'Solo journeys',
+    description: 'Dedicated care for your pet.',
+    href: '/services/solo-journeys',
+    imageSrc: '/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif',
+    imageAlt: 'Dog sitting attentively on a trail',
+  },
+  {
+    title: 'Overnight stays',
+    description: 'Safe and cozy nights.',
+    href: '/services/overnight-stays',
     imageSrc: '/images/25c0c9d1-2e99-484e-817b-bf1e3505d5e8.avif',
-    imageAlt: 'Children playing in a daycare setting',
+    imageAlt: 'Dog resting comfortably indoors',
   },
   {
-    title: 'Day Care',
-    description:
-      "Fun-filled days with plenty of play and socialization, ensuring your dog is well-cared for while you're at work.",
-    cta: 'Join us',
+    title: 'Daytime care',
+    description: 'Engaging and secure day care.',
+    href: '/services/daytime-care',
     imageSrc: '/images/a58085e9-4555-461c-9f59-6029e44d0a55.avif',
-    imageAlt: 'Pet training class',
+    imageAlt: 'Dog being cared for during daytime playtime',
   },
   {
-    title: 'Drop-In Visits',
-    description: 'Quick visits to check in on your pet, providing them with the attention and care they need.',
-    cta: 'Schedule a visit',
+    title: 'Home check-ins',
+    description: "Quick visits for your pet's needs.",
+    href: '/services/home-check-ins',
     imageSrc: '/images/bc30b5db-c4fa-466a-a797-7ef1e270262b.avif',
-    imageAlt: 'Chic pet lounging area',
+    imageAlt: 'Person greeting a dog inside a home',
   },
   {
-    title: 'Specialized Care',
-    description: 'Expert care for dogs with specific needs, ensuring they receive the best possible attention.',
-    cta: 'Contact us',
+    title: 'Training help',
+    description: 'Guidance for training essentials.',
+    href: '/services/training-help',
+    imageSrc: '/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif',
+    imageAlt: 'Trainer working with a dog',
+  },
+  {
+    title: 'Custom solutions',
+    description: 'Personalized care plans.',
+    href: '/services/custom-solutions',
     imageSrc: '/images/d801bc7b-4e2e-4836-8ed2-f4f819ecc79a.avif',
-    imageAlt: 'Vet assisting an animal',
+    imageAlt: 'Owner cuddling with a relaxed dog',
   },
 ];
 
@@ -126,8 +137,11 @@ const HomeSliderSection = () => {
                     <div className="card_body padding-bottom_none" style={{ flexGrow: 1 }}>
                       <p className="heading_h4">{slide.title}</p>
                       <p>{slide.description}</p>
-                      <br />
-                      <p>{slide.cta}</p>
+                      <div className="margin-top_small">
+                        <Link href={slide.href} className="button w-button">
+                          View service
+                        </Link>
+                      </div>
                     </div>
                     <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
                       <img

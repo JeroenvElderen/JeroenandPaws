@@ -1,12 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-
-const SERVICE_LABELS = {
-  'daily-stroll-custom': 'Custom daily strolls',
-  'overnight-stay-custom': 'Custom overnight',
-  'home-check-in-custom': 'Custom home check-in',
-  'daytime-care-custom': 'Custom daytime care',
-  'solo-journey-custom': 'Custom solo journey',
-};
+import { getServiceLabel } from '../../../constants/serviceLabels';
 
 const createDog = () => ({
   name: '',
@@ -62,10 +55,7 @@ const buildBookingMessage = (state, serviceLabel) => {
 };
 
 const CustomBookingFormSection = ({ serviceId }) => {
-  const serviceLabel = useMemo(
-    () => SERVICE_LABELS[serviceId] || 'Custom booking request',
-    [serviceId]
-  );
+  const serviceLabel = useMemo(() => getServiceLabel(serviceId), [serviceId]);
   const [formState, setFormState] = useState(() =>
     createInitialState(serviceLabel)
   );

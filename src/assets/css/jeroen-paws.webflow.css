@@ -1646,6 +1646,14 @@
   color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---text-color--text-on-accent-secondary);
 }
 
+@media screen and (min-width: 992px) {
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 99;
+  }
+}
+
 .nav_mobile-menu-button {
   padding-top: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---spacing--0-5x);
   padding-right: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---spacing--0-5x);
@@ -4204,8 +4212,16 @@
 }
 
 .nav_logo-icon {
-  align-self: stretch;
+  align-self: center;
+  align-items: center;
   display: flex;
+}
+
+.nav_logo-image {
+  margin-top: 15px;
+  height: 6rem;
+  width: auto;
+  object-fit: contain;
 }
 
 .radius_right-0 {
