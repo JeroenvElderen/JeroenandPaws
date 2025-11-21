@@ -7139,13 +7139,47 @@
   max-width: 33.3333%;
   padding: 0 0.75rem;
   display: flex;
-  height: auto;
+  height: 100%;
   box-sizing: border-box;
+}
+
+.home-slider-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  height: 100%;
+}
+
+.home-slider-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.home-slider-description {
+  color: var(--text-mid, #505050);
+  line-height: 1.6;
 }
 
 .home-slider-cta {
   margin-top: 0.5rem;
   font-weight: 600;
+}
+
+.home-slider-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.home-slider-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .home-slider-arrow {

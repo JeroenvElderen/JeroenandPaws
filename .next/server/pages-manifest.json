@@ -2,7 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
   "/services/training-help": "pages/services/training-help.js",
-  "/services/overnight-stays": "pages/services/overnight-stays.js"
+  "/services/daily-strolls": "pages/services/daily-strolls.js",
+  "/": "pages/index.js"
 }

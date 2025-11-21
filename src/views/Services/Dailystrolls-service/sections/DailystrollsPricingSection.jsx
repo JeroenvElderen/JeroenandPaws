@@ -1,5 +1,6 @@
 import React from "react";
 import DynamicPricingSection from "../../../../components/Pricing/DynamicPricingSection";
+import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 
 const services = [
   {
@@ -33,7 +34,8 @@ const services = [
       "Need special timing or extra help? Let’s create the perfect plan for your dog’s day.",
     duration: "Custom Plan",
     durationMinutes: null,
-    ctaText: "Plan Together",
+    ctaText: "Chat on WhatsApp",
+    ctaHref: getPreferredChatUrl(),
   },
 ];
 
@@ -43,7 +45,7 @@ const DailystrollsPricingSection = () => (
     services={services}
     gridClassName="grid_3-col"
     defaultCta="Check availability"
-    />
+  />
 );
 
 export default DailystrollsPricingSection;
