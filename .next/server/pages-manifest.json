@@ -2,8 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/availability": "pages/api/availability.js",
   "/services/training-help": "pages/services/training-help.js",
   "/": "pages/index.js",
-  "/services/solo-journeys": "pages/services/solo-journeys.js"
+  "/services/solo-journeys": "pages/services/solo-journeys.js",
+  "/api/availability": "pages/api/availability.js",
+  "/api/book": "pages/api/book.js"
 }

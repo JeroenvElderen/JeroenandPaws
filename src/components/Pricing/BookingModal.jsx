@@ -194,63 +194,88 @@ const BookingModal = ({ service, onClose }) => {
       setError("Please pick a date and time.");
       return;
     }
+
+    if (!clientName.trim() || !clientEmail.trim()) {
+      setError(
+        "Please add your name and email so we can confirm your booking."
+      );
+      return;
+    }
+
     setIsBooking(true);
     setError("");
     setSuccess("");
 
     try {
       const start = new Date(`${selectedDate}T${selectedTime}:00`);
-      const end = new Date(
-        start.getTime() + (service.durationMinutes || 60) * 60000
-      );
-      const dogSummary = dogs
-        .slice(0, dogCount)
-        .map(
-          (dog, index) =>
-            `${index + 1}. ${dog.name || "(no name)"} (${
-              dog.breed || "breed unknown"
-            })`
-        )
-        .join(" | ");
+      const durationMinutes = Number.isFinite(service.durationMinutes)
+        ? service.durationMinutes
+        : 60;
+      const end = new Date(start.getTime() + durationMinutes * 60000);
 
-      console.log("booking_submission", {
-        serviceId: service.id,
+      const payload = {
         date: selectedDate,
-        startTime: selectedTime,
-        endTime: `${end.getHours().toString().padStart(2, "0")}:${end
-          .getMinutes()
-          .toString()
-          .padStart(2, "0")}`,
-        clientName,
-        clientEmail,
-        notes,
+        time: selectedTime,
+        durationMinutes,
+        serviceId: service.id,
+        serviceTitle: service.title,
+        clientName: clientName.trim(),
+        clientEmail: clientEmail.trim(),
+        notes: notes.trim(),
+        timeZone: availability.timeZone || "UTC",
         dogs: dogs.slice(0, dogCount),
+        dogCount,
+      };
+
+      const requestUrl = `${apiBaseUrl}/api/book`;
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
+      if (!response.ok) {
+        throw new Error(
+          "Booking could not be completed right now. Please try again shortly."
+        );
+      }
+
+      const data = await parseJsonSafely(response, requestUrl);
+
       setSuccess(
-        `Reserved ${service.title} for ${dogSummary} on ${start.toLocaleString(
-          undefined,
-          {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }
-        )} – ${end.toLocaleTimeString(undefined, {
+        `Booked ${service.title} on ${start.toLocaleString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
           hour: "2-digit",
           minute: "2-digit",
-        })}.`
+        })}. Confirmation emails have been sent${
+          data?.webLink ? " and the calendar event is ready." : "."
+        }`
       );
 
-      setAvailabilityNotice(
-        "Your booking is saved locally for now — we'll sync it manually once the live calendar is back."
-      );
+      if (data?.webLink) {
+        setAvailabilityNotice(
+          `View calendar event: ${data.webLink}. We'll also send you a confirmation email.`
+        );
+      } else {
+        setAvailabilityNotice("");
+      }
+
       setClientName("");
       setClientEmail("");
       setNotes("");
       resetDogProfiles();
       setError("");
+    } catch (bookingError) {
+      console.error("Booking failed", bookingError);
+      setError(
+        bookingError.message ||
+          "Unable to send booking. Please try again later."
+      );
     } finally {
       setIsBooking(false);
     }
@@ -281,7 +306,7 @@ const BookingModal = ({ service, onClose }) => {
 
   const renderFormContent = (isPopup = false) => (
     <>
-    {error && <p className="error-banner">{error}</p>}
+      {error && <p className="error-banner">{error}</p>}
       {success && <p className="success-banner">{success}</p>}
       <div className="form-grid">
         <label className="input-group full-width">
@@ -521,9 +546,7 @@ const BookingModal = ({ service, onClose }) => {
               </div>
               <div className="times-actions">
                 <p className="muted subtle">
-                  {selectedTime
-                    ? formatTime(selectedTime)
-                    : "Choose a time"}
+                  {selectedTime ? formatTime(selectedTime) : "Choose a time"}
                 </p>
                 <button
                   type="button"
@@ -562,7 +585,7 @@ const BookingModal = ({ service, onClose }) => {
                 selectedDay.slots.every((slot) => !slot.available) && (
                   <p className="muted">All slots are full for this day.</p>
                 )}
-                <p className="muted subtle">Times shown in your timezone</p>
+              <p className="muted subtle">Times shown in your timezone</p>
             </div>
           </div>
         </div>

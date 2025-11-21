@@ -290,13 +290,13 @@ const Navbar = () => {
                 <div>Questions</div>
               </Link>
             </li>
-            <li className ="nav_menu-list-item">
+            {/* <li className ="nav_menu-list-item">
               <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                   <div>
                     Booking
                   </div>
               </Link>
-            </li>
+            </li> */}
             <li className="nav_menu-list-item">
               <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                 <div>Contact</div>

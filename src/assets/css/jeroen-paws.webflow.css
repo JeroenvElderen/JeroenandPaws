@@ -4039,6 +4039,10 @@
   color: color-mix(in srgb, currentColor 80%, transparent);
 }
 
+.nav_logo [data-brand-name] {
+  white-space: nowrap;
+}
+
 .nav_menu-full-screen {
   z-index: 1;
   text-align: left;
