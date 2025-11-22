@@ -74,7 +74,7 @@ const buildConfirmationBody = ({
       <ul style="padding-left: 20px; margin: 0 0 12px;">
         <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
         <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
-        <li><strong>Time zone:</strong> ${escapeHtml(timeing.timeZone || 'UTC')}</li>
+        <li><strong>Time zone:</strong> ${escapeHtml(timing.timeZone || 'UTC')}</li>
       </ul>
       <p style="margin: 12px 0 8px;"><strong>Pets:</strong></p>
       ${petsBlock}

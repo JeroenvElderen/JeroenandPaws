@@ -32,10 +32,19 @@ const BookingModal = ({ service, onClose }) => {
   const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [showFormPopup, setShowFormPopup] = useState(false);
 
-  const apiBaseUrl = useMemo(
-    () => (process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "").replace(/\/$/, ""),
-    []
-  );
+  const apiBaseUrl = useMemo(() => {
+    const configuredBase = (
+      process.env.NEXT_PUBLIC_BACKEND_BASE_URL || ""
+    ).replace(/\/$/, "");
+
+    if (configuredBase) return configuredBase;
+
+    if (typeof window !== "undefined") {
+      return window.location.origin.replace(/\/$/, "");
+    }
+
+    return "";
+  }, []);
 
   const isDayAvailableForService = useCallback((day) => {
     if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
