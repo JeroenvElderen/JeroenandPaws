@@ -57,6 +57,29 @@ const buildMessageBody = (payload) => {
   `;
 };
 
+const resolveNotificationEmail = () => {
+  const toEmail =
+    process.env.CONTACT_NOTIFICATION_EMAIL ||
+    process.env.NOTIFY_EMAIL ||
+    process.env.JEROEN_AND_PAWS_EMAIL;
+
+  if (!toEmail) {
+    throw new Error('Missing contact notification email env var');
+  }
+
+  return toEmail;
+};
+
+const resolveCalendarId = () => {
+  const calendarId = process.env.OUTLOOK_CALENDAR_ID;
+
+  if (!calendarId) {
+    throw new Error('Missing OUTLOOK_CALENDAR_ID env var');
+  }
+
+  return calendarId;
+};
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.statusCode = 405;
@@ -64,6 +87,9 @@ module.exports = async (req, res) => {
     res.end('Method Not Allowed');
     return;
   }
+
+  let toEmail;
+  let calendarId;
 
   try {
     const body = await parseBody(req);
@@ -77,19 +103,8 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const toEmail =
-      process.env.CONTACT_NOTIFICATION_EMAIL ||
-      process.env.NOTIFY_EMAIL ||
-      process.env.JEROEN_AND_PAWS_EMAIL;
-
-    if (!toEmail) {
-      throw new Error('Missing contact notification email env var');
-    }
-
-    const calendarId = process.env.OUTLOOK_CALENDAR_ID;
-    if (!calendarId) {
-      throw new Error('Missing OUTLOOK_CALENDAR_ID env var');
-    }
+    toEmail = resolveNotificationEmail();
+    calendarId = resolveCalendarId();
 
     const accessToken = await getAppOnlyAccessToken();
     const subject = body.serviceType
@@ -109,7 +124,12 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ message: 'Message sent' }));
   } catch (error) {
-    console.error('Contact form error', error);
+    console.error('Contact form error', {
+      error,
+      errorMessage: error?.message,
+      toEmail,
+      calendarId,
+    });
     res.statusCode = 500;
     res.end(JSON.stringify({ message: 'Failed to send message' }));
   }

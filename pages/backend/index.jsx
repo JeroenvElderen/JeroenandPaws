@@ -1,17 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'jeroen@jeroenandpaws.com';
+
+const emptyServiceDraft = {
+  id: null,
+  title: '',
+  slug: '',
+  description: '',
+  price: '',
+  duration_minutes: 60,
+  sort_order: 0,
+  is_active: true,
+};
 
 const BackendDashboard = () => {
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingBookings, setLoadingBookings] = useState(false);
-  const [serviceDraft, setServiceDraft] = useState({ title: '', price: '', duration_minutes: 60 });
+  const [serviceDraft, setServiceDraft] = useState(emptyServiceDraft);
   const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
 
   const fetchServices = async () => {
     setLoadingServices(true);
+    setError('');
     try {
       const response = await fetch('/api/services');
       const data = await response.json();
@@ -25,6 +38,7 @@ const BackendDashboard = () => {
 
   const fetchBookings = async () => {
     setLoadingBookings(true);
+    setError('');
     try {
       const response = await fetch('/api/bookings', {
         headers: { 'x-admin-email': adminEmail },
@@ -38,7 +52,35 @@ const BackendDashboard = () => {
     }
   };
 
+  const handleDraftChange = (field, value) => {
+    setServiceDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const startEditingService = (service) => {
+    setServiceDraft({
+      id: service.id || null,
+      title: service.title || '',
+      slug: service.slug || '',
+      description: service.description || '',
+      price: service.price || '',
+      duration_minutes: service.duration_minutes || service.durationMinutes || 60,
+      sort_order: service.sort_order ?? service.sortOrder ?? 0,
+      is_active: service.is_active ?? true,
+    });
+    setStatus('');
+  };
+
+  const resetDraft = () => {
+    setServiceDraft(emptyServiceDraft);
+    setStatus('');
+  };
+
   const saveService = async (service) => {
+    setStatus('saving');
+    setError('');
     try {
       const response = await fetch('/api/services', {
         method: 'POST',
@@ -46,7 +88,13 @@ const BackendDashboard = () => {
           'Content-Type': 'application/json',
           'x-admin-email': adminEmail,
         },
-        body: JSON.stringify({ service }),
+        body: JSON.stringify({
+          service: {
+            ...service,
+            duration_minutes: Number(service.duration_minutes) || 0,
+            sort_order: Number(service.sort_order) || 0,
+          },
+        }),
       });
 
       if (!response.ok) {
@@ -54,9 +102,11 @@ const BackendDashboard = () => {
       }
 
       await fetchServices();
-      setServiceDraft({ title: '', price: '', duration_minutes: 60 });
+      resetDraft();
+      setStatus('saved');
     } catch (err) {
       setError('Could not save service');
+      setStatus('error');
     }
   };
 
@@ -65,93 +115,274 @@ const BackendDashboard = () => {
     fetchBookings();
   }, []);
 
+  const servicesEmptyState = useMemo(
+    () => !loadingServices && (!services || services.length === 0),
+    [loadingServices, services],
+  );
+
   return (
-    <main style={{ maxWidth: '960px', margin: '0 auto', padding: '24px' }}>
-      <h1>Backend controls</h1>
-      <p>Signed in as: {adminEmail}</p>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <section style={{ marginTop: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>Services</h2>
-          <button onClick={fetchServices} disabled={loadingServices}>
-            {loadingServices ? 'Refreshing…' : 'Refresh'}
-          </button>
-        </div>
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {services.map((service) => (
-            <div key={service.id} style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong>{service.title}</strong>
-                <span style={{ color: '#666' }}>{service.price}</span>
-                <span style={{ color: '#666' }}>{service.duration_minutes} min</span>
-              </div>
-              <p style={{ marginTop: '8px', color: '#444' }}>{service.description}</p>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: '16px', borderTop: '1px solid #eee', paddingTop: '16px' }}>
-          <h3>Add or update service</h3>
-          <div style={{ display: 'grid', gap: '8px' }}>
-            <input
-              type="text"
-              placeholder="Title"
-              value={serviceDraft.title}
-              onChange={(e) => setServiceDraft({ ...serviceDraft, title: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Slug (optional)"
-              value={serviceDraft.slug || ''}
-              onChange={(e) => setServiceDraft({ ...serviceDraft, slug: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Price"
-              value={serviceDraft.price}
-              onChange={(e) => setServiceDraft({ ...serviceDraft, price: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="Duration minutes"
-              value={serviceDraft.duration_minutes}
-              onChange={(e) =>
-                setServiceDraft({ ...serviceDraft, duration_minutes: Number(e.target.value) })
-              }
-            />
-            <textarea
-              placeholder="Description"
-              value={serviceDraft.description || ''}
-              onChange={(e) => setServiceDraft({ ...serviceDraft, description: e.target.value })}
-            />
-            <button type="button" onClick={() => saveService(serviceDraft)}>Save service</button>
+    <main>
+      <section className="section is-secondary">
+        <div className="container">
+          <div className="header margin-bottom_medium">
+            <p className="eyebrow">Backend</p>
+            <h1 className="heading_h2 margin-bottom_xsmall">Admin dashboard</h1>
+            <p className="subheading max-width_large">
+              Manage the Supabase data powering your site. Signed in as
+              {' '}
+              <strong>{adminEmail}</strong>
+              .
+            </p>
           </div>
-        </div>
-      </section>
 
-      <section style={{ marginTop: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>Recent bookings</h2>
-          <button onClick={fetchBookings} disabled={loadingBookings}>
-            {loadingBookings ? 'Refreshing…' : 'Refresh'}
-          </button>
-        </div>
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {bookings.map((booking) => (
-            <div key={booking.id} style={{ border: '1px solid #ddd', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong>{booking.service_title || booking?.services_catalog?.title}</strong>
-                  <p style={{ margin: '4px 0', color: '#444' }}>{booking.clients?.full_name}</p>
-                </div>
-                <span style={{ color: '#666' }}>
-                  {new Date(booking.start_at).toLocaleString()} →{' '}
-                  {new Date(booking.end_at).toLocaleTimeString()}
-                </span>
-              </div>
-              {booking.notes && <p style={{ color: '#555' }}>{booking.notes}</p>}
+          {error && (
+            <div className="form_error-message w-form-fail margin-bottom_small">
+              <div className="form_error-message_content">{error}</div>
             </div>
-          ))}
+          )}
+
+          <div className="w-layout-grid grid_2-col gap-large">
+            <div className="card is-secondary">
+              <div className="card_body">
+                <div className="flex_horizontal is-y-center is-x-between gap-xsmall margin-bottom_small">
+                  <div>
+                    <p className="eyebrow margin-bottom_xxsmall">Services</p>
+                    <h2 className="heading_h4 margin-bottom_none">Supabase catalog</h2>
+                  </div>
+                  <div className="flex_horizontal gap-xxsmall">
+                    <button
+                      type="button"
+                      className="text-button is-secondary is-small w-inline-block"
+                      onClick={fetchServices}
+                      disabled={loadingServices}
+                    >
+                      {loadingServices ? 'Refreshing…' : 'Refresh'}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-button is-small w-inline-block"
+                      onClick={resetDraft}
+                    >
+                      New service
+                    </button>
+                  </div>
+                </div>
+                <p className="paragraph_small margin-bottom_small">
+                  These services are pulled straight from Supabase. Click a card to edit and publish updates directly from this page.
+                </p>
+                <div className="w-layout-grid grid_1-col gap-xsmall">
+                  {servicesEmptyState && <p className="paragraph_small">No services found yet.</p>}
+                  {services.map((service) => (
+                    <button
+                      key={service.id || service.slug}
+                      type="button"
+                      className="card w-inline-block"
+                      onClick={() => startEditingService(service)}
+                    >
+                      <div className="card_body flex_horizontal is-y-center is-x-between gap-small">
+                        <div className="flex_vertical gap-xxsmall align-start">
+                          <p className="eyebrow margin-bottom_none">{service.slug}</p>
+                          <div className="flex_horizontal is-y-center gap-xxsmall">
+                            <h3 className="heading_h4 margin-bottom_none">{service.title}</h3>
+                            {service.is_active === false && (
+                              <span className="tag is-secondary">Hidden</span>
+                            )}
+                          </div>
+                          {service.description && (
+                            <p className="paragraph_small margin-bottom_none text-color-muted">
+                              {service.description}
+                            </p>
+                          )}
+                          <div className="flex_horizontal gap-small">
+                            <span className="paragraph_small">{service.price || 'No price set'}</span>
+                            <span className="paragraph_small">• {service.duration_minutes || 0} min</span>
+                          </div>
+                        </div>
+                        <div className="flex_vertical is-y-center gap-xxsmall align-end text-right">
+                          <span className="text-button is-secondary is-small w-inline-block">Edit</span>
+                          <span className="paragraph_small text-color-muted">Sort {service.sort_order ?? 0}</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card_body">
+                <div className="flex_horizontal is-y-center is-x-between gap-xsmall margin-bottom_small">
+                  <div>
+                    <p className="eyebrow margin-bottom_xxsmall">Editor</p>
+                    <h2 className="heading_h4 margin-bottom_none">Service details</h2>
+                  </div>
+                  {status === 'saved' && <span className="tag is-secondary">Saved</span>}
+                </div>
+                <div className="w-form">
+                  <form onSubmit={(event) => event.preventDefault()} className="flex_vertical gap-small">
+                    <div className="w-layout-grid grid_2-col gap-small">
+                      <div className="input">
+                        <label htmlFor="title" className="input_label">
+                          Title
+                        </label>
+                        <input
+                          id="title"
+                          type="text"
+                          className="input_field w-input"
+                          placeholder="Service title"
+                          value={serviceDraft.title}
+                          onChange={(event) => handleDraftChange('title', event.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="input">
+                        <label htmlFor="slug" className="input_label">
+                          Slug
+                        </label>
+                        <input
+                          id="slug"
+                          type="text"
+                          className="input_field w-input"
+                          placeholder="unique-slug"
+                          value={serviceDraft.slug}
+                          onChange={(event) => handleDraftChange('slug', event.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-layout-grid grid_3-col tablet-2-col gap-small">
+                      <div className="input">
+                        <label htmlFor="price" className="input_label">
+                          Price
+                        </label>
+                        <input
+                          id="price"
+                          type="text"
+                          className="input_field w-input"
+                          placeholder="€60"
+                          value={serviceDraft.price}
+                          onChange={(event) => handleDraftChange('price', event.target.value)}
+                        />
+                      </div>
+                      <div className="input">
+                        <label htmlFor="duration" className="input_label">
+                          Duration (minutes)
+                        </label>
+                        <input
+                          id="duration"
+                          type="number"
+                          className="input_field w-input"
+                          placeholder="60"
+                          min="0"
+                          value={serviceDraft.duration_minutes}
+                          onChange={(event) => handleDraftChange('duration_minutes', event.target.value)}
+                        />
+                      </div>
+                      <div className="input">
+                        <label htmlFor="sort_order" className="input_label">
+                          Sort order
+                        </label>
+                        <input
+                          id="sort_order"
+                          type="number"
+                          className="input_field w-input"
+                          placeholder="0"
+                          value={serviceDraft.sort_order}
+                          onChange={(event) => handleDraftChange('sort_order', event.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="input">
+                      <label htmlFor="description" className="input_label">
+                        Description
+                      </label>
+                      <textarea
+                        id="description"
+                        className="input_field input_text-area w-input"
+                        placeholder="What clients can expect"
+                        value={serviceDraft.description}
+                        onChange={(event) => handleDraftChange('description', event.target.value)}
+                      />
+                    </div>
+                    <label className="flex_horizontal is-y-center gap-xxsmall">
+                      <input
+                        type="checkbox"
+                        checked={serviceDraft.is_active}
+                        onChange={(event) => handleDraftChange('is_active', event.target.checked)}
+                      />
+                      <span className="paragraph_small">Show this service on the site</span>
+                    </label>
+                    <div className="divider margin-top_small margin-bottom_small"></div>
+                    <div className="flex_horizontal gap-xsmall">
+                      <button
+                        type="button"
+                        className="button w-button"
+                        onClick={() => saveService(serviceDraft)}
+                        disabled={status === 'saving'}
+                      >
+                        {status === 'saving' ? 'Saving…' : 'Save service'}
+                      </button>
+                      <button
+                        type="button"
+                        className="button is-secondary w-button"
+                        onClick={resetDraft}
+                        disabled={status === 'saving'}
+                      >
+                        Clear form
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+       <div className="card margin-top_large">
+            <div className="card_body">
+              <div className="flex_horizontal is-y-center is-x-between gap-xsmall margin-bottom_small">
+                <div>
+                  <p className="eyebrow margin-bottom_xxsmall">Bookings</p>
+                  <h2 className="heading_h4 margin-bottom_none">Recent requests</h2>
+                </div>
+                <button
+                  type="button"
+                  className="text-button is-secondary is-small w-inline-block"
+                  onClick={fetchBookings}
+                  disabled={loadingBookings}
+                >
+                  {loadingBookings ? 'Refreshing…' : 'Refresh'}
+                </button>
+              </div>
+              <p className="paragraph_small margin-bottom_small">Live Supabase data with client details and session times.</p>
+              <div className="w-layout-grid grid_1-col gap-xsmall">
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="card is-secondary">
+                    <div className="card_body flex_horizontal is-y-center is-x-between gap-small">
+                      <div className="flex_vertical gap-xxsmall align-start">
+                        <p className="eyebrow margin-bottom_none">
+                          {booking.service_title || booking?.services_catalog?.title || 'Service'}
+                        </p>
+                        <h3 className="heading_h4 margin-bottom_none">{booking.clients?.full_name || 'Client'}</h3>
+                        {booking.notes && (
+                          <p className="paragraph_small margin-bottom_none text-color-muted">{booking.notes}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="paragraph_small margin-bottom_none">
+                          {new Date(booking.start_at).toLocaleString()} → {new Date(booking.end_at).toLocaleTimeString()}
+                        </p>
+                        {booking.phone && (
+                          <p className="paragraph_small margin-bottom_none text-color-muted">{booking.phone}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {!loadingBookings && bookings.length === 0 && (
+                  <p className="paragraph_small">No bookings to show yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

@@ -266,7 +266,12 @@ const sendMail = async ({
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Graph send mail error: ${response.status} ${error}`);
+    const recipientList = recipients
+      .map((recipient) => recipient.emailAddress.address)
+      .join(", ");
+    throw new Error(
+      `Graph send mail error: ${response.status} recipients=[${recipientList}] ${error}`
+    );
   }
 };
 
