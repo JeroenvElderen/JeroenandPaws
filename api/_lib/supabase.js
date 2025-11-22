@@ -135,18 +135,22 @@ const ensurePetProfiles = async (clientId, pets = []) => {
   return ensuredPets;
 };
 
+const looksLikeUuid = (value) =>
+  typeof value === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
 const getServiceByIdentifier = async (serviceIdOrSlug) => {
   requireSupabase();
 
   if (!serviceIdOrSlug) return null;
 
-  const query = supabaseAdmin
-    .from('services_catalog')
-    .select('*')
-    .or(`id.eq.${serviceIdOrSlug},slug.eq.${serviceIdOrSlug}`)
-    .limit(1);
+  const isUuid = looksLikeUuid(serviceIdOrSlug);
 
-  const result = await query.single();
+  const query = supabaseAdmin.from('services_catalog').select('*');
+
+  const result = isUuid
+    ? await query.eq('id', serviceIdOrSlug).maybeSingle()
+    : await query.eq('slug', serviceIdOrSlug).maybeSingle();
 
   if (result.error) {
     if (result.error.code === 'PGRST116') {

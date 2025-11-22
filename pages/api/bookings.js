@@ -1,3 +1,3 @@
-const bookingsHandler = require('../../api/bookings');
+const bookingsHandler = require('../../api/booking');
 
 export default bookingsHandler;
