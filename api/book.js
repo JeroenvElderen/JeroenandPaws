@@ -250,7 +250,14 @@ module.exports = async (req, res) => {
     );
   } catch (error) {
     console.error('Booking error', error);
-    res.statusCode = 500;
-    res.end(JSON.stringify({ message: 'Failed to book event' }));
+    const status = error.statusCode || error.status || 500;
+    const message =
+      error.publicMessage ||
+      error.message ||
+      'Failed to book event. Please try again later.';
+
+    res.statusCode = status;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ message }));
   }
 };

@@ -5,21 +5,42 @@ const { DateTime } = require('luxon');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+let supabaseAdmin = null;
+
 if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.warn('Supabase admin client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  console.warn(
+    'Supabase admin client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY'
+  );
+} else {
+  supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+const createConfigError = () => {
+  const error = new Error(
+    'Supabase admin client is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.'
+  );
+  error.statusCode = 503;
+  error.publicMessage = 'Bookings are temporarily unavailable. Please try again later.';
+  return error;
+};
+
+const requireSupabase = () => {
+  if (!supabaseAdmin) {
+    throw createConfigError();
+  }
+};
 
 const hashPassword = (value) =>
   crypto.createHash('sha256').update(value || '').digest('hex');
 
 const ensureClientProfile = async ({ email, fullName, phone }) => {
+  requireSupabase();
+
   const normalizedEmail = (email || '').trim().toLowerCase();
 
   if (!normalizedEmail) {
@@ -67,6 +88,8 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
 };
 
 const ensurePetProfiles = async (clientId, pets = []) => {
+  requireSupabase();
+
   if (!clientId) return [];
 
   const ensuredPets = [];
@@ -89,7 +112,7 @@ const ensurePetProfiles = async (clientId, pets = []) => {
         continue;
       }
     }
-
+    
     const insertResult = await supabaseAdmin
       .from('pets')
       .insert({
@@ -113,6 +136,8 @@ const ensurePetProfiles = async (clientId, pets = []) => {
 };
 
 const getServiceByIdentifier = async (serviceIdOrSlug) => {
+  requireSupabase();
+
   if (!serviceIdOrSlug) return null;
 
   const query = supabaseAdmin
@@ -142,6 +167,8 @@ const createBookingRecord = async ({
   timeZone,
   notes,
 }) => {
+  requireSupabase();
+
   const insertResult = await supabaseAdmin
     .from('bookings')
     .insert({
@@ -164,6 +191,8 @@ const createBookingRecord = async ({
 };
 
 const linkBookingPets = async (bookingId, pets) => {
+  requireSupabase();
+
   if (!bookingId || pets.length === 0) return [];
 
   const records = pets.map((pet) => ({
@@ -196,6 +225,8 @@ const createBookingWithProfiles = async ({
   pets = [],
   dogCount,
 }) => {
+  requireSupabase();
+
   const service = await getServiceByIdentifier(serviceId);
   const duration = Number.isFinite(durationMinutes)
     ? durationMinutes

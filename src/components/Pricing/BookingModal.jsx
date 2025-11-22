@@ -307,9 +307,21 @@ const BookingModal = ({ service, onClose }) => {
       });
 
       if (!response.ok) {
-        throw new Error(
-          "Booking could not be completed right now. Please try again shortly."
-        );
+        let message =
+          "Booking could not be completed right now. Please try again shortly.";
+
+        try {
+          const errorText = await response.text();
+          const parsedError = errorText ? JSON.parse(errorText) : {};
+
+          if (parsedError?.message) {
+            message = parsedError.message;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse booking error response", parseError);
+        }
+
+        throw new Error(message);
       }
 
       const data = await parseJsonSafely(response, requestUrl);

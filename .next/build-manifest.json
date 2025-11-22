@@ -22,6 +22,11 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
+    "/backend": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/backend.js"
+    ],
     "/services/daily-strolls": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
