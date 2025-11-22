@@ -22,11 +22,14 @@ const BookingModal = ({ service, onClose }) => {
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
+  const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => new Date());
   const [availabilityNotice, setAvailabilityNotice] = useState("");
   const [dogCount, setDogCount] = useState(1);
   const [dogs, setDogs] = useState([createEmptyDogProfile()]);
   const [breedSearch, setBreedSearch] = useState({});
+  const [existingPets, setExistingPets] = useState([]);
+  const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [showFormPopup, setShowFormPopup] = useState(false);
 
   const apiBaseUrl = useMemo(
@@ -166,6 +169,43 @@ const BookingModal = ({ service, onClose }) => {
     loadAvailability();
   }, [loadAvailability]);
 
+  useEffect(() => {
+    setExistingPets([]);
+    setSelectedPetIds([]);
+  }, [clientEmail]);
+
+  const fetchExistingPets = useCallback(async () => {
+    if (!clientEmail) {
+      setExistingPets([]);
+      setSelectedPetIds([]);
+      return;
+    }
+
+    setIsLoadingPets(true);
+    try {
+      const requestUrl = `${apiBaseUrl}/api/pets?ownerEmail=${encodeURIComponent(
+        clientEmail
+      )}`;
+      const response = await fetch(requestUrl, {
+        headers: { Accept: "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not load pets for this email");
+      }
+
+      const data = await parseJsonSafely(response, requestUrl);
+      setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
+      setSelectedPetIds([]);
+    } catch (loadError) {
+      console.error("Failed to load pets", loadError);
+      setExistingPets([]);
+      setSelectedPetIds([]);
+    } finally {
+      setIsLoadingPets(false);
+    }
+  }, [apiBaseUrl, clientEmail, parseJsonSafely]);
+
   const calendarDays = useMemo(() => availability.dates || [], [availability]);
   const availabilityMap = useMemo(() => {
     return calendarDays.reduce((acc, day) => {
@@ -224,6 +264,15 @@ const BookingModal = ({ service, onClose }) => {
         : 60;
       const end = new Date(start.getTime() + durationMinutes * 60000);
 
+      const selectedExistingPets = existingPets.filter((pet) =>
+        selectedPetIds.includes(pet.id)
+      );
+
+      const petPayload = [
+        ...selectedExistingPets,
+        ...dogs.slice(0, dogCount),
+      ];
+
       const payload = {
         date: selectedDate,
         time: selectedTime,
@@ -234,8 +283,8 @@ const BookingModal = ({ service, onClose }) => {
         clientEmail: clientEmail.trim(),
         notes: notes.trim(),
         timeZone: availability.timeZone || "UTC",
-        dogs: dogs.slice(0, dogCount),
-        dogCount,
+        pets: petPayload,
+        dogCount: petPayload.length,
       };
 
       const requestUrl = `${apiBaseUrl}/api/book`;
@@ -256,30 +305,30 @@ const BookingModal = ({ service, onClose }) => {
 
       const data = await parseJsonSafely(response, requestUrl);
 
+      const readableDate = start.toLocaleString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const passwordNote = data?.passwordDelivery
+        ? " Check your inbox for your new account password so you can update pets and bookings."
+        : "";
+
       setSuccess(
-        `Booked ${service.title} on ${start.toLocaleString(undefined, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}. Confirmation emails have been sent${
-          data?.webLink ? " and the calendar event is ready." : "."
-        }`
+        `Booked ${service.title} on ${readableDate}. Confirmation emails have been sent.${passwordNote}`
       );
 
-      if (data?.webLink) {
-        setAvailabilityNotice(
-          `View calendar event: ${data.webLink}. We'll also send you a confirmation email.`
-        );
-      } else {
-        setAvailabilityNotice("");
-      }
+      setAvailabilityNotice("");
 
       setClientName("");
       setClientEmail("");
       setNotes("");
       resetDogProfiles();
+      setExistingPets([]);
+      setSelectedPetIds([]);
       setError("");
     } catch (bookingError) {
       console.error("Booking failed", bookingError);
@@ -417,6 +466,48 @@ const BookingModal = ({ service, onClose }) => {
             placeholder="name@email.com"
           />
         </label>
+        <div className="input-group">
+          <div className="label-row">
+            <span>Pets on your profile</span>
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={fetchExistingPets}
+              disabled={!clientEmail || isLoadingPets}
+            >
+              {isLoadingPets ? "Loading…" : "Load pets"}
+            </button>
+          </div>
+          {existingPets.length === 0 ? (
+            <p className="muted subtle">
+              Add your email first, then tap "Load pets" to attach existing profiles.
+            </p>
+          ) : (
+            <div className="pet-list">
+              {existingPets.map((pet) => (
+                <label key={pet.id} className="pet-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedPetIds.includes(pet.id)}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setSelectedPetIds((prev) => {
+                        if (checked) {
+                          return [...prev, pet.id];
+                        }
+                        return prev.filter((id) => id !== pet.id);
+                      });
+                    }}
+                  />
+                  <span>
+                    <strong>{pet.name}</strong>
+                    {pet.breed ? ` • ${pet.breed}` : ""}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         <label className="input-group full-width">
           <span>Notes for Jeroen</span>
           <textarea

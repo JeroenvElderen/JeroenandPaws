@@ -1,161 +1,124 @@
-const { DateTime } = require("luxon");
-const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { createEvent, sendMail } = require("./_lib/graph");
+const { DateTime } = require('luxon');
+const { getAppOnlyAccessToken } = require('./_lib/auth');
+const { sendMail } = require('./_lib/graph');
+const { createBookingWithProfiles } = require('./_lib/supabase');
 
 const parseBody = async (req) => {
   const chunks = [];
   for await (const chunk of req) {
     chunks.push(chunk);
   }
-  const body = Buffer.concat(chunks).toString("utf8");
+  const body = Buffer.concat(chunks).toString('utf8');
   return body ? JSON.parse(body) : {};
 };
 
-const addMinutesToDateTime = (date, time, minutes) => {
-  const start = new Date(`${date}T${time}:00Z`);
-  start.setUTCMinutes(start.getUTCMinutes() + minutes);
-  return start.toISOString().slice(0, 19);
-};
-
-const escapeHtml = (value = "") =>
+const escapeHtml = (value = '') =>
   String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
-const buildFriendlyTiming = ({ date, time, durationMinutes, timeZone = "UTC" }) => {
-  const zone = timeZone || "UTC";
-  const start = DateTime.fromISO(`${date}T${time}`, { zone });
-  const safeStart = start.isValid
-    ? start
-    : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
-
-  const end = safeStart.plus({ minutes: durationMinutes });
+const buildFriendlyTiming = ({ start, end, timeZone = 'UTC' }) => {
   const format = "cccc, LLLL d, yyyy 'at' t ZZZZ";
+  const zone = timeZone || 'UTC';
+  const safeStart = start.setZone(zone, { keepLocalTime: false });
+  const safeEnd = end.setZone(zone, { keepLocalTime: false });
 
   return {
     start: safeStart.toFormat(format),
-    end: end.toFormat(format),
+    end: safeEnd.toFormat(format),
+    timeZone: zone,
   };
 };
 
 const buildConfirmationBody = ({
   clientName,
-  serviceId,
-  serviceTitle,
   timing,
+  service,
   notes,
-  dogs,
-  dogCount,
-  timeZone,
+  pets,
+  passwordDelivery,
 }) => {
-  const readableService = serviceTitle || `Training booking (${serviceId || "custom"})`;
-  const dogEntries = Array.isArray(dogs) ? dogs : [];
-  const hasDogs = dogEntries.length > 0;
+  const readableService = service?.title || service?.serviceTitle || 'Training';
+  const petDetails = (pets || []).map((pet, index) => {
+    const name = escapeHtml(pet?.name || `Pet ${index + 1}`);
+    const breed = escapeHtml(pet?.breed || 'Breed pending');
+    return `<li><strong>${name}</strong> (${breed})</li>`;
+  });
 
-  const dogDetails = hasDogs
-    ? `<ol style="margin: 0; padding-left: 20px;">
-        ${dogEntries
-          .map((dog, index) => {
-            const name = escapeHtml(dog?.name || "Name pending");
-            const breed = escapeHtml(dog?.breed || "Breed pending");
-            const photoName = escapeHtml(dog?.photoName || "Uploaded photo");
-            const hasPhoto = Boolean(dog?.photoDataUrl);
-
-            return `<li><strong>Dog ${index + 1}:</strong> ${name} (${breed})${
-              hasPhoto ? ` — Photo: ${photoName}` : ""
-            }</li>`;
-          })
-          .join("")}
-      </ol>`
-    : `<p style="margin: 8px 0 0;"><strong>Dogs:</strong> ${
-        dogCount ?? dogEntries.length ?? 0
-      } (details pending)</p>`;
+  const passwordBlock = passwordDelivery
+    ? `<p style="margin: 16px 0 0;">An account has been created for you so you can update bookings and pets later. Use this temporary password to sign in: <strong>${escapeHtml(
+        passwordDelivery.temporaryPassword
+      )}</strong>.</p>`
+    : '';
 
   const notesBlock = notes
     ? `<p style="margin: 16px 0 0;"><strong>Notes from you:</strong><br>${escapeHtml(
         notes
       )}</p>`
-    : "";
+    : '';
+
+  const petsBlock =
+    petDetails.length > 0
+      ? `<ol style="margin: 0; padding-left: 20px;">${petDetails.join('')}</ol>`
+      : '<p style="margin: 8px 0 0;">No pets were attached yet.</p>';
 
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
-      <p style="margin: 0 0 12px;">Hi ${escapeHtml(clientName || "there")},</p>
+      <p style="margin: 0 0 12px;">Hi ${escapeHtml(clientName || 'there')},</p>
       <p style="margin: 0 0 12px;">
         Thank you for booking <strong>${escapeHtml(readableService)}</strong>. Here are your appointment details:
       </p>
       <ul style="padding-left: 20px; margin: 0 0 12px;">
         <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
         <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
-        <li><strong>Time zone:</strong> ${escapeHtml(timeZone || "UTC")}</li>
+        <li><strong>Time zone:</strong> ${escapeHtml(timeing.timeZone || 'UTC')}</li>
       </ul>
-      ${dogDetails}
+      <p style="margin: 12px 0 8px;"><strong>Pets:</strong></p>
+      ${petsBlock}
       ${notesBlock}
-      <p style="margin: 16px 0 0;">
-        If you need to reschedule or have questions, just reply to this email and we'll be happy to help.
-      </p>
+       ${passwordBlock}
+      <p style="margin: 16px 0 0;">If you need to reschedule or have questions, just reply to this email and we'll be happy to help.</p>
       <p style="margin: 8px 0 0;">Looking forward to seeing you soon!</p>
     </div>
   `;
 };
 
 const buildNotificationBody = ({
-  serviceTitle,
-  serviceId,
-  clientName,
-  clientEmail,
+  service,
+  client,
   timing,
-  timeZone,
   notes,
-  dogs,
-  dogCount,
+  pets,
 }) => {
-  const readableService = serviceTitle || `Training booking (${serviceId || "custom"})`;
-  const dogEntries = Array.isArray(dogs) ? dogs : [];
-  const hasDogs = dogEntries.length > 0;
-
-  const dogDetails = hasDogs
-    ? `<ol style="margin: 0; padding-left: 20px;">
-        ${dogEntries
-          .map((dog, index) => {
-            const name = escapeHtml(dog?.name || "Name pending");
-            const breed = escapeHtml(dog?.breed || "Breed pending");
-            const hasPhoto = Boolean(dog?.photoDataUrl);
-
-            return `<li><strong>Dog ${index + 1}:</strong> ${name} (${breed})${
-              hasPhoto ? " — photo uploaded" : ""
-            }</li>`;
-          })
-          .join("")}
-      </ol>`
-    : `<p style="margin: 8px 0 0;"><strong>Dogs:</strong> ${
-        dogCount ?? dogEntries.length ?? 0
-      } (details pending)</p>`;
+  const readableService = service?.title || service?.serviceTitle || 'Training';
+  const petDetails = (pets || []).map((pet, index) => {
+    const name = escapeHtml(pet?.name || `Pet ${index + 1}`);
+    const breed = escapeHtml(pet?.breed || 'Breed pending');
+    return `<li><strong>${name}</strong> (${breed})</li>`;
+  });
 
   const notesBlock = notes
     ? `<p style="margin: 16px 0 0;"><strong>Client notes:</strong><br>${escapeHtml(
         notes
       )}</p>`
-    : "";
-
-  const clientLine =
-    clientName || clientEmail
-      ? `${escapeHtml(clientName || "Client")} (${escapeHtml(clientEmail || "email missing")})`
-      : "Unknown client";
+    : '';
 
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
       <p style="margin: 0 0 12px;">New booking received:</p>
       <ul style="padding-left: 20px; margin: 0 0 12px;">
-        <li><strong>Client:</strong> ${clientLine}</li>
+        <li><strong>Client:</strong> ${escapeHtml(client?.full_name || client?.email)}</li>
+        <li><strong>Email:</strong> ${escapeHtml(client?.email)}</li>
         <li><strong>Service:</strong> ${escapeHtml(readableService)}</li>
         <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
         <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
-        <li><strong>Time zone:</strong> ${escapeHtml(timeZone || "UTC")}</li>
+        <li><strong>Time zone:</strong> ${escapeHtml(timing.timeZone || 'UTC')}</li>
       </ul>
-      ${dogDetails}
+      <p style="margin: 12px 0 8px;"><strong>Pets:</strong></p>
+      <ol style="margin: 0; padding-left: 20px;">${petDetails.join('')}</ol>
       ${notesBlock}
       <p style="margin: 16px 0 0;">This is an internal notification for Jeroen & Paws.</p>
     </div>
@@ -163,20 +126,16 @@ const buildNotificationBody = ({
 };
 
 module.exports = async (req, res) => {
-  if (req.method !== "POST") {
+  if (req.method !== 'POST') {
     res.statusCode = 405;
-    res.setHeader("Allow", "POST");
-    res.end("Method Not Allowed");
+    res.setHeader('Allow', 'POST');
+    res.end('Method Not Allowed');
     return;
   }
 
   try {
     const calendarId = process.env.OUTLOOK_CALENDAR_ID;
-    if (!calendarId) {
-      throw new Error("Missing OUTLOOK_CALENDAR_ID env var");
-    }
-
-    const accessToken = await getAppOnlyAccessToken();
+    const accessToken = calendarId ? await getAppOnlyAccessToken() : null;
     const body = await parseBody(req);
     const {
       date,
@@ -187,113 +146,99 @@ module.exports = async (req, res) => {
       clientName,
       clientEmail,
       notes,
-      timeZone = "UTC",
+      timeZone = 'UTC',
+      pets = [],
       dogs = [],
       dogCount,
     } = body;
 
-    const teamEmail =
-      process.env.BOOKING_NOTIFICATION_EMAIL ||
-      process.env.NOTIFY_EMAIL ||
-      process.env.JEROEN_AND_PAWS_EMAIL;
-
-    const bookingFromEmail = 
-      process.env.BOOKING_SENDER_EMAIL || "booking@jeroenandpaws.com";
-    const ownerNotificationEmail = "jeroen@jeroenandpaws.com";
-
     if (!date || !time) {
       res.statusCode = 400;
-      res.end(JSON.stringify({ message: "Missing date or time" }));
+      res.end(JSON.stringify({ message: 'Missing date or time' }));
       return;
     }
 
-    const startDateTime = `${date}T${time}:00`;
-    const endDateTime = addMinutesToDateTime(date, time, durationMinutes);
+    const petsFromBody = Array.isArray(pets) && pets.length ? pets : dogs || [];
 
-    const subject = serviceTitle || `Training booking (${serviceId || "custom"})`;
-    const timing = buildFriendlyTiming({
+    const bookingResult = await createBookingWithProfiles({
       date,
       time,
       durationMinutes,
-      timeZone,
-    });
-    const confirmationBody = buildConfirmationBody({
-      clientName,
       serviceId,
       serviceTitle,
-      timing,
-      notes,
-      dogs,
-      dogCount,
-      timeZone,
-    });
-
-    const event = await createEvent({
-      accessToken,
-      calendarId,
-      subject,
-      body: confirmationBody,
-      bodyContentType: "HTML",
-      start: startDateTime,
-      end: endDateTime,
-      attendeeEmail: clientEmail,
-      attendeeEmails: [],
-      timeZone,
-    });
-
-    const notificationBody = buildNotificationBody({
-      serviceTitle,
-      serviceId,
       clientName,
       clientEmail,
-      timing,
-      timeZone,
       notes,
-      dogs,
+      timeZone,
+      pets: petsFromBody,
       dogCount,
     });
 
-    const notificationRecipients = [teamEmail, ownerNotificationEmail].filter(
-      Boolean
-    );
+    const timing = buildFriendlyTiming({
+      start: DateTime.fromISO(bookingResult.booking.start_at, { zone: 'UTC' }),
+      end: DateTime.fromISO(bookingResult.booking.end_at, { zone: 'UTC' }),
+      timeZone,
+    });
 
-    if (notificationRecipients.length) {
+    if (accessToken && calendarId && clientEmail) {
+      const confirmationBody = buildConfirmationBody({
+        clientName,
+        timing,
+        service: bookingResult.service || { serviceTitle },
+        notes,
+        pets: bookingResult.pets,
+        passwordDelivery: bookingResult.passwordDelivery,
+      });
+
       await sendMail({
         accessToken,
         fromCalendarId: calendarId,
-        to: notificationRecipients,
-        subject: `New booking: ${subject}`,
-        body: notificationBody,
-        contentType: "HTML",
-        from: bookingFromEmail,
-        replyTo: bookingFromEmail,
+        to: clientEmail,
+        subject: bookingResult.service?.title || serviceTitle,
+        body: confirmationBody,
+        contentType: 'HTML',
       });
+
+      const notificationRecipients = [
+        process.env.BOOKING_NOTIFICATION_EMAIL,
+        process.env.NOTIFY_EMAIL,
+        process.env.JEROEN_AND_PAWS_EMAIL,
+        'jeroen@jeroenandpaws.com',
+      ].filter(Boolean);
+
+      if (notificationRecipients.length) {
+        const notificationBody = buildNotificationBody({
+          service: bookingResult.service || { serviceTitle },
+          client: bookingResult.client,
+          timing,
+          notes,
+          pets: bookingResult.pets,
+        });
+
+        await sendMail({
+          accessToken,
+          fromCalendarId: calendarId,
+          to: notificationRecipients,
+          subject: `New booking: ${bookingResult.service?.title || serviceTitle}`,
+          body: notificationBody,
+          contentType: 'HTML',
+        });
+      }
     }
-    
-    await sendMail({
-      accessToken,
-      fromCalendarId: calendarId,
-      to: clientEmail,
-      subject,
-      body: confirmationBody,
-      contentType: "HTML",
-      from: bookingFromEmail,
-      replyTo: bookingFromEmail,
-    });
-    
-    res.setHeader("Content-Type", "application/json");
+    res.setHeader('Content-Type', 'application/json');
     res.end(
       JSON.stringify({
-        id: event.id,
-        webLink: event.webLink,
-        subject,
-        start: event.start,
-        end: event.end,
+        booking: bookingResult.booking,
+        client: bookingResult.client,
+        pets: bookingResult.pets,
+        passwordDelivery: bookingResult.passwordDelivery,
+        service: bookingResult.service || { title: serviceTitle },
+        totals: bookingResult.totals,
       })
     );
   } catch (error) {
-    console.error("Booking error", error);
+    console.error('Booking error', error);
     res.statusCode = 500;
-    res.end(JSON.stringify({ message: "Failed to book event" }));
+    res.end(JSON.stringify({ message: 'Failed to book event' }));
   }
 };
