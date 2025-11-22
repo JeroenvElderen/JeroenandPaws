@@ -1,5 +1,7 @@
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import logo from '../../assets/images/transparent-logo.png';
 
 const Footer = () => (
   <footer className="footer is-inverse">
@@ -7,9 +9,9 @@ const Footer = () => (
       <div className="w-layout-grid grid_5-col gap-small">
         <div id="w-node-_851d61a1-1dad-400a-5b6a-92b99f998536-b17c3d94" className="flex_vertical gap-small w-node-_8489c8c1-07dc-6ab4-cde4-f5c814a2d0ce-14a2d0cb">
           <Link href="/" className="logo w-inline-block">
-            <div className="nav_logo-icon"><svg width="100%" height="100%" viewBox="0 0 33 33" preserveAspectRatio="xMidYMid meet">
-                <path d="M28,0H5C2.24,0,0,2.24,0,5v23c0,2.76,2.24,5,5,5h23c2.76,0,5-2.24,5-5V5c0-2.76-2.24-5-5-5ZM29,17c-6.63,0-12,5.37-12,12h-1c0-6.63-5.37-12-12-12v-1c6.63,0,12-5.37,12-12h1c0,6.63,5.37,12,12,12v1Z" fill="currentColor"></path>
-              </svg></div>
+            <div className="nav_logo-icon">
+              <Image src={logo} alt="Jeroen & Paws logo" className="nav_logo-image" />
+            </div>
             <div data-brand-name="true" className="paragraph_xlarge margin-bottom_none text_all-caps">Jeroen &amp; Paws</div>
           </Link>
           <ul aria-label="Social media links" className="footer_icon-group margin_top-auto w-list-unstyled">
