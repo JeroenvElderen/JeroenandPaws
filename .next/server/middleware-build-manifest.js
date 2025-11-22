@@ -28,11 +28,6 @@ self.__BUILD_MANIFEST = {
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/services/daily-strolls.js"
-    ],
-    "/services/training-help": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/services/training-help.js"
     ]
   },
   "ampFirstPages": []

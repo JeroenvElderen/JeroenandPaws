@@ -338,8 +338,13 @@ const BookingModal = ({ service, onClose }) => {
         ? " Check your inbox for your new account password so you can update pets and bookings."
         : "";
 
+      const emailStatus = data?.emailStatus;
+      const emailMessage = emailStatus?.confirmationSent
+        ? "Confirmation emails have been sent."
+        : "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
+      
       setSuccess(
-        `Booked ${service.title} on ${readableDate}. Confirmation emails have been sent.${passwordNote}`
+        `Booked ${service.title} on ${readableDate}. ${emailMessage}${passwordNote}`
       );
 
       setAvailabilityNotice("");

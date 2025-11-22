@@ -3,8 +3,8 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/services/training-help": "pages/services/training-help.js",
-  "/backend": "pages/backend.js",
   "/services/daily-strolls": "pages/services/daily-strolls.js",
+  "/backend": "pages/backend.js",
   "/api/availability": "pages/api/availability.js",
   "/api/pets": "pages/api/pets.js",
   "/api/book": "pages/api/book.js"
