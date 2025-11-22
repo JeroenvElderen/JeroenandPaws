@@ -2,10 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/services/daily-strolls": "pages/services/daily-strolls.js",
-  "/api/availability": "pages/api/availability.js",
   "/services/training-help": "pages/services/training-help.js",
+  "/services/daily-strolls": "pages/services/daily-strolls.js",
   "/backend": "pages/backend.js",
-  "/api/book": "pages/api/book.js",
-  "/api/pets": "pages/api/pets.js"
+  "/api/availability": "pages/api/availability.js"
 }
