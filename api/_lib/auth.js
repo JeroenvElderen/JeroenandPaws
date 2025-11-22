@@ -21,9 +21,20 @@ const redirectUri =
   process.env.AZURE_REDIRECT_URI ||
   `${process.env.BACKEND_BASE_URL}/api/auth/microsoft/callback`;
 
+  const encryptionSecret =
+  process.env.TOKEN_ENCRYPTION_KEY ||
+  process.env.AZURE_CLIENT_SECRET ||
+  "development-token-key";
+
+if (!process.env.TOKEN_ENCRYPTION_KEY && !process.env.AZURE_CLIENT_SECRET) {
+  console.warn(
+    "Missing TOKEN_ENCRYPTION_KEY and AZURE_CLIENT_SECRET; using fallback encryption key"
+  );
+}
+
 const encryptionKey = crypto
   .createHash("sha256")
-  .update(process.env.TOKEN_ENCRYPTION_KEY || process.env.AZURE_CLIENT_SECRET)
+  .update(encryptionSecret)
   .digest();
 
 const serializeCookie = (name, value, options = {}) => {

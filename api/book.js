@@ -135,7 +135,15 @@ module.exports = async (req, res) => {
 
   try {
     const calendarId = process.env.OUTLOOK_CALENDAR_ID;
-    const accessToken = calendarId ? await getAppOnlyAccessToken() : null;
+    let accessToken = null;
+
+    if (calendarId) {
+      try {
+        accessToken = await getAppOnlyAccessToken();
+      } catch (authError) {
+        console.error('Booking email auth error', authError);
+      }
+    }
     const body = await parseBody(req);
     const {
       date,
@@ -181,48 +189,52 @@ module.exports = async (req, res) => {
     });
 
     if (accessToken && calendarId && clientEmail) {
-      const confirmationBody = buildConfirmationBody({
-        clientName,
-        timing,
-        service: bookingResult.service || { serviceTitle },
-        notes,
-        pets: bookingResult.pets,
-        passwordDelivery: bookingResult.passwordDelivery,
-      });
-
-      await sendMail({
-        accessToken,
-        fromCalendarId: calendarId,
-        to: clientEmail,
-        subject: bookingResult.service?.title || serviceTitle,
-        body: confirmationBody,
-        contentType: 'HTML',
-      });
-
-      const notificationRecipients = [
-        process.env.BOOKING_NOTIFICATION_EMAIL,
-        process.env.NOTIFY_EMAIL,
-        process.env.JEROEN_AND_PAWS_EMAIL,
-        'jeroen@jeroenandpaws.com',
-      ].filter(Boolean);
-
-      if (notificationRecipients.length) {
-        const notificationBody = buildNotificationBody({
-          service: bookingResult.service || { serviceTitle },
-          client: bookingResult.client,
+      try {
+        const confirmationBody = buildConfirmationBody({
+          clientName,
           timing,
+          service: bookingResult.service || { serviceTitle },
           notes,
           pets: bookingResult.pets,
+          passwordDelivery: bookingResult.passwordDelivery,
         });
 
         await sendMail({
           accessToken,
           fromCalendarId: calendarId,
-          to: notificationRecipients,
-          subject: `New booking: ${bookingResult.service?.title || serviceTitle}`,
-          body: notificationBody,
+          to: clientEmail,
+          subject: bookingResult.service?.title || serviceTitle,
+          body: confirmationBody,
           contentType: 'HTML',
         });
+
+        const notificationRecipients = [
+          process.env.BOOKING_NOTIFICATION_EMAIL,
+          process.env.NOTIFY_EMAIL,
+          process.env.JEROEN_AND_PAWS_EMAIL,
+          'jeroen@jeroenandpaws.com',
+        ].filter(Boolean);
+
+        if (notificationRecipients.length) {
+          const notificationBody = buildNotificationBody({
+            service: bookingResult.service || { serviceTitle },
+            client: bookingResult.client,
+            timing,
+            notes,
+            pets: bookingResult.pets,
+          });
+
+          await sendMail({
+            accessToken,
+            fromCalendarId: calendarId,
+            to: notificationRecipients,
+            subject: `New booking: ${bookingResult.service?.title || serviceTitle}`,
+            body: notificationBody,
+            contentType: 'HTML',
+          });
+        }
+      } catch (emailError) {
+        console.error('Booking email delivery failed', emailError);
       }
     }
     res.setHeader('Content-Type', 'application/json');
