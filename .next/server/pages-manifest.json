@@ -1,9 +1,0 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/services/training-help": "pages/services/training-help.js",
-  "/backend": "pages/backend.js",
-  "/api/availability": "pages/api/availability.js",
-  "/services/daily-strolls": "pages/services/daily-strolls.js"
-}
