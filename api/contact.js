@@ -80,6 +80,9 @@ const resolveCalendarId = () => {
   return calendarId;
 };
 
+const resolveSenderEmail = (calendarId) =>
+  process.env.OUTLOOK_SENDER_EMAIL?.trim() || calendarId;
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.statusCode = 405;
@@ -90,6 +93,7 @@ module.exports = async (req, res) => {
 
   let toEmail;
   let calendarId;
+  let senderEmail;
 
   try {
     const body = await parseBody(req);
@@ -105,6 +109,7 @@ module.exports = async (req, res) => {
 
     toEmail = resolveNotificationEmail();
     calendarId = resolveCalendarId();
+    senderEmail = resolveSenderEmail(calendarId);
 
     const accessToken = await getAppOnlyAccessToken();
     const subject = body.serviceType
@@ -116,6 +121,7 @@ module.exports = async (req, res) => {
       accessToken,
       fromCalendarId: calendarId,
       to: toEmail,
+      from: senderEmail,
       subject,
       body: bodyContent,
       contentType: 'HTML',
@@ -129,6 +135,7 @@ module.exports = async (req, res) => {
       errorMessage: error?.message,
       toEmail,
       calendarId,
+      senderEmail,
     });
     res.statusCode = 500;
     res.end(JSON.stringify({ message: 'Failed to send message' }));
