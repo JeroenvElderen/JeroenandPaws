@@ -57,19 +57,6 @@ const buildMessageBody = (payload) => {
   `;
 };
 
-const resolveNotificationEmail = () => {
-  const toEmail =
-    process.env.CONTACT_NOTIFICATION_EMAIL ||
-    process.env.NOTIFY_EMAIL ||
-    process.env.JEROEN_AND_PAWS_EMAIL;
-
-  if (!toEmail) {
-    throw new Error('Missing contact notification email env var');
-  }
-
-  return toEmail;
-};
-
 const resolveCalendarId = () => {
   const calendarId = process.env.OUTLOOK_CALENDAR_ID;
 
@@ -80,8 +67,24 @@ const resolveCalendarId = () => {
   return calendarId;
 };
 
-const resolveSenderEmail = (calendarId) =>
-  process.env.OUTLOOK_SENDER_EMAIL?.trim() || calendarId;
+const resolveCalendarEmail = (calendarId) =>
+  process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
+  process.env.OUTLOOK_SENDER_EMAIL?.trim() ||
+  calendarId;
+
+const resolveNotificationEmail = (calendarId) => {
+  const toEmail =
+    process.env.CONTACT_NOTIFICATION_EMAIL ||
+    process.env.NOTIFY_EMAIL ||
+    process.env.JEROEN_AND_PAWS_EMAIL ||
+    resolveCalendarEmail(calendarId);
+
+  if (!toEmail) {
+    throw new Error('Missing contact notification email env var');
+  }
+
+  return toEmail;
+};
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -107,9 +110,9 @@ module.exports = async (req, res) => {
       return;
     }
 
-    toEmail = resolveNotificationEmail();
     calendarId = resolveCalendarId();
-    senderEmail = resolveSenderEmail(calendarId);
+    senderEmail = resolveCalendarEmail(calendarId);
+    toEmail = resolveNotificationEmail(calendarId);
 
     const accessToken = await getAppOnlyAccessToken();
     const subject = body.serviceType

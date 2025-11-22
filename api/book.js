@@ -3,6 +3,11 @@ const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { createEvent, sendMail } = require("./_lib/graph");
 const { createBookingWithProfiles } = require("./_lib/supabase");
 
+const resolveCalendarEmail = (calendarId) =>
+  process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
+  process.env.OUTLOOK_SENDER_EMAIL?.trim() ||
+  calendarId;
+
 const parseBody = async (req) => {
   const chunks = [];
   for await (const chunk of req) {
@@ -138,6 +143,7 @@ module.exports = async (req, res) => {
   try {
     const calendarId = process.env.OUTLOOK_CALENDAR_ID;
     let accessToken = null;
+    const calendarEmail = resolveCalendarEmail(calendarId);
 
     if (calendarId) {
       try {
@@ -196,12 +202,17 @@ module.exports = async (req, res) => {
       error: null,
     };
 
-    const notificationRecipients = [
-      process.env.BOOKING_NOTIFICATION_EMAIL,
-      process.env.NOTIFY_EMAIL,
-      process.env.JEROEN_AND_PAWS_EMAIL,
-      "jeroen@jeroenandpaws.com",
-    ].filter(Boolean);
+    const notificationRecipients = Array.from(
+      new Set(
+        [
+          calendarEmail,
+          process.env.BOOKING_NOTIFICATION_EMAIL,
+          process.env.NOTIFY_EMAIL,
+          process.env.JEROEN_AND_PAWS_EMAIL,
+          "jeroen@jeroenandpaws.com",
+        ].filter(Boolean)
+      )
+    );
 
     if (accessToken && calendarId) {
       try {
