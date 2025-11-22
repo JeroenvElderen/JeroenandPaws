@@ -1,6 +1,6 @@
 const { DateTime } = require("luxon");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { sendMail } = require("./_lib/graph");
+const { createEvent, sendMail } = require("./_lib/graph");
 const { createBookingWithProfiles } = require("./_lib/supabase");
 
 const parseBody = async (req) => {
@@ -190,6 +190,58 @@ module.exports = async (req, res) => {
       timeZone,
     });
 
+    const calendarStatus = {
+      created: false,
+      skipped: false,
+      error: null,
+    };
+
+    const notificationRecipients = [
+      process.env.BOOKING_NOTIFICATION_EMAIL,
+      process.env.NOTIFY_EMAIL,
+      process.env.JEROEN_AND_PAWS_EMAIL,
+      "jeroen@jeroenandpaws.com",
+    ].filter(Boolean);
+
+    if (accessToken && calendarId) {
+      try {
+        const eventStart = DateTime.fromISO(bookingResult.booking.start_at, {
+          zone: "UTC",
+        }).setZone(timeZone || "UTC");
+
+        const eventEnd = DateTime.fromISO(bookingResult.booking.end_at, {
+          zone: "UTC",
+        }).setZone(timeZone || "UTC");
+
+        await createEvent({
+          accessToken,
+          calendarId,
+          subject: bookingResult.service?.title || serviceTitle,
+          body: buildNotificationBody({
+            service: bookingResult.service || { serviceTitle },
+            client: bookingResult.client,
+            timing,
+            notes,
+            pets: bookingResult.pets,
+          }),
+          bodyContentType: "HTML",
+          start: eventStart.toISO(),
+          end: eventEnd.toISO(),
+          attendeeEmail: clientEmail,
+          attendeeEmails: notificationRecipients,
+          timeZone: timeZone || "UTC",
+        });
+
+        calendarStatus.created = true;
+      } catch (eventError) {
+        console.error("Booking calendar event failed", eventError);
+        calendarStatus.error =
+          eventError?.message || "Calendar event creation failed";
+      }
+    } else {
+      calendarStatus.skipped = true;
+    }
+
     const emailStatus = {
       confirmationSent: false,
       notificationCount: 0,
@@ -217,13 +269,6 @@ module.exports = async (req, res) => {
           contentType: "HTML",
         });
         emailStatus.confirmationSent = true;
-
-        const notificationRecipients = [
-          process.env.BOOKING_NOTIFICATION_EMAIL,
-          process.env.NOTIFY_EMAIL,
-          process.env.JEROEN_AND_PAWS_EMAIL,
-          "jeroen@jeroenandpaws.com",
-        ].filter(Boolean);
 
         if (notificationRecipients.length) {
           const notificationBody = buildNotificationBody({
@@ -262,6 +307,7 @@ module.exports = async (req, res) => {
         passwordDelivery: bookingResult.passwordDelivery,
         service: bookingResult.service || { title: serviceTitle },
         totals: bookingResult.totals,
+        calendarStatus,
         emailStatus,
       })
     );

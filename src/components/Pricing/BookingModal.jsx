@@ -339,12 +339,34 @@ const BookingModal = ({ service, onClose }) => {
         : "";
 
       const emailStatus = data?.emailStatus;
-      const emailMessage = emailStatus?.confirmationSent
-        ? "Confirmation emails have been sent."
-        : "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
-      
+      let emailMessage = "";
+
+      if (emailStatus?.confirmationSent) {
+        emailMessage = "Confirmation emails have been sent.";
+      } else if (emailStatus?.error) {
+        emailMessage =
+          "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
+      } else if (emailStatus?.skipped) {
+        emailMessage =
+          "We saved your booking, but automated confirmation emails are paused. We'll confirm manually.";
+      } else {
+        emailMessage =
+          "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
+      }
+
+      const calendarStatus = data?.calendarStatus;
+      let calendarMessage = "";
+
+      if (calendarStatus?.error) {
+        calendarMessage =
+          " We couldn't add this booking to the calendar automatically; we'll add it manually.";
+      } else if (calendarStatus?.skipped) {
+        calendarMessage =
+          " Calendar sync is currently paused; we'll add this booking manually.";
+      }
+
       setSuccess(
-        `Booked ${service.title} on ${readableDate}. ${emailMessage}${passwordNote}`
+        `Booked ${service.title} on ${readableDate}. ${emailMessage}${calendarMessage}${passwordNote}`
       );
 
       setAvailabilityNotice("");
