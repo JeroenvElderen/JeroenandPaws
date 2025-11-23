@@ -6,48 +6,56 @@ const services = [
     label: 'Daily strolls',
     description: 'Calm, enriching neighborhood walks with plenty of sniff time.',
     meta: '30-60 minutes · solo or paired',
+    cta: 'Explore daily strolls',
   },
   {
     path: '/services/group-adventures',
     label: 'Group adventures',
     description: 'Social hikes and park play with carefully matched pups.',
     meta: 'Small curated groups',
+    cta: 'Explore group adventures',
   },
   {
     path: '/services/solo-journeys',
     label: 'Solo journeys',
     description: 'One-on-one outings for pups who prefer a quieter pace.',
     meta: 'Quiet neighborhoods · extra patience',
+    cta: 'Explore solo journeys',
   },
   {
     path: '/services/overnight-stays',
     label: 'Overnight & multi-day',
     description: 'Cozy, in-home boarding with bedtime routines from home.',
     meta: 'Sleepovers · extended stays',
+    cta: 'Explore overnight stays',
   },
   {
     path: '/services/daytime-care',
     label: 'Daytime care',
     description: 'Structured daytime hangs with breaks for play and rest.',
     meta: 'Play + rest rhythm',
+    cta: 'Explore daytime care',
   },
   {
     path: '/services/home-check-ins',
     label: 'Home check-ins',
     description: 'Quick visits for meals, meds, and a reassuring hello.',
     meta: '15-30 minutes · meds welcome',
+    cta: 'Explore home check-ins',
   },
   {
     path: '/services/training-help',
     label: 'Training help',
     description: 'Reinforcement walks and support for your training goals.',
     meta: 'Fear-free handling',
+    cta: 'Explore training help',
   },
   {
     path: '/services/custom-solutions',
     label: 'Custom solutions',
     description: 'A tailored plan for unique schedules, needs, or behaviors.',
     meta: 'Flexible & collaborative',
+    cta: 'Explore custom solutions',
   },
 ];
 
@@ -63,24 +71,6 @@ const careHighlights = [
   {
     title: 'Transparent updates',
     description: 'GPS logs, photos, and real-talk notes so you always know how the day went.',
-  },
-];
-
-const steps = [
-  {
-    label: 'Step 1',
-    title: 'Get to know you',
-    copy: 'We learn routines, triggers, and the little quirks that make your dog feel safe.',
-  },
-  {
-    label: 'Step 2',
-    title: 'Match the experience',
-    copy: 'We pair the right walker, cadence, and route to fit your pup’s confidence level.',
-  },
-  {
-    label: 'Step 3',
-    title: 'Share the journey',
-    copy: 'Live updates, milestone wins, and honest communication keep you looped in.',
   },
 ];
 
@@ -102,8 +92,8 @@ const ServicesIndexPage = () => (
         </div>
         <div className="hero-card">
           <div className="badge">Most loved</div>
-          <div className="hero-card__title">Weekend adventures</div>
-          <p className="hero-card__meta">New routes, long sniffs, happy naps after.</p>
+          <div className="hero-card__title">30-minute daily strolls</div>
+          <p className="hero-card__meta">Unhurried neighborhood walks with plenty of sniff time.</p>
           <div className="hero-card__cta">See the full lineup below</div>
           
           <div className="hero-card__highlights">
@@ -170,52 +160,20 @@ const ServicesIndexPage = () => (
               <p className="paragraph_small text-color_secondary">{service.description}</p>
               <div className="service-card__meta">{service.meta}</div>
               <div className="service-card__actions">
-                <Link href={service.path} className="service-card__button">
-                  View service
+                <Link
+                  href={service.path}
+                  className="service-card__button"
+                  aria-label={`Go to ${service.label}`}
+                >
+                  <span className="service-card__button-glow" aria-hidden />
+                  <span className="service-card__button-label">{service.cta}</span>
+                  <span className="service-card__button-icon" aria-hidden>
+                    ↗
+                  </span>
                 </Link>
               </div>
             </article>
           ))}
-        </div>
-      </div>
-    </section>
-
-    <section className="process">
-      <div className="container">
-        <div className="section-header section-header--stacked">
-          <p className="overline">A smooth start</p>
-          <h2 className="heading_h3">What working together feels like</h2>
-          <p className="paragraph_small text-color_secondary">
-            From the first hello to daily check-ins, we keep things warm, attentive, and easy.
-          </p>
-        </div>
-
-        <div className="steps">
-          {steps.map((step) => (
-            <article key={step.title} className="step-card">
-              <div className="step-card__pill">{step.label}</div>
-              <div className="heading_h5 margin-bottom_none">{step.title}</div>
-              <p className="paragraph_small text-color_secondary">{step.copy}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="cta-panel">
-          <div>
-            <p className="overline">Ready when you are</p>
-            <h3 className="heading_h4 margin-bottom_none">Let’s plan your pup’s next great day</h3>
-            <p className="paragraph_small text-color_secondary">
-              Share your routines and we’ll shape a service that feels like an extension of home.
-            </p>
-          </div>
-          <div className="cta-actions">
-            <Link href="/contact" className="service-card__button">
-              Book a meet & greet
-            </Link>
-            <Link href="/profile" className="ghost-button">
-              See our approach
-            </Link>
-          </div>
         </div>
       </div>
     </section>
@@ -386,7 +344,7 @@ const ServicesIndexPage = () => (
       .services-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
+        gap: 1.25rem;
       }
 
       .service-card {
@@ -394,20 +352,22 @@ const ServicesIndexPage = () => (
         gap: 0.85rem;
         padding: 1.1rem;
         border-radius: 1rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: radial-gradient(circle at 20% 20%, rgba(166, 140, 255, 0.12), transparent 35%),
+          radial-gradient(circle at 85% 10%, rgba(123, 214, 255, 0.1), transparent 40%),
+          linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(255, 255, 255, 0.12);
         color: inherit;
         position: relative;
         overflow: hidden;
         transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
       }
 
       .service-card::before {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(135deg, rgba(124, 211, 255, 0.18), rgba(133, 109, 255, 0.12));
+        background: linear-gradient(135deg, rgba(124, 211, 255, 0.16), rgba(124, 69, 243, 0.18));
         opacity: 0;
         transition: opacity 180ms ease;
       }
@@ -422,10 +382,10 @@ const ServicesIndexPage = () => (
       }
 
       .service-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(121, 208, 255, 0.35);
-        background: rgba(255, 255, 255, 0.06);
-        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+        transform: translateY(-5px);
+        border-color: rgba(124, 69, 243, 0.5);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.32);
       }
 
       .service-card:hover::before {
@@ -456,18 +416,23 @@ const ServicesIndexPage = () => (
 
       .service-card__meta {
         display: inline-flex;
-        padding: 0.35rem 0.7rem;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.4rem 0.75rem;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #d6d3ff;
-        font-weight: 600;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: #e6e4ff;
+        font-weight: 700;
         width: fit-content;
+        line-height: 1.2;
+        margin: 0;
       }
 
       .service-card__actions {
         display: flex;
         justify-content: flex-start;
+        margin-top: 0.25rem;
       }
 
       .service-card__button {
@@ -477,41 +442,48 @@ const ServicesIndexPage = () => (
         gap: 0.35rem;
         padding: 0.65rem 1rem;
         border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: #f8f7ff;
-        color: #0f1024;
-        font-weight: 700;
+        border: 1px solid rgba(164, 126, 247, 0.9);
+        background: linear-gradient(120deg, var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-accent-color--accent-primary, #7c45f3),
+            #9f7ff7);
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.01em;
         text-decoration: none;
-        min-width: 130px;
-        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        min-width: 160px;
+        box-shadow: 0 12px 30px rgba(124, 69, 243, 0.45);
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+        position: relative;
+        overflow: hidden;
       }
 
       .service-card__button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        background: #ffffff;
+        box-shadow: 0 14px 32px rgba(124, 69, 243, 0.52);
+        background: linear-gradient(120deg, #9f7ff7, var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-accent-color--accent-primary, #7c45f3));
+        border-color: rgba(164, 126, 247, 0.95);
       }
 
-      .ghost-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.35rem;
-        padding: 0.65rem 1rem;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        background: transparent;
-        color: #f8f7ff;
-        font-weight: 700;
-        text-decoration: none;
-        min-width: 130px;
-        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      .service-card__button:focus-visible {
+        outline: 2px solid rgba(164, 126, 247, 0.9);
+        outline-offset: 3px;
+
+      .service-card__button-glow {
+        position: absolute;
+        inset: -20%;
+        background: radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.3), transparent 35%),
+          radial-gradient(circle at 70% 50%, rgba(255, 255, 255, 0.25), transparent 35%);
+        opacity: 0.65;
       }
 
-      .ghost-button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-        border-color: rgba(121, 208, 255, 0.4);
+      .service-card__button-label,
+      .service-card__button-icon {
+        position: relative;
+        z-index: 1;
+      }
+
+      .service-card__button-icon {
+        font-size: 1rem;
+        line-height: 1;
       }
 
       .care-pillars {
@@ -564,56 +536,6 @@ const ServicesIndexPage = () => (
         z-index: 1;
       }
 
-      .process {
-        padding: 1rem 0 3rem;
-      }
-
-      .steps {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-
-      .step-card {
-        padding: 1rem;
-        border-radius: 1rem;
-        background: linear-gradient(145deg, rgba(133, 109, 255, 0.18), rgba(73, 198, 255, 0.12));
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
-        display: grid;
-        gap: 0.5rem;
-      }
-
-      .step-card__pill {
-        display: inline-flex;
-        padding: 0.35rem 0.7rem;
-        border-radius: 999px;
-        background: rgba(15, 16, 36, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        font-weight: 700;
-        letter-spacing: 0.03em;
-      }
-
-      .cta-panel {
-        margin-top: 2rem;
-        padding: 1.2rem 1.4rem;
-        border-radius: 1.2rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        display: grid;
-        grid-template-columns: minmax(0, 2fr) auto;
-        gap: 1rem;
-        align-items: center;
-      }
-
-      .cta-actions {
-        display: flex;
-        gap: 0.6rem;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
       @media (max-width: 960px) {
         .services-hero__inner {
           grid-template-columns: 1fr;
@@ -622,10 +544,6 @@ const ServicesIndexPage = () => (
         .section-header {
           flex-direction: column;
           align-items: flex-start;
-        }
-
-        .cta-panel {
-          grid-template-columns: 1fr;
         }
       }
 
