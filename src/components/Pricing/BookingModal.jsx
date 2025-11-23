@@ -36,6 +36,20 @@ const BookingModal = ({ service, onClose }) => {
   const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
   const [showDogDetails, setShowDogDetails] = useState(false);
 
+  const hasAtLeastOneDog = useMemo(() => {
+    if (selectedPetIds.length > 0) return true;
+
+    const dogsToCheck = dogs.slice(0, dogCount);
+    return dogsToCheck.some((dog) => {
+      if (!dog) return false;
+      const name = (dog.name || "").trim();
+      const breed = (dog.breed || "").trim();
+      const notes = (dog.notes || "").trim();
+
+      return Boolean(name || breed || notes || dog.photoDataUrl || dog.profileId);
+    });
+  }, [dogCount, dogs, selectedPetIds]);
+
   const trimmedName = clientName.trim();
   const trimmedEmail = clientEmail.trim();
   const canLoadPets = Boolean(trimmedName && trimmedEmail);
@@ -85,6 +99,21 @@ const BookingModal = ({ service, onClose }) => {
       const newDogs = [...prevDogs];
       newDogs[index] = { ...newDogs[index], [field]: value };
       return newDogs;
+    });
+  };
+
+  const removeDog = (index) => {
+    setSelectedPetIds((prev) => {
+      const profileId = dogs[index]?.profileId;
+      if (!profileId) return prev;
+      return prev.filter((id) => id !== profileId);
+    });
+
+    setDogs((prevDogs) => {
+      const updatedDogs = prevDogs.filter((_, dogIndex) => dogIndex !== index);
+      const nextDogs = updatedDogs.length > 0 ? updatedDogs : [];
+      setDogCount(nextDogs.length);
+      return nextDogs;
     });
   };
 
@@ -589,27 +618,36 @@ const BookingModal = ({ service, onClose }) => {
               </p>
             ) : (
               <div className="pet-list">
-                {existingPets.map((pet) => (
-                  <label key={pet.id} className="pet-option">
-                    <input
-                      type="checkbox"
-                      checked={selectedPetIds.includes(pet.id)}
-                      onChange={(event) => {
-                        const checked = event.target.checked;
-                        setSelectedPetIds((prev) => {
-                          if (checked) {
-                            return [...prev, pet.id];
-                          }
-                          return prev.filter((id) => id !== pet.id);
-                        });
-                      }}
-                    />
-                    <span>
-                      <strong>{pet.name}</strong>
-                      {pet.breed ? ` • ${pet.breed}` : ""}
-                    </span>
-                  </label>
-                ))}
+                {existingPets.map((pet) => {
+                  const isSelected = selectedPetIds.includes(pet.id);
+
+                  return (
+                    <label
+                      key={pet.id}
+                      className={`pet-option ${isSelected ? "selected" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setSelectedPetIds((prev) => {
+                            if (checked) {
+                              return [...prev, pet.id];
+                            }
+                            return prev.filter((id) => id !== pet.id);
+                          });
+                        }}
+                      />
+                      <div className="pet-option__details">
+                        <span className="pet-option__name">{pet.name}</span>
+                        {pet.breed && (
+                          <span className="pet-option__breed">{pet.breed}</span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -687,6 +725,16 @@ const BookingModal = ({ service, onClose }) => {
                       />
                     )}
                   </label>
+                  <div className="dog-row__actions">
+                    <button
+                      type="button"
+                      className="ghost-button remove-dog-button"
+                      onClick={() => removeDog(index)}
+                      aria-label={`Remove dog ${index + 1}`}
+                    >
+                      Remove dog
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -704,14 +752,18 @@ const BookingModal = ({ service, onClose }) => {
       </div>
       <div className="actions-row">
         <div className="actions-stack">
-          <button
-            type="button"
-            className="button w-button"
-            onClick={handleBook}
-            disabled={isBooking || loading}
-          >
-            {isBooking ? "Booking…" : "Confirm / Book"}
-          </button>
+          {hasAtLeastOneDog ? (
+            <button
+              type="button"
+              className="button w-button"
+              onClick={handleBook}
+              disabled={isBooking || loading}
+            >
+              {isBooking ? "Booking…" : "Confirm / Book"}
+            </button>
+          ) : (
+            <p className="muted subtle">Add at least one dog to continue.</p>
+          )}
           {isPopup && (
             <button
               type="button"

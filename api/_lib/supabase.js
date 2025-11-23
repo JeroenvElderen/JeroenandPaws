@@ -293,5 +293,6 @@ module.exports = {
   ensureClientProfile,
   ensurePetProfiles,
   getServiceByIdentifier,
+  hashPassword,
   supabaseAdmin,
 };

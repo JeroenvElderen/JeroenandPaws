@@ -540,6 +540,49 @@ const PricingStyles = () => (
         .pet-list-group {
           gap: 10px;
         }
+        .pet-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 10px;
+        }
+        .pet-option {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px;
+          border-radius: 12px;
+          background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          cursor: pointer;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .pet-option:hover {
+          border-color: rgba(255, 255, 255, 0.25);
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+        }
+        .pet-option.selected {
+          border-color: rgba(144, 166, 255, 0.8);
+          box-shadow: 0 8px 28px rgba(124, 148, 255, 0.24);
+          background: linear-gradient(135deg, rgba(144, 166, 255, 0.18), rgba(144, 166, 255, 0.06));
+        }
+        .pet-option input {
+          width: 18px;
+          height: 18px;
+          accent-color: #b9c4ff;
+        }
+        .pet-option__details {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .pet-option__name {
+          font-weight: 700;
+          color: #f8f6ff;
+        }
+        .pet-option__breed {
+          color: #d8d2f8;
+          font-size: 13px;
+        }
         .dog-row {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -550,6 +593,15 @@ const PricingStyles = () => (
         .dog-row .searchable-select,
         .dog-row .input-group {
           width: 100%;
+        }
+        .dog-row__actions {
+          grid-column: 1 / -1;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .remove-dog-button {
+          color: #f9c6d4;
+          border-color: rgba(255, 255, 255, 0.28);
         }
         .actions-row {
           margin-top: 4px;

@@ -43,22 +43,47 @@ const emptyStateStyle = {
 
 const ProfilePage = () => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [newPet, setNewPet] = useState({ name: '', breed: '', notes: '' });
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordSetupError, setPasswordSetupError] = useState('');
 
   const loadProfile = async () => {
-    if (!email) return;
+    if (!email || !password) {
+      setError('Please enter both email and password to view your profile.');
+      return;
+    }
     setLoading(true);
     setError('');
+    setPasswordModalOpen(false);
     try {
-      const response = await fetch(`/api/clients?email=${encodeURIComponent(email)}`);
+      const response = await fetch('/api/client-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (response.status === 403) {
+        setPasswordModalOpen(true);
+        setProfile(null);
+        setLoading(false);
+        setPasswordSetupError('');
+        setNewPassword('');
+        return;
+      }
       if (!response.ok) {
-        throw new Error('Profile not found');
+        throw new Error(payload?.message || 'Profile not found');
       }
       const data = await response.json();
-      setProfile(data);
+
+      setProfile(payload);
     } catch (err) {
       setError(err.message || 'Could not load profile');
       setProfile(null);
@@ -83,6 +108,39 @@ const ProfilePage = () => {
       await loadProfile();
     } catch (err) {
       setError(err.message || 'Unable to save pet');
+    }
+  };
+
+  const savePassword = async () => {
+    if (!email || !newPassword) {
+      setPasswordSetupError('Please enter a password to continue.');
+      return;
+    }
+
+    setSavingPassword(true);
+    setPasswordSetupError('');
+    try {
+      const response = await fetch('/api/client-auth', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: newPassword }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Could not save password');
+      }
+
+      setError('');
+      setProfile(payload);
+      setPassword(newPassword);
+      setPasswordModalOpen(false);
+      setNewPassword('');
+    } catch (err) {
+      setPasswordSetupError(err.message || 'Unable to save password');
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -159,10 +217,24 @@ const ProfilePage = () => {
                     color: 'white',
                   }}
                 />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{
+                    flex: '1 1 180px',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.15)',
+                    color: 'white',
+                  }}
+                />
                 <button
                   type="button"
                   onClick={loadProfile}
-                  disabled={loading || !email}
+                  disabled={loading || !email || !password}
                   style={{
                     padding: '12px 18px',
                     borderRadius: '12px',
@@ -443,6 +515,89 @@ const ProfilePage = () => {
           )}
         </div>
       </div>
+      {passwordModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.35)',
+            display: 'grid',
+            placeItems: 'center',
+            padding: '16px',
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '18px',
+              padding: '20px',
+              width: 'min(460px, 96vw)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.2)',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px', color: '#0f172a' }}>Create your password</h3>
+            <p style={{ margin: '0 0 16px', color: '#475569', lineHeight: 1.5 }}>
+              We found your email but you need to set a password to continue. Create a password to
+              open your profile and keep your details secure.
+            </p>
+            <label style={{ display: 'block', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+              New password
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter a password"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                background: '#f8fafc',
+              }}
+            />
+            {passwordSetupError && (
+              <p style={{ color: '#b91c1c', fontWeight: 600, margin: '8px 0 0' }}>{passwordSetupError}</p>
+            )}
+            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setPasswordModalOpen(false)}
+                disabled={savingPassword}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #e5e7eb',
+                  background: '#f8fafc',
+                  color: '#0f172a',
+                  cursor: savingPassword ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={savePassword}
+                disabled={savingPassword}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  color: 'white',
+                  fontWeight: 800,
+                  cursor: savingPassword ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 10px 25px rgba(34, 197, 94, 0.35)',
+                }}
+              >
+                {savingPassword ? 'Saving…' : 'Save password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
