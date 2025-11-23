@@ -76,6 +76,8 @@ const buildRedirectUrl = ({ origin, forwardedProto, forwardedHost }) => {
   const siteBase =
     normalizeUrlBase(process.env.NEXT_PUBLIC_SITE_URL) ||
     normalizeUrlBase(process.env.SITE_URL) ||
+    normalizeUrlBase(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
+    normalizeUrlBase(process.env.NEXT_PUBLIC_VERCEL_URL) ||
     normalizeUrlBase(process.env.VERCEL_URL) ||
     normalizeUrlBase(derivedForwardedBase) ||
     normalizeUrlBase(origin) ||
