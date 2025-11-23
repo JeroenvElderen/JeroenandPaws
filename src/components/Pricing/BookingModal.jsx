@@ -277,10 +277,18 @@ const BookingModal = ({ service, onClose }) => {
         selectedPetIds.includes(pet.id)
       );
 
-      const petPayload = [
-        ...selectedExistingPets,
-        ...dogs.slice(0, dogCount),
-      ];
+      const newDogProfiles = dogs
+        .slice(0, dogCount)
+        .filter((dog) => {
+          const name = (dog?.name || "").trim();
+          const breed = (dog?.breed || "").trim();
+          const notes = (dog?.notes || "").trim();
+          const photo = dog?.photoDataUrl;
+
+          return Boolean(name || breed || notes || photo);
+        });
+
+      const petPayload = [...selectedExistingPets, ...newDogProfiles];
 
       const payload = {
         date: selectedDate,

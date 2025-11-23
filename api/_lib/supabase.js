@@ -87,6 +87,15 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
   };
 };
 
+const hasPetDetails = (pet = {}) => {
+  const name = (pet.name || '').trim();
+  const breed = (pet.breed || '').trim();
+  const notes = (pet.notes || '').trim();
+  const photo = pet.photoDataUrl || pet.photo_data_url;
+
+  return Boolean(name || breed || notes || photo);
+};
+
 const ensurePetProfiles = async (clientId, pets = []) => {
   requireSupabase();
 
@@ -95,6 +104,8 @@ const ensurePetProfiles = async (clientId, pets = []) => {
   const ensuredPets = [];
 
   for (const pet of pets) {
+    if (!pet) continue;
+
     if (pet?.id) {
       const existing = await supabaseAdmin
         .from('pets')
