@@ -51,12 +51,22 @@ const normalizeUrlBase = (value) => {
   return `https://${trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed}`;
 };
 
-const buildRedirectUrl = (origin) => {
+const buildRedirectUrl = ({ origin, forwardedProto, forwardedHost }) => {
+  const derivedForwardedBase = (() => {
+    const proto = forwardedProto?.split(',')[0]?.trim();
+    const host = forwardedHost?.split(',')[0]?.trim();
+
+    if (!proto || !host) return null;
+
+    return `${proto}://${host}`;
+  })();
+
   const siteBase =
     normalizeUrlBase(process.env.NEXT_PUBLIC_SITE_URL) ||
     normalizeUrlBase(process.env.SITE_URL) ||
     normalizeUrlBase(process.env.VERCEL_URL) ||
     normalizeUrlBase(origin) ||
+    normalizeUrlBase(derivedForwardedBase) ||
     'http://localhost:3000';
 
   const normalizedBase = siteBase.endsWith('/') ? siteBase.slice(0, -1) : siteBase;
@@ -106,10 +116,14 @@ const hasGraphEmailConfig = () =>
       process.env.BACKEND_BASE_URL
   );
 
-const sendClientResetEmail = async (email, origin, accessToken) => {
+const sendClientResetEmail = async (email, req, accessToken) => {
   requireSupabase();
 
-  const redirectTo = buildRedirectUrl(origin);
+  const redirectTo = buildRedirectUrl({
+    origin: req.headers.origin,
+    forwardedProto: req.headers['x-forwarded-proto'],
+    forwardedHost: req.headers['x-forwarded-host'] || req.headers.host,
+  });
   if (!hasGraphEmailConfig()) {
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, { redirectTo });
 
@@ -173,7 +187,7 @@ module.exports = async (req, res) => {
 
     const accessToken = hasGraphEmailConfig() ? await getAppOnlyAccessToken() : null;
 
-    await sendClientResetEmail(email, req.headers.origin, accessToken);
+    await sendClientResetEmail(email, req, accessToken);
 
     const toEmail = resolveRecipientEmail();
 
