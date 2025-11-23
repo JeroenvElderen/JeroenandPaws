@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
-import { supabase } from '../src/supabaseClient';
+import { supabase } from '../../src/supabaseClient';
 
 const PageContainer = ({ children }) => (
   <main
