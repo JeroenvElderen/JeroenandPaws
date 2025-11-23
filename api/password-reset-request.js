@@ -98,10 +98,28 @@ const resolveFromEmail = () =>
   process.env.NOTIFY_EMAIL ||
   process.env.JEROEN_AND_PAWS_EMAIL;
 
+const hasGraphEmailConfig = () =>
+  Boolean(
+    process.env.AZURE_CLIENT_ID &&
+      process.env.AZURE_CLIENT_SECRET &&
+      process.env.AZURE_TENANT_ID &&
+      process.env.BACKEND_BASE_URL
+  );
+
 const sendClientResetEmail = async (email, origin, accessToken) => {
   requireSupabase();
 
   const redirectTo = buildRedirectUrl(origin);
+  if (!hasGraphEmailConfig()) {
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, { redirectTo });
+
+    if (error) {
+      throw error;
+    }
+
+    return null;
+  }
+
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({
     type: 'recovery',
     email,
@@ -153,13 +171,13 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const accessToken = await getAppOnlyAccessToken();
+    const accessToken = hasGraphEmailConfig() ? await getAppOnlyAccessToken() : null;
 
     await sendClientResetEmail(email, req.headers.origin, accessToken);
 
     const toEmail = resolveRecipientEmail();
 
-    if (toEmail) {
+    if (toEmail && accessToken) {
       await sendMail({
         accessToken,
         fromCalendarId: process.env.OUTLOOK_CALENDAR_ID,
