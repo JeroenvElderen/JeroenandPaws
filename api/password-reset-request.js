@@ -130,7 +130,7 @@ const sendClientResetEmail = async (email, origin, accessToken) => {
     throw error;
   }
 
-  const resetLink = data?.action_link;
+  const resetLink = data?.action_link || data?.properties?.action_link;
 
   if (!resetLink) {
     throw new Error('Supabase did not return a reset link.');
