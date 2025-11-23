@@ -1,5 +1,6 @@
 const { getAppOnlyAccessToken } = require('./_lib/auth');
 const { sendMail } = require('./_lib/graph');
+const { supabaseAdmin, requireSupabase } = require('./_lib/supabase');
 
 const parseBody = async (req) => {
   if (req.body) return req.body;
@@ -34,6 +35,25 @@ const buildBody = ({ email, context }) => `
   </div>
 `;
 
+const buildRedirectUrl = (origin) => {
+  const siteBase =
+    process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || origin || 'http://localhost:3000';
+
+  const normalizedBase = siteBase.endsWith('/') ? siteBase.slice(0, -1) : siteBase;
+  return `${normalizedBase}/reset-password`;
+};
+
+const sendClientResetEmail = async (email, origin) => {
+  requireSupabase();
+
+  const redirectTo = buildRedirectUrl(origin);
+  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, { redirectTo });
+
+  if (error) {
+    throw error;
+  }
+};
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.statusCode = 405;
@@ -53,6 +73,8 @@ module.exports = async (req, res) => {
       return;
     }
 
+    await sendClientResetEmail(email, req.headers.origin);
+
     const toEmail = resolveRecipientEmail();
     const accessToken = await getAppOnlyAccessToken();
 
@@ -68,7 +90,9 @@ module.exports = async (req, res) => {
 
     res.setHeader('Content-Type', 'application/json');
     res.end(
-      JSON.stringify({ message: 'Reset request received. We will email you with next steps shortly.' })
+      JSON.stringify({
+        message: 'Reset link sent. Please check your inbox for a secure link to update your password.',
+      })
     );
   } catch (error) {
     console.error('Password reset request error', error);

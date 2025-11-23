@@ -66,6 +66,7 @@ const HomeSliderSection = () => {
   const loopOffset = slides.length;
   const [currentIndex, setCurrentIndex] = useState(loopOffset);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -104,6 +105,19 @@ const HomeSliderSection = () => {
     }
   }, [isTransitioning]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 767);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   const goToSlide = (delta) => {
     setCurrentIndex((prev) => prev + delta);
   };
@@ -119,11 +133,19 @@ const HomeSliderSection = () => {
         </div>
         <div className="slider overflow_visible w-slider">
           <div
-            className="width_35percent width_100percent_tablet overflow_visible w-slider-mask"
+            className="slider_mask width_35percent width_100percent_tablet overflow_visible w-slider-mask"
             style={{
               display: 'flex',
               transform: `translateX(-${currentIndex * 100}%)`,
               transition: isTransitioning ? `transform ${transitionDurationMs}ms ease` : 'none',
+              ...(isMobile
+                ? {
+                    width: '100%',
+                    maxWidth: '960px',
+                    margin: '0 auto',
+                    overflow: 'hidden',
+                  }
+                : {}),
             }}
           >
             {renderedSlides.map((slide, index) => (
