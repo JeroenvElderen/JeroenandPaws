@@ -1,6 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
-const crypto = require('crypto');
-const { DateTime } = require('luxon');
+const { createClient } = require("@supabase/supabase-js");
+const crypto = require("crypto");
+const { DateTime } = require("luxon");
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -9,7 +9,7 @@ let supabaseAdmin = null;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.warn(
-    'Supabase admin client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY'
+    "Supabase admin client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
   );
 } else {
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -22,10 +22,11 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
 
 const createConfigError = () => {
   const error = new Error(
-    'Supabase admin client is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.'
+    "Supabase admin client is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
   );
   error.statusCode = 503;
-  error.publicMessage = 'Bookings are temporarily unavailable. Please try again later.';
+  error.publicMessage =
+    "Bookings are temporarily unavailable. Please try again later.";
   return error;
 };
 
@@ -36,21 +37,79 @@ const requireSupabase = () => {
 };
 
 const hashPassword = (value) =>
-  crypto.createHash('sha256').update(value || '').digest('hex');
+  crypto
+    .createHash("sha256")
+    .update(value || "")
+    .digest("hex");
+
+const findAuthUserByEmail = async (email) => {
+  requireSupabase();
+
+  const normalizedEmail = (email || "").trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    email: normalizedEmail,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.users?.[0] || null;
+};
+
+const ensureAuthUserWithPassword = async ({ email, password, fullName }) => {
+  requireSupabase();
+
+  const normalizedEmail = (email || "").trim().toLowerCase();
+  if (!normalizedEmail || !password) return { user: null, created: false };
+
+  const existingUser = await findAuthUserByEmail(normalizedEmail);
+
+  if (existingUser) {
+    const updateResult = await supabaseAdmin.auth.admin.updateUserById(
+      existingUser.id,
+      {
+        password,
+        user_metadata: fullName ? { full_name: fullName } : undefined,
+      }
+    );
+
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+
+    return { user: updateResult.data.user, created: false };
+  }
+
+  const createResult = await supabaseAdmin.auth.admin.createUser({
+    email: normalizedEmail,
+    password,
+    email_confirm: true,
+    user_metadata: fullName ? { full_name: fullName } : undefined,
+  });
+
+  if (createResult.error) {
+    throw createResult.error;
+  }
+
+  return { user: createResult.data.user, created: true };
+};
 
 const ensureClientProfile = async ({ email, fullName, phone }) => {
   requireSupabase();
 
-  const normalizedEmail = (email || '').trim().toLowerCase();
+  const normalizedEmail = (email || "").trim().toLowerCase();
 
   if (!normalizedEmail) {
-    throw new Error('Client email is required to create a profile');
+    throw new Error("Client email is required to create a profile");
   }
 
   const existingClient = await supabaseAdmin
-    .from('clients')
-    .select('*')
-    .eq('email', normalizedEmail)
+    .from("clients")
+    .select("*")
+    .eq("email", normalizedEmail)
     .maybeSingle();
 
   if (existingClient.error) {
@@ -61,11 +120,11 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
     return { client: existingClient.data, created: false };
   }
 
-  const temporaryPassword = crypto.randomBytes(9).toString('base64');
+  const temporaryPassword = crypto.randomBytes(9).toString("base64");
   const passwordSetupToken = crypto.randomUUID();
 
   const insertResult = await supabaseAdmin
-    .from('clients')
+    .from("clients")
     .insert({
       email: normalizedEmail,
       full_name: fullName || null,
@@ -73,11 +132,21 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
       hashed_password: hashPassword(temporaryPassword),
       password_setup_token: passwordSetupToken,
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (insertResult.error) {
     throw insertResult.error;
+  }
+
+  try {
+    await ensureAuthUserWithPassword({
+      email: normalizedEmail,
+      password: temporaryPassword,
+      fullName,
+    });
+  } catch (authError) {
+    console.error("Failed to sync client with Supabase Auth", authError);
   }
 
   return {
@@ -88,9 +157,9 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
 };
 
 const hasPetDetails = (pet = {}) => {
-  const name = (pet.name || '').trim();
-  const breed = (pet.breed || '').trim();
-  const notes = (pet.notes || '').trim();
+  const name = (pet.name || "").trim();
+  const breed = (pet.breed || "").trim();
+  const notes = (pet.notes || "").trim();
   const photo = pet.photoDataUrl || pet.photo_data_url;
 
   return Boolean(name || breed || notes || photo);
@@ -108,10 +177,10 @@ const ensurePetProfiles = async (clientId, pets = []) => {
 
     if (pet?.id) {
       const existing = await supabaseAdmin
-        .from('pets')
-        .select('*')
-        .eq('id', pet.id)
-        .eq('owner_id', clientId)
+        .from("pets")
+        .select("*")
+        .eq("id", pet.id)
+        .eq("owner_id", clientId)
         .maybeSingle();
 
       if (existing.error) {
@@ -123,17 +192,17 @@ const ensurePetProfiles = async (clientId, pets = []) => {
         continue;
       }
     }
-    
+
     const insertResult = await supabaseAdmin
-      .from('pets')
+      .from("pets")
       .insert({
         owner_id: clientId,
-        name: pet?.name || 'New pet',
+        name: pet?.name || "New pet",
         breed: pet?.breed || null,
         notes: pet?.notes || null,
         photo_data_url: pet?.photoDataUrl || null,
       })
-      .select('*')
+      .select("*")
       .single();
 
     if (insertResult.error) {
@@ -147,7 +216,7 @@ const ensurePetProfiles = async (clientId, pets = []) => {
 };
 
 const looksLikeUuid = (value) =>
-  typeof value === 'string' &&
+  typeof value === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 const getServiceByIdentifier = async (serviceIdOrSlug) => {
@@ -157,14 +226,14 @@ const getServiceByIdentifier = async (serviceIdOrSlug) => {
 
   const isUuid = looksLikeUuid(serviceIdOrSlug);
 
-  const query = supabaseAdmin.from('services_catalog').select('*');
+  const query = supabaseAdmin.from("services_catalog").select("*");
 
   const result = isUuid
-    ? await query.eq('id', serviceIdOrSlug).maybeSingle()
-    : await query.eq('slug', serviceIdOrSlug).maybeSingle();
+    ? await query.eq("id", serviceIdOrSlug).maybeSingle()
+    : await query.eq("slug", serviceIdOrSlug).maybeSingle();
 
   if (result.error) {
-    if (result.error.code === 'PGRST116') {
+    if (result.error.code === "PGRST116") {
       return null;
     }
     throw result.error;
@@ -185,17 +254,17 @@ const createBookingRecord = async ({
   requireSupabase();
 
   const insertResult = await supabaseAdmin
-    .from('bookings')
+    .from("bookings")
     .insert({
       client_id: clientId,
       service_id: serviceId || null,
       service_title: serviceTitle || null,
       start_at: start.toUTC().toISO(),
       end_at: end.toUTC().toISO(),
-      time_zone: timeZone || 'UTC',
+      time_zone: timeZone || "UTC",
       notes: notes || null,
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (insertResult.error) {
@@ -216,9 +285,9 @@ const linkBookingPets = async (bookingId, pets) => {
   }));
 
   const insertResult = await supabaseAdmin
-    .from('booking_pets')
+    .from("booking_pets")
     .insert(records)
-    .select('*');
+    .select("*");
 
   if (insertResult.error) {
     throw insertResult.error;
@@ -233,7 +302,7 @@ const createBookingWithProfiles = async ({
   durationMinutes = 60,
   serviceId,
   serviceTitle,
-  timeZone = 'UTC',
+  timeZone = "UTC",
   clientName,
   clientEmail,
   notes,
@@ -247,8 +316,12 @@ const createBookingWithProfiles = async ({
     ? durationMinutes
     : service?.duration_minutes || 60;
 
-  const start = DateTime.fromISO(`${date}T${time}`, { zone: timeZone || 'UTC' });
-  const safeStart = start.isValid ? start : DateTime.fromISO(`${date}T${time}`, { zone: 'UTC' });
+  const start = DateTime.fromISO(`${date}T${time}`, {
+    zone: timeZone || "UTC",
+  });
+  const safeStart = start.isValid
+    ? start
+    : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
   const end = safeStart.plus({ minutes: duration });
 
   const { client, created, temporaryPassword } = await ensureClientProfile({
@@ -293,6 +366,9 @@ module.exports = {
   ensureClientProfile,
   ensurePetProfiles,
   getServiceByIdentifier,
+  ensureAuthUserWithPassword,
+  findAuthUserByEmail,
   hashPassword,
   supabaseAdmin,
+  requireSupabase,
 };
