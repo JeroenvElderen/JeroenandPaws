@@ -180,29 +180,33 @@ const createEvent = async ({
     }, []);
 
   const response = await fetch(`${GRAPH_BASE}${principalPath}/events`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    subject,
+    body: {
+      contentType: bodyContentType,
+      content: body,
     },
-    body: JSON.stringify({
-      subject,
-      body: {
-        contentType: bodyContentType,
-        content: body,
-      },
-      start: { dateTime: start, timeZone },
-      end: { dateTime: end, timeZone },
-      attendees,
-      isReminderOn: true,
-      reminderMinutesBeforeStart: 15,
-    }),
-  });
+    start: { dateTime: start, timeZone },
+    end: { dateTime: end, timeZone },
+    attendees,
+    isReminderOn: true,
+    reminderMinutesBeforeStart: 15,
+  }),
+});
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Graph create event error: ${response.status} ${error}`);
-  }
+  const text = await response.text();
+  console.error("GRAPH EVENT ERROR:", {
+    status: response.status,
+    body: text
+  });
+  throw new Error(`Graph create event error: ${response.status} ${text}`);
+}
 
   return response.json();
 };

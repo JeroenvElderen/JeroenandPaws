@@ -190,6 +190,25 @@ module.exports = async (req, res) => {
       dogCount,
     });
 
+    console.log("➡️ BOOKING RESULT:", bookingResult);
+    console.log("➡️ start_at:", bookingResult?.booking?.start_at);
+    console.log("➡️ end_at:", bookingResult?.booking?.end_at);
+
+    console.log(
+      "➡️ Parsed start:",
+      DateTime.fromISO(bookingResult?.booking?.start_at, { zone: "UTC" })
+        .isValid,
+      DateTime.fromISO(bookingResult?.booking?.start_at, {
+        zone: "UTC",
+      }).toISO()
+    );
+
+    console.log(
+      "➡️ Parsed end:",
+      DateTime.fromISO(bookingResult?.booking?.end_at, { zone: "UTC" }).isValid,
+      DateTime.fromISO(bookingResult?.booking?.end_at, { zone: "UTC" }).toISO()
+    );
+
     const timing = buildFriendlyTiming({
       start: DateTime.fromISO(bookingResult.booking.start_at, { zone: "UTC" }),
       end: DateTime.fromISO(bookingResult.booking.end_at, { zone: "UTC" }),
@@ -216,13 +235,12 @@ module.exports = async (req, res) => {
 
     if (accessToken && calendarId) {
       try {
-        const eventStart = DateTime.fromISO(bookingResult.booking.start_at, {
-          zone: "UTC",
-        }).setZone(timeZone || "UTC");
-
-        const eventEnd = DateTime.fromISO(bookingResult.booking.end_at, {
-          zone: "UTC",
-        }).setZone(timeZone || "UTC");
+        const eventStart = DateTime.fromISO(bookingResult.booking.start_at)
+          .toUTC()
+          .toISO({ suppressMilliseconds: true });
+        const eventEnd = DateTime.fromISO(bookingResult.booking.end_at)
+          .toUTC()
+          .toISO({ suppressMilliseconds: true });
 
         await createEvent({
           accessToken,
@@ -236,8 +254,8 @@ module.exports = async (req, res) => {
             pets: bookingResult.pets,
           }),
           bodyContentType: "HTML",
-          start: eventStart.toISO(),
-          end: eventEnd.toISO(),
+          start: eventStart, // ✅ already ISO string
+          end: eventEnd, // ✅ already ISO string
           attendeeEmail: clientEmail,
           attendeeEmails: notificationRecipients,
           timeZone: timeZone || "UTC",
