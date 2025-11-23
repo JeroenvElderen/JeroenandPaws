@@ -52,6 +52,8 @@ const ProfilePage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSetupError, setPasswordSetupError] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState({ state: 'idle', message: '' });
 
   const loadProfile = async () => {
     if (!email || !password) {
@@ -81,8 +83,6 @@ const ProfilePage = () => {
       if (!response.ok) {
         throw new Error(payload?.message || 'Profile not found');
       }
-      const data = await response.json();
-
       setProfile(payload);
     } catch (err) {
       setError(err.message || 'Could not load profile');
@@ -146,6 +146,39 @@ const ProfilePage = () => {
 
   const hasPets = useMemo(() => profile?.pets?.length > 0, [profile]);
   const hasBookings = useMemo(() => profile?.bookings?.length > 0, [profile]);
+
+  const requestPasswordReset = async () => {
+    if (!resetEmail) {
+      setResetStatus({ state: 'error', message: 'Please enter your email address.' });
+      return;
+    }
+
+    setResetStatus({ state: 'loading', message: '' });
+    try {
+      const response = await fetch('/api/password-reset-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Could not submit your request.');
+      }
+
+      setResetStatus({
+        state: 'success',
+        message:
+          'We have your request. Please check your email for the next steps to reset your password.',
+      });
+    } catch (err) {
+      setResetStatus({
+        state: 'error',
+        message: err.message || 'Unable to process your request right now.',
+      });
+    }
+  };
 
   return (
     <main
@@ -501,17 +534,81 @@ const ProfilePage = () => {
               </SectionCard>
             </>
           ) : (
-            <SectionCard
-              title="Welcome back"
-              description="Enter your email above to unlock your personalized client hub."
-              accent="#e5e7eb"
-            >
-              <div style={{ ...emptyStateStyle, background: 'linear-gradient(135deg, #eef2ff, #f8fafc)' }}>
-                <p style={{ margin: 0 }}>
-                  <strong>Tip:</strong> Use the same email you used during booking to instantly load your profile.
-                </p>
-              </div>
-            </SectionCard>
+            <>
+              <SectionCard
+                title="Welcome back"
+                description="Enter your email above to unlock your personalized client hub."
+                accent="#e5e7eb"
+              >
+                <div style={{ ...emptyStateStyle, background: 'linear-gradient(135deg, #eef2ff, #f8fafc)' }}>
+                  <p style={{ margin: 0 }}>
+                    <strong>Tip:</strong> Use the same email you used during booking to instantly load your profile.
+                  </p>
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title="Need to reset your password?"
+                description="Request a fresh sign-in link and we'll guide you through setting a new password."
+                accent="#dbeafe"
+              >
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '12px',
+                    gridTemplateColumns: '2fr 1fr',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ color: '#475569', fontWeight: 700 }}>Email address</label>
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        background: '#fff',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={requestPasswordReset}
+                      disabled={resetStatus.state === 'loading'}
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                        color: 'white',
+                        fontWeight: 800,
+                        cursor: resetStatus.state === 'loading' ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 14px 40px rgba(59, 130, 246, 0.25)',
+                        width: '100%',
+                      }}
+                    >
+                      {resetStatus.state === 'loading' ? 'Sending…' : 'Send reset request'}
+                    </button>
+                  </div>
+                </div>
+                {resetStatus.message && (
+                  <p
+                    style={{
+                      margin: '12px 0 0',
+                      color: resetStatus.state === 'success' ? '#15803d' : '#b91c1c',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {resetStatus.message}
+                  </p>
+                )}
+              </SectionCard>
+            </>
           )}
         </div>
       </div>
