@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Head from 'next/head';
-import { supabase } from '../src/supabaseClient';
 
 const PageContainer = ({ children }) => (
   <main
@@ -94,21 +93,28 @@ const PasswordResetRequestPage = () => {
 
     setStatus('loading');
 
-    const redirectUrl = `${window.location.origin}/reset-password`;
+    try {
+      const response = await fetch('/api/password-reset-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
+      const data = await response.json().catch(() => ({}));
 
-    if (resetError) {
-      console.error('Reset email error', resetError);
-      setError(resetError.message || 'Could not send reset email.');
+      if (!response.ok) {
+        throw new Error(data?.message || 'Could not send reset email.');
+      }
+
+      setMessage(
+        data?.message || 'Check your inbox for a secure link to reset your password.'
+      );
+    } catch (requestError) {
+      console.error('Reset email error', requestError);
+      setError(requestError.message || 'Could not send reset email.');
+    } finally {
       setStatus('idle');
-      return;
     }
-
-    setMessage('Check your inbox for a secure link to reset your password.');
-    setStatus('idle');
   };
 
   return (
