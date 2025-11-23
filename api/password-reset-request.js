@@ -21,7 +21,10 @@ const resolveRecipientEmail = () => {
     process.env.JEROEN_AND_PAWS_EMAIL;
 
   if (!email) {
-    throw new Error('Missing password reset notification email env var');
+    console.warn(
+      'Missing password reset notification email env var; proceeding without notifying team'
+    );
+    return null;
   }
 
   return email;
@@ -156,15 +159,17 @@ module.exports = async (req, res) => {
 
     const toEmail = resolveRecipientEmail();
 
-    await sendMail({
-      accessToken,
-      fromCalendarId: process.env.OUTLOOK_CALENDAR_ID,
-      to: toEmail,
-      subject: `Password reset requested for ${email}`,
-      body: buildBody({ email, context }),
-      contentType: 'HTML',
-      replyTo: email,
-    });
+    if (toEmail) {
+      await sendMail({
+        accessToken,
+        fromCalendarId: process.env.OUTLOOK_CALENDAR_ID,
+        to: toEmail,
+        subject: `Password reset requested for ${email}`,
+        body: buildBody({ email, context }),
+        contentType: 'HTML',
+        replyTo: email,
+      });
+    }
 
     res.setHeader('Content-Type', 'application/json');
     res.end(
