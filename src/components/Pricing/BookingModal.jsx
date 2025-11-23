@@ -8,6 +8,7 @@ import {
 } from "./utils";
 
 const BookingModal = ({ service, onClose }) => {
+  const MAX_DOGS = 4;
   const [is24h, setIs24h] = useState(true);
   const [availability, setAvailability] = useState({
     dates: [],
@@ -33,6 +34,7 @@ const BookingModal = ({ service, onClose }) => {
   const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
+  const [showDogDetails, setShowDogDetails] = useState(false);
 
   const apiBaseUrl = useMemo(() => {
     const configuredBase = (
@@ -56,14 +58,33 @@ const BookingModal = ({ service, onClose }) => {
     return day.slots.some((slot) => slot.available);
   }, []);
   const handleDogCountChange = (count) => {
-    setDogCount(count);
+    const safeCount = Math.min(MAX_DOGS, Math.max(1, count));
+    setDogCount(safeCount);
 
     setDogs((prevDogs) => {
       const newDogs = [...prevDogs];
-      while (newDogs.length < count) {
+      while (newDogs.length < safeCount) {
         newDogs.push(createEmptyDogProfile());
       }
-      return newDogs.slice(0, count);
+      return newDogs.slice(0, safeCount);
+    });
+  };
+
+  const addAnotherDog = () => {
+    setShowDogDetails(true);
+    setDogCount((prevCount) => {
+      const nextCount = Math.min(MAX_DOGS, prevCount + 1);
+      if (nextCount === prevCount) return prevCount;
+
+      setDogs((prevDogs) => {
+        const newDogs = [...prevDogs];
+        while (newDogs.length < nextCount) {
+          newDogs.push(createEmptyDogProfile());
+        }
+        return newDogs;
+      });
+
+      return nextCount;
     });
   };
 
@@ -184,6 +205,7 @@ const BookingModal = ({ service, onClose }) => {
     setExistingPets([]);
     setSelectedPetIds([]);
     setHasAttemptedPetLoad(false);
+    setShowDogDetails(false);
   }, [clientEmail]);
 
   const fetchExistingPets = useCallback(async () => {
@@ -211,10 +233,14 @@ const BookingModal = ({ service, onClose }) => {
       const data = await parseJsonSafely(response, requestUrl);
       setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
       setSelectedPetIds([]);
+      const hasPets = Array.isArray(data?.pets) && data.pets.length > 0;
 
-      if (!Array.isArray(data?.pets) || data.pets.length === 0) {
+      if (!hasPets) {
         setDogCount(1);
         resetDogProfiles();
+        setShowDogDetails(true);
+      } else {
+        setShowDogDetails(false);
       }
     } catch (loadError) {
       console.error("Failed to load pets", loadError);
@@ -222,8 +248,88 @@ const BookingModal = ({ service, onClose }) => {
       setSelectedPetIds([]);
     } finally {
       setIsLoadingPets(false);
+      setHasAttemptedPetLoad(true);
     }
   }, [apiBaseUrl, clientEmail, parseJsonSafely]);
+
+  useEffect(() => {
+    const selectedPets = existingPets.filter((pet) =>
+      selectedPetIds.includes(pet.id)
+    );
+
+    if (selectedPets.length === 0) {
+      if (existingPets.length === 0 && hasAttemptedPetLoad) {
+        setShowDogDetails(true);
+      }
+      return;
+    }
+
+    const desiredCount = Math.min(
+      MAX_DOGS,
+      Math.max(dogCount, selectedPets.length)
+    );
+
+    if (desiredCount !== dogCount) {
+      setDogCount(desiredCount);
+    }
+
+    setDogs((prevDogs) => {
+      const newDogs = [...prevDogs];
+      while (newDogs.length < desiredCount) {
+        newDogs.push(createEmptyDogProfile());
+      }
+
+      selectedPets.forEach((pet, index) => {
+        newDogs[index] = {
+          ...newDogs[index],
+          name: pet.name || "",
+          breed: pet.breed || "",
+          notes: pet.notes || "",
+          profileId: pet.id,
+        };
+      });
+
+      for (let i = selectedPets.length; i < newDogs.length; i += 1) {
+        if (newDogs[i]?.profileId && !selectedPetIds.includes(newDogs[i].profileId)) {
+          newDogs[i] = createEmptyDogProfile();
+        }
+      }
+
+      return newDogs.slice(0, desiredCount);
+    });
+
+    setShowDogDetails(true);
+  }, [
+    dogCount,
+    existingPets,
+    hasAttemptedPetLoad,
+    selectedPetIds,
+  ]);
+
+  const preparePetPayload = () => {
+    const normalizedDogs = dogs.slice(0, dogCount).map((dog) => {
+      const name = (dog?.name || "").trim();
+      const breed = (dog?.breed || "").trim();
+      const notes = (dog?.notes || "").trim();
+      const photo = dog?.photoDataUrl;
+      const photoName = dog?.photoName;
+      const profileId = dog?.profileId;
+
+      const hasDetails = Boolean(name || breed || notes || photo || profileId);
+      if (!hasDetails) return null;
+
+      return {
+        id: profileId || undefined,
+        name,
+        breed,
+        notes,
+        photoDataUrl: photo,
+        photoName,
+      };
+    });
+
+    return normalizedDogs.filter(Boolean);
+  };
 
   const calendarDays = useMemo(() => availability.dates || [], [availability]);
   const availabilityMap = useMemo(() => {
@@ -283,22 +389,7 @@ const BookingModal = ({ service, onClose }) => {
         : 60;
       const end = new Date(start.getTime() + durationMinutes * 60000);
 
-      const selectedExistingPets = existingPets.filter((pet) =>
-        selectedPetIds.includes(pet.id)
-      );
-
-      const newDogProfiles = dogs
-        .slice(0, dogCount)
-        .filter((dog) => {
-          const name = (dog?.name || "").trim();
-          const breed = (dog?.breed || "").trim();
-          const notes = (dog?.notes || "").trim();
-          const photo = dog?.photoDataUrl;
-
-          return Boolean(name || breed || notes || photo);
-        });
-
-      const petPayload = [...selectedExistingPets, ...newDogProfiles];
+      const petPayload = preparePetPayload();
 
       const payload = {
         date: selectedDate,
@@ -500,7 +591,7 @@ const BookingModal = ({ service, onClose }) => {
           </div>
           {existingPets.length === 0 ? (
             <p className="muted subtle">
-               {hasAttemptedPetLoad
+              {hasAttemptedPetLoad
                 ? "No pets found for this email. Start a new pet profile below."
                 : "Add your email first, then tap \"Load pets\" to attach existing profiles."}
             </p>
@@ -530,71 +621,105 @@ const BookingModal = ({ service, onClose }) => {
             </div>
           )}
         </div>
-        <label className="input-group full-width">
-          <span>How many dogs?</span>
-          <select
-            value={dogCount}
-            onChange={(e) => handleDogCountChange(Number(e.target.value))}
-            className="input-like-select"
-          >
-            <option value={1}>1 dog</option>
-            <option value={2}>2 dogs</option>
-            <option value={3}>3 dogs</option>
-            <option value={4}>4 dogs</option>
-          </select>
-        </label>
-        {Array.from({ length: dogCount }).map((_, index) => {
-          const dogProfile = dogs[index] || createEmptyDogProfile();
-          return (
-            <React.Fragment key={index}>
-              <label className="input-group">
-                <span>Dog {index + 1} Name</span>
-                <input
-                  type="text"
-                  value={dogProfile.name}
-                  onChange={(e) =>
-                    updateDogField(index, "name", e.target.value)
-                  }
-                  placeholder="e.g. Bella"
-                />
-              </label>
+        {existingPets.length > 0 && !showDogDetails && (
+          <div className="input-group full-width">
+            <div className="label-row">
+              <span className="muted subtle">
+                Need to share details for another dog?
+              </span>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setShowDogDetails(true)}
+                disabled={dogCount >= MAX_DOGS}
+              >
+                {dogCount >= MAX_DOGS ? "Dog limit reached" : "Add another dog"}
+              </button>
+            </div>
+          </div>
+        )}
+        {showDogDetails && (
+          <>
+            <label className="input-group full-width">
+              <div className="label-row">
+                <span>How many dogs?</span>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={addAnotherDog}
+                  disabled={dogCount >= MAX_DOGS}
+                >
+                  Add another dog
+                </button>
+              </div>
+              <select
+                value={dogCount}
+                onChange={(e) => handleDogCountChange(Number(e.target.value))}
+                className="input-like-select"
+              >
+                {Array.from({ length: MAX_DOGS }).map((_, index) => {
+                  const count = index + 1;
+                  return (
+                    <option key={count} value={count}>
+                      {count} {count === 1 ? "dog" : "dogs"}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+            {Array.from({ length: dogCount }).map((_, index) => {
+              const dogProfile = dogs[index] || createEmptyDogProfile();
+              return (
+                <React.Fragment key={index}>
+                  <label className="input-group">
+                    <span>Dog {index + 1} Name</span>
+                    <input
+                      type="text"
+                      value={dogProfile.name}
+                      onChange={(e) =>
+                        updateDogField(index, "name", e.target.value)
+                      }
+                      placeholder="e.g. Bella"
+                    />
+                  </label>
 
-              <SearchableSelect
-                label={`Dog ${index + 1} Breed`}
-                options={["Mixed breed", ...DOG_BREEDS]}
-                value={dogProfile.breed}
-                onChange={(value) => updateDogField(index, "breed", value)}
-              />
-
-              <label className="input-group">
-                <span>Dog {index + 1} Photo</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) =>
-                    handleDogPhotoChange(index, event.target.files?.[0])
-                  }
-                />
-                {dogProfile.photoDataUrl && (
-                  <img
-                    src={dogProfile.photoDataUrl}
-                    alt={`Dog ${index + 1} preview`}
-                    className="dog-photo-preview"
+                  <SearchableSelect
+                    label={`Dog ${index + 1} Breed`}
+                    options={["Mixed breed", ...DOG_BREEDS]}
+                    value={dogProfile.breed}
+                    onChange={(value) => updateDogField(index, "breed", value)}
                   />
-                )}
-              </label>
-            </React.Fragment>
-          );
-        })}
-        <label className="input-group full-width">
-          <span>Notes for Jeroen</span>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Tell us about your pup or preferences"
-            rows={3}
-          />
-        </label>
+                <label className="input-group">
+                    <span>Dog {index + 1} Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) =>
+                        handleDogPhotoChange(index, event.target.files?.[0])
+                      }
+                    />
+                    {dogProfile.photoDataUrl && (
+                      <img
+                        src={dogProfile.photoDataUrl}
+                        alt={`Dog ${index + 1} preview`}
+                        className="dog-photo-preview"
+                      />
+                    )}
+                  </label>
+                </React.Fragment>
+              );
+            })}
+            <label className="input-group full-width">
+              <span>Notes for Jeroen</span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Tell us about your pup or preferences"
+                rows={3}
+              />
+            </label>
+          </>
+        )}
       </div>
       <div className="actions-row">
         <div className="actions-stack">

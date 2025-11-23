@@ -82,6 +82,8 @@ export const generateDemoAvailability = (durationMinutes) => {
 export const createEmptyDogProfile = () => ({
   name: "",
   breed: "",
+  notes: "",
   photoDataUrl: "",
   photoName: "",
+  profileId: null,
 });
