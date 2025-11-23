@@ -465,12 +465,10 @@ const BookingModal = ({ service, onClose }) => {
         minute: "2-digit",
       });
 
-      const passwordNote = data?.passwordDelivery
-        ? " Check your inbox for your new account password so you can update pets and bookings."
-        : "";
-
+      const passwordDelivery = data?.passwordDelivery;
       const emailStatus = data?.emailStatus;
       let emailMessage = "";
+      let passwordNote = "";
 
       if (emailStatus?.confirmationSent) {
         emailMessage = "Confirmation emails have been sent.";
@@ -485,6 +483,22 @@ const BookingModal = ({ service, onClose }) => {
           "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
       }
 
+      if (passwordDelivery) {
+        const tempPasswordMessage = passwordDelivery.temporaryPassword
+          ? ` Use this temporary password to access your profile: ${passwordDelivery.temporaryPassword}.`
+          : "";
+
+        if (emailStatus?.confirmationSent) {
+          passwordNote =
+            " Check your inbox for your new account password so you can update pets and bookings." +
+            tempPasswordMessage;
+        } else {
+          passwordNote =
+            " Save the password below so you can sign in to manage pets and bookings." +
+            tempPasswordMessage;
+        }
+      }
+      
       const calendarStatus = data?.calendarStatus;
       let calendarMessage = "";
 
