@@ -1,9 +1,4 @@
-const {
-  supabaseAdmin,
-  hashPassword,
-  requireSupabase,
-  ensureAuthUserWithPassword,
-} = require("./_lib/supabase");
+const { supabaseAdmin, requireSupabase } = require("./_lib/supabase");
 
 const normalizeEmail = (value = "") => (value || "").trim().toLowerCase();
 
@@ -14,9 +9,7 @@ const buildProfile = async (clientId) => {
     .eq("id", clientId)
     .single();
 
-  if (clientResult.error) {
-    throw clientResult.error;
-  }
+  if (clientResult.error) throw clientResult.error;
 
   const petsResult = await supabaseAdmin
     .from("pets")
@@ -24,9 +17,7 @@ const buildProfile = async (clientId) => {
     .eq("owner_id", clientId)
     .order("created_at", { ascending: false });
 
-  if (petsResult.error) {
-    throw petsResult.error;
-  }
+  if (petsResult.error) throw petsResult.error;
 
   const bookingsResult = await supabaseAdmin
     .from("bookings")
@@ -34,9 +25,7 @@ const buildProfile = async (clientId) => {
     .eq("client_id", clientId)
     .order("start_at", { ascending: false });
 
-  if (bookingsResult.error) {
-    throw bookingsResult.error;
-  }
+  if (bookingsResult.error) throw bookingsResult.error;
 
   return {
     client: clientResult.data,
@@ -45,186 +34,61 @@ const buildProfile = async (clientId) => {
   };
 };
 
-const handleConfigError = (res, error) => {
-  const status = error?.statusCode || 503;
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json");
-  res.end(
-    JSON.stringify({
-      message: error?.publicMessage || "Service is temporarily unavailable.",
-    })
-  );
-};
-
 module.exports = async (req, res) => {
   if (req.method === "POST") {
+    // LOGIN
     try {
       requireSupabase();
+
       const body = req.body || {};
       const email = normalizeEmail(body.email);
       const password = body.password || "";
 
       if (!email || !password) {
         res.statusCode = 400;
-        res.end(
-          JSON.stringify({ message: "Email and password are required." })
-        );
-        return;
+        return res.end(JSON.stringify({ message: "Email and password are required." }));
       }
 
-      const clientResult = await supabaseAdmin
-        .from("clients")
-        .select("id, email, full_name, hashed_password")
-        .eq("email", email)
-        .maybeSingle();
+      // 🔥 Login using Supabase Auth
+      const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (clientResult.error) {
-        res.statusCode = 500;
-        res.end(JSON.stringify({ message: "Failed to check your profile." }));
-        return;
-      }
-
-      const client = clientResult.data;
-
-      if (!client) {
-        res.statusCode = 404;
-        res.end(JSON.stringify({ message: "Client not found." }));
-        return;
-      }
-
-      if (!client.hashed_password) {
-        res.statusCode = 403;
-        res.end(
-          JSON.stringify({
-            message: "Please set a password to access your profile.",
-            needsPassword: true,
-          })
-        );
-        return;
-      }
-
-      if (client.hashed_password !== hashPassword(password)) {
+      if (error) {
+        console.error("Supabase Auth login error:", error);
         res.statusCode = 401;
-        res.end(JSON.stringify({ message: "Incorrect password." }));
-        return;
+        return res.end(JSON.stringify({ message: "Incorrect email or password." }));
       }
 
-      const profile = await buildProfile(client.id);
+      const user = data?.user;
+
+      if (!user) {
+        res.statusCode = 401;
+        return res.end(JSON.stringify({ message: "Login failed." }));
+      }
+
+      // 🔥 Then load your custom profile from DB (clients table)
+      const profile = await buildProfile(user.id);
+
       res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(profile));
-      return;
-    } catch (error) {
-      if (error?.statusCode === 503) {
-        handleConfigError(res, error);
-        return;
-      }
+      return res.end(JSON.stringify(profile));
 
+    } catch (error) {
       console.error("Client auth error", error);
       res.statusCode = 500;
-      res.end(JSON.stringify({ message: "Unable to authenticate." }));
-      return;
+      return res.end(JSON.stringify({ message: "Unable to authenticate." }));
     }
   }
 
   if (req.method === "PUT") {
-    try {
-      requireSupabase();
-      const body = req.body || {};
-      const email = normalizeEmail(body.email);
-      const password = body.password || "";
-
-      if (!email || !password) {
-        res.statusCode = 400;
-        res.end(
-          JSON.stringify({ message: "Email and password are required." })
-        );
-        return;
-      }
-
-      if (password.length < 8) {
-        res.statusCode = 400;
-        res.end(
-          JSON.stringify({
-            message: "Password must be at least 8 characters long.",
-          })
-        );
-        return;
-      }
-
-      const clientResult = await supabaseAdmin
-        .from("clients")
-        .select("id, email, full_name, hashed_password")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (clientResult.error) {
-        res.statusCode = 500;
-        res.end(JSON.stringify({ message: "Unable to verify your account." }));
-        return;
-      }
-
-      const client = clientResult.data;
-
-      if (!client) {
-        res.statusCode = 404;
-        res.end(JSON.stringify({ message: "Client not found." }));
-        return;
-      }
-
-      if (client.hashed_password) {
-        res.statusCode = 409;
-        res.end(
-          JSON.stringify({
-            message: "A password has already been set for this account.",
-          })
-        );
-        return;
-      }
-
-      const updateResult = await supabaseAdmin
-        .from("clients")
-        .update({
-          hashed_password: hashPassword(password),
-          password_setup_token: null,
-        })
-        .eq("id", client.id)
-        .select("*")
-        .single();
-
-      if (updateResult.error) {
-        res.statusCode = 500;
-        res.end(JSON.stringify({ message: "Could not save your password." }));
-        return;
-      }
-
-      try {
-        await ensureAuthUserWithPassword({
-          email: normalizedEmail,
-          password,
-          fullName: updateResult.data.full_name,
-        });
-      } catch (authError) {
-        console.error("Failed to sync Supabase Auth password", authError);
-      }
-
-      const profile = await buildProfile(client.id);
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(profile));
-      return;
-    } catch (error) {
-      if (error?.statusCode === 503) {
-        handleConfigError(res, error);
-        return;
-      }
-
-      console.error("Password setup error", error);
-      res.statusCode = 500;
-      res.end(JSON.stringify({ message: "Unable to set password." }));
-      return;
-    }
+    // (Optional) Initial password setup if needed
+    res.statusCode = 410;
+    res.end(JSON.stringify({ message: "Password setup via API is disabled. Use password reset." }));
+    return;
   }
 
   res.statusCode = 405;
-  res.setHeader("Allow", "POST, PUT");
+  res.setHeader("Allow", "POST");
   res.end("Method Not Allowed");
 };
