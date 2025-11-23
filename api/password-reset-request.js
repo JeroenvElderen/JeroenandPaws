@@ -35,23 +35,100 @@ const buildBody = ({ email, context }) => `
   </div>
 `;
 
+const normalizeUrlBase = (value) => {
+  if (!value) return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+  }
+
+  return `https://${trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed}`;
+};
+
 const buildRedirectUrl = (origin) => {
   const siteBase =
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || origin || 'http://localhost:3000';
+    normalizeUrlBase(process.env.NEXT_PUBLIC_SITE_URL) ||
+    normalizeUrlBase(process.env.SITE_URL) ||
+    normalizeUrlBase(process.env.VERCEL_URL) ||
+    normalizeUrlBase(origin) ||
+    'http://localhost:3000';
 
   const normalizedBase = siteBase.endsWith('/') ? siteBase.slice(0, -1) : siteBase;
   return `${normalizedBase}/reset-password`;
 };
 
-const sendClientResetEmail = async (email, origin) => {
+const buildClientResetBody = (email, resetLink) => `
+  <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">Hi${email ? ` ${email}` : ''},</p>
+    <p style="margin: 0 0 12px;">
+      We received a request to reset your password. Click the secure button below to open a
+      password reset form directly on our site.
+    </p>
+    <p style="margin: 0 0 16px;">
+      <a
+        href="${resetLink}"
+        style="
+          display: inline-block;
+          padding: 12px 18px;
+          background: #111827;
+          color: #f8fafc;
+          border-radius: 10px;
+          font-weight: 700;
+          text-decoration: none;
+        "
+      >Reset your password</a>
+    </p>
+    <p style="margin: 0 0 10px;">If the button does not work, copy and paste this link into your browser:</p>
+    <p style="margin: 0; word-break: break-all;"><a href="${resetLink}" style="color: #111827;">${resetLink}</a></p>
+    <p style="margin: 16px 0 0; color: #6b7280;">
+      If you did not request this change, please ignore this message.
+    </p>
+  </div>
+`;
+
+const resolveFromEmail = () =>
+  process.env.PASSWORD_RESET_FROM_EMAIL ||
+  process.env.CONTACT_NOTIFICATION_EMAIL ||
+  process.env.NOTIFY_EMAIL ||
+  process.env.JEROEN_AND_PAWS_EMAIL;
+
+const sendClientResetEmail = async (email, origin, accessToken) => {
   requireSupabase();
 
   const redirectTo = buildRedirectUrl(origin);
-  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, { redirectTo });
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo },
+  });
 
   if (error) {
     throw error;
   }
+
+  const resetLink = data?.action_link;
+
+  if (!resetLink) {
+    throw new Error('Supabase did not return a reset link.');
+  }
+
+  const token = accessToken || (await getAppOnlyAccessToken());
+  const fromEmail = resolveFromEmail();
+
+  await sendMail({
+    accessToken: token,
+    fromCalendarId: process.env.OUTLOOK_CALENDAR_ID,
+    to: email,
+    subject: 'Reset your Jeroen & Paws password',
+    body: buildClientResetBody(email, resetLink),
+    contentType: 'HTML',
+    ...(fromEmail ? { from: fromEmail, replyTo: fromEmail } : {}),
+  });
+
+  return resetLink;
 };
 
 module.exports = async (req, res) => {
@@ -73,10 +150,11 @@ module.exports = async (req, res) => {
       return;
     }
 
-    await sendClientResetEmail(email, req.headers.origin);
+    const accessToken = await getAppOnlyAccessToken();
+
+    await sendClientResetEmail(email, req.headers.origin, accessToken);
 
     const toEmail = resolveRecipientEmail();
-    const accessToken = await getAppOnlyAccessToken();
 
     await sendMail({
       accessToken,
