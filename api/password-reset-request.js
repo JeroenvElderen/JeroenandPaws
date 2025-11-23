@@ -74,14 +74,12 @@ const buildRedirectUrl = ({ origin, forwardedProto, forwardedHost }) => {
   })();
 
   const siteBase =
+    normalizeUrlBase(process.env.SITE_URL) ||  // force production value
     normalizeUrlBase(process.env.NEXT_PUBLIC_SITE_URL) ||
-    normalizeUrlBase(process.env.SITE_URL) ||
     normalizeUrlBase(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
     normalizeUrlBase(process.env.NEXT_PUBLIC_VERCEL_URL) ||
     normalizeUrlBase(process.env.VERCEL_URL) ||
-    normalizeUrlBase(derivedForwardedBase) ||
-    normalizeUrlBase(origin) ||
-    'http://localhost:3000';
+    'https://jeroenandpaws.com';
 
   const normalizedBase = siteBase.endsWith('/') ? siteBase.slice(0, -1) : siteBase;
   return `${normalizedBase}/reset-password`;
