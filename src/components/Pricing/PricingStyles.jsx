@@ -526,6 +526,31 @@ const PricingStyles = () => (
         .input-group.full-width {
           grid-column: 1 / -1;
         }
+          .email-group .email-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .email-group .email-row input {
+          flex: 1;
+        }
+        .email-group .load-pets-button {
+          white-space: nowrap;
+        }
+        .pet-list-group {
+          gap: 10px;
+        }
+        .dog-row {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+          align-items: end;
+          grid-column: 1 / -1;
+        }
+        .dog-row .searchable-select,
+        .dog-row .input-group {
+          width: 100%;
+        }
         .actions-row {
           margin-top: 4px;
           display: flex;
@@ -651,6 +676,17 @@ const PricingStyles = () => (
           .form-grid {
             gap: 10px;
             max-height: none;
+          }
+            .email-group .email-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .email-group .load-pets-button {
+            width: 100%;
+            justify-content: center;
+          }
+          .dog-row {
+            grid-template-columns: 1fr;
           }
           .actions-row {
             position: sticky;

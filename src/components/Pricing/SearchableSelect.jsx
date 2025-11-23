@@ -1,6 +1,14 @@
 import React from "react";
 
-const SearchableSelect = ({ label, options, value, onChange }) => {
+const SearchableSelect = ({
+  label,
+  options,
+  value,
+  onChange,
+  className = "",
+  fullWidth = true,
+}) => {
+  const labelClassName = fullWidth ? "input-group full-width" : "input-group";
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [highlight, setHighlight] = React.useState(0);
@@ -58,8 +66,8 @@ const SearchableSelect = ({ label, options, value, onChange }) => {
   };
 
   return (
-    <div className="searchable-select">
-      <label className="input-group full-width">
+    <div className={`searchable-select ${className}`}>
+      <label className={labelClassName}>
         <span>{label}</span>
 
         <input

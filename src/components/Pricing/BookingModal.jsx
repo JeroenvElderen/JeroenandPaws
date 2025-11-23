@@ -36,6 +36,10 @@ const BookingModal = ({ service, onClose }) => {
   const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
   const [showDogDetails, setShowDogDetails] = useState(false);
 
+  const trimmedName = clientName.trim();
+  const trimmedEmail = clientEmail.trim();
+  const canLoadPets = Boolean(trimmedName && trimmedEmail);
+
   const apiBaseUrl = useMemo(() => {
     const configuredBase = (
       process.env.NEXT_PUBLIC_BACKEND_BASE_URL || ""
@@ -57,18 +61,6 @@ const BookingModal = ({ service, onClose }) => {
 
     return day.slots.some((slot) => slot.available);
   }, []);
-  const handleDogCountChange = (count) => {
-    const safeCount = Math.min(MAX_DOGS, Math.max(1, count));
-    setDogCount(safeCount);
-
-    setDogs((prevDogs) => {
-      const newDogs = [...prevDogs];
-      while (newDogs.length < safeCount) {
-        newDogs.push(createEmptyDogProfile());
-      }
-      return newDogs.slice(0, safeCount);
-    });
-  };
 
   const addAnotherDog = () => {
     setShowDogDetails(true);
@@ -568,59 +560,60 @@ const BookingModal = ({ service, onClose }) => {
             placeholder="Best number to reach you"
           />
         </label>
-        <label className="input-group">
+        <label className="input-group email-group">
           <span>Your email</span>
-          <input
-            type="email"
-            value={clientEmail}
-            onChange={(e) => setClientEmail(e.target.value)}
-            placeholder="name@email.com"
-          />
-        </label>
-        <div className="input-group">
-          <div className="label-row">
-            <span>Pets on your profile</span>
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={fetchExistingPets}
-              disabled={!clientEmail || isLoadingPets}
-            >
-              {isLoadingPets ? "Loading…" : "Load pets"}
-            </button>
+          <div className="email-row">
+            <input
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder="name@email.com"
+            />
+            {canLoadPets && (
+              <button
+                type="button"
+                className="ghost-button load-pets-button"
+                onClick={fetchExistingPets}
+                disabled={isLoadingPets}
+              >
+                {isLoadingPets ? "Loading…" : "Load pets"}
+              </button>
+            )}
           </div>
-          {existingPets.length === 0 ? (
-            <p className="muted subtle">
-              {hasAttemptedPetLoad
-                ? "No pets found for this email. Start a new pet profile below."
-                : "Add your email first, then tap \"Load pets\" to attach existing profiles."}
-            </p>
-          ) : (
-            <div className="pet-list">
-              {existingPets.map((pet) => (
-                <label key={pet.id} className="pet-option">
-                  <input
-                    type="checkbox"
-                    checked={selectedPetIds.includes(pet.id)}
-                    onChange={(event) => {
-                      const checked = event.target.checked;
-                      setSelectedPetIds((prev) => {
-                        if (checked) {
-                          return [...prev, pet.id];
-                        }
-                        return prev.filter((id) => id !== pet.id);
-                      });
-                    }}
-                  />
-                  <span>
-                    <strong>{pet.name}</strong>
-                    {pet.breed ? ` • ${pet.breed}` : ""}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+        </label>
+        {(existingPets.length > 0 || hasAttemptedPetLoad) && (
+          <div className="input-group full-width pet-list-group">
+            {existingPets.length === 0 ? (
+              <p className="muted subtle">
+                No pets found for this email. Start a new pet profile below.
+              </p>
+            ) : (
+              <div className="pet-list">
+                {existingPets.map((pet) => (
+                  <label key={pet.id} className="pet-option">
+                    <input
+                      type="checkbox"
+                      checked={selectedPetIds.includes(pet.id)}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setSelectedPetIds((prev) => {
+                          if (checked) {
+                            return [...prev, pet.id];
+                          }
+                          return prev.filter((id) => id !== pet.id);
+                        });
+                      }}
+                    />
+                    <span>
+                      <strong>{pet.name}</strong>
+                      {pet.breed ? ` • ${pet.breed}` : ""}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {existingPets.length > 0 && !showDogDetails && (
           <div className="input-group full-width">
             <div className="label-row">
@@ -640,9 +633,9 @@ const BookingModal = ({ service, onClose }) => {
         )}
         {showDogDetails && (
           <>
-            <label className="input-group full-width">
+            <div className="input-group full-width">
               <div className="label-row">
-                <span>How many dogs?</span>
+                <span>Dog details</span>
                 <button
                   type="button"
                   className="ghost-button"
@@ -652,25 +645,11 @@ const BookingModal = ({ service, onClose }) => {
                   Add another dog
                 </button>
               </div>
-              <select
-                value={dogCount}
-                onChange={(e) => handleDogCountChange(Number(e.target.value))}
-                className="input-like-select"
-              >
-                {Array.from({ length: MAX_DOGS }).map((_, index) => {
-                  const count = index + 1;
-                  return (
-                    <option key={count} value={count}>
-                      {count} {count === 1 ? "dog" : "dogs"}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
+            </div>
             {Array.from({ length: dogCount }).map((_, index) => {
               const dogProfile = dogs[index] || createEmptyDogProfile();
               return (
-                <React.Fragment key={index}>
+                <div className="dog-row" key={index}>
                   <label className="input-group">
                     <span>Dog {index + 1} Name</span>
                     <input
@@ -688,8 +667,10 @@ const BookingModal = ({ service, onClose }) => {
                     options={["Mixed breed", ...DOG_BREEDS]}
                     value={dogProfile.breed}
                     onChange={(value) => updateDogField(index, "breed", value)}
+                    className="dog-breed-select"
+                    fullWidth={false}
                   />
-                <label className="input-group">
+                  <label className="input-group">
                     <span>Dog {index + 1} Photo</span>
                     <input
                       type="file"
@@ -706,7 +687,7 @@ const BookingModal = ({ service, onClose }) => {
                       />
                     )}
                   </label>
-                </React.Fragment>
+                </div>
               );
             })}
             <label className="input-group full-width">
