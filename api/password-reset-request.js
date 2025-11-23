@@ -44,11 +44,15 @@ const normalizeUrlBase = (value) => {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
-  }
+  try {
+    const parsed = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? new URL(trimmed)
+      : new URL(`https://${trimmed}`);
 
-  return `https://${trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed}`;
+    return parsed.origin;
+  } catch (e) {
+    return null;
+  }
 };
 
 const buildRedirectUrl = ({ origin, forwardedProto, forwardedHost }) => {
@@ -56,17 +60,25 @@ const buildRedirectUrl = ({ origin, forwardedProto, forwardedHost }) => {
     const proto = forwardedProto?.split(',')[0]?.trim();
     const host = forwardedHost?.split(',')[0]?.trim();
 
-    if (!proto || !host) return null;
+    if (!host) return null;
 
-    return `${proto}://${host}`;
+    const safeProto = proto || (() => {
+      try {
+        return new URL(origin).protocol.replace(':', '');
+      } catch (e) {
+        return 'https';
+      }
+    })();
+
+    return `${safeProto}://${host}`;
   })();
 
   const siteBase =
     normalizeUrlBase(process.env.NEXT_PUBLIC_SITE_URL) ||
     normalizeUrlBase(process.env.SITE_URL) ||
     normalizeUrlBase(process.env.VERCEL_URL) ||
-    normalizeUrlBase(origin) ||
     normalizeUrlBase(derivedForwardedBase) ||
+    normalizeUrlBase(origin) ||
     'http://localhost:3000';
 
   const normalizedBase = siteBase.endsWith('/') ? siteBase.slice(0, -1) : siteBase;
