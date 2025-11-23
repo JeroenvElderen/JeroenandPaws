@@ -97,6 +97,10 @@ const ensureAuthUserWithPassword = async ({ email, password, fullName }) => {
   return { user: createResult.data.user, created: true };
 };
 
+// Ensures there is a Supabase Auth user for the given email and then creates a
+// matching row in the `clients` table using the Auth user's ID. If a client
+// already exists for the normalized email, the existing row is returned
+// without creating or updating Auth state.
 const ensureClientProfile = async ({ email, fullName, phone }) => {
   requireSupabase();
 
@@ -123,9 +127,22 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
   const temporaryPassword = crypto.randomBytes(9).toString("base64");
   const passwordSetupToken = crypto.randomUUID();
 
+  const { user: authUser } = await ensureAuthUserWithPassword({
+    email: normalizedEmail,
+    password: temporaryPassword,
+    fullName,
+  });
+
+  const clientId = authUser?.id;
+
+  if (!clientId) {
+    throw new Error("Failed to ensure Supabase Auth user for client creation");
+  }
+
   const insertResult = await supabaseAdmin
     .from("clients")
     .insert({
+      id: clientId,
       email: normalizedEmail,
       full_name: fullName || null,
       phone_number: phone || null,
@@ -137,16 +154,6 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
 
   if (insertResult.error) {
     throw insertResult.error;
-  }
-
-  try {
-    await ensureAuthUserWithPassword({
-      email: normalizedEmail,
-      password: temporaryPassword,
-      fullName,
-    });
-  } catch (authError) {
-    console.error("Failed to sync client with Supabase Auth", authError);
   }
 
   return {
@@ -324,6 +331,9 @@ const createBookingWithProfiles = async ({
     : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
   const end = safeStart.plus({ minutes: duration });
 
+  // The client profile call will create or update the Supabase Auth user first
+  // and then insert the `clients` row using the Auth user's ID so both records
+  // share the same identifier.
   const { client, created, temporaryPassword } = await ensureClientProfile({
     email: clientEmail,
     fullName: clientName,
