@@ -19,6 +19,7 @@ const BookingModal = ({ service, onClose }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
@@ -31,6 +32,7 @@ const BookingModal = ({ service, onClose }) => {
   const [existingPets, setExistingPets] = useState([]);
   const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [showFormPopup, setShowFormPopup] = useState(false);
+  const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
 
   const apiBaseUrl = useMemo(() => {
     const configuredBase = (
@@ -181,16 +183,19 @@ const BookingModal = ({ service, onClose }) => {
   useEffect(() => {
     setExistingPets([]);
     setSelectedPetIds([]);
+    setHasAttemptedPetLoad(false);
   }, [clientEmail]);
 
   const fetchExistingPets = useCallback(async () => {
     if (!clientEmail) {
       setExistingPets([]);
       setSelectedPetIds([]);
+      setHasAttemptedPetLoad(false);
       return;
     }
 
     setIsLoadingPets(true);
+    setHasAttemptedPetLoad(false);
     try {
       const requestUrl = `${apiBaseUrl}/api/pets?ownerEmail=${encodeURIComponent(
         clientEmail
@@ -206,6 +211,11 @@ const BookingModal = ({ service, onClose }) => {
       const data = await parseJsonSafely(response, requestUrl);
       setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
       setSelectedPetIds([]);
+
+      if (!Array.isArray(data?.pets) || data.pets.length === 0) {
+        setDogCount(1);
+        resetDogProfiles();
+      }
     } catch (loadError) {
       console.error("Failed to load pets", loadError);
       setExistingPets([]);
@@ -255,9 +265,9 @@ const BookingModal = ({ service, onClose }) => {
       return;
     }
 
-    if (!clientName.trim() || !clientEmail.trim()) {
+    if (!clientName.trim() || !clientPhone.trim() || !clientEmail.trim()) {
       setError(
-        "Please add your name and email so we can confirm your booking."
+        "Please add your name, phone number, and email so we can confirm your booking."
       );
       return;
     }
@@ -297,6 +307,7 @@ const BookingModal = ({ service, onClose }) => {
         serviceId: service.id,
         serviceTitle: service.title,
         clientName: clientName.trim(),
+        clientPhone: clientPhone.trim(),
         clientEmail: clientEmail.trim(),
         notes: notes.trim(),
         timeZone: availability.timeZone || "UTC",
@@ -380,6 +391,7 @@ const BookingModal = ({ service, onClose }) => {
       setAvailabilityNotice("");
 
       setClientName("");
+      setClientPhone("");
       setClientEmail("");
       setNotes("");
       resetDogProfiles();
@@ -447,6 +459,77 @@ const BookingModal = ({ service, onClose }) => {
       {error && <p className="error-banner">{error}</p>}
       {success && <p className="success-banner">{success}</p>}
       <div className="form-grid">
+        <label className="input-group">
+          <span>Your name</span>
+          <input
+            type="text"
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            placeholder="Client name"
+          />
+        </label>
+        <label className="input-group">
+          <span>Your phone</span>
+          <input
+            type="tel"
+            value={clientPhone}
+            onChange={(e) => setClientPhone(e.target.value)}
+            placeholder="Best number to reach you"
+          />
+        </label>
+        <label className="input-group">
+          <span>Your email</span>
+          <input
+            type="email"
+            value={clientEmail}
+            onChange={(e) => setClientEmail(e.target.value)}
+            placeholder="name@email.com"
+          />
+        </label>
+        <div className="input-group">
+          <div className="label-row">
+            <span>Pets on your profile</span>
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={fetchExistingPets}
+              disabled={!clientEmail || isLoadingPets}
+            >
+              {isLoadingPets ? "Loading…" : "Load pets"}
+            </button>
+          </div>
+          {existingPets.length === 0 ? (
+            <p className="muted subtle">
+               {hasAttemptedPetLoad
+                ? "No pets found for this email. Start a new pet profile below."
+                : "Add your email first, then tap \"Load pets\" to attach existing profiles."}
+            </p>
+          ) : (
+            <div className="pet-list">
+              {existingPets.map((pet) => (
+                <label key={pet.id} className="pet-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedPetIds.includes(pet.id)}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setSelectedPetIds((prev) => {
+                        if (checked) {
+                          return [...prev, pet.id];
+                        }
+                        return prev.filter((id) => id !== pet.id);
+                      });
+                    }}
+                  />
+                  <span>
+                    <strong>{pet.name}</strong>
+                    {pet.breed ? ` • ${pet.breed}` : ""}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         <label className="input-group full-width">
           <span>How many dogs?</span>
           <select
@@ -503,67 +586,6 @@ const BookingModal = ({ service, onClose }) => {
             </React.Fragment>
           );
         })}
-
-        <label className="input-group">
-          <span>Your name</span>
-          <input
-            type="text"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            placeholder="Client name"
-          />
-        </label>
-        <label className="input-group">
-          <span>Your email</span>
-          <input
-            type="email"
-            value={clientEmail}
-            onChange={(e) => setClientEmail(e.target.value)}
-            placeholder="name@email.com"
-          />
-        </label>
-        <div className="input-group">
-          <div className="label-row">
-            <span>Pets on your profile</span>
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={fetchExistingPets}
-              disabled={!clientEmail || isLoadingPets}
-            >
-              {isLoadingPets ? "Loading…" : "Load pets"}
-            </button>
-          </div>
-          {existingPets.length === 0 ? (
-            <p className="muted subtle">
-              Add your email first, then tap "Load pets" to attach existing profiles.
-            </p>
-          ) : (
-            <div className="pet-list">
-              {existingPets.map((pet) => (
-                <label key={pet.id} className="pet-option">
-                  <input
-                    type="checkbox"
-                    checked={selectedPetIds.includes(pet.id)}
-                    onChange={(event) => {
-                      const checked = event.target.checked;
-                      setSelectedPetIds((prev) => {
-                        if (checked) {
-                          return [...prev, pet.id];
-                        }
-                        return prev.filter((id) => id !== pet.id);
-                      });
-                    }}
-                  />
-                  <span>
-                    <strong>{pet.name}</strong>
-                    {pet.breed ? ` • ${pet.breed}` : ""}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
         <label className="input-group full-width">
           <span>Notes for Jeroen</span>
           <textarea
