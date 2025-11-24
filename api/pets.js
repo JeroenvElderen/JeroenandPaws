@@ -83,7 +83,60 @@ module.exports = async (req, res) => {
     }
   }
 
+  if (req.method === 'PUT') {
+    try {
+      const { id, ownerEmail, name, breed, notes, photoDataUrl } = req.body || {};
+      const normalizedEmail = (ownerEmail || '').toLowerCase();
+
+      if (!id || !normalizedEmail) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: 'Pet id and owner email are required' }));
+        return;
+      }
+
+      const clientResult = await supabaseAdmin
+        .from('clients')
+        .select('id')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (clientResult.error || !clientResult.data) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ message: 'Owner not found' }));
+        return;
+      }
+
+      const updateResult = await supabaseAdmin
+        .from('pets')
+        .update({
+          name: name || 'New pet',
+          breed: breed || null,
+          notes: notes || null,
+          photo_data_url: photoDataUrl || null,
+        })
+        .eq('id', id)
+        .eq('owner_id', clientResult.data.id)
+        .select('*')
+        .single();
+
+      if (updateResult.error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: 'Failed to update pet' }));
+        return;
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ pet: updateResult.data }));
+      return;
+    } catch (error) {
+      console.error('Pet update error', error);
+      res.statusCode = 500;
+      res.end(JSON.stringify({ message: 'Failed to update pet' }));
+      return;
+    }
+  }
+
   res.statusCode = 405;
-  res.setHeader('Allow', 'GET, POST');
+  res.setHeader('Allow', 'GET, POST, PUT');
   res.end('Method Not Allowed');
 };
