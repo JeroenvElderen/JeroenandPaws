@@ -166,15 +166,33 @@ const ProfilePage = () => {
     setResetEmail(payload?.client?.email || '');
     }, []);
 
-  const persistProfileState = (payload) => {
-    if (!payload) return;
+  const persistProfileState = (nextProfileOrUpdater) => {
+    setProfile((previous) => {
+      const nextProfile =
+        typeof nextProfileOrUpdater === 'function'
+          ? nextProfileOrUpdater(previous)
+          : nextProfileOrUpdater;
 
-    setProfile(payload);
-    if (!useMockProfile) {
-      setAuthProfile(payload);
-    }
-    refreshContactForm(payload);
-    setEmail(payload?.client?.email || '');
+      if (nextProfile === undefined) {
+        return previous;
+      }
+
+      if (!nextProfile) {
+        if (!useMockProfile) {
+          setAuthProfile(null);
+        }
+        refreshContactForm(null);
+        setEmail('');
+        return null;
+      }
+
+      if (!useMockProfile) {
+        setAuthProfile(nextProfile);
+      }
+      refreshContactForm(nextProfile);
+      setEmail(nextProfile?.client?.email || '');
+      return nextProfile;
+    });
   };
 
   useEffect(() => {
@@ -243,8 +261,10 @@ const ProfilePage = () => {
           throw new Error(payload?.message || 'Could not load bookings');
         }
 
-        const nextProfile = { ...profile, bookings: payload.bookings || [] };
-        persistProfileState(nextProfile);
+        persistProfileState((currentProfile) => ({
+          ...currentProfile,
+          bookings: payload.bookings || [],
+        }));
       } catch (err) {
         console.error('Failed to refresh bookings', err);
       }
@@ -267,8 +287,10 @@ const ProfilePage = () => {
           throw new Error(payload?.message || 'Could not refresh pets');
         }
 
-        const nextProfile = { ...profile, pets: payload.pets || [] };
-        persistProfileState(nextProfile);
+        persistProfileState((currentProfile) => ({
+          ...currentProfile,
+          pets: payload.pets || [],
+        }));
       } catch (err) {
         console.error('Failed to refresh pet photos', err);
       }
@@ -304,8 +326,10 @@ const ProfilePage = () => {
         throw new Error(payload?.message || 'Could not save your details');
       }
 
-      const nextProfile = { ...profile, client: payload.client };
-      persistProfileState(nextProfile);
+      persistProfileState((currentProfile) => ({
+        ...currentProfile,
+        client: payload.client,
+      }));
     } catch (err) {
       setError(err.message || 'Unable to save details');
     } finally {
@@ -451,9 +475,12 @@ const ProfilePage = () => {
         throw new Error(payload?.message || 'Could not update pet');
       }
 
-      const nextPets = (profile?.pets || []).map((pet) => (pet.id === petId ? payload.pet : pet));
-      const nextProfile = { ...profile, pets: nextPets };
-      persistProfileState(nextProfile);
+      persistProfileState((currentProfile) => {
+        const nextPets = (currentProfile?.pets || []).map((pet) =>
+          pet.id === petId ? payload.pet : pet
+        );
+        return { ...currentProfile, pets: nextPets };
+      });
       stopEditingPet(petId);
     } catch (err) {
       setError(err.message || 'Unable to update pet');
@@ -482,11 +509,12 @@ const ProfilePage = () => {
         throw new Error(payload?.message || 'Could not cancel booking');
       }
 
-      const nextBookings = (profile?.bookings || []).map((booking) =>
-        booking.id === selectedBooking.id ? payload.booking : booking
-      );
-      const nextProfile = { ...profile, bookings: nextBookings };
-      persistProfileState(nextProfile);
+      persistProfileState((currentProfile) => {
+        const nextBookings = (currentProfile?.bookings || []).map((booking) =>
+          booking.id === selectedBooking.id ? payload.booking : booking
+        );
+        return { ...currentProfile, bookings: nextBookings };
+      });
       setSelectedBooking(payload.booking);
     } catch (err) {
       setBookingAction({ cancelling: false, error: err.message || 'Unable to cancel booking' });
