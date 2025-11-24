@@ -107,6 +107,7 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
   requireSupabase();
 
   const normalizedEmail = (email || "").trim().toLowerCase();
+  const phoneToStore = (phone || "").trim();
 
   if (!normalizedEmail) {
     throw new Error("Client email is required to create a profile");
@@ -123,6 +124,21 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
   }
 
   if (existingClient.data) {
+    if (phoneToStore && existingClient.data.phone_number !== phoneToStore) {
+      const updateResult = await supabaseAdmin
+        .from("clients")
+        .update({ phone_number: phoneToStore })
+        .eq("id", existingClient.data.id)
+        .select("*")
+        .maybeSingle();
+
+      if (updateResult.error) {
+        throw updateResult.error;
+      }
+
+      return { client: updateResult.data, created: false };
+    }
+
     return { client: existingClient.data, created: false };
   }
 
@@ -147,7 +163,7 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
       id: clientId,
       email: normalizedEmail,
       full_name: fullName || null,
-      phone_number: phone || null,
+      phone_number: phoneToStore || null,
       hashed_password: hashPassword(temporaryPassword),
       password_setup_token: passwordSetupToken,
     })
@@ -370,6 +386,7 @@ const createBookingWithProfiles = async ({
   serviceTitle,
   timeZone = "UTC",
   clientName,
+  clientPhone,
   clientEmail,
   notes,
   pets = [],
@@ -396,6 +413,7 @@ const createBookingWithProfiles = async ({
   const { client, created, temporaryPassword } = await ensureClientProfile({
     email: clientEmail,
     fullName: clientName,
+    phone: clientPhone,
   });
 
   const ensuredPets = await ensurePetProfiles(client.id, pets);

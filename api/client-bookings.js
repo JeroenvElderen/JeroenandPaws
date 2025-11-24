@@ -134,7 +134,7 @@ module.exports = async (req, res) => {
         .eq('id', bookingId)
         .eq('client_id', clientResult.data.id)
         .select('*, services_catalog(*), booking_pets(pet_id)')
-        .single();
+        .maybeSingle();
 
       if (updateResult.error) {
         res.statusCode = 500;

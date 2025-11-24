@@ -184,6 +184,7 @@ module.exports = async (req, res) => {
       serviceId,
       serviceTitle,
       clientName,
+      clientPhone,
       clientEmail,
       notes,
       timeZone = "UTC",
@@ -198,20 +199,21 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const petsFromBody = Array.isArray(pets) && pets.length ? pets : dogs || [];
+  const petsFromBody = Array.isArray(pets) && pets.length ? pets : dogs || [];
 
-    const bookingResult = await createBookingWithProfiles({
-      date,
-      time,
-      durationMinutes,
-      serviceId,
-      serviceTitle,
-      clientName,
-      clientEmail,
-      notes,
-      timeZone,
-      pets: petsFromBody,
-      dogCount,
+  const bookingResult = await createBookingWithProfiles({
+    date,
+    time,
+    durationMinutes,
+    serviceId,
+    serviceTitle,
+    clientName,
+    clientPhone,
+    clientEmail,
+    notes,
+    timeZone,
+    pets: petsFromBody,
+    dogCount,
     });
 
     console.log("➡️ BOOKING RESULT:", bookingResult);
