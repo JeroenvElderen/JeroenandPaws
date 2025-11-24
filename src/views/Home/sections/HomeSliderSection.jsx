@@ -67,6 +67,8 @@ const HomeSliderSection = () => {
   const [currentIndex, setCurrentIndex] = useState(loopOffset);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const containerPaddingVar =
+    '--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---container--container-padding-horizontal';
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -131,7 +133,10 @@ const HomeSliderSection = () => {
           <div className="eyebrow">Welcome to your dog's second home</div>
           <h2 className="heading_h2">Tailored care for every dog</h2>
         </div>
-        <div className="slider overflow_visible w-slider">
+        <div
+          className="slider overflow_visible w-slider"
+          style={isMobile ? { overflow: 'hidden' } : undefined}
+        >
           <div
             className="slider_mask width_35percent width_100percent_tablet overflow_visible w-slider-mask"
             style={{
@@ -144,6 +149,8 @@ const HomeSliderSection = () => {
                     maxWidth: '960px',
                     margin: '0 auto',
                     overflow: 'hidden',
+                    justifyContent: 'center',
+                    padding: `0 var(${containerPaddingVar})`,
                   }
                 : {}),
             }}
@@ -152,14 +159,26 @@ const HomeSliderSection = () => {
               <div
                 key={`${slide.title}-${index}`}
                 className="ix_card-deck-space height_100percent w-slide"
-                style={{ flex: '0 0 100%', maxWidth: '100%', display: 'flex', marginRight: 0 }}
+                style={{
+                  flex: '0 0 100%',
+                  maxWidth: '100%',
+                  display: 'flex',
+                  marginRight: 0,
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                  ...(isMobile
+                    ? {
+                        padding: `0 var(${containerPaddingVar})`,
+                      }
+                    : {}),
+                }}
               >
                 <div
                   className="card overflow_hidden backdrop-filter_blur"
                   style={{
                     height: '100%',
                     width: '100%',
-                    maxWidth: '28rem',
+                    maxWidth: isMobile ? '100%' : '28rem',
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -172,7 +191,7 @@ const HomeSliderSection = () => {
                         </Link>
                       </div>
                     </div>
-                    <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                    <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium margin-right_medium">
                       <img
                         width="405"
                         height="405"
