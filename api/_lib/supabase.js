@@ -113,7 +113,7 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
   const existingClient = await supabaseAdmin
     .from("clients")
     .select("*")
-    .eq("email", normalizedEmail)
+    .ilike("email", normalizedEmail)
     .maybeSingle();
 
   if (existingClient.error) {
@@ -153,6 +153,24 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
     .single();
 
   if (insertResult.error) {
+    // Gracefully handle race conditions or case-only email differences that can
+    // happen when a client already exists with the same email.
+    if (insertResult.error.code === "23505") {
+      const conflict = await supabaseAdmin
+        .from("clients")
+        .select("*")
+        .ilike("email", normalizedEmail)
+        .maybeSingle();
+
+      if (conflict.error) {
+        throw conflict.error;
+      }
+
+      if (conflict.data) {
+        return { client: conflict.data, created: false };
+      }
+    }
+    
     throw insertResult.error;
   }
 
