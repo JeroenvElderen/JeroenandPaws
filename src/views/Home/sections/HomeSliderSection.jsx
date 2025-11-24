@@ -152,9 +152,21 @@ const HomeSliderSection = () => {
               <div
                 key={`${slide.title}-${index}`}
                 className="ix_card-deck-space height_100percent w-slide"
-                style={{ flex: '0 0 100%', maxWidth: '100%', display: 'flex' }}
+                style={{
+                  flex: '0 0 100%',
+                  maxWidth: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
               >
-                <div className="card overflow_hidden backdrop-filter_blur" style={{ height: '100%' }}>
+                <div
+                  className="card overflow_hidden backdrop-filter_blur"
+                  style={{
+                    height: '100%',
+                    width: '100%',
+                    maxWidth: '28rem',
+                  }}
+                >
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <div className="card_body padding-bottom_none" style={{ flexGrow: 1 }}>
                       <p className="heading_h4">{slide.title}</p>
