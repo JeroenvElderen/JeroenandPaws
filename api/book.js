@@ -28,15 +28,36 @@ const escapeHtml = (value = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+const WINDOWS_TO_IANA = {
+  "GMT Standard Time": "Europe/London",
+};
+
+const resolveTimeZone = (timeZone = "UTC") => {
+  const candidate = WINDOWS_TO_IANA[timeZone] || timeZone || "UTC";
+  return DateTime.now().setZone(candidate).isValid ? candidate : "UTC";
+};
+
 const buildFriendlyTiming = ({ start, end, timeZone = "UTC" }) => {
   const format = "cccc, LLLL d, yyyy 'at' t ZZZZ";
-  const zone = timeZone || "UTC";
-  const safeStart = start.setZone(zone, { keepLocalTime: false });
-  const safeEnd = end.setZone(zone, { keepLocalTime: false });
+  const zone = resolveTimeZone(timeZone);
+  const ensureDateTime = (value) => {
+    if (DateTime.isDateTime(value)) return value;
+    return DateTime.fromISO(String(value), { zone: "UTC" });
+  };
+
+  const formatDate = (value) => {
+    const parsed = ensureDateTime(value);
+    if (!parsed.isValid) return "Date pending";
+
+    const zoned = parsed.setZone(zone, { keepLocalTime: false });
+    return zoned.isValid
+      ? zoned.toFormat(format)
+      : parsed.toUTC().toFormat(format);
+  };
 
   return {
-    start: safeStart.toFormat(format),
-    end: safeEnd.toFormat(format),
+    start: formatDate(start),
+    end: formatDate(end),
     timeZone: zone,
   };
 };

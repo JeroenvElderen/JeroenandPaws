@@ -2,14 +2,16 @@ const { createClient } = require("@supabase/supabase-js");
 const crypto = require("crypto");
 const { DateTime } = require("luxon");
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 let supabaseAdmin = null;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.warn(
-    "Supabase admin client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+    "Supabase admin client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
   );
 } else {
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -22,7 +24,7 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
 
 const createConfigError = () => {
   const error = new Error(
-    "Supabase admin client is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    "Supabase admin client is not configured. Please set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY."
   );
   error.statusCode = 503;
   error.publicMessage =
@@ -341,6 +343,25 @@ const linkBookingPets = async (bookingId, pets) => {
   return insertResult.data;
 };
 
+const deleteBookingById = async (bookingId) => {
+  requireSupabase();
+
+  if (!bookingId) return null;
+
+  const deleteResult = await supabaseAdmin
+    .from("bookings")
+    .delete()
+    .eq("id", bookingId)
+    .select("*")
+    .maybeSingle();
+
+  if (deleteResult.error) {
+    throw deleteResult.error;
+  }
+
+  return deleteResult.data;
+};
+
 const createBookingWithProfiles = async ({
   date,
   time,
@@ -418,6 +439,7 @@ module.exports = {
   ensureAuthUserWithPassword,
   findAuthUserByEmail,
   hashPassword,
+  deleteBookingById,
   supabaseAdmin,
   requireSupabase,
 };
