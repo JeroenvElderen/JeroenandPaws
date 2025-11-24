@@ -128,7 +128,10 @@ const ProfilePage = () => {
     phone: initialProfile?.client?.phone_number || '',
     email: initialProfile?.client?.email || '',
   });
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [savingContact, setSavingContact] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [newPet, setNewPet] = useState({ name: '', breed: '', notes: '' });
@@ -281,8 +284,18 @@ const ProfilePage = () => {
   };
 
   const savePassword = async () => {
-    if (!contactForm.email || !newPassword) {
-      setError('Enter a new password to continue.');
+    if (!contactForm.email) {
+      setError('Email is required to save your details.');
+      return;
+    }
+
+    if (!currentPasswordInput || !newPassword || !confirmPassword) {
+      setError('Please complete all password fields to continue.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('New password and confirmation must match.');
       return;
     }
 
@@ -292,7 +305,11 @@ const ProfilePage = () => {
       const response = await fetch('/api/clients', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: contactForm.email, password: newPassword }),
+        body: JSON.stringify({
+          email: contactForm.email,
+          password: newPassword,
+          currentPassword: currentPasswordInput,
+        }),
       });
 
       const payload = await response.json().catch(() => null);
@@ -303,7 +320,11 @@ const ProfilePage = () => {
 
       const nextProfile = { ...profile, client: payload.client };
       persistProfileState(nextProfile);
+      setPassword(newPassword);
+      setCurrentPasswordInput('');
       setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordForm(false);
     } catch (err) {
       setError(err.message || 'Unable to update password');
     } finally {
@@ -681,38 +702,133 @@ const ProfilePage = () => {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ color: brand.subtleText, fontWeight: 700 }}>Change password</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <input
-                        type="password"
-                        placeholder="New password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        style={{
-                          flex: '1 1 180px',
-                          padding: '12px',
-                          borderRadius: '12px',
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: 'rgba(255,255,255,0.04)',
-                          color: brand.ink,
-                        }}
-                      />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <button
                         type="button"
-                        onClick={savePassword}
-                        disabled={savingPassword}
+                        onClick={() => {
+                          const next = !showPasswordForm;
+                          setShowPasswordForm(next);
+                          if (!next) {
+                            setCurrentPasswordInput('');
+                            setNewPassword('');
+                            setConfirmPassword('');
+                          } else {
+                            setError('');
+                          }
+                        }}
                         style={{
-                          padding: '12px 16px',
+                          alignSelf: 'flex-start',
+                          padding: '10px 14px',
                           borderRadius: '12px',
-                          border: 'none',
-                          background: savingPassword ? brand.primarySoft : brand.primary,
-                          color: 'white',
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: brand.surfaceHighlight,
+                          color: brand.ink,
                           fontWeight: 800,
-                          cursor: savingPassword ? 'not-allowed' : 'pointer',
+                          cursor: 'pointer',
                           boxShadow: brand.cardShadow,
                         }}
                       >
-                        {savingPassword ? 'Saving…' : 'Update password'}
+                        {showPasswordForm ? 'Close password form' : 'Change password'}
                       </button>
+
+                      {showPasswordForm && (
+                        <div
+                          style={{
+                            display: 'grid',
+                            gap: '10px',
+                            borderRadius: '14px',
+                            padding: '12px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${brand.cardBorder}`,
+                          }}
+                        >
+                          <input
+                            type="password"
+                            placeholder="Current password"
+                            value={currentPasswordInput}
+                            onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                            style={{
+                              padding: '12px',
+                              borderRadius: '12px',
+                              border: `1px solid ${brand.cardBorder}`,
+                              background: 'rgba(255,255,255,0.04)',
+                              color: brand.ink,
+                            }}
+                          />
+                          <input
+                            type="password"
+                            placeholder="New password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            style={{
+                              padding: '12px',
+                              borderRadius: '12px',
+                              border: `1px solid ${brand.cardBorder}`,
+                              background: 'rgba(255,255,255,0.04)',
+                              color: brand.ink,
+                            }}
+                          />
+                          <input
+                            type="password"
+                            placeholder="Confirm new password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            style={{
+                              padding: '12px',
+                              borderRadius: '12px',
+                              border: `1px solid ${brand.cardBorder}`,
+                              background: 'rgba(255,255,255,0.04)',
+                              color: brand.ink,
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: '8px',
+                              justifyContent: 'flex-end',
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowPasswordForm(false);
+                                setCurrentPasswordInput('');
+                                setNewPassword('');
+                                setConfirmPassword('');
+                              }}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: '12px',
+                                border: `1px solid ${brand.cardBorder}`,
+                                background: 'transparent',
+                                color: brand.subtleText,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={savePassword}
+                              disabled={savingPassword}
+                              style={{
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: savingPassword ? brand.primarySoft : brand.primary,
+                                color: 'white',
+                                fontWeight: 800,
+                                cursor: savingPassword ? 'not-allowed' : 'pointer',
+                                boxShadow: brand.cardShadow,
+                              }}
+                            >
+                              {savingPassword ? 'Saving…' : 'Update password'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
