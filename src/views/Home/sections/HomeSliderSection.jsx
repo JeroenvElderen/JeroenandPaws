@@ -67,8 +67,6 @@ const HomeSliderSection = () => {
   const [currentIndex, setCurrentIndex] = useState(loopOffset);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const containerPaddingVar =
-    '--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---container--container-padding-horizontal';
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -133,10 +131,7 @@ const HomeSliderSection = () => {
           <div className="eyebrow">Welcome to your dog's second home</div>
           <h2 className="heading_h2">Tailored care for every dog</h2>
         </div>
-        <div
-          className="slider overflow_visible w-slider"
-          style={isMobile ? { overflow: 'hidden' } : undefined}
-        >
+        <div className="slider overflow_visible w-slider">
           <div
             className="slider_mask width_35percent width_100percent_tablet overflow_visible w-slider-mask"
             style={{
@@ -149,8 +144,6 @@ const HomeSliderSection = () => {
                     maxWidth: '960px',
                     margin: '0 auto',
                     overflow: 'hidden',
-                    justifyContent: 'center',
-                    padding: `0 var(${containerPaddingVar})`,
                   }
                 : {}),
             }}
@@ -163,47 +156,30 @@ const HomeSliderSection = () => {
                   flex: '0 0 100%',
                   maxWidth: '100%',
                   display: 'flex',
-                  marginRight: 0,
                   justifyContent: 'center',
-                  boxSizing: 'border-box',
-                  ...(isMobile
-                    ? {
-                        padding: `0 var(${containerPaddingVar})`,
-                      }
-                    : {}),
                 }}
               >
-                <div
-                  className="card overflow_hidden backdrop-filter_blur"
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    maxWidth: isMobile ? '100%' : '28rem',
-                  }}
-                >
+                <div className="card overflow_hidden backdrop-filter_blur" style={{ height: '100%' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div className="card_body padding-bottom_none" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div className="card_body padding-bottom_none" style={{ flexGrow: 1 }}>
                       <p className="heading_h4">{slide.title}</p>
                       <p>{slide.description}</p>
-                      <div
-                        className="image-ratio_1x1 margin-top_xsmall"
-                        style={{ alignSelf: 'center', width: '100%', maxWidth: '24rem' }}
-                      >
-                        <img
-                          width="405"
-                          height="405"
-                          alt={slide.imageAlt}
-                          src={slide.imageSrc}
-                          loading="lazy"
-                          className="image_cover"
-                        />
-                      </div>
-                      <div className="margin-top_small" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                    </div>
+                    <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                      <img
+                        width="405"
+                        height="405"
+                        alt={slide.imageAlt}
+                        src={slide.imageSrc}
+                        loading="lazy"
+                        className="image_cover"
+                      />
+                    </div>
+                    <div className="margin-top_small">
                         <Link href={slide.href} className="button w-button">
                           View service
                         </Link>
                       </div>
-                    </div>
                   </div>
                 </div>
               </div>
