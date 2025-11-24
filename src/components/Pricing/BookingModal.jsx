@@ -656,6 +656,10 @@ const BookingModal = ({ service, onClose }) => {
               <div className="pet-list">
                 {existingPets.map((pet) => {
                   const isSelected = selectedPetIds.includes(pet.id);
+                  const petInitial = (pet.name || pet.breed || "🐾")
+                    .charAt(0)
+                    .toUpperCase();
+                  const noteText = pet.notes || pet.bio || "";
 
                   return (
                     <label
@@ -677,17 +681,34 @@ const BookingModal = ({ service, onClose }) => {
                       />
                       <div className="pet-option__details">
                         <div className="pet-option__identity">
-                          {(pet.photo_data_url || pet.photoDataUrl) && (
-                            <img
-                              src={pet.photo_data_url || pet.photoDataUrl}
-                              alt={`${pet.name} avatar`}
-                              className="pet-option__avatar"
-                            />
-                          )}
-                          <div>
-                            <span className="pet-option__name">{pet.name}</span>
-                            {pet.breed && (
-                              <span className="pet-option__breed">{pet.breed}</span>
+                          <div className="pet-option__thumb" aria-hidden="true">
+                            {pet.photo_data_url || pet.photoDataUrl ? (
+                              <img
+                                src={pet.photo_data_url || pet.photoDataUrl}
+                                alt={`${pet.name} avatar`}
+                                className="pet-option__avatar"
+                              />
+                            ) : (
+                              <div className="pet-option__avatar placeholder">
+                                <span className="pet-option__initial">{petInitial}</span>
+                              </div>
+                            )}
+                            <div className="pet-option__glow" />
+                          </div>
+                          <div className="pet-option__text">
+                            <span className="pet-option__name">
+                              {pet.name || "Your pup"}
+                            </span>
+                            <div className="pet-option__meta-row">
+                              {pet.breed && (
+                                <span className="pet-option__breed">{pet.breed}</span>
+                              )}
+                              <span className="pet-option__pill">Saved profile</span>
+                            </div>
+                            {noteText && (
+                              <p className="pet-option__notes" title={noteText}>
+                                {noteText}
+                              </p>
                             )}
                           </div>
                         </div>

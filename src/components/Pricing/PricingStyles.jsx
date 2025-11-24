@@ -542,59 +542,141 @@ const PricingStyles = () => (
         }
         .pet-list {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 12px;
         }
         .pet-option {
-          display: flex;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 14px;
           align-items: center;
-          gap: 10px;
-          padding: 12px;
-          border-radius: 12px;
-          background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          padding: 14px;
+          border-radius: 14px;
+          position: relative;
+          background: radial-gradient(
+              120% 140% at 0% 0%,
+              rgba(255, 255, 255, 0.08),
+              rgba(255, 255, 255, 0.02)
+            ),
+              linear-gradient(145deg, rgba(34, 36, 76, 0.8), rgba(20, 22, 55, 0.8));
+          border: 1px solid rgba(255, 255, 255, 0.1);
           cursor: pointer;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+          overflow: hidden;
+          transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
+        }
+        .pet-option::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: radial-gradient(circle at 85% 20%, rgba(185, 196, 255, 0.14), transparent 50%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
         }
         .pet-option:hover {
-          border-color: rgba(255, 255, 255, 0.25);
-          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+          border-color: rgba(255, 255, 255, 0.24);
+          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+          transform: translateY(-2px);
+        }
+        .pet-option:hover::after {
+          opacity: 1;
         }
         .pet-option.selected {
           border-color: rgba(144, 166, 255, 0.8);
-          box-shadow: 0 8px 28px rgba(124, 148, 255, 0.24);
-          background: linear-gradient(135deg, rgba(144, 166, 255, 0.18), rgba(144, 166, 255, 0.06));
+          box-shadow: 0 16px 36px rgba(124, 148, 255, 0.32);
+          background: linear-gradient(135deg, rgba(144, 166, 255, 0.18), rgba(144, 166, 255, 0.06)),
+            radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+            linear-gradient(145deg, rgba(34, 36, 76, 0.8), rgba(20, 22, 55, 0.8));
         }
         .pet-option input {
           width: 18px;
           height: 18px;
           accent-color: #b9c4ff;
+          align-self: flex-start;
+          margin-top: 2px;
         }
         .pet-option__details {
           display: flex;
           flex-direction: column;
           gap: 2px;
+          position: relative;
+          z-index: 1;
         }
         .pet-option__identity {
-          display: flex;
-          gap: 10px;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 12px;
           align-items: center;
         }
+        .pet-option__thumb {
+          position: relative;
+          width: 64px;
+          height: 64px;
+          border-radius: 16px;
+          overflow: hidden;
+        }
         .pet-option__avatar {
-          width: 52px;
-          height: 52px;
-          border-radius: 12px;
+          width: 100%;
+          height: 100%;
+          border-radius: 16px;
           object-fit: cover;
           border: 1px solid rgba(255, 255, 255, 0.18);
           background: rgba(255, 255, 255, 0.04);
         }
+        .pet-option__avatar.placeholder {
+          display: grid;
+          place-items: center;
+          background: linear-gradient(135deg, rgba(185, 196, 255, 0.18), rgba(249, 198, 212, 0.16));
+        }
+        .pet-option__initial {
+          font-weight: 800;
+          color: #0f1024;
+          font-size: 22px;
+          letter-spacing: 0.5px;
+        }
+        .pet-option__glow {
+          position: absolute;
+          inset: -4px;
+          border-radius: 18px;
+          background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2), transparent 50%);
+          filter: blur(8px);
+          opacity: 0.7;
+          pointer-events: none;
+        }
+        .pet-option__text {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
         .pet-option__name {
           font-weight: 700;
           color: #f8f6ff;
+          font-size: 16px;
+        }
+        .pet-option__meta-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
         }
         .pet-option__breed {
           color: #d8d2f8;
           font-size: 13px;
+        }
+        .pet-option__pill {
+          font-size: 12px;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: rgba(144, 166, 255, 0.18);
+          color: #e5e7ff;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .pet-option__notes {
+          margin: 0;
+          color: #cdd3ff;
+          font-size: 13px;
+          line-height: 1.4;
+          opacity: 0.9;
         }
         .dog-row {
           display: grid;
