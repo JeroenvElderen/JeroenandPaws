@@ -235,8 +235,10 @@ const BookingModal = ({ service, onClose }) => {
     const client = profile?.client;
     if (!client) return;
 
+    const phoneNumber = client.phone_number || client.phone || "";
+
     setClientName(client.full_name || "");
-    setClientPhone(client.phone_number || "");
+    setClientPhone(phoneNumber || "");
     setClientEmail(client.email || "");
   }, [profile]);
 

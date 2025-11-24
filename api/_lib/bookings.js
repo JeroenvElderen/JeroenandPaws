@@ -1,9 +1,33 @@
-const { deleteBookingById, requireSupabase } = require('./supabase');
+const { requireSupabase, supabaseAdmin } = require('./supabase');
 const { getAppOnlyAccessToken } = require('./auth');
 const { getEvent } = require('./graph');
 
 const normalizeStatus = (status = '') => (status || '').toLowerCase();
 const isCancelledStatus = (status = '') => ['cancelled', 'canceled'].includes(normalizeStatus(status));
+
+const cancelBookingInSupabase = async (
+  bookingId,
+  { clientId, select = '*' } = {}
+) => {
+  if (!bookingId) return null;
+
+  let query = supabaseAdmin
+    .from('bookings')
+    .update({ status: 'cancelled', calendar_event_id: null })
+    .eq('id', bookingId);
+
+  if (clientId) {
+    query = query.eq('client_id', clientId);
+  }
+
+  const updateResult = await query.select(select).maybeSingle();
+
+  if (updateResult.error) {
+    throw updateResult.error;
+  }
+
+  return updateResult.data;
+};
 
 const reconcileBookingsWithCalendar = async (bookings = []) => {
   requireSupabase();
@@ -36,12 +60,11 @@ const reconcileBookingsWithCalendar = async (bookings = []) => {
 
       if (!event?.exists || event?.event?.isCancelled) {
         try {
-          await deleteBookingById(booking.id);
+          const updatedBooking = await cancelBookingInSupabase(booking.id);
+          hydratedBookings.push(updatedBooking || booking);
           continue;
-        } catch (deleteError) {
-          console.error('Booking delete failed during calendar reconciliation', {
-            bookingId: booking.id,
-            error: deleteError,
+        } catch (cancelError) {
+          console.error('Booking cancel failed during calendar reconciliation', {
           });
         }
       }
@@ -58,4 +81,4 @@ const reconcileBookingsWithCalendar = async (bookings = []) => {
   return hydratedBookings;
 };
 
-module.exports = { reconcileBookingsWithCalendar };
+module.exports = { reconcileBookingsWithCalendar, cancelBookingInSupabase };

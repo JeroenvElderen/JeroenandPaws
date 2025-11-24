@@ -1,5 +1,7 @@
 const { supabaseAdmin } = require('./_lib/supabase');
 const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
+const { getAppOnlyAccessToken } = require('./_lib/auth');
+const { deleteEvent } = require('./_lib/graph');
 
 const isAdmin = (req) => {
   const adminEmail = process.env.ADMIN_EMAIL || 'jeroen@jeroenandpaws.com';
@@ -25,9 +27,38 @@ module.exports = async (req, res) => {
       return;
     }
 
+    const calendarId = process.env.OUTLOOK_CALENDAR_ID;
+    let calendarAccessToken = null;
+
+    if (calendarId) {
+      try {
+        calendarAccessToken = await getAppOnlyAccessToken();
+      } catch (calendarAuthError) {
+        console.error('Calendar auth failed for admin booking update', calendarAuthError);
+      }
+    }
+
+    const existingBookingResult = await supabaseAdmin
+      .from('bookings')
+      .select('calendar_event_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (existingBookingResult.error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ message: 'Failed to load existing booking' }));
+      return;
+    }
+
+    const updatePayload = { status: normalizedStatus };
+
+    if (['cancelled', 'canceled'].includes(normalizedStatus)) {
+      updatePayload.calendar_event_id = null;
+    }
+
     const updateResult = await supabaseAdmin
       .from('bookings')
-      .update({ status: normalizedStatus })
+      .update(updatePayload)
       .eq('id', id)
       .select('*, clients(full_name,email), services_catalog(*), booking_pets(pet_id)')
       .maybeSingle();
@@ -38,6 +69,23 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (
+      ['cancelled', 'canceled'].includes(normalizedStatus) &&
+      calendarAccessToken &&
+      calendarId &&
+      existingBookingResult.data?.calendar_event_id
+    ) {
+      try {
+        await deleteEvent({
+          accessToken: calendarAccessToken,
+          calendarId,
+          eventId: existingBookingResult.data.calendar_event_id,
+        });
+      } catch (deleteError) {
+        console.error('Failed to delete calendar event for admin cancellation', deleteError);
+      }
+    }
+    
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ booking: updateResult.data }));
     return;

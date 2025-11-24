@@ -1,7 +1,10 @@
 const { supabaseAdmin, requireSupabase } = require('./_lib/supabase');
 const { getAppOnlyAccessToken } = require('./_lib/auth');
 const { deleteEvent } = require('./_lib/graph');
-const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
+const {
+  reconcileBookingsWithCalendar,
+  cancelBookingInSupabase,
+} = require('./_lib/bookings');
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
@@ -122,21 +125,14 @@ module.exports = async (req, res) => {
 
       const bookingEventId = bookingResult.data?.calendar_event_id;
 
-      const updatePayload = { status: 'cancelled' };
-
-      if (bookingEventId) {
-        updatePayload.calendar_event_id = null;
-      }
-
-      const updateResult = await supabaseAdmin
-        .from('bookings')
-        .update(updatePayload)
-        .eq('id', bookingId)
-        .eq('client_id', clientResult.data.id)
-        .select('*, services_catalog(*), booking_pets(pet_id)')
-        .maybeSingle();
-
-      if (updateResult.error) {
+      let updatedBooking = null;
+      try {
+        updatedBooking = await cancelBookingInSupabase(bookingId, {
+          clientId: clientResult.data.id,
+          select: '*, services_catalog(*), booking_pets(pet_id)',
+        });
+      } catch (updateError) {
+        console.error('Failed to cancel booking for client', updateError);
         res.statusCode = 500;
         res.end(JSON.stringify({ message: 'Failed to cancel booking' }));
         return;
@@ -155,7 +151,7 @@ module.exports = async (req, res) => {
       }
 
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ booking: updateResult.data }));
+      res.end(JSON.stringify({ booking: updatedBooking }));
       return;
     } catch (error) {
       console.error('Client booking update error', error);
@@ -166,6 +162,6 @@ module.exports = async (req, res) => {
   }
 
   res.statusCode = 405;
-  res.setHeader('Allow', 'PATCH');
+  res.setHeader('Allow', 'GET, PATCH');
   res.end('Method Not Allowed');
 };
