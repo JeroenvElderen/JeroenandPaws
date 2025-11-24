@@ -5,7 +5,7 @@ const brand = {
   primarySoft: '#7c45f31a',
   neutral: '#0c081f',
   background:
-   'radial-gradient(circle at 12% 18%, rgba (124, 69, 243, 0.08), transparent 28%), \n radial-gradient(circle at 88% 6%, rgba(255, 214, 150, 0.08), transparent 30%), \n #f7f4ef',
+   'radial-gradient(circle at 12% 18%, rgba(124, 69, 243, 0.08), transparent 28%), \n radial-gradient(circle at 88% 6%, rgba(255, 214, 150, 0.08), transparent 30%), \n #0c081f',
   cardBorder: '#ebe7ff',
   cardShadow: '0 20px 60px rgba(124, 69, 243, 0.12)',
   subtleText: '#5c5674',
