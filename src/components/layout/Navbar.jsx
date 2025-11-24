@@ -274,7 +274,7 @@ const Navbar = () => {
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/Profile" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+              <Link href="/profile" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                 <div>Profile</div>
               </Link>
             </li>
