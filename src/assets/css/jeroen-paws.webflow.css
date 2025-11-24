@@ -1547,7 +1547,7 @@
 }
 
 .home-slider-card-tilt {
-  transform: rotate(-2deg) scale(1.04);
+  transform: rotate(-10deg) scale(1.04);
   transform-origin: center;
   transition: transform .3s ease;
 }

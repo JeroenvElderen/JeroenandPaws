@@ -133,7 +133,7 @@ const HomeSliderSection = () => {
         </div>
         <div className="slider overflow_visible w-slider">
           <div
-            className="slider_mask width_35percent width_100percent_tablet overflow_visible w-slider-mask home-slider-mask"
+            className="slider_mask width_35percent width_100percent_tablet overflow_visible w-slider-mask"
             style={{
               display: 'flex',
               transform: `translateX(-${currentIndex * 100}%)`,
@@ -148,49 +148,45 @@ const HomeSliderSection = () => {
                 : {}),
             }}
           >
-            {renderedSlides.map((slide, index) => {
-              const cardClassName = `card overflow_hidden backdrop-filter_blur home-slider-card-shell ${
-                !isMobile ? 'home-slider-card-tilt' : ''
-              }`;
-
-              return (
-                <div
-                  key={`${slide.title}-${index}`}
-                  className="ix_card-deck-space height_100percent w-slide home-slider-slide"
-                  style={{
-                    flex: '0 0 100%',
-                    maxWidth: '100%',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    padding: isMobile ? '0 0.25rem' : '0 0.75rem',
-                  }}
-                >
-                  <div className={cardClassName} style={{ height: '100%', marginRight: isMobile ? 0 : undefined }}>
-                    <div className="home-slider-card">
-                      <div className="card_body padding-bottom_none home-slider-card-body">
-                        <p className="heading_h4">{slide.title}</p>
-                        <p>{slide.description}</p>
-                      </div>
-                      <div className="image-ratio_1x1 margin-top_xsmall home-slider-image">
-                        <img
-                          width="405"
-                          height="405"
-                          alt={slide.imageAlt}
-                          src={slide.imageSrc}
-                          loading="lazy"
-                          className="image_cover"
-                        />
-                      </div>
-                      <div className="margin-top_small home-slider-button">
+            {renderedSlides.map((slide, index) => (
+              <div
+                key={`${slide.title}-${index}`}
+                className="ix_card-deck-space height_100percent w-slide"
+                style={{
+                  flex: '0 0 100%',
+                  maxWidth: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                <div className="card overflow_hidden backdrop-filter_blur" style={{ height: '100%' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div className="card_body padding-bottom_none" style={{ flexGrow: 1 }}>
+                      <p className="heading_h4">{slide.title}</p>
+                      <p>{slide.description}</p>
+                    </div>
+                    <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                      <img
+                        width="405"
+                        height="405"
+                        alt={slide.imageAlt}
+                        src={slide.imageSrc}
+                        loading="lazy"
+                        className="image_cover"
+                      />
+                    </div>
+                    <div 
+                      className="margin-top_small"
+                      style={{ marginBottom: 20, marginLeft: 20}}
+                    >
                         <Link href={slide.href} className="button w-button">
                           View service
                         </Link>
                       </div>
-                    </div>
                   </div>
                 </div>
-              );
-})}
+              </div>
+            ))}
           </div>
           <button
             type="button"
