@@ -253,6 +253,30 @@ const ProfilePage = () => {
     fetchBookings();
   }, [profile?.client?.email, useMockProfile]);
   
+  useEffect(() => {
+    const refreshPetPhotos = async () => {
+      if (useMockProfile || !profile?.client?.email) return;
+
+      try {
+        const response = await fetch(
+          `/api/pets?ownerEmail=${encodeURIComponent(profile.client.email)}`
+        );
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(payload?.message || 'Could not refresh pets');
+        }
+
+        const nextProfile = { ...profile, pets: payload.pets || [] };
+        persistProfileState(nextProfile);
+      } catch (err) {
+        console.error('Failed to refresh pet photos', err);
+      }
+    };
+
+    refreshPetPhotos();
+  }, [profile?.client?.email, useMockProfile]);
+  
   const saveContact = async () => {
     if (!contactForm.email) {
       setError('Email is required to save your details.');
