@@ -7237,33 +7237,79 @@
   }
 }
 
-/* Services grid refinements */
+/* === Services Grid === */
 .services-grid {
   gap: 1.5rem;
 }
 
+/* === Card Wrapper === */
 .services-card {
-  border: 1px solid var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---border-color--border-secondary);
-  border-radius: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-radius);
+  border: 1px solid var(--border-secondary, #e1e1e1);
+  border-radius: var(--card-radius, 0.75rem);
   box-shadow: 0 14px 40px -24px rgba(17, 24, 40, 0.3);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .services-card:hover {
   transform: translateY(-4px);
-  border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---border-color--border-primary);
+  border-color: var(--border-primary, #000);
   box-shadow: 0 16px 48px -20px rgba(17, 24, 40, 0.35);
 }
 
+/* === Image Container === */
 .services-card_image {
-  border-radius: calc(var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-radius) - 0.125rem);
   overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4 / 2;
+}
+
+
+.services-card_image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* === Card Body === */
+.card_body {
+  padding: 1rem 1.25rem;
+  flex: 1; /* pushes buttons to bottom */
+}
+
+/* === Actions / Buttons === */
+.services-card_actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-top: auto;
 }
 
 .services-card_button {
-  margin: 0 1.25rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+
+  padding: 0.75rem 1rem;
+  text-align: center;
+
+  border-radius: 0.5rem;
+}
+
+.eyebrow {
+  background: #121026;
+  color: white;
+  padding: 0.5rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+  width: fit-content;
+  text-transform: uppercase;
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 const services = [
@@ -82,46 +83,49 @@ const Services = () => {
                 className="card height_100percent services-card"
               >
                 <div className="card-link flex_vertical gap-small height_100percent">
-                  <div className="image-ratio_4x3 services-card_image">
-                    <img
+                  <div className="services-card_image">
+                    <Image
                       src={service.imageSrc}
                       alt={service.imageAlt}
+                      fill
+                      sizes="(max-width: 991px) 100vw, 400px"
+                      priority={service.title === "Daily strolls"}
                       className="image_cover"
-                      loading="lazy"
                     />
                   </div>
-                  <div className="card_body flex_vertical gap-xsmall flex_child-expand">
-                    <div className="eyebrow">Service</div>
-                    <div className="heading_h4 margin-bottom_none">
+                  <div className="card_body text-overlay flex_vertical flex_child-expand">
+                    <div className="heading_h4 eyebrow margin-bottom_none" style={{ marginTop: 5 }}>
                       {service.title}
                     </div>
-                    <p className="paragraph_small text-color_secondary margin-bottom_none">
-                      {service.description}
-                    </p>
                   </div>
                 </div>
-                <Link
-                  href={service.path}
-                  className="button services-card_button w-button"
-                >
-                  <span>Book {service.title.toLowerCase()}</span>
-                  <span className="button_icon" aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                    >
-                      <path
-                        d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinejoin="round"
-                      ></path>
-                    </svg>
-                  </span>
-                </Link>
+                <div className="button-group services-card_actions">
+                  <p className="paragraph_small text-color_secondary" style={{ marginTop: 5 }}>
+                      {service.description}
+                    </p>
+                  <Link
+                    href={service.path}
+                    className="button services-card_button w-button"
+                  >
+                    <span>View {service.title.toLowerCase()}</span>
+                    <span className="button_icon" aria-hidden="true">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="100%"
+                        height="100%"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                        ></path>
+                      </svg>
+                    </span>
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
