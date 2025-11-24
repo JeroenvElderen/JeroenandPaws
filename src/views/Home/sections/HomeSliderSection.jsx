@@ -165,7 +165,10 @@ const HomeSliderSection = () => {
                       <p className="heading_h4">{slide.title}</p>
                       <p>{slide.description}</p>
                     </div>
-                    <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium">
+                    <div 
+                      className="image-ratio_1x1 margin-top_xsmall"
+                      style={{ marginRight: 20, marginLeft: 20}}
+                      >
                       <img
                         width="405"
                         height="405"

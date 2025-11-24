@@ -1531,68 +1531,6 @@
   transition: margin-right .5s cubic-bezier(.68, -.55, .265, 1.55);
 }
 
-.home-slider-card-shell {
-  height: 100%;
-}
-
-.home-slider-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: .75rem;
-  height: 100%;
-  padding: 1.25rem 1.5rem 1.5rem;
-}
-
-.home-slider-card-tilt {
-  transform: rotate(-10deg) scale(1.04);
-  transform-origin: center;
-  transition: transform .3s ease;
-}
-
-.home-slider-card-tilt:hover {
-  transform: rotate(-1deg) translateY(-4px) scale(1.04);
-}
-
-.home-slider-card-body {
-  flex-grow: 1;
-}
-
-.home-slider-image {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 0;
-}
-
-.home-slider-button {
-  display: flex;
-  justify-content: center;
-}
-
-.home-slider-slide {
-  align-self: stretch;
-}
-
-@media screen and (max-width: 767px) {
-  .home-slider-card-tilt {
-    transform: none;
-  }
-
-  .home-slider-card {
-    padding: 1rem 1.25rem 1.25rem;
-  }
-
-  .home-slider-button {
-    width: 100%;
-  }
-
-  .home-slider-mask {
-    overflow: hidden;
-  }
-}
 .card.on-accent-primary, .card.on-accent-secondary, .card.on-accent-tertiary {
   background-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---background-color--bg-primary);
   box-shadow: 0 0 0 1px var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--neutral-primary-a20), 0 3px 3px #0000001a, 0 2px 0 #0000000d;
@@ -1629,7 +1567,8 @@
 
 .card_body {
   z-index: 1;
-  padding: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-padding);
+  padding-left: 20px;
+  padding-top: 20px;
   flex-flow: column;
   flex: 1;
   justify-content: flex-start;
