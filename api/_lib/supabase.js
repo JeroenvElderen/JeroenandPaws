@@ -65,6 +65,26 @@ const extractStoragePath = (publicUrl = "") => {
     : null;
 };
 
+const createSignedPetPhotoUrl = async (publicUrl) => {
+  requireSupabase();
+
+  if (!publicUrl) return null;
+
+  const storagePath = extractStoragePath(publicUrl);
+  if (!storagePath) return publicUrl;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(PET_PHOTO_BUCKET)
+    .createSignedUrl(storagePath, 60 * 60 * 24 * 14);
+
+  if (error) {
+    console.error("Failed to create signed pet photo URL", error);
+    return publicUrl;
+  }
+
+  return data?.signedUrl || publicUrl;
+};
+
 const deletePetPhotoFromStorage = async (publicUrlOrPath) => {
   requireSupabase();
 
@@ -598,6 +618,7 @@ module.exports = {
   deleteBookingById,
   uploadPetPhoto,
   deletePetPhotoFromStorage,
+  createSignedPetPhotoUrl,
   supabaseAdmin,
   requireSupabase,
 };

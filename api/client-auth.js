@@ -1,4 +1,8 @@
-const { supabaseAdmin, requireSupabase } = require("./_lib/supabase");
+const {
+  supabaseAdmin,
+  requireSupabase,
+  createSignedPetPhotoUrl,
+} = require("./_lib/supabase");
 const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
 
 const normalizeEmail = (value = "") => (value || "").trim().toLowerCase();
@@ -20,6 +24,15 @@ const buildProfile = async (clientId) => {
 
   if (petsResult.error) throw petsResult.error;
 
+  const petsWithSignedUrls = await Promise.all(
+    (petsResult.data || []).map(async (pet) => ({
+      ...pet,
+      photo_data_url: pet.photo_data_url
+        ? await createSignedPetPhotoUrl(pet.photo_data_url)
+        : null,
+    }))
+  );
+
   const bookingsResult = await supabaseAdmin
     .from("bookings")
     .select("*, services_catalog(*), booking_pets(pet_id)")
@@ -34,7 +47,7 @@ const buildProfile = async (clientId) => {
 
   return {
     client: clientResult.data,
-    pets: petsResult.data || [],
+    pets: petsWithSignedUrls,
     bookings: reconciledBookings,
   };
 };
