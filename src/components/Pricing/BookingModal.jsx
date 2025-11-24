@@ -676,10 +676,21 @@ const BookingModal = ({ service, onClose }) => {
                         }}
                       />
                       <div className="pet-option__details">
-                        <span className="pet-option__name">{pet.name}</span>
-                        {pet.breed && (
-                          <span className="pet-option__breed">{pet.breed}</span>
-                        )}
+                        <div className="pet-option__identity">
+                          {(pet.photo_data_url || pet.photoDataUrl) && (
+                            <img
+                              src={pet.photo_data_url || pet.photoDataUrl}
+                              alt={`${pet.name} avatar`}
+                              className="pet-option__avatar"
+                            />
+                          )}
+                          <div>
+                            <span className="pet-option__name">{pet.name}</span>
+                            {pet.breed && (
+                              <span className="pet-option__breed">{pet.breed}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </label>
                   );

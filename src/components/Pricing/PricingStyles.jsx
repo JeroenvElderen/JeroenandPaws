@@ -575,6 +575,19 @@ const PricingStyles = () => (
           flex-direction: column;
           gap: 2px;
         }
+        .pet-option__identity {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        .pet-option__avatar {
+          width: 52px;
+          height: 52px;
+          border-radius: 12px;
+          object-fit: cover;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.04);
+        }
         .pet-option__name {
           font-weight: 700;
           color: #f8f6ff;

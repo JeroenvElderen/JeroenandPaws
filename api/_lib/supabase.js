@@ -2,6 +2,9 @@ const { createClient } = require("@supabase/supabase-js");
 const crypto = require("crypto");
 const { DateTime } = require("luxon");
 
+const PET_PHOTO_BUCKET =
+  process.env.SUPABASE_PET_PHOTO_BUCKET || "pet-photos";
+
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceRoleKey =
@@ -30,6 +33,85 @@ const createConfigError = () => {
   error.publicMessage =
     "Bookings are temporarily unavailable. Please try again later.";
   return error;
+};
+
+const parseDataUrlImage = (dataUrl = "") => {
+  if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
+    return null;
+  }
+
+  const matches = dataUrl.match(/^data:([^;]+);base64,(.*)$/);
+  if (!matches || matches.length < 3) return null;
+
+  const contentType = matches[1];
+  const base64Data = matches[2];
+
+  if (!contentType || !base64Data) return null;
+
+  return { contentType, buffer: Buffer.from(base64Data, "base64") };
+};
+
+const buildPublicStoragePrefix = () =>
+  `${supabaseUrl}/storage/v1/object/public/${PET_PHOTO_BUCKET}/`;
+
+const extractStoragePath = (publicUrl = "") => {
+  const prefix = buildPublicStoragePrefix();
+  if (typeof publicUrl !== "string") return null;
+
+  return publicUrl.startsWith(prefix)
+    ? publicUrl.slice(prefix.length)
+    : publicUrl.startsWith("public/")
+    ? publicUrl.replace(/^public\//, "")
+    : null;
+};
+
+const deletePetPhotoFromStorage = async (publicUrlOrPath) => {
+  requireSupabase();
+
+  const storagePath = extractStoragePath(publicUrlOrPath);
+  if (!storagePath) return null;
+
+  const { error } = await supabaseAdmin.storage
+    .from(PET_PHOTO_BUCKET)
+    .remove([storagePath]);
+
+  if (error) {
+    console.error("Failed to delete pet photo", error);
+    return null;
+  }
+
+  return storagePath;
+};
+
+const uploadPetPhoto = async ({ dataUrl, fileName, clientId, replace }) => {
+  requireSupabase();
+
+  const parsed = parseDataUrlImage(dataUrl);
+  if (!parsed) return { publicUrl: null, storagePath: null };
+
+  const extension = parsed.contentType.split("/")[1] || "jpg";
+  const sanitizedName = (fileName || "pet").replace(/[^a-z0-9.\-]+/gi, "-");
+  const uniqueName = `${Date.now()}-${sanitizedName || "photo"}.${extension}`;
+  const path = clientId
+    ? `clients/${clientId}/pets/${uniqueName}`
+    : `pets/${uniqueName}`;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(PET_PHOTO_BUCKET)
+    .upload(path, parsed.buffer, {
+      contentType: parsed.contentType,
+      upsert: Boolean(replace),
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  const { data: publicData } = supabaseAdmin.storage
+    .from(PET_PHOTO_BUCKET)
+    .getPublicUrl(data?.path || path);
+
+  return { publicUrl: publicData?.publicUrl || null, storagePath: data?.path || path };
 };
 
 const requireSupabase = () => {
@@ -231,9 +313,65 @@ const ensurePetProfiles = async (clientId, pets = []) => {
       }
 
       if (existing.data) {
-        ensuredPets.push(existing.data);
+        const hasIncomingPhoto = parseDataUrlImage(
+          pet.photoDataUrl || pet.photo_data_url
+        );
+        const shouldUpdate = hasPetDetails(pet) || hasIncomingPhoto;
+
+        if (!shouldUpdate) {
+          ensuredPets.push(existing.data);
+          continue;
+        }
+
+        let nextPhotoUrl = existing.data.photo_data_url;
+
+        if (hasIncomingPhoto) {
+          const uploadResult = await uploadPetPhoto({
+            dataUrl: pet.photoDataUrl || pet.photo_data_url,
+            fileName: pet.photoName,
+            clientId,
+            replace: true,
+          });
+
+          nextPhotoUrl = uploadResult.publicUrl || nextPhotoUrl;
+
+          if (uploadResult.publicUrl && existing.data.photo_data_url) {
+            await deletePetPhotoFromStorage(existing.data.photo_data_url);
+          }
+        }
+
+        const updateResult = await supabaseAdmin
+          .from("pets")
+          .update({
+            name: pet?.name || existing.data.name || "New pet",
+            breed: pet?.breed || existing.data.breed || null,
+            notes: pet?.notes || existing.data.notes || null,
+            photo_data_url: nextPhotoUrl || null,
+          })
+          .eq("id", pet.id)
+          .eq("owner_id", clientId)
+          .select("*")
+          .single();
+
+        if (updateResult.error) {
+          throw updateResult.error;
+        }
+
+        ensuredPets.push(updateResult.data);
         continue;
       }
+    }
+
+    let uploadedPhotoUrl = null;
+
+    if (parseDataUrlImage(pet.photoDataUrl || pet.photo_data_url)) {
+      const uploadResult = await uploadPetPhoto({
+        dataUrl: pet.photoDataUrl || pet.photo_data_url,
+        fileName: pet.photoName,
+        clientId,
+      });
+
+      uploadedPhotoUrl = uploadResult.publicUrl;
     }
 
     const insertResult = await supabaseAdmin
@@ -243,7 +381,7 @@ const ensurePetProfiles = async (clientId, pets = []) => {
         name: pet?.name || "New pet",
         breed: pet?.breed || null,
         notes: pet?.notes || null,
-        photo_data_url: pet?.photoDataUrl || null,
+        photo_data_url: uploadedPhotoUrl,
       })
       .select("*")
       .single();
@@ -458,6 +596,8 @@ module.exports = {
   findAuthUserByEmail,
   hashPassword,
   deleteBookingById,
+  uploadPetPhoto,
+  deletePetPhotoFromStorage,
   supabaseAdmin,
   requireSupabase,
 };

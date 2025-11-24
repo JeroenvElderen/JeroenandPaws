@@ -134,7 +134,13 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingContact, setSavingContact] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [newPet, setNewPet] = useState({ name: '', breed: '', notes: '' });
+  const [newPet, setNewPet] = useState({
+    name: '',
+    breed: '',
+    notes: '',
+    photoDataUrl: null,
+    photoName: '',
+  });
   const [editingPets, setEditingPets] = useState({});
   const [resetEmail, setResetEmail] = useState(initialProfile?.client?.email || '');
   const [resetStatus, setResetStatus] = useState({ state: 'idle', message: '' });
@@ -332,6 +338,42 @@ const ProfilePage = () => {
     }
   };
 
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleNewPetPhotoChange = async (file) => {
+    if (!file) return;
+
+    const dataUrl = await fileToDataUrl(file);
+    setNewPet((prev) => ({
+      ...prev,
+      photoDataUrl: dataUrl,
+      photoName: file.name,
+    }));
+  };
+
+  const handleExistingPetPhotoChange = async (petId, file) => {
+    if (!file) return;
+
+    const dataUrl = await fileToDataUrl(file);
+    updatePetField(petId, 'photoDataUrl', dataUrl);
+    updatePetField(petId, 'photoName', file.name);
+  };
+
+  const clearExistingPetPhoto = (petId) => {
+    updatePetField(petId, 'photoDataUrl', null);
+    updatePetField(petId, 'photo_data_url', null);
+    updatePetField(petId, 'photoName', '');
+  };
+
+  const clearNewPetPhoto = () =>
+    setNewPet((prev) => ({ ...prev, photoDataUrl: null, photoName: '' }));
+
   const createPet = async () => {
     try {
       const response = await fetch('/api/pets', {
@@ -344,7 +386,7 @@ const ProfilePage = () => {
         throw new Error('Could not save pet');
       }
 
-      setNewPet({ name: '', breed: '', notes: '' });
+      setNewPet({ name: '', breed: '', notes: '', photoDataUrl: null, photoName: '' });
       await loadProfile();
     } catch (err) {
       setError(err.message || 'Unable to save pet');
@@ -868,6 +910,11 @@ const ProfilePage = () => {
                     {profile.pets.map((pet) => {
                       const isEditing = Boolean(editingPets[pet.id]);
                       const editing = editingPets[pet.id] || {};
+                      const petPhoto =
+                        editing.photoDataUrl ||
+                        editing.photo_data_url ||
+                        pet.photo_data_url;
+                      const petInitial = (pet.name || '?').charAt(0).toUpperCase();
                       return (
                         <div
                           key={pet.id}
@@ -884,23 +931,65 @@ const ProfilePage = () => {
                         >
                           {!isEditing ? (
                             <>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: brand.ink }}>{pet.name}</div>
-                                {pet.breed && (
-                                  <span
-                                    style={{
-                                      background: brand.primary,
-                                      color: brand.ink,
-                                      padding: '6px 10px',
-                                      borderRadius: '999px',
-                                      fontSize: '0.85rem',
-                                      fontWeight: 700,
-                                      border: `1px solid ${brand.cardBorder}`,
-                                    }}
-                                  >
-                                    {pet.breed}
-                                  </span>
-                                )}
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  gap: '12px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  {petPhoto ? (
+                                    <img
+                                      src={petPhoto}
+                                      alt={`${pet.name} profile`}
+                                      style={{
+                                        width: '64px',
+                                        height: '64px',
+                                        borderRadius: '14px',
+                                        objectFit: 'cover',
+                                        border: `1px solid ${brand.cardBorder}`,
+                                      }}
+                                    />
+                                  ) : (
+                                    <div
+                                      style={{
+                                        width: '64px',
+                                        height: '64px',
+                                        borderRadius: '14px',
+                                        background: brand.primarySoft,
+                                        color: brand.primary,
+                                        display: 'grid',
+                                        placeItems: 'center',
+                                        fontWeight: 800,
+                                        border: `1px solid ${brand.cardBorder}`,
+                                      }}
+                                    >
+                                      {petInitial}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: brand.ink }}>{pet.name}</div>
+                                    {pet.breed && (
+                                      <span
+                                        style={{
+                                          display: 'inline-block',
+                                          marginTop: '6px',
+                                          background: brand.primary,
+                                          color: brand.ink,
+                                          padding: '6px 10px',
+                                          borderRadius: '999px',
+                                          fontSize: '0.85rem',
+                                          fontWeight: 700,
+                                          border: `1px solid ${brand.cardBorder}`,
+                                        }}
+                                      >
+                                        {pet.breed}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                               {pet.notes ? (
                                 <p style={{ margin: 0, color: brand.subtleText }}>{pet.notes}</p>
@@ -952,6 +1041,58 @@ const ProfilePage = () => {
                                     color: brand.ink,
                                   }}
                                 />
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Profile photo</label>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) =>
+                                        handleExistingPetPhotoChange(
+                                          pet.id,
+                                          e.target.files?.[0]
+                                        )
+                                      }
+                                      style={{
+                                        padding: '10px',
+                                        borderRadius: '10px',
+                                        border: `1px solid ${brand.cardBorder}`,
+                                        background: 'rgba(255,255,255,0.04)',
+                                        color: brand.ink,
+                                      }}
+                                    />
+                                  </div>
+                                  {(editing.photoDataUrl || editing.photo_data_url) && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <img
+                                        src={editing.photoDataUrl || editing.photo_data_url}
+                                        alt={`${editing.name || pet.name} preview`}
+                                        style={{
+                                          width: '72px',
+                                          height: '72px',
+                                          borderRadius: '14px',
+                                          objectFit: 'cover',
+                                          border: `1px solid ${brand.cardBorder}`,
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => clearExistingPetPhoto(pet.id)}
+                                        style={{
+                                          padding: '8px 12px',
+                                          borderRadius: '10px',
+                                          border: `1px solid ${brand.cardBorder}`,
+                                          background: 'rgba(255,255,255,0.06)',
+                                          color: brand.ink,
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        Remove photo
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                                 <textarea
                                   value={editing.notes || ''}
                                   onChange={(e) => updatePetField(pet.id, 'notes', e.target.value)}
@@ -1040,6 +1181,51 @@ const ProfilePage = () => {
                           color: brand.ink,
                         }}
                       />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>Profile photo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleNewPetPhotoChange(e.target.files?.[0])}
+                        style={{
+                          padding: '12px',
+                          borderRadius: '12px',
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: 'rgba(255,255,255,0.04)',
+                          color: brand.ink,
+                        }}
+                      />
+                      {newPet.photoDataUrl && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <img
+                            src={newPet.photoDataUrl}
+                            alt={`${newPet.name || 'New pet'} preview`}
+                            style={{
+                              width: '72px',
+                              height: '72px',
+                              borderRadius: '14px',
+                              objectFit: 'cover',
+                              border: `1px solid ${brand.cardBorder}`,
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={clearNewPetPhoto}
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: '10px',
+                              border: `1px solid ${brand.cardBorder}`,
+                              background: 'rgba(255,255,255,0.06)',
+                              color: brand.ink,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Remove photo
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ color: brand.subtleText, fontWeight: 700 }}>Breed</label>

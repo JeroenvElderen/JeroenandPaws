@@ -28,6 +28,27 @@ const escapeHtml = (value = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+const renderPetList = (pets = [], { includePhotos = false } = {}) => {
+  return (pets || []).map((pet, index) => {
+    const name = escapeHtml(pet?.name || `Pet ${index + 1}`);
+    const breed = escapeHtml(pet?.breed || "Breed pending");
+    const photoSrc = includePhotos
+      ? escapeHtml(
+          pet?.photo_url ||
+            pet?.photoDataUrl ||
+            pet?.photo_data_url ||
+            ""
+        )
+      : "";
+
+    const photoBlock = photoSrc
+      ? `<div style="margin: 6px 0 0;"><img src="${photoSrc}" alt="${name} photo" style="width: 140px; max-width: 100%; border-radius: 12px; object-fit: cover;" /></div>`
+      : "";
+
+    return `<li><strong>${name}</strong> (${breed})${photoBlock}</li>`;
+  });
+};
+
 const WINDOWS_TO_IANA = {
   "GMT Standard Time": "Europe/London",
 };
@@ -71,11 +92,7 @@ const buildConfirmationBody = ({
   passwordDelivery,
 }) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
-  const petDetails = (pets || []).map((pet, index) => {
-    const name = escapeHtml(pet?.name || `Pet ${index + 1}`);
-    const breed = escapeHtml(pet?.breed || "Breed pending");
-    return `<li><strong>${name}</strong> (${breed})</li>`;
-  });
+  const petDetails = renderPetList(pets);
 
   const passwordBlock = passwordDelivery
     ? `<p style="margin: 16px 0 0;">An account has been created for you so you can update bookings and pets later. Use this temporary password to sign in: <strong>${escapeHtml(
@@ -121,11 +138,7 @@ const buildConfirmationBody = ({
 
 const buildNotificationBody = ({ service, client, timing, notes, pets }) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
-  const petDetails = (pets || []).map((pet, index) => {
-    const name = escapeHtml(pet?.name || `Pet ${index + 1}`);
-    const breed = escapeHtml(pet?.breed || "Breed pending");
-    return `<li><strong>${name}</strong> (${breed})</li>`;
-  });
+  const petDetails = renderPetList(pets, { includePhotos: true });
 
   const notesBlock = notes
     ? `<p style="margin: 16px 0 0;"><strong>Client notes:</strong><br>${escapeHtml(

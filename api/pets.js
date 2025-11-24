@@ -1,4 +1,4 @@
-const { supabaseAdmin } = require('./_lib/supabase');
+const { supabaseAdmin, uploadPetPhoto, deletePetPhotoFromStorage } = require('./_lib/supabase');
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
@@ -41,7 +41,8 @@ module.exports = async (req, res) => {
 
   if (req.method === 'POST') {
     try {
-      const { ownerEmail, name, breed, notes, photoDataUrl } = req.body || {};
+      const { ownerEmail, name, breed, notes, photoDataUrl, photoName } =
+        req.body || {};
       const normalizedEmail = (ownerEmail || '').toLowerCase();
 
       const clientResult = await supabaseAdmin
@@ -56,6 +57,18 @@ module.exports = async (req, res) => {
         return;
       }
 
+      let photoUrl = null;
+
+      if (typeof photoDataUrl === 'string' && photoDataUrl.startsWith('data:')) {
+        const uploadResult = await uploadPetPhoto({
+          dataUrl: photoDataUrl,
+          fileName: photoName,
+          clientId: clientResult.data.id,
+        });
+
+        photoUrl = uploadResult.publicUrl;
+      }
+
       const insertResult = await supabaseAdmin
         .from('pets')
         .insert({
@@ -63,7 +76,7 @@ module.exports = async (req, res) => {
           name: name || 'New pet',
           breed: breed || null,
           notes: notes || null,
-          photo_data_url: photoDataUrl || null,
+          photo_data_url: photoUrl,
         })
         .select('*')
         .single();
@@ -85,7 +98,8 @@ module.exports = async (req, res) => {
 
   if (req.method === 'PUT') {
     try {
-      const { id, ownerEmail, name, breed, notes, photoDataUrl } = req.body || {};
+      const { id, ownerEmail, name, breed, notes, photoDataUrl, photoName } =
+        req.body || {};
       const normalizedEmail = (ownerEmail || '').toLowerCase();
 
       if (!id || !normalizedEmail) {
@@ -106,13 +120,48 @@ module.exports = async (req, res) => {
         return;
       }
 
+      const existingPet = await supabaseAdmin
+        .from('pets')
+        .select('*')
+        .eq('id', id)
+        .eq('owner_id', clientResult.data.id)
+        .maybeSingle();
+
+      if (existingPet.error || !existingPet.data) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ message: 'Pet not found' }));
+        return;
+      }
+
+      let nextPhotoUrl = existingPet.data?.photo_data_url || null;
+
+      if (typeof photoDataUrl === 'string' && photoDataUrl.startsWith('data:')) {
+        const uploadResult = await uploadPetPhoto({
+          dataUrl: photoDataUrl,
+          fileName: photoName,
+          clientId: clientResult.data.id,
+          replace: true,
+        });
+
+        nextPhotoUrl = uploadResult.publicUrl || nextPhotoUrl;
+
+        if (uploadResult.publicUrl && existingPet.data?.photo_data_url) {
+          await deletePetPhotoFromStorage(existingPet.data.photo_data_url);
+        }
+      } else if (photoDataUrl === null) {
+        if (existingPet.data?.photo_data_url) {
+          await deletePetPhotoFromStorage(existingPet.data.photo_data_url);
+        }
+        nextPhotoUrl = null;
+      }
+
       const updateResult = await supabaseAdmin
         .from('pets')
         .update({
           name: name || 'New pet',
           breed: breed || null,
           notes: notes || null,
-          photo_data_url: photoDataUrl || null,
+          photo_data_url: nextPhotoUrl,
         })
         .eq('id', id)
         .eq('owner_id', clientResult.data.id)
