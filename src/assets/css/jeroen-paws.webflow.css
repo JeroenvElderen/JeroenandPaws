@@ -7236,3 +7236,34 @@
     max-width: 100%;
   }
 }
+
+/* Services grid refinements */
+.services-grid {
+  gap: 1.5rem;
+}
+
+.services-card {
+  border: 1px solid var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---border-color--border-secondary);
+  border-radius: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-radius);
+  box-shadow: 0 14px 40px -24px rgba(17, 24, 40, 0.3);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.services-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---border-color--border-primary);
+  box-shadow: 0 16px 48px -20px rgba(17, 24, 40, 0.35);
+}
+
+.services-card_image {
+  border-radius: calc(var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-radius) - 0.125rem);
+  overflow: hidden;
+}
+
+.services-card_button {
+  margin: 0 1.25rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
