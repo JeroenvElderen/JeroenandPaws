@@ -260,7 +260,6 @@ module.exports = async (req, res) => {
           start: eventStart, // ✅ already ISO string
           end: eventEnd, // ✅ already ISO string
           attendeeEmail: clientEmail,
-          attendeeEmails: notificationRecipients,
           timeZone: timeZone || "UTC",
         });
 

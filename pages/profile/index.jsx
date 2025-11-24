@@ -220,6 +220,30 @@ const ProfilePage = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (useMockProfile || !profile?.client?.email) return;
+
+      try {
+        const response = await fetch(
+          `/api/client-bookings?email=${encodeURIComponent(profile.client.email)}`
+        );
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(payload?.message || 'Could not load bookings');
+        }
+
+        const nextProfile = { ...profile, bookings: payload.bookings || [] };
+        persistProfileState(nextProfile);
+      } catch (err) {
+        console.error('Failed to refresh bookings', err);
+      }
+    };
+
+    fetchBookings();
+  }, [profile?.client?.email, useMockProfile]);
+  
   const saveContact = async () => {
     if (!contactForm.email) {
       setError('Email is required to save your details.');

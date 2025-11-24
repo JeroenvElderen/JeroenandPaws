@@ -1,8 +1,60 @@
 const { supabaseAdmin, requireSupabase } = require('./_lib/supabase');
 const { getAppOnlyAccessToken } = require('./_lib/auth');
 const { deleteEvent } = require('./_lib/graph');
+const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
 
 module.exports = async (req, res) => {
+  if (req.method === 'GET') {
+    try {
+      requireSupabase();
+
+      const clientEmail = (req.query.email || '').toLowerCase();
+
+      if (!clientEmail) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: 'Client email is required' }));
+        return;
+      }
+
+      const clientResult = await supabaseAdmin
+        .from('clients')
+        .select('id')
+        .ilike('email', clientEmail)
+        .maybeSingle();
+
+      if (clientResult.error || !clientResult.data) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ message: 'Client not found' }));
+        return;
+      }
+
+      const bookingsResult = await supabaseAdmin
+        .from('bookings')
+        .select('*, services_catalog(*), booking_pets(pet_id)')
+        .eq('client_id', clientResult.data.id)
+        .order('start_at', { ascending: false });
+
+      if (bookingsResult.error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: 'Failed to load bookings' }));
+        return;
+      }
+
+      const reconciledBookings = await reconcileBookingsWithCalendar(
+        bookingsResult.data || []
+      );
+
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ bookings: reconciledBookings }));
+      return;
+    } catch (error) {
+      console.error('Client bookings fetch error', error);
+      res.statusCode = error?.statusCode || 500;
+      res.end(JSON.stringify({ message: error?.publicMessage || 'Failed to load bookings' }));
+      return;
+    }
+  }
+  
   if (req.method === 'PATCH') {
     try {
       requireSupabase();
