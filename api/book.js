@@ -1,7 +1,10 @@
 const { DateTime } = require("luxon");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { createEvent, sendMail } = require("./_lib/graph");
-const { createBookingWithProfiles } = require("./_lib/supabase");
+const {
+  createBookingWithProfiles,
+  saveBookingCalendarEventId,
+} = require("./_lib/supabase");
 
 const resolveCalendarEmail = (calendarId) =>
   process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
@@ -242,7 +245,7 @@ module.exports = async (req, res) => {
           .toUTC()
           .toISO({ suppressMilliseconds: true });
 
-        await createEvent({
+        const eventResponse = await createEvent({
           accessToken,
           calendarId,
           subject: bookingResult.service?.title || serviceTitle,
@@ -262,6 +265,20 @@ module.exports = async (req, res) => {
         });
 
         calendarStatus.created = true;
+
+        if (eventResponse?.id) {
+          try {
+            await saveBookingCalendarEventId(
+              bookingResult.booking.id,
+              eventResponse.id
+            );
+          } catch (storeEventError) {
+            console.error(
+              "Failed to persist calendar event id for booking",
+              storeEventError
+            );
+          }
+        }
       } catch (eventError) {
         console.error("Booking calendar event failed", eventError);
         calendarStatus.error =

@@ -1,4 +1,6 @@
 const { supabaseAdmin, requireSupabase } = require('./_lib/supabase');
+const { getAppOnlyAccessToken } = require('./_lib/auth');
+const { deleteEvent } = require('./_lib/graph');
 
 module.exports = async (req, res) => {
   if (req.method === 'PATCH') {
@@ -7,6 +9,19 @@ module.exports = async (req, res) => {
 
       const { bookingId, clientEmail } = req.body || {};
       const normalizedEmail = (clientEmail || '').toLowerCase();
+      const calendarId = process.env.OUTLOOK_CALENDAR_ID;
+      let calendarAccessToken = null;
+
+      if (calendarId) {
+        try {
+          calendarAccessToken = await getAppOnlyAccessToken();
+        } catch (calendarAuthError) {
+          console.error(
+            'Calendar auth failed for booking cancellation',
+            calendarAuthError
+          );
+        }
+      }
 
       if (!bookingId || !normalizedEmail) {
         res.statusCode = 400;
@@ -28,7 +43,7 @@ module.exports = async (req, res) => {
 
       const bookingResult = await supabaseAdmin
         .from('bookings')
-        .select('id, client_id, status')
+        .select('id, client_id, status, calendar_event_id')
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -53,9 +68,17 @@ module.exports = async (req, res) => {
         return;
       }
 
+      const bookingEventId = bookingResult.data?.calendar_event_id;
+
+      const updatePayload = { status: 'cancelled' };
+
+      if (bookingEventId) {
+        updatePayload.calendar_event_id = null;
+      }
+
       const updateResult = await supabaseAdmin
         .from('bookings')
-        .update({ status: 'cancelled' })
+        .update(updatePayload)
         .eq('id', bookingId)
         .eq('client_id', clientResult.data.id)
         .select('*, services_catalog(*), booking_pets(pet_id)')
@@ -65,6 +88,18 @@ module.exports = async (req, res) => {
         res.statusCode = 500;
         res.end(JSON.stringify({ message: 'Failed to cancel booking' }));
         return;
+      }
+
+      if (calendarAccessToken && calendarId && bookingEventId) {
+        try {
+          await deleteEvent({
+            accessToken: calendarAccessToken,
+            calendarId,
+            eventId: bookingEventId,
+          });
+        } catch (deleteError) {
+          console.error('Failed to delete calendar event for booking', deleteError);
+        }
       }
 
       res.setHeader('Content-Type', 'application/json');

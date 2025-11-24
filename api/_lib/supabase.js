@@ -222,6 +222,25 @@ const ensurePetProfiles = async (clientId, pets = []) => {
   return ensuredPets;
 };
 
+const saveBookingCalendarEventId = async (bookingId, calendarEventId) => {
+  requireSupabase();
+
+  if (!bookingId || !calendarEventId) return null;
+
+  const updateResult = await supabaseAdmin
+    .from("bookings")
+    .update({ calendar_event_id: calendarEventId })
+    .eq("id", bookingId)
+    .select("id, calendar_event_id")
+    .maybeSingle();
+
+  if (updateResult.error) {
+    throw updateResult.error;
+  }
+
+  return updateResult.data;
+};
+
 const looksLikeUuid = (value) =>
   typeof value === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -373,6 +392,7 @@ const createBookingWithProfiles = async ({
 
 module.exports = {
   createBookingWithProfiles,
+  saveBookingCalendarEventId,
   ensureClientProfile,
   ensurePetProfiles,
   getServiceByIdentifier,
