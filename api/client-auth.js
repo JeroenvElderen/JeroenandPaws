@@ -1,4 +1,5 @@
 const { supabaseAdmin, requireSupabase } = require("./_lib/supabase");
+const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
 
 const normalizeEmail = (value = "") => (value || "").trim().toLowerCase();
 
@@ -27,10 +28,14 @@ const buildProfile = async (clientId) => {
 
   if (bookingsResult.error) throw bookingsResult.error;
 
+  const reconciledBookings = await reconcileBookingsWithCalendar(
+    bookingsResult.data || []
+  );
+
   return {
     client: clientResult.data,
     pets: petsResult.data || [],
-    bookings: bookingsResult.data || [],
+    bookings: reconciledBookings,
   };
 };
 

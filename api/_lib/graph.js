@@ -211,6 +211,36 @@ const createEvent = async ({
   return response.json();
 };
 
+const getEvent = async ({ accessToken, calendarId, eventId }) => {
+  if (!accessToken || !eventId) return { exists: false };
+
+  const principalPath = buildPrincipalPath(calendarId);
+
+  const response = await fetch(
+    `${GRAPH_BASE}${principalPath}/events/${encodeURIComponent(eventId)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (response.status === 404) {
+    return { exists: false, missing: true };
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error('GRAPH EVENT FETCH ERROR:', {
+      status: response.status,
+      body: text,
+    });
+    throw new Error(`Graph get event error: ${response.status} ${text}`);
+  }
+
+  return { exists: true, event: await response.json() };
+};
+
 const deleteEvent = async ({ accessToken, calendarId, eventId }) => {
   if (!accessToken || !eventId) return { skipped: true };
 
@@ -310,4 +340,4 @@ const sendMail = async ({
   }
 };
 
-module.exports = { createEvent, deleteEvent, getSchedule, sendMail };
+module.exports = { createEvent, deleteEvent, getEvent, getSchedule, sendMail };

@@ -54,6 +54,34 @@ const BackendDashboard = () => {
     }
   };
 
+  const updateBookingStatus = async (bookingId, status) => {
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-email": adminEmail,
+        },
+        body: JSON.stringify({ id: bookingId, status }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "Could not update booking");
+      }
+
+      setBookings((current) =>
+        current.map((booking) =>
+          booking.id === bookingId ? payload.booking || booking : booking
+        )
+      );
+    } catch (statusError) {
+      console.error(statusError);
+      setError("Could not update booking status");
+    }
+  };
+
   const handleDraftChange = (field, value) => {
     setServiceDraft((current) => ({
       ...current,
@@ -132,6 +160,14 @@ const BackendDashboard = () => {
     fetchServices();
     fetchBookings();
   }, []);
+
+  const bookingStatusLabel = (status = "") => {
+    const normalized = status.toLowerCase();
+    if (!normalized || normalized === "pending") return "Waiting confirmation";
+    if (["scheduled", "confirmed"].includes(normalized)) return "Scheduled";
+    if (["cancelled", "canceled"].includes(normalized)) return "Cancelled";
+    return status;
+  };
 
   const servicesEmptyState = useMemo(
     () => !loadingServices && (!services || services.length === 0),
@@ -281,15 +317,28 @@ const BackendDashboard = () => {
                           )}
                         </div>
                         <div className="booking-card__time">
-                          <p className="paragraph_small margin-bottom_none">
-                            {new Date(booking.start_at).toLocaleString()} → {new Date(booking.end_at).toLocaleTimeString()}
-                          </p>
-                          <span className="tag is-secondary">Scheduled</span>
+                        <p className="paragraph_small margin-bottom_none">
+                          {new Date(booking.start_at).toLocaleString()} → {new Date(booking.end_at).toLocaleTimeString()}
+                        </p>
+                        <div className="flex_horizontal gap-xxsmall is-y-center">
+                          <span className="tag is-secondary">
+                            {bookingStatusLabel(booking.status)}
+                          </span>
+                          {(!booking.status || booking.status.toLowerCase() === "pending") && (
+                            <button
+                              type="button"
+                              className="text-button is-secondary is-small w-inline-block"
+                              onClick={() => updateBookingStatus(booking.id, "scheduled")}
+                            >
+                              Mark as scheduled
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
                 {!loadingBookings && bookings.length === 0 && (
                   <p className="paragraph_small">No bookings to show yet.</p>
                 )}

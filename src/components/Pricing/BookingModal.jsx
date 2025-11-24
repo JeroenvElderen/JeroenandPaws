@@ -6,6 +6,7 @@ import {
   createEmptyDogProfile,
   generateDemoAvailability,
 } from "./utils";
+import { useAuth } from "../../context/AuthContext";
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
@@ -34,7 +35,8 @@ const BookingModal = ({ service, onClose }) => {
   const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
-  const [showDogDetails, setShowDogDetails] = useState(false);
+  const [showDogDetails, setShowDogDetails] = useState(true);
+  const { profile, isAuthenticated } = useAuth();
 
   const hasAtLeastOneDog = useMemo(() => {
     if (selectedPetIds.length > 0) return true;
@@ -226,8 +228,17 @@ const BookingModal = ({ service, onClose }) => {
     setExistingPets([]);
     setSelectedPetIds([]);
     setHasAttemptedPetLoad(false);
-    setShowDogDetails(false);
+    setShowDogDetails(true);
   }, [clientEmail]);
+
+  useEffect(() => {
+    const client = profile?.client;
+    if (!client) return;
+
+    setClientName(client.full_name || "");
+    setClientPhone(client.phone_number || "");
+    setClientEmail(client.email || "");
+  }, [profile]);
 
   const fetchExistingPets = useCallback(async () => {
     if (!clientEmail) {
@@ -259,10 +270,8 @@ const BookingModal = ({ service, onClose }) => {
       if (!hasPets) {
         setDogCount(1);
         resetDogProfiles();
-        setShowDogDetails(true);
-      } else {
-        setShowDogDetails(false);
       }
+      setShowDogDetails(true);
     } catch (loadError) {
       console.error("Failed to load pets", loadError);
       setExistingPets([]);
@@ -327,6 +336,17 @@ const BookingModal = ({ service, onClose }) => {
     selectedPetIds,
   ]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !canLoadPets || hasAttemptedPetLoad) return;
+
+    fetchExistingPets();
+  }, [
+    canLoadPets,
+    fetchExistingPets,
+    hasAttemptedPetLoad,
+    isAuthenticated,
+  ]);
+  
   const preparePetPayload = () => {
     const normalizedDogs = dogs.slice(0, dogCount).map((dog) => {
       const name = (dog?.name || "").trim();

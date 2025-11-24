@@ -5,6 +5,7 @@ const {
   hashPassword,
   requireSupabase,
 } = require("./_lib/supabase");
+const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
 
 module.exports = async (req, res) => {
   if (req.method === "GET") {
@@ -63,12 +64,16 @@ module.exports = async (req, res) => {
       .eq("client_id", clientResult.data.id)
       .order("start_at", { ascending: false });
 
+    const reconciledBookings = await reconcileBookingsWithCalendar(
+      bookingsResult.data || []
+    );
+
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
         client: clientResult.data,
         pets: petsResult.data || [],
-        bookings: bookingsResult.data || [],
+        bookings: reconciledBookings,
       })
     );
     return;

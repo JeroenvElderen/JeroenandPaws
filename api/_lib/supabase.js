@@ -307,6 +307,7 @@ const createBookingRecord = async ({
       end_at: end.toUTC().toISO(),
       time_zone: timeZone || "UTC",
       notes: notes || null,
+      status: "pending",
     })
     .select("*")
     .single();

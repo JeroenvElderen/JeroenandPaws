@@ -105,6 +105,15 @@ const formatDateRange = (booking) => {
   })} — ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
+const bookingStatusLabel = (status = '') => {
+  const normalized = status.toLowerCase();
+
+  if (!normalized || normalized === 'pending') return 'Waiting confirmation';
+  if (['scheduled', 'confirmed'].includes(normalized)) return 'Scheduled';
+  if (['cancelled', 'canceled'].includes(normalized)) return 'Cancelled';
+  return status;
+};
+
 const ProfilePage = () => {
   const { profile: authProfile, setProfile: setAuthProfile, logout: clearAuth } = useAuth();
   const initialProfile = useMockProfile ? mockProfile : authProfile;
@@ -740,7 +749,7 @@ const ProfilePage = () => {
                                 {pet.breed && (
                                   <span
                                     style={{
-                                      background: 'rgba(255,255,255,0.08)',
+                                      background: brand.primary,
                                       color: brand.ink,
                                       padding: '6px 10px',
                                       borderRadius: '999px',
@@ -985,7 +994,7 @@ const ProfilePage = () => {
                               textTransform: 'capitalize',
                             }}
                           >
-                            {booking.status || 'scheduled'}
+                            {bookingStatusLabel(booking.status)}
                           </span>
                         </div>
                         {booking.notes && <p style={{ margin: '8px 0 0', color: brand.subtleText }}>{booking.notes}</p>}
@@ -1123,7 +1132,7 @@ const ProfilePage = () => {
             </p>
             <p style={{ margin: 0, color: brand.neutral, fontWeight: 600 }}>{formatDateRange(selectedBooking)}</p>
             <p style={{ margin: 0, color: brand.subtleText, textTransform: 'capitalize' }}>
-              Status: {selectedBooking.status || 'scheduled'}
+              Status: {bookingStatusLabel(selectedBooking.status)}
             </p>
             {selectedBooking.notes && (
               <p style={{ margin: '8px 0 0', color: brand.subtleText }}>{selectedBooking.notes}</p>
