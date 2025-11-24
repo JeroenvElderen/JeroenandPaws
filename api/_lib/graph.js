@@ -211,6 +211,37 @@ const createEvent = async ({
   return response.json();
 };
 
+const deleteEvent = async ({ accessToken, calendarId, eventId }) => {
+  if (!accessToken || !eventId) return { skipped: true };
+
+  const principalPath = buildPrincipalPath(calendarId);
+
+  const response = await fetch(
+    `${GRAPH_BASE}${principalPath}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (response.status === 404) {
+    return { deleted: false, missing: true };
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("GRAPH EVENT DELETE ERROR:", {
+      status: response.status,
+      body: text,
+    });
+    throw new Error(`Graph delete event error: ${response.status} ${text}`);
+  }
+
+  return { deleted: true };
+};
+
 const sendMail = async ({
   accessToken,
   fromCalendarId,
@@ -279,4 +310,4 @@ const sendMail = async ({
   }
 };
 
-module.exports = { createEvent, getSchedule, sendMail };
+module.exports = { createEvent, deleteEvent, getSchedule, sendMail };
