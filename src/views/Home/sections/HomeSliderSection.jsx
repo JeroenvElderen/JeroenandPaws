@@ -182,24 +182,27 @@ const HomeSliderSection = () => {
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div className="card_body padding-bottom_none" style={{ flexGrow: 1 }}>
+                    <div className="card_body padding-bottom_none" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                       <p className="heading_h4">{slide.title}</p>
                       <p>{slide.description}</p>
-                      <div className="margin-top_small">
+                      <div
+                        className="image-ratio_1x1 margin-top_xsmall"
+                        style={{ alignSelf: 'center', width: '100%', maxWidth: '24rem' }}
+                      >
+                        <img
+                          width="405"
+                          height="405"
+                          alt={slide.imageAlt}
+                          src={slide.imageSrc}
+                          loading="lazy"
+                          className="image_cover"
+                        />
+                      </div>
+                      <div className="margin-top_small" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
                         <Link href={slide.href} className="button w-button">
                           View service
                         </Link>
                       </div>
-                    </div>
-                    <div className="image-ratio_1x1 margin-top_xsmall margin-left_medium margin-right_medium">
-                      <img
-                        width="405"
-                        height="405"
-                        alt={slide.imageAlt}
-                        src={slide.imageSrc}
-                        loading="lazy"
-                        className="image_cover"
-                      />
                     </div>
                   </div>
                 </div>
