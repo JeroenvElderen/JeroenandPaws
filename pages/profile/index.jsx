@@ -1,5 +1,15 @@
 import React, { useMemo, useState } from 'react';
 
+const brand = {
+  primary: '#7c45f3',
+  primarySoft: '#7c45f31a',
+  neutral: '#0c081f',
+  background: 'linear-gradient(135deg, #f6f3ff 0%, #f9fafb 60%, #fff 100%)',
+  cardBorder: '#ebe7ff',
+  cardShadow: '0 20px 60px rgba(124, 69, 243, 0.12)',
+  subtleText: '#5c5674',
+};
+
 const pillStyles = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -7,25 +17,26 @@ const pillStyles = {
   padding: '8px 12px',
   borderRadius: '999px',
   background: 'rgba(255, 255, 255, 0.9)',
-  color: '#1f2937',
-  fontWeight: 600,
+  color: brand.primary,
+  fontWeight: 700,
   boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+  letterSpacing: '0.01em',
 };
 
-const SectionCard = ({ title, description, children, accent }) => (
+const SectionCard = ({ title, description, children }) => (
   <section
     style={{
       background: '#ffffff',
       borderRadius: '20px',
       padding: '24px',
-      boxShadow: '0 20px 60px rgba(15, 23, 42, 0.08)',
-      border: `1px solid ${accent || '#e5e7eb'}`,
+      boxShadow: brand.cardShadow,
+      border: `1px solid ${brand.cardBorder}`,
     }}
   >
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
       <div>
-        <h2 style={{ margin: 0, color: '#111827', fontSize: '1.4rem' }}>{title}</h2>
-        {description && <p style={{ margin: '6px 0 16px', color: '#6b7280' }}>{description}</p>}
+        <h2 style={{ margin: 0, color: brand.neutral, fontSize: '1.4rem' }}>{title}</h2>
+        {description && <p style={{ margin: '6px 0 16px', color: brand.subtleText }}>{description}</p>}
       </div>
     </div>
     {children}
@@ -33,27 +44,99 @@ const SectionCard = ({ title, description, children, accent }) => (
 );
 
 const emptyStateStyle = {
-  background: 'linear-gradient(135deg, #f9fafb, #f3f4f6)',
-  border: '1px dashed #d1d5db',
+  background: brand.primarySoft,
+  border: `1px dashed ${brand.cardBorder}`,
   borderRadius: '16px',
   padding: '16px',
-  color: '#6b7280',
+  color: brand.subtleText,
   textAlign: 'center',
 };
 
+const mockProfile = {
+  client: {
+    id: 'demo-client',
+    full_name: 'Jeroen & Paws Guest',
+    email: 'demo@jeroenandpaws.com',
+    phone_number: '+1 (555) 123-4567',
+  },
+  pets: [
+    { id: 'pet-1', name: 'Luna', breed: 'Golden Retriever', notes: 'Loves long walks and peanut butter treats.' },
+    { id: 'pet-2', name: 'Milo', breed: 'Corgi', notes: 'Keep an eye on the zoomies after lunch.' },
+  ],
+  bookings: [
+    {
+      id: 'booking-1',
+      service_title: 'Training Session',
+      start_at: new Date(Date.now() + 86400000).toISOString(),
+      end_at: new Date(Date.now() + 9000000).toISOString(),
+      status: 'confirmed',
+      notes: 'Focus on loose leash walking.',
+    },
+    {
+      id: 'booking-2',
+      service_title: 'Daycare',
+      start_at: new Date(Date.now() + 172800000).toISOString(),
+      end_at: new Date(Date.now() + 180000000).toISOString(),
+      status: 'confirmed',
+      notes: 'Please offer a frozen Kong at nap time.',
+    },
+  ],
+};
+
+const useMockProfile = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_MOCK_PROFILE === 'true';
+
+const formatDateRange = (booking) => {
+  if (!booking?.start_at || !booking?.end_at) return 'Scheduled time pending';
+
+  const start = new Date(booking.start_at);
+  const end = new Date(booking.end_at);
+  return `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • ${start.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  })} — ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 const ProfilePage = () => {
-  const [email, setEmail] = useState('');
+  const initialProfile = useMockProfile ? mockProfile : null;
+
+  const [email, setEmail] = useState(initialProfile?.client?.email || '');
   const [password, setPassword] = useState('');
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(initialProfile);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [newPet, setNewPet] = useState({ name: '', breed: '', notes: '' });
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    fullName: initialProfile?.client?.full_name || '',
+    phone: initialProfile?.client?.phone_number || '',
+    email: initialProfile?.client?.email || '',
+  });
   const [newPassword, setNewPassword] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [passwordSetupError, setPasswordSetupError] = useState('');
-  const [resetEmail, setResetEmail] = useState('');
+  const [newPet, setNewPet] = useState({ name: '', breed: '', notes: '' });
+  const [editingPets, setEditingPets] = useState({});
+  const [resetEmail, setResetEmail] = useState(initialProfile?.client?.email || '');
   const [resetStatus, setResetStatus] = useState({ state: 'idle', message: '' });
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingAction, setBookingAction] = useState({ cancelling: false, error: '' });
+
+  const activeBookings = useMemo(() => {
+    const clean = (status = '') => status?.toLowerCase();
+    return (profile?.bookings || []).filter(
+      (booking) => !['cancelled', 'canceled'].includes(clean(booking.status))
+    );
+  }, [profile]);
+
+  const hasPets = useMemo(() => profile?.pets?.length > 0, [profile]);
+  const hasBookings = useMemo(() => activeBookings.length > 0, [activeBookings]);
+
+  const refreshContactForm = (payload) => {
+    setContactForm({
+      fullName: payload?.client?.full_name || '',
+      phone: payload?.client?.phone_number || '',
+      email: payload?.client?.email || '',
+    });
+    setResetEmail(payload?.client?.email || '');
+  };
 
   const loadProfile = async () => {
     if (!email || !password) {
@@ -62,7 +145,6 @@ const ProfilePage = () => {
     }
     setLoading(true);
     setError('');
-    setPasswordModalOpen(false);
     try {
       const response = await fetch('/api/client-auth', {
         method: 'POST',
@@ -72,18 +154,12 @@ const ProfilePage = () => {
 
       const payload = await response.json().catch(() => null);
 
-      if (response.status === 403) {
-        setPasswordModalOpen(true);
-        setProfile(null);
-        setLoading(false);
-        setPasswordSetupError('');
-        setNewPassword('');
-        return;
-      }
       if (!response.ok) {
         throw new Error(payload?.message || 'Profile not found');
       }
+
       setProfile(payload);
+      refreshContactForm(payload);
     } catch (err) {
       setError(err.message || 'Could not load profile');
       setProfile(null);
@@ -92,12 +168,80 @@ const ProfilePage = () => {
     }
   };
 
+  const saveContact = async () => {
+    if (!contactForm.email) {
+      setError('Email is required to save your details.');
+      return;
+    }
+    setSavingContact(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: profile?.client?.id,
+          email: profile?.client?.email,
+          newEmail: contactForm.email,
+          fullName: contactForm.fullName,
+          phone: contactForm.phone,
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Could not save your details');
+      }
+
+      const nextProfile = { ...profile, client: payload.client };
+      setProfile(nextProfile);
+      refreshContactForm(nextProfile);
+    } catch (err) {
+      setError(err.message || 'Unable to save details');
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
+  const savePassword = async () => {
+    if (!contactForm.email || !newPassword) {
+      setError('Enter a new password to continue.');
+      return;
+    }
+
+    setSavingPassword(true);
+    setError('');
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: contactForm.email, password: newPassword }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Could not update password');
+      }
+
+      const nextProfile = { ...profile, client: payload.client };
+      setProfile(nextProfile);
+      setNewPassword('');
+    } catch (err) {
+      setError(err.message || 'Unable to update password');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const createPet = async () => {
     try {
       const response = await fetch('/api/pets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownerEmail: email, ...newPet }),
+        body: JSON.stringify({ ownerEmail: contactForm.email || email, ...newPet }),
       });
 
       if (!response.ok) {
@@ -111,41 +255,83 @@ const ProfilePage = () => {
     }
   };
 
-  const savePassword = async () => {
-    if (!email || !newPassword) {
-      setPasswordSetupError('Please enter a password to continue.');
-      return;
-    }
+  const startEditingPet = (pet) => {
+    setEditingPets((prev) => ({ ...prev, [pet.id]: { ...pet } }));
+  };
 
-    setSavingPassword(true);
-    setPasswordSetupError('');
+  const stopEditingPet = (petId) => {
+    setEditingPets((prev) => {
+      const next = { ...prev };
+      delete next[petId];
+      return next;
+    });
+  };
+
+  const updatePetField = (petId, field, value) => {
+    setEditingPets((prev) => ({
+      ...prev,
+      [petId]: { ...prev[petId], [field]: value },
+    }));
+  };
+
+  const savePetEdit = async (petId) => {
+    const petPayload = editingPets[petId];
+    if (!petPayload) return;
     try {
-      const response = await fetch('/api/client-auth', {
+      const response = await fetch('/api/pets', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: newPassword }),
+        body: JSON.stringify({ ownerEmail: contactForm.email || email, ...petPayload }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Could not update pet');
+      }
+
+      const nextPets = (profile?.pets || []).map((pet) => (pet.id === petId ? payload.pet : pet));
+      const nextProfile = { ...profile, pets: nextPets };
+      setProfile(nextProfile);
+      stopEditingPet(petId);
+    } catch (err) {
+      setError(err.message || 'Unable to update pet');
+    }
+  };
+
+  const openBooking = (booking) => {
+    setSelectedBooking(booking);
+    setBookingAction({ cancelling: false, error: '' });
+  };
+
+  const cancelBooking = async () => {
+    if (!selectedBooking) return;
+
+    setBookingAction({ cancelling: true, error: '' });
+    try {
+      const response = await fetch('/api/client-bookings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: selectedBooking.id, clientEmail: contactForm.email || email }),
       });
 
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(payload?.message || 'Could not save password');
+        throw new Error(payload?.message || 'Could not cancel booking');
       }
 
-      setError('');
-      setProfile(payload);
-      setPassword(newPassword);
-      setPasswordModalOpen(false);
-      setNewPassword('');
+      const nextBookings = (profile?.bookings || []).map((booking) =>
+        booking.id === selectedBooking.id ? payload.booking : booking
+      );
+      const nextProfile = { ...profile, bookings: nextBookings };
+      setProfile(nextProfile);
+      setSelectedBooking(payload.booking);
     } catch (err) {
-      setPasswordSetupError(err.message || 'Unable to save password');
+      setBookingAction({ cancelling: false, error: err.message || 'Unable to cancel booking' });
     } finally {
-      setSavingPassword(false);
+      setBookingAction((prev) => ({ ...prev, cancelling: false }));
     }
   };
-
-  const hasPets = useMemo(() => profile?.pets?.length > 0, [profile]);
-  const hasBookings = useMemo(() => profile?.bookings?.length > 0, [profile]);
 
   const requestPasswordReset = async () => {
     if (!resetEmail) {
@@ -169,8 +355,7 @@ const ProfilePage = () => {
 
       setResetStatus({
         state: 'success',
-        message:
-          'We have your request. Please check your email for the next steps to reset your password.',
+        message: 'Check your inbox for the next steps to reset your password.',
       });
     } catch (err) {
       setResetStatus({
@@ -180,18 +365,25 @@ const ProfilePage = () => {
     }
   };
 
+  const signOut = () => {
+    setProfile(null);
+    setContactForm({ fullName: '', phone: '', email: '' });
+    setPassword('');
+    setSelectedBooking(null);
+  };
+
   return (
     <main
       style={{
         minHeight: '100vh',
-        background: 'radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.18), transparent 25%),\n          radial-gradient(circle at 80% 0%, rgba(129, 140, 248, 0.18), transparent 25%),\n          #f8fafc',
+        background: brand.background,
         padding: '32px 16px 48px',
       }}
     >
       <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
         <header
           style={{
-            background: 'linear-gradient(120deg, #1e293b, #111827)',
+            background: `linear-gradient(120deg, ${brand.primary} 0%, #5d3ce6 45%, ${brand.neutral} 100%)`,
             color: 'white',
             borderRadius: '28px',
             padding: '32px',
@@ -205,7 +397,7 @@ const ProfilePage = () => {
               position: 'absolute',
               inset: 0,
               background:
-                'radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.25), transparent 30%),\n                 radial-gradient(circle at 80% 10%, rgba(129, 140, 248, 0.25), transparent 35%)',
+                'radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.15), transparent 30%),\n               radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.12), transparent 35%)',
             }}
           />
           <div style={{ position: 'relative', display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center' }}>
@@ -216,73 +408,126 @@ const ProfilePage = () => {
                 </span>
                 Your client hub
               </div>
-              <h1 style={{ margin: '12px 0 8px', fontSize: '2.4rem' }}>Profile & Booking Center</h1>
+              <h1 style={{ margin: '12px 0 8px', fontSize: '2.4rem', lineHeight: 1.2 }}>Profile & Booking Center</h1>
               <p style={{ margin: 0, color: 'rgba(255,255,255,0.88)', fontSize: '1rem', lineHeight: 1.6 }}>
-                View your contact details, manage pets, and keep track of bookings—all in one polished dashboard.
+                Manage your contact details, pets, and bookings with the same styling as our Webflow hub.
               </p>
             </div>
-            <div
-              style={{
-                flex: '1 1 280px',
-                background: 'rgba(255,255,255,0.06)',
-                borderRadius: '18px',
-                padding: '16px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.18) inset',
-              }}
-            >
-              <p style={{ margin: '0 0 8px', color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>Access your profile</p>
-              <p style={{ margin: '0 0 12px', color: 'rgba(255,255,255,0.75)' }}>
-                Use the email you provided when booking with us.
-              </p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    flex: '1 1 200px',
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255,255,255,0.15)',
-                    color: 'white',
-                  }}
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    flex: '1 1 180px',
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255,255,255,0.15)',
-                    color: 'white',
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={loadProfile}
-                  disabled={loading || !email || !password}
-                  style={{
-                    padding: '12px 18px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: '#22c55e',
-                    color: '#0f172a',
-                    fontWeight: 700,
-                    cursor: loading || !email ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 12px 30px rgba(34, 197, 94, 0.35)',
-                  }}
-                >
-                  {loading ? 'Loading…' : 'View profile'}
-                </button>
+            {!profile ? (
+              <div
+                style={{
+                  flex: '1 1 280px',
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: '18px',
+                  padding: '16px',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.18) inset',
+                }}
+              >
+                <p style={{ margin: '0 0 8px', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>Access your profile</p>
+                <p style={{ margin: '0 0 12px', color: 'rgba(255,255,255,0.75)' }}>
+                  Use the email you provided when booking with us.
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={{
+                      flex: '1 1 200px',
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.15)',
+                      color: 'white',
+                    }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{
+                      flex: '1 1 180px',
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.15)',
+                      color: 'white',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={loadProfile}
+                    disabled={loading || !email || !password}
+                    style={{
+                      padding: '12px 18px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: '#22c55e',
+                      color: '#0f172a',
+                      fontWeight: 800,
+                      cursor: loading || !email ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 12px 30px rgba(34, 197, 94, 0.35)',
+                    }}
+                  >
+                    {loading ? 'Loading…' : 'View profile'}
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                style={{
+                  flex: '1 1 280px',
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: '18px',
+                  padding: '16px',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.18) inset',
+                  color: 'white',
+                  display: 'grid',
+                  gap: '10px',
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: 700 }}>Signed in</p>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)' }}>
+                  {contactForm.fullName || 'Client'} · {contactForm.email}
+                </p>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={loadProfile}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(255,255,255,0.16)',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Refresh data
+                  </button>
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: '#0f172a',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
@@ -305,49 +550,112 @@ const ProfilePage = () => {
           {profile ? (
             <>
               <SectionCard
-                title="Client overview"
-                description="Quick details to confirm you're in the right place."
-                accent="#e0f2fe"
+                title="Your details"
+                description="Update your contact information, password, and login email."
               >
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: '12px',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    alignItems: 'stretch',
-                  }}
-                >
-                  <div
+                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Full name</label>
+                    <input
+                      type="text"
+                      value={contactForm.fullName}
+                      onChange={(e) => setContactForm({ ...contactForm, fullName: e.target.value })}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: `1px solid ${brand.cardBorder}`,
+                        background: '#fff',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Phone</label>
+                    <input
+                      type="tel"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: `1px solid ${brand.cardBorder}`,
+                        background: '#fff',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Email</label>
+                    <input
+                      type="email"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: `1px solid ${brand.cardBorder}`,
+                        background: '#fff',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Change password</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <input
+                        type="password"
+                        placeholder="New password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        style={{
+                          flex: '1 1 180px',
+                          padding: '12px',
+                          borderRadius: '12px',
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: '#fff',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={savePassword}
+                        disabled={savingPassword}
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: savingPassword ? brand.primarySoft : brand.primary,
+                          color: 'white',
+                          fontWeight: 800,
+                          cursor: savingPassword ? 'not-allowed' : 'pointer',
+                          boxShadow: brand.cardShadow,
+                        }}
+                      >
+                        {savingPassword ? 'Saving…' : 'Update password'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={saveContact}
+                    disabled={savingContact}
                     style={{
-                      background: 'linear-gradient(135deg, #e0f2fe, #dbeafe)',
-                      borderRadius: '16px',
-                      padding: '16px',
-                      border: '1px solid #bfdbfe',
+                      padding: '12px 18px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: savingContact ? brand.primarySoft : brand.primary,
+                      color: 'white',
+                      fontWeight: 800,
+                      cursor: savingContact ? 'not-allowed' : 'pointer',
+                      boxShadow: brand.cardShadow,
                     }}
                   >
-                    <p style={{ margin: '0 0 6px', color: '#1d4ed8', fontWeight: 700 }}>Name</p>
-                    <p style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 700 }}>
-                      {profile.client.full_name || 'Unnamed client'}
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      background: 'linear-gradient(135deg, #ecfdf3, #dcfce7)',
-                      borderRadius: '16px',
-                      padding: '16px',
-                      border: '1px solid #bbf7d0',
-                    }}
-                  >
-                    <p style={{ margin: '0 0 6px', color: '#15803d', fontWeight: 700 }}>Email</p>
-                    <p style={{ margin: 0, color: '#0f172a', fontSize: '1.05rem', fontWeight: 600 }}>{profile.client.email}</p>
-                  </div>
+                    {savingContact ? 'Saving…' : 'Save details'}
+                  </button>
                 </div>
               </SectionCard>
 
               <SectionCard
                 title="Your pets"
-                description="Keep pet details handy for quick bookings and personalized care."
-                accent="#f3e8ff"
+                description="Open any card to edit names, breeds, or notes."
               >
                 {hasPets ? (
                   <div
@@ -357,41 +665,137 @@ const ProfilePage = () => {
                       gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
                     }}
                   >
-                    {profile.pets.map((pet) => (
-                      <div
-                        key={pet.id}
-                        style={{
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '16px',
-                          padding: '16px',
-                          background: 'linear-gradient(180deg, #f8fafc, #ffffff)',
-                          boxShadow: '0 14px 30px rgba(15, 23, 42, 0.06)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>{pet.name}</div>
-                          {pet.breed && (
-                            <span
-                              style={{
-                                background: '#eef2ff',
-                                color: '#4338ca',
-                                padding: '6px 10px',
-                                borderRadius: '999px',
-                                fontSize: '0.85rem',
-                                fontWeight: 700,
-                              }}
-                            >
-                              {pet.breed}
-                            </span>
+                    {profile.pets.map((pet) => {
+                      const isEditing = Boolean(editingPets[pet.id]);
+                      const editing = editingPets[pet.id] || {};
+                      return (
+                        <div
+                          key={pet.id}
+                          style={{
+                            border: `1px solid ${brand.cardBorder}`,
+                            borderRadius: '16px',
+                            padding: '16px',
+                            background: 'linear-gradient(180deg, #f8f7ff, #ffffff)',
+                            boxShadow: brand.cardShadow,
+                            display: 'grid',
+                            gap: '10px',
+                          }}
+                        >
+                          {!isEditing ? (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: brand.neutral }}>{pet.name}</div>
+                                {pet.breed && (
+                                  <span
+                                    style={{
+                                      background: brand.primarySoft,
+                                      color: brand.primary,
+                                      padding: '6px 10px',
+                                      borderRadius: '999px',
+                                      fontSize: '0.85rem',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {pet.breed}
+                                  </span>
+                                )}
+                              </div>
+                              {pet.notes ? (
+                                <p style={{ margin: 0, color: brand.subtleText }}>{pet.notes}</p>
+                              ) : (
+                                <p style={{ margin: 0, color: '#94a3b8' }}>No notes added yet.</p>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => startEditingPet(pet)}
+                                style={{
+                                  justifySelf: 'flex-start',
+                                  padding: '10px 14px',
+                                  borderRadius: '12px',
+                                  border: `1px solid ${brand.cardBorder}`,
+                                  background: '#fff',
+                                  color: brand.neutral,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Edit pet
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ display: 'grid', gap: '8px' }}>
+                                <input
+                                  type="text"
+                                  value={editing.name || ''}
+                                  onChange={(e) => updatePetField(pet.id, 'name', e.target.value)}
+                                  style={{
+                                    padding: '10px',
+                                    borderRadius: '10px',
+                                    border: `1px solid ${brand.cardBorder}`,
+                                  }}
+                                />
+                                <input
+                                  type="text"
+                                  value={editing.breed || ''}
+                                  onChange={(e) => updatePetField(pet.id, 'breed', e.target.value)}
+                                  placeholder="Breed"
+                                  style={{
+                                    padding: '10px',
+                                    borderRadius: '10px',
+                                    border: `1px solid ${brand.cardBorder}`,
+                                  }}
+                                />
+                                <textarea
+                                  value={editing.notes || ''}
+                                  onChange={(e) => updatePetField(pet.id, 'notes', e.target.value)}
+                                  placeholder="Notes"
+                                  style={{
+                                    padding: '10px',
+                                    borderRadius: '10px',
+                                    border: `1px solid ${brand.cardBorder}`,
+                                    minHeight: '80px',
+                                  }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => stopEditingPet(pet.id)}
+                                  style={{
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    border: `1px solid ${brand.cardBorder}`,
+                                    background: '#fff',
+                                    color: brand.neutral,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => savePetEdit(pet.id)}
+                                  style={{
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: brand.primary,
+                                    color: '#fff',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    boxShadow: brand.cardShadow,
+                                  }}
+                                >
+                                  Save pet
+                                </button>
+                              </div>
+                            </>
                           )}
                         </div>
-                        {pet.notes ? (
-                          <p style={{ margin: 0, color: '#4b5563' }}>{pet.notes}</p>
-                        ) : (
-                          <p style={{ margin: 0, color: '#94a3b8' }}>No notes added yet.</p>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={emptyStateStyle}>
@@ -406,14 +810,14 @@ const ProfilePage = () => {
                     marginTop: '18px',
                     padding: '16px',
                     borderRadius: '16px',
-                    background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.12), rgba(236, 72, 153, 0.08))',
-                    border: '1px solid rgba(129, 140, 248, 0.25)',
+                    background: brand.primarySoft,
+                    border: `1px solid ${brand.cardBorder}`,
                   }}
                 >
-                  <h3 style={{ margin: '0 0 10px', color: '#111827' }}>Add a new pet</h3>
+                  <h3 style={{ margin: '0 0 10px', color: brand.neutral }}>Add a new pet</h3>
                   <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ color: '#475569', fontWeight: 600 }}>Name</label>
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>Name</label>
                       <input
                         type="text"
                         placeholder="Luna"
@@ -422,13 +826,13 @@ const ProfilePage = () => {
                         style={{
                           padding: '12px',
                           borderRadius: '12px',
-                          border: '1px solid #e5e7eb',
+                          border: `1px solid ${brand.cardBorder}`,
                           background: '#fff',
                         }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ color: '#475569', fontWeight: 600 }}>Breed</label>
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>Breed</label>
                       <input
                         type="text"
                         placeholder="Golden Retriever"
@@ -437,13 +841,13 @@ const ProfilePage = () => {
                         style={{
                           padding: '12px',
                           borderRadius: '12px',
-                          border: '1px solid #e5e7eb',
+                          border: `1px solid ${brand.cardBorder}`,
                           background: '#fff',
                         }}
                       />
                     </div>
                     <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ color: '#475569', fontWeight: 600 }}>Notes</label>
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>Notes</label>
                       <textarea
                         placeholder="Feeding instructions, personality notes, medication..."
                         value={newPet.notes}
@@ -451,7 +855,7 @@ const ProfilePage = () => {
                         style={{
                           padding: '12px',
                           borderRadius: '12px',
-                          border: '1px solid #e5e7eb',
+                          border: `1px solid ${brand.cardBorder}`,
                           background: '#fff',
                           minHeight: '90px',
                         }}
@@ -466,11 +870,11 @@ const ProfilePage = () => {
                         padding: '12px 16px',
                         borderRadius: '12px',
                         border: 'none',
-                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                        background: brand.primary,
                         color: 'white',
                         fontWeight: 800,
                         cursor: 'pointer',
-                        boxShadow: '0 14px 40px rgba(34, 197, 94, 0.35)',
+                        boxShadow: brand.cardShadow,
                       }}
                     >
                       Save pet
@@ -481,46 +885,47 @@ const ProfilePage = () => {
 
               <SectionCard
                 title="Bookings"
-                description="Upcoming and past appointments at a glance."
-                accent="#fee2e2"
+                description="Tap a booking to view details or cancel. Cancelled bookings are hidden."
               >
                 {hasBookings ? (
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>
-                    {profile.bookings.map((booking) => (
+                    {activeBookings.map((booking) => (
                       <li
                         key={booking.id}
+                        onClick={() => openBooking(booking)}
                         style={{
-                          background: 'linear-gradient(180deg, #fff7ed, #ffffff)',
-                          border: '1px solid #fed7aa',
+                          background: 'linear-gradient(180deg, #fdf9ff, #ffffff)',
+                          border: `1px solid ${brand.cardBorder}`,
                           borderRadius: '16px',
                           padding: '14px',
-                          boxShadow: '0 12px 28px rgba(251, 146, 60, 0.12)',
+                          boxShadow: brand.cardShadow,
+                          cursor: 'pointer',
+                          transition: 'transform 150ms ease, box-shadow 150ms ease',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                           <div>
-                            <p style={{ margin: '0 0 4px', fontWeight: 800, color: '#c2410c' }}>
-                              {booking.service_title || booking?.services_catalog?.title}
+                            <p style={{ margin: '0 0 4px', fontWeight: 800, color: brand.primary }}>
+                              {booking.service_title || booking?.services_catalog?.title || 'Service'}
                             </p>
-                            <p style={{ margin: 0, color: '#0f172a', fontWeight: 600 }}>
-                              {new Date(booking.start_at).toLocaleString()} → {new Date(booking.end_at).toLocaleTimeString()}
-                            </p>
+                            <p style={{ margin: 0, color: brand.neutral, fontWeight: 600 }}>{formatDateRange(booking)}</p>
                           </div>
                           <span
                             style={{
-                              background: '#fef3c7',
-                              color: '#92400e',
+                              background: brand.primarySoft,
+                              color: brand.primary,
                               padding: '6px 12px',
                               borderRadius: '999px',
                               fontWeight: 700,
                               fontSize: '0.9rem',
-                              border: '1px solid #fcd34d',
+                              border: `1px solid ${brand.cardBorder}`,
+                              textTransform: 'capitalize',
                             }}
                           >
-                            {new Date(booking.start_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            {booking.status || 'scheduled'}
                           </span>
                         </div>
-                        {booking.notes && <p style={{ margin: '8px 0 0', color: '#4b5563' }}>{booking.notes}</p>}
+                        {booking.notes && <p style={{ margin: '8px 0 0', color: brand.subtleText }}>{booking.notes}</p>}
                       </li>
                     ))}
                   </ul>
@@ -532,25 +937,10 @@ const ProfilePage = () => {
                   </div>
                 )}
               </SectionCard>
-            </>
-          ) : (
-            <>
-              <SectionCard
-                title="Welcome back"
-                description="Enter your email above to unlock your personalized client hub."
-                accent="#e5e7eb"
-              >
-                <div style={{ ...emptyStateStyle, background: 'linear-gradient(135deg, #eef2ff, #f8fafc)' }}>
-                  <p style={{ margin: 0 }}>
-                    <strong>Tip:</strong> Use the same email you used during booking to instantly load your profile.
-                  </p>
-                </div>
-              </SectionCard>
 
               <SectionCard
-                title="Need to reset your password?"
-                description="Request a fresh sign-in link and we'll guide you through setting a new password."
-                accent="#dbeafe"
+                title="Need a password reset link?"
+                description="We'll email you instructions to reset your password if needed."
               >
                 <div
                   style={{
@@ -561,7 +951,7 @@ const ProfilePage = () => {
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ color: '#475569', fontWeight: 700 }}>Email address</label>
+                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Email address</label>
                     <input
                       type="email"
                       placeholder="you@example.com"
@@ -570,7 +960,7 @@ const ProfilePage = () => {
                       style={{
                         padding: '12px',
                         borderRadius: '12px',
-                        border: '1px solid #e5e7eb',
+                        border: `1px solid ${brand.cardBorder}`,
                         background: '#fff',
                       }}
                     />
@@ -584,11 +974,11 @@ const ProfilePage = () => {
                         padding: '12px 16px',
                         borderRadius: '12px',
                         border: 'none',
-                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                        background: resetStatus.state === 'loading' ? brand.primarySoft : brand.primary,
                         color: 'white',
                         fontWeight: 800,
                         cursor: resetStatus.state === 'loading' ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 14px 40px rgba(59, 130, 246, 0.25)',
+                        boxShadow: brand.cardShadow,
                         width: '100%',
                       }}
                     >
@@ -609,10 +999,22 @@ const ProfilePage = () => {
                 )}
               </SectionCard>
             </>
+          ) : (
+            <SectionCard
+              title="Welcome back"
+              description="Enter your email above to unlock your personalized client hub."
+            >
+              <div style={{ ...emptyStateStyle, background: brand.primarySoft }}>
+                <p style={{ margin: 0 }}>
+                  <strong>Tip:</strong> Use the same email you used during booking to instantly load your profile.
+                </p>
+              </div>
+            </SectionCard>
           )}
         </div>
       </div>
-      {passwordModalOpen && (
+
+      {selectedBooking && (
         <div
           style={{
             position: 'fixed',
@@ -626,70 +1028,63 @@ const ProfilePage = () => {
         >
           <div
             style={{
-              background: 'white',
+              background: '#fff',
               borderRadius: '18px',
               padding: '20px',
-              width: 'min(460px, 96vw)',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.2)',
-              border: '1px solid #e5e7eb',
+              width: 'min(520px, 96vw)',
+              boxShadow: brand.cardShadow,
+              border: `1px solid ${brand.cardBorder}`,
+              display: 'grid',
+              gap: '10px',
             }}
           >
-            <h3 style={{ margin: '0 0 8px', color: '#0f172a' }}>Create your password</h3>
-            <p style={{ margin: '0 0 16px', color: '#475569', lineHeight: 1.5 }}>
-              We found your email but you need to set a password to continue. Create a password to
-              open your profile and keep your details secure.
-            </p>
-            <label style={{ display: 'block', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-              New password
-            </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter a password"
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                background: '#f8fafc',
-              }}
-            />
-            {passwordSetupError && (
-              <p style={{ color: '#b91c1c', fontWeight: 600, margin: '8px 0 0' }}>{passwordSetupError}</p>
-            )}
-            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: brand.neutral }}>Booking details</h3>
               <button
                 type="button"
-                onClick={() => setPasswordModalOpen(false)}
-                disabled={savingPassword}
+                onClick={() => setSelectedBooking(null)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  fontSize: '1.2rem',
+                  cursor: 'pointer',
+                  color: brand.subtleText,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: 0, color: brand.primary, fontWeight: 800 }}>
+              {selectedBooking.service_title || selectedBooking?.services_catalog?.title || 'Service'}
+            </p>
+            <p style={{ margin: 0, color: brand.neutral, fontWeight: 600 }}>{formatDateRange(selectedBooking)}</p>
+            <p style={{ margin: 0, color: brand.subtleText, textTransform: 'capitalize' }}>
+              Status: {selectedBooking.status || 'scheduled'}
+            </p>
+            {selectedBooking.notes && (
+              <p style={{ margin: '8px 0 0', color: brand.subtleText }}>{selectedBooking.notes}</p>
+            )}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              {bookingAction.error && (
+                <span style={{ color: '#b91c1c', fontWeight: 700, marginRight: 'auto' }}>
+                  {bookingAction.error}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={cancelBooking}
+                disabled={bookingAction.cancelling}
                 style={{
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  border: '1px solid #e5e7eb',
-                  background: '#f8fafc',
-                  color: '#0f172a',
-                  cursor: savingPassword ? 'not-allowed' : 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={savePassword}
-                disabled={savingPassword}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '10px',
                   border: 'none',
-                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                  color: 'white',
+                  background: bookingAction.cancelling ? brand.primarySoft : '#ef4444',
+                  color: '#fff',
                   fontWeight: 800,
-                  cursor: savingPassword ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 10px 25px rgba(34, 197, 94, 0.35)',
+                  cursor: bookingAction.cancelling ? 'not-allowed' : 'pointer',
                 }}
               >
-                {savingPassword ? 'Saving…' : 'Save password'}
+                {bookingAction.cancelling ? 'Cancelling…' : 'Cancel booking'}
               </button>
             </div>
           </div>

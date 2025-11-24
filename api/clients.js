@@ -3,6 +3,7 @@ const {
   ensureClientProfile,
   ensureAuthUserWithPassword,
   hashPassword,
+  requireSupabase,
 } = require("./_lib/supabase");
 
 module.exports = async (req, res) => {
@@ -95,6 +96,80 @@ module.exports = async (req, res) => {
     }
   }
 
+  if (req.method === "PATCH") {
+    try {
+      requireSupabase();
+
+      const { id, email, fullName, phone, newEmail } = req.body || {};
+      const normalizedEmail = (email || newEmail || "").toLowerCase();
+
+      if (!id && !normalizedEmail) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: "Client id or email is required" }));
+        return;
+      }
+
+      const clientLookup = await supabaseAdmin
+        .from("clients")
+        .select("*")
+        .eq(id ? "id" : "email", id || normalizedEmail)
+        .maybeSingle();
+
+      if (clientLookup.error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: "Failed to load client" }));
+        return;
+      }
+
+      const existingClient = clientLookup.data;
+
+      if (!existingClient) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ message: "Client not found" }));
+        return;
+      }
+
+      const nextEmail = (newEmail || existingClient.email || "").toLowerCase();
+
+      const updateResult = await supabaseAdmin
+        .from("clients")
+        .update({
+          full_name: fullName ?? existingClient.full_name,
+          phone_number: phone ?? existingClient.phone_number,
+          email: nextEmail,
+        })
+        .eq("id", existingClient.id)
+        .select("*")
+        .single();
+
+      if (updateResult.error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: "Failed to update client" }));
+        return;
+      }
+
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(existingClient.id, {
+          email: nextEmail,
+          user_metadata: updateResult.data.full_name
+            ? { full_name: updateResult.data.full_name }
+            : undefined,
+        });
+      } catch (authError) {
+        console.error("Failed to sync client profile to Supabase Auth", authError);
+      }
+
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ client: updateResult.data }));
+      return;
+    } catch (error) {
+      console.error("Client update error", error);
+      res.statusCode = error?.statusCode || 500;
+      res.end(JSON.stringify({ message: error?.publicMessage || "Failed to update client" }));
+      return;
+    }
+  }
+
   if (req.method === "PUT") {
     const { email, password } = req.body || {};
     const normalizedEmail = (email || "").toLowerCase();
@@ -167,6 +242,6 @@ module.exports = async (req, res) => {
   }
 
   res.statusCode = 405;
-  res.setHeader("Allow", "GET, POST, PUT");
+  res.setHeader("Allow", "GET, POST, PATCH, PUT");
   res.end("Method Not Allowed");
 };
