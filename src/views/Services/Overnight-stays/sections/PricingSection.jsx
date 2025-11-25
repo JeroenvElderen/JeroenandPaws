@@ -13,6 +13,8 @@ const services = [
     duration: "Overnight Stay",
     durationMinutes: 24 * 60,
     ctaText: "Book Boarding",
+    allowRecurring: false,
+    allowMultiDay: false,
   },
   {
     id: "overnight-stay-custom",
@@ -31,6 +33,8 @@ const services = [
       description:
         "Choose WhatsApp for a quick chat about dates and care notes, or send your full request through the form.",
     },
+    allowRecurring: false,
+    allowMultiDay: false,
   },
 ];
 

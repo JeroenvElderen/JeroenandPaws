@@ -52,6 +52,38 @@ const renderPetList = (pets = [], { includePhotos = false } = {}) => {
   });
 };
 
+const renderScheduleBlock = (schedule = []) => {
+  if (!Array.isArray(schedule) || schedule.length === 0) return "";
+
+  const items = schedule.map((item, index) => {
+    const label = escapeHtml(item?.label || `Visit ${index + 1}`);
+    const start = escapeHtml(item?.start || "");
+    const end = escapeHtml(item?.end || "");
+    return `<li><strong>${label}</strong>${start ? ` — ${start}` : ""}${
+      end ? ` (ends ${end})` : ""
+    }</li>`;
+  });
+
+  return `<p style="margin: 12px 0 8px;"><strong>Schedule:</strong></p><ul style="margin: 0; padding-left: 20px;">${items.join(
+    ""
+  )}</ul>`;
+};
+
+const formatRecurrenceMessage = (recurrence) => {
+  switch (recurrence) {
+    case "monthly":
+      return "Auto-renews every month.";
+    case "every 6 months":
+      return "Auto-renews every 6 months.";
+    case "yearly":
+      return "Auto-renews every year.";
+    case "requested":
+      return "Auto-renewal requested.";
+    default:
+      return "";
+  }
+};
+
 const WINDOWS_TO_IANA = {
   "GMT Standard Time": "Europe/London",
 };
@@ -94,6 +126,8 @@ const buildConfirmationBody = ({
   pets,
   passwordDelivery,
   clientAddress,
+  schedule = [],
+  recurrence = "",
 }) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
   const petDetails = renderPetList(pets);
@@ -120,6 +154,10 @@ const buildConfirmationBody = ({
         clientAddress
       )}</p>`
     : "";
+  const scheduleBlock = renderScheduleBlock(schedule);
+  const recurrenceBlock = formatRecurrenceMessage(recurrence)
+    ? `<p style="margin: 12px 0 0;">${formatRecurrenceMessage(recurrence)}</p>`
+    : "";
 
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
@@ -139,6 +177,8 @@ const buildConfirmationBody = ({
       <p style="margin: 12px 0 8px;"><strong>Pets:</strong></p>
       ${petsBlock}
       ${addressBlock}
+      ${scheduleBlock}
+      ${recurrenceBlock}
       ${notesBlock}
        ${passwordBlock}
       <p style="margin: 16px 0 0;">If you need to reschedule or have questions, just reply to this email and we'll be happy to help.</p>
@@ -147,7 +187,15 @@ const buildConfirmationBody = ({
   `;
 };
 
-const buildNotificationBody = ({ service, client, timing, notes, pets }) => {
+const buildNotificationBody = ({
+  service,
+  client,
+  timing,
+  notes,
+  pets,
+  schedule = [],
+  recurrence = "",
+}) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
   const petDetails = renderPetList(pets, { includePhotos: true });
 
@@ -161,6 +209,11 @@ const buildNotificationBody = ({ service, client, timing, notes, pets }) => {
     ? `<p style="margin: 12px 0 0;"><strong>Address:</strong><br>${escapeHtml(
         client.address
       )}</p>`
+    : "";
+
+  const scheduleBlock = renderScheduleBlock(schedule);
+  const recurrenceBlock = formatRecurrenceMessage(recurrence)
+    ? `<p style="margin: 12px 0 0;">${formatRecurrenceMessage(recurrence)}</p>`
     : "";
 
   return `
@@ -182,6 +235,8 @@ const buildNotificationBody = ({ service, client, timing, notes, pets }) => {
       <ol style="margin: 0; padding-left: 20px;">${petDetails.join("")}</ol>
       ${notesBlock}
       ${addressBlock}
+      ${scheduleBlock}
+      ${recurrenceBlock}
       <p style="margin: 16px 0 0;">This is an internal notification for Jeroen & Paws.</p>
     </div>
   `;
@@ -223,6 +278,10 @@ module.exports = async (req, res) => {
       pets = [],
       dogs = [],
       dogCount,
+      schedule = [],
+      recurrence = null,
+      autoRenew = false,
+      bookingMode,
     } = body;
 
     const trimmedName = (clientName || "").trim();
@@ -230,12 +289,6 @@ module.exports = async (req, res) => {
     const trimmedAddress = (clientAddress || "").trim();
     const trimmedEmail = (clientEmail || "").trim();
     const trimmedNotes = (notes || "").trim();
-
-    if (!date || !time) {
-      res.statusCode = 400;
-      res.end(JSON.stringify({ message: "Missing date or time" }));
-      return;
-    }
 
     if (!trimmedName || !trimmedPhone || !trimmedEmail || !trimmedAddress) {
       res.statusCode = 400;
@@ -248,91 +301,155 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const { start, end } = resolveBookingTimes({
-      date,
-      time,
-      durationMinutes,
-      timeZone,
-    });
+    const preparedSchedule = (Array.isArray(schedule) ? schedule : [])
+      .map((entry) => ({
+        date: entry?.date,
+        time: entry?.time,
+        durationMinutes: Number.isFinite(entry?.durationMinutes)
+          ? entry.durationMinutes
+          : durationMinutes,
+      }))
+      .filter((entry) => entry.date && entry.time);
 
-    const adjacentBookings = await findAdjacentBookings({
-      start: start.toUTC().toISO(),
-      end: end.toUTC().toISO(),
-    });
+    if (!preparedSchedule.length && date && time) {
+      preparedSchedule.push({
+        date,
+        time,
+        durationMinutes,
+      });
+    }
 
-    const travelCheck = await validateTravelWindow({
-      start,
-      end,
-      clientAddress: trimmedAddress,
-      previousBooking: adjacentBookings.previous,
-      nextBooking: adjacentBookings.next,
-      baseAddress:
-        process.env.TRAVEL_HOME_ADDRESS ||
-        process.env.HOME_BASE_ADDRESS ||
-        DEFAULT_HOME_ADDRESS,
-    });
-
-    if (!travelCheck.ok) {
-      res.statusCode = 409;
-      res.end(
-        JSON.stringify({
-          message:
-            travelCheck.message ||
-            "Please choose a different time so we have enough travel time between bookings.",
-        })
-      );
+    if (!preparedSchedule.length) {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ message: "Missing schedule details" }));
       return;
     }
 
     const petsFromBody =
       Array.isArray(pets) && pets.length ? pets : dogs || [];
 
-    const bookingResult = await createBookingWithProfiles({
-      date,
-      time,
-      durationMinutes,
-      serviceId,
-      serviceTitle,
-      clientName: trimmedName,
-      clientPhone: trimmedPhone,
-      clientAddress: trimmedAddress,
-      clientEmail: trimmedEmail,
-      notes: trimmedNotes,
-      timeZone,
-      pets: petsFromBody,
-      dogCount,
-    });
+    const recurrenceLabel =
+      recurrence === "monthly"
+        ? "monthly"
+        : recurrence === "six-months"
+        ? "every 6 months"
+        : recurrence === "yearly"
+        ? "yearly"
+        : "";
 
-    console.log("➡️ BOOKING RESULT:", bookingResult);
-    console.log("➡️ start_at:", bookingResult?.booking?.start_at);
-    console.log("➡️ end_at:", bookingResult?.booking?.end_at);
+    const recurrenceNote = recurrenceLabel
+      ? `Auto-renew requested: ${recurrenceLabel}.`
+      : autoRenew
+      ? "Auto-renew requested."
+      : "";
 
-    console.log(
-      "➡️ Parsed start:",
-      DateTime.fromISO(bookingResult?.booking?.start_at, { zone: "UTC" })
-        .isValid,
-      DateTime.fromISO(bookingResult?.booking?.start_at, {
-        zone: "UTC",
-      }).toISO()
-    );
+    const aggregatedNotes = [
+      trimmedNotes,
+      recurrenceNote,
+      bookingMode === "multi-day" || preparedSchedule.length > 1
+        ? `Multi-visit booking with ${preparedSchedule.length} dates.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
-    console.log(
-      "➡️ Parsed end:",
-      DateTime.fromISO(bookingResult?.booking?.end_at, { zone: "UTC" }).isValid,
-      DateTime.fromISO(bookingResult?.booking?.end_at, { zone: "UTC" }).toISO()
-    );
+    const validatedSchedule = [];
 
-    const timing = buildFriendlyTiming({
-      start: DateTime.fromISO(bookingResult.booking.start_at, { zone: "UTC" }),
-      end: DateTime.fromISO(bookingResult.booking.end_at, { zone: "UTC" }),
-      timeZone,
-    });
+    for (const entry of preparedSchedule) {
+      const entryDuration = Number.isFinite(entry.durationMinutes)
+        ? entry.durationMinutes
+        : durationMinutes;
 
-    const calendarStatus = {
-      created: false,
-      skipped: false,
-      error: null,
-    };
+      const { start, end } = resolveBookingTimes({
+        date: entry.date,
+        time: entry.time,
+        durationMinutes: entryDuration,
+        timeZone,
+      });
+
+      const adjacentBookings = await findAdjacentBookings({
+        start: start.toUTC().toISO(),
+        end: end.toUTC().toISO(),
+      });
+
+      const travelCheck = await validateTravelWindow({
+        start,
+        end,
+        clientAddress: trimmedAddress,
+        previousBooking: adjacentBookings.previous,
+        nextBooking: adjacentBookings.next,
+        baseAddress:
+          process.env.TRAVEL_HOME_ADDRESS ||
+          process.env.HOME_BASE_ADDRESS ||
+          DEFAULT_HOME_ADDRESS,
+      });
+
+      if (!travelCheck.ok) {
+        res.statusCode = 409;
+        res.end(
+          JSON.stringify({
+            message:
+              travelCheck.message ||
+              "Please choose a different time so we have enough travel time between bookings.",
+          })
+        );
+        return;
+      }
+
+    validatedSchedule.push({
+        ...entry,
+        durationMinutes: entryDuration,
+        start,
+        end,
+      });
+    }
+
+    const bookingResults = [];
+
+    for (const entry of validatedSchedule) {
+      const bookingResult = await createBookingWithProfiles({
+        date: entry.date,
+        time: entry.time,
+        durationMinutes: entry.durationMinutes,
+        serviceId,
+        serviceTitle,
+        clientName: trimmedName,
+        clientPhone: trimmedPhone,
+        clientAddress: trimmedAddress,
+        clientEmail: trimmedEmail,
+        notes: aggregatedNotes,
+        timeZone,
+        pets: petsFromBody,
+        dogCount,
+      });
+
+      console.log("➡️ BOOKING RESULT:", bookingResult);
+      console.log("➡️ start_at:", bookingResult?.booking?.start_at);
+      console.log("➡️ end_at:", bookingResult?.booking?.end_at);
+
+      console.log(
+        "➡️ Parsed start:",
+        DateTime.fromISO(bookingResult?.booking?.start_at, { zone: "UTC" })
+          .isValid,
+        DateTime.fromISO(bookingResult?.booking?.start_at, {
+          zone: "UTC",
+        }).toISO()
+      );
+
+      console.log(
+        "➡️ Parsed end:",
+        DateTime.fromISO(bookingResult?.booking?.end_at, { zone: "UTC" }).isValid,
+        DateTime.fromISO(bookingResult?.booking?.end_at, { zone: "UTC" }).toISO()
+      );
+
+      const timing = buildFriendlyTiming({
+        start: entry.start,
+        end: entry.end,
+        timeZone,
+      });
+
+      bookingResults.push({ bookingResult, timing, entry });
+    }
 
     const notificationRecipients = Array.from(
       new Set(
@@ -346,55 +463,81 @@ module.exports = async (req, res) => {
       )
     );
 
-    if (accessToken && calendarId) {
-      try {
-        const eventStart = DateTime.fromISO(bookingResult.booking.start_at)
-          .toUTC()
-          .toISO({ suppressMilliseconds: true });
-        const eventEnd = DateTime.fromISO(bookingResult.booking.end_at)
-          .toUTC()
-          .toISO({ suppressMilliseconds: true });
+    const calendarStatuses = [];
 
-        const eventResponse = await createEvent({
-          accessToken,
-          calendarId,
-          subject: bookingResult.service?.title || serviceTitle,
-          body: buildNotificationBody({
-            service: bookingResult.service || { serviceTitle },
-            client: bookingResult.client,
-            timing,
-            notes,
-            pets: bookingResult.pets,
-          }),
-          bodyContentType: "HTML",
-          start: eventStart, // ✅ already ISO string
-          end: eventEnd, // ✅ already ISO string
-          attendeeEmail: clientEmail,
-          timeZone: timeZone || "UTC",
-        });
+    if (accessToken && calendarId) {
+      for (const entry of bookingResults) {
+        const calendarStatus = {
+          bookingId: entry.bookingResult.booking.id,
+          created: false,
+          skipped: false,
+          error: null,
+        };
+
+        try {
+          const eventStart = DateTime.fromISO(entry.bookingResult.booking.start_at)
+            .toUTC()
+            .toISO({ suppressMilliseconds: true });
+          const eventEnd = DateTime.fromISO(entry.bookingResult.booking.end_at)
+            .toUTC()
+            .toISO({ suppressMilliseconds: true });
+
+          const eventResponse = await createEvent({
+            accessToken,
+            calendarId,
+            subject: entry.bookingResult.service?.title || serviceTitle,
+            body: buildNotificationBody({
+              service: entry.bookingResult.service || { serviceTitle },
+              client: entry.bookingResult.client,
+              timing: entry.timing,
+              notes: aggregatedNotes,
+              pets: entry.bookingResult.pets,
+              schedule: bookingResults.map((booking, index) => ({
+                label: `Visit ${index + 1}`,
+                start: booking.timing.start,
+                end: booking.timing.end,
+              })),
+              recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
+            }),
+            bodyContentType: "HTML",
+            start: eventStart, // ✅ already ISO string
+            end: eventEnd, // ✅ already ISO string
+            attendeeEmail: clientEmail,
+            timeZone: timeZone || "UTC",
+          });
 
         calendarStatus.created = true;
 
-        if (eventResponse?.id) {
-          try {
-            await saveBookingCalendarEventId(
-              bookingResult.booking.id,
-              eventResponse.id
-            );
-          } catch (storeEventError) {
-            console.error(
-              "Failed to persist calendar event id for booking",
-              storeEventError
-            );
+          if (eventResponse?.id) {
+            try {
+              await saveBookingCalendarEventId(
+                entry.bookingResult.booking.id,
+                eventResponse.id
+              );
+            } catch (storeEventError) {
+              console.error(
+                "Failed to persist calendar event id for booking",
+                storeEventError
+              );
+            }
           }
+          } catch (eventError) {
+          console.error("Booking calendar event failed", eventError);
+          calendarStatus.error =
+            eventError?.message || "Calendar event creation failed";
         }
-      } catch (eventError) {
-        console.error("Booking calendar event failed", eventError);
-        calendarStatus.error =
-          eventError?.message || "Calendar event creation failed";
+
+          calendarStatuses.push(calendarStatus);
       }
     } else {
-      calendarStatus.skipped = true;
+      bookingResults.forEach((entry) => {
+        calendarStatuses.push({
+          bookingId: entry.bookingResult.booking.id,
+          created: false,
+          skipped: true,
+          error: null,
+        });
+      });
     }
 
     const emailStatus = {
@@ -404,23 +547,36 @@ module.exports = async (req, res) => {
       error: null,
     };
 
+    const scheduleSummary = bookingResults.map((booking, index) => ({
+      label: `Visit ${index + 1}`,
+      start: booking.timing.start,
+      end: booking.timing.end,
+    }));
+
+    const passwordDelivery =
+      bookingResults.find((entry) => entry.bookingResult.passwordDelivery)?.
+        bookingResult.passwordDelivery || null;
+
     if (accessToken && calendarId && clientEmail) {
       try {
         const confirmationBody = buildConfirmationBody({
           clientName,
-          timing,
-          service: bookingResult.service || { serviceTitle },
-          notes,
-          pets: bookingResult.pets,
-          passwordDelivery: bookingResult.passwordDelivery,
+          timing: bookingResults[0]?.timing,
+          service: bookingResults[0]?.bookingResult.service || { serviceTitle },
+          notes: aggregatedNotes,
+          pets: bookingResults[0]?.bookingResult.pets,
+          passwordDelivery,
           clientAddress,
+          schedule: scheduleSummary,
+          recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
         });
 
         await sendMail({
           accessToken,
           fromCalendarId: calendarId,
           to: clientEmail,
-          subject: bookingResult.service?.title || serviceTitle,
+          subject:
+            bookingResults[0]?.bookingResult.service?.title || serviceTitle,
           body: confirmationBody,
           contentType: "HTML",
         });
@@ -428,11 +584,13 @@ module.exports = async (req, res) => {
 
         if (notificationRecipients.length) {
           const notificationBody = buildNotificationBody({
-            service: bookingResult.service || { serviceTitle },
-            client: bookingResult.client,
-            timing,
-            notes,
-            pets: bookingResult.pets,
+            service: bookingResults[0]?.bookingResult.service || { serviceTitle },
+            client: bookingResults[0]?.bookingResult.client,
+            timing: bookingResults[0]?.timing,
+            notes: aggregatedNotes,
+            pets: bookingResults[0]?.bookingResult.pets,
+            schedule: scheduleSummary,
+            recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
           });
 
           await sendMail({
@@ -440,7 +598,7 @@ module.exports = async (req, res) => {
             fromCalendarId: calendarId,
             to: notificationRecipients,
             subject: `New booking: ${
-              bookingResult.service?.title || serviceTitle
+              bookingResults[0]?.bookingResult.service?.title || serviceTitle
             }`,
             body: notificationBody,
             contentType: "HTML",
@@ -454,17 +612,29 @@ module.exports = async (req, res) => {
     } else {
       emailStatus.skipped = true;
     }
+    const calendarStatus = {
+      created: calendarStatuses.every((status) => status.created),
+      skipped: calendarStatuses.every((status) => status.skipped),
+      error: calendarStatuses.find((status) => status.error)?.error || null,
+      entries: calendarStatuses,
+    };
+
+    const primaryResult = bookingResults[0];
+
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
-        booking: bookingResult.booking,
-        client: bookingResult.client,
-        pets: bookingResult.pets,
-        passwordDelivery: bookingResult.passwordDelivery,
-        service: bookingResult.service || { title: serviceTitle },
-        totals: bookingResult.totals,
+        bookings: bookingResults.map((entry) => entry.bookingResult.booking),
+        client: primaryResult?.bookingResult.client,
+        pets: primaryResult?.bookingResult.pets,
+        passwordDelivery,
+        service: primaryResult?.bookingResult.service || { title: serviceTitle },
+        totals: primaryResult?.bookingResult.totals,
         calendarStatus,
         emailStatus,
+        schedule: scheduleSummary,
+        recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
+        bookingMode: bookingMode || (preparedSchedule.length > 1 ? "multi-day" : "single"),
       })
     );
   } catch (error) {

@@ -37,7 +37,13 @@ const BookingModal = ({ service, onClose }) => {
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
   const [showDogDetails, setShowDogDetails] = useState(true);
+  const [selectedSlots, setSelectedSlots] = useState({});
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [recurrence, setRecurrence] = useState("none");
   const { profile, isAuthenticated } = useAuth();
+
+  const allowMultiDay = service?.allowMultiDay !== false;
+  const allowRecurring = service?.allowRecurring !== false;
 
   const hasAtLeastOneDog = useMemo(() => {
     if (selectedPetIds.length > 0) return true;
@@ -177,6 +183,9 @@ const BookingModal = ({ service, onClose }) => {
       setSelectedDate(firstOpenDate.date);
       const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
       setSelectedTime(firstSlot?.time || "");
+      setSelectedSlots({
+        [firstOpenDate.date]: firstSlot?.time || "",
+      });
       setVisibleMonth(new Date(firstOpenDate.date));
     }
   }, [isDayAvailableForService]);
@@ -186,6 +195,9 @@ const BookingModal = ({ service, onClose }) => {
     setError("");
     setSuccess("");
     setAvailabilityNotice("");
+    setSelectedSlots({});
+    setIsMultiDay(false);
+    setRecurrence("none");
     try {
       const durationMinutes = Number.isFinite(service.durationMinutes)
         ? service.durationMinutes
@@ -397,6 +409,95 @@ const BookingModal = ({ service, onClose }) => {
     return `${adjustedHour}:${minutes} ${suffix}`;
   };
 
+  const scheduleEntries = useMemo(() => {
+    return Object.entries(selectedSlots || {})
+      .map(([date, time]) => ({ date, time }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [selectedSlots]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    if (!(selectedDate in selectedSlots)) {
+      const nextDate = scheduleEntries[0]?.date || "";
+      setSelectedDate(nextDate);
+      setSelectedTime(nextDate ? selectedSlots[nextDate] || "" : "");
+      return;
+    }
+
+    const savedTime = selectedSlots[selectedDate] || "";
+    if (savedTime !== selectedTime) {
+      setSelectedTime(savedTime || "");
+    }
+  }, [selectedDate, selectedSlots, selectedTime, scheduleEntries]);
+
+  useEffect(() => {
+    if (isMultiDay || scheduleEntries.length <= 1) return;
+
+    const primary = scheduleEntries[0];
+    if (!primary?.date) return;
+
+    setSelectedSlots({ [primary.date]: primary.time || "" });
+    setSelectedDate(primary.date);
+    setSelectedTime(primary.time || "");
+  }, [isMultiDay, scheduleEntries]);
+
+  const getDefaultSlotForDate = useCallback(
+    (iso) => {
+      const day = availabilityMap[iso];
+      if (!day || !Array.isArray(day.slots)) return "";
+
+      const firstAvailable = day.slots.find((slot) => slot.available);
+      return firstAvailable?.time || "";
+    },
+    [availabilityMap]
+  );
+
+  const handleDaySelection = (iso) => {
+    const existingTime = selectedSlots[iso];
+    const nextTime = existingTime || getDefaultSlotForDate(iso);
+
+    if (isMultiDay) {
+      setSelectedSlots((prev) => ({
+        ...prev,
+        [iso]: nextTime,
+      }));
+      setSelectedDate(iso);
+      setSelectedTime(nextTime);
+      return;
+    }
+
+    setSelectedSlots({ [iso]: nextTime });
+    setSelectedDate(iso);
+    setSelectedTime(nextTime);
+  };
+
+  const handleTimeSelection = (time) => {
+    if (!selectedDate) return;
+    setSelectedTime(time);
+    setSelectedSlots((prev) => ({
+      ...prev,
+      [selectedDate]: time,
+    }));
+  };
+
+  const removeDateFromSchedule = (date) => {
+    setSelectedSlots((prev) => {
+      const next = { ...prev };
+      delete next[date];
+
+      const remainingDates = Object.keys(next);
+      const nextDate = remainingDates.includes(selectedDate)
+        ? selectedDate
+        : remainingDates[0] || "";
+
+      setSelectedDate(nextDate);
+      setSelectedTime(nextDate ? next[nextDate] || "" : "");
+
+      return next;
+    });
+  };
+
   const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
   const monthLabel = visibleMonth.toLocaleDateString(undefined, {
     month: "long",
@@ -411,10 +512,26 @@ const BookingModal = ({ service, onClose }) => {
     : "Pick a date";
 
   const handleBook = async () => {
-    if (!selectedDate || !selectedTime) {
-      setError("Please pick a date and time.");
+    const sortedSchedule = Object.entries(selectedSlots || {})
+      .map(([date, time]) => ({ date, time }))
+      .filter((entry) => entry.date)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const validSchedule = sortedSchedule.filter((entry) => Boolean(entry.time));
+
+    if (!validSchedule.length) {
+      setError("Please pick at least one date and time.");
       return;
     }
+
+    if (isMultiDay && validSchedule.length !== sortedSchedule.length) {
+      setError("Please choose a time for each selected day.");
+      return;
+    }
+
+    const primaryEntry = validSchedule[0];
+    const recurrenceSelection = recurrence === "none" ? null : recurrence;
+    const bookingMode = isMultiDay || validSchedule.length > 1 ? "multi-day" : "single";
 
     if (
       !clientName.trim() ||
@@ -433,17 +550,20 @@ const BookingModal = ({ service, onClose }) => {
     setSuccess("");
 
     try {
-      const start = new Date(`${selectedDate}T${selectedTime}:00`);
       const durationMinutes = Number.isFinite(service.durationMinutes)
         ? service.durationMinutes
         : 60;
-      const end = new Date(start.getTime() + durationMinutes * 60000);
 
       const petPayload = preparePetPayload();
 
+      const schedulePayload = validSchedule.map((entry) => ({
+        ...entry,
+        durationMinutes,
+      }));
+
       const payload = {
-        date: selectedDate,
-        time: selectedTime,
+        date: primaryEntry.date,
+        time: primaryEntry.time,
         durationMinutes,
         serviceId: service.id,
         serviceTitle: service.title,
@@ -455,6 +575,10 @@ const BookingModal = ({ service, onClose }) => {
         timeZone: availability.timeZone || "UTC",
         pets: petPayload,
         dogCount: petPayload.length,
+        schedule: schedulePayload,
+        recurrence: recurrenceSelection,
+        autoRenew: Boolean(recurrenceSelection),
+        bookingMode,
       };
 
       const requestUrl = `${apiBaseUrl}/api/book`;
@@ -487,12 +611,15 @@ const BookingModal = ({ service, onClose }) => {
 
       const data = await parseJsonSafely(response, requestUrl);
 
-      const readableDate = start.toLocaleString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+      const readableDates = validSchedule.map((entry) => {
+        const start = new Date(`${entry.date}T${entry.time}:00`);
+        return start.toLocaleString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
       });
 
       const passwordDelivery = data?.passwordDelivery;
@@ -540,11 +667,30 @@ const BookingModal = ({ service, onClose }) => {
           " Calendar sync is currently paused; we'll add this booking manually.";
       }
 
+      const recurrenceLabel =
+        recurrence === "monthly"
+          ? " This plan will auto-renew each month."
+          : recurrence === "six-months"
+          ? " This plan will auto-renew every 6 months."
+          : recurrence === "yearly"
+          ? " This plan will auto-renew each year."
+          : "";
+
+      const scheduleLabel =
+        readableDates.length > 1
+          ? `${readableDates.length} visits booked: ${readableDates.join(", ")}`
+          : readableDates[0];
+
       setSuccess(
-        `Booked ${service.title} on ${readableDate}. ${emailMessage}${calendarMessage}${passwordNote}`
+        `Booked ${service.title} for ${scheduleLabel}. ${emailMessage}${calendarMessage}${passwordNote}${recurrenceLabel}`
       );
 
       setAvailabilityNotice("");
+      setSelectedSlots({});
+      setSelectedDate("");
+      setSelectedTime("");
+      setIsMultiDay(false);
+      setRecurrence("none");
 
       setClientName("");
       setClientPhone("");
@@ -885,6 +1031,78 @@ const BookingModal = ({ service, onClose }) => {
         </header>
 
         <div className="booking-body">
+          <div className="schedule-controls">
+            {allowMultiDay && (
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={isMultiDay}
+                  onChange={(event) => setIsMultiDay(event.target.checked)}
+                />
+                <span className="muted subtle">Book multiple days at once</span>
+              </label>
+            )}
+
+            {allowRecurring && (
+              <label className="input-group recurrence-group">
+                <span>Auto-renewal</span>
+                <select
+                  value={recurrence}
+                  onChange={(event) => setRecurrence(event.target.value)}
+                >
+                  <option value="none">One-time booking</option>
+                  <option value="monthly">Renew every month</option>
+                  <option value="six-months">Renew every 6 months</option>
+                  <option value="yearly">Renew every year</option>
+                </select>
+                <p className="muted subtle">
+                  Choose a cadence to auto-renew your booking once the selected visits are complete.
+                </p>
+              </label>
+            )}
+
+            {isMultiDay && (
+              <div className="input-group full-width">
+                <span className="muted small">Selected days</span>
+                <div className="schedule-summary">
+                  {scheduleEntries.length === 0 ? (
+                    <p className="muted subtle">Pick dates on the calendar to add them here.</p>
+                  ) : (
+                    <ul className="schedule-list">
+                      {scheduleEntries.map((entry) => {
+                        const readableDate = entry.date
+                          ? new Date(entry.date).toLocaleDateString(undefined, {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                            })
+                          : "Date";
+                        return (
+                          <li key={entry.date} className="schedule-list__item">
+                            <div>
+                              <strong>{readableDate}</strong>
+                              <p className="muted small">
+                                {entry.time ? formatTime(entry.time) : "Pick a time"}
+                              </p>
+                            </div>
+                            {scheduleEntries.length > 1 && (
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={() => removeDateFromSchedule(entry.date)}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="calendar-card">
             <div className="calendar-toolbar">
               <div>
@@ -972,7 +1190,7 @@ const BookingModal = ({ service, onClose }) => {
                         } ${
                           isAvailable ? "day-has-slots" : "day-no-slots"
                         }`}
-                        onClick={() => setSelectedDate(iso)}
+                        onClick={() => handleDaySelection(iso)}
                         aria-pressed={isSelected}
                         disabled={isPastDate || !isAvailable}
                       >
@@ -1026,7 +1244,7 @@ const BookingModal = ({ service, onClose }) => {
                         key={`${selectedDay.date}-${slot.time}`}
                         type="button"
                         className={`time-slot ${isActive ? "active" : ""}`}
-                        onClick={() => setSelectedTime(slot.time)}
+                        onClick={() => handleTimeSelection(slot.time)}
                         aria-pressed={isActive}
                       >
                         <span className="dot" />
