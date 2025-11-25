@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 
 const AboutHeroSection = () => (
-  <header data-copilot="true" className="section max-height_100vh_desktop overflow_hidden flex_horizontal">
+  <header data-copilot="true" className="section flex_horizontal">
     <div className="container">
       <div className="w-layout-grid grid_2-col tablet-1-col gap-large">
         <div className="rotate_-12deg tablet-straight">
