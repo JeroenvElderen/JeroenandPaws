@@ -195,10 +195,14 @@ const PricingStyles = () => (
 }
 
 /* Light purple placeholder text style like your inputs */
-..input-like-select option {
-          color: #e7def9;
-          background: rgba(26, 17, 50, 1);
-        }
+.input-like-select option {
+  color: #e7def9;
+  background: rgba(26, 17, 50, 1);
+}
+
+.recurrence-group .recurrence-select {
+  margin-top: 6px;
+}
         .cta-choice-modal {
           background: linear-gradient(145deg, #1a1132 0%, #1f0f3a 100%);
           border-radius: 14px;

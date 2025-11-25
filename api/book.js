@@ -71,6 +71,8 @@ const renderScheduleBlock = (schedule = []) => {
 
 const formatRecurrenceMessage = (recurrence) => {
   switch (recurrence) {
+    case" weekly":
+      return "Auto-renews every week.";
     case "monthly":
       return "Auto-renews every month.";
     case "every 6 months":
@@ -329,7 +331,9 @@ module.exports = async (req, res) => {
       Array.isArray(pets) && pets.length ? pets : dogs || [];
 
     const recurrenceLabel =
-      recurrence === "monthly"
+      recurrence === "weekly"
+        ? "weekly"
+        : recurrence === "monthly"
         ? "monthly"
         : recurrence === "six-months"
         ? "every 6 months"

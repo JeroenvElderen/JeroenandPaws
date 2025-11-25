@@ -44,6 +44,9 @@ const BookingModal = ({ service, onClose }) => {
 
   const allowMultiDay = service?.allowMultiDay !== false;
   const allowRecurring = service?.allowRecurring !== false;
+  const serviceLabel = (service?.label || service?.title || "").toLowerCase();
+  const isBoardingService = serviceLabel.includes("boarding");
+  const allowWeeklyRecurring = allowRecurring && !isBoardingService;
 
   const hasAtLeastOneDog = useMemo(() => {
     if (selectedPetIds.length > 0) return true;
@@ -672,7 +675,9 @@ const BookingModal = ({ service, onClose }) => {
       }
 
       const recurrenceLabel =
-        recurrence === "monthly"
+        recurrence === "weekly"
+          ? " This plan will auto-renew each week."
+          : recurrence === "monthly"
           ? " This plan will auto-renew each month."
           : recurrence === "six-months"
           ? " This plan will auto-renew every 6 months."
@@ -989,16 +994,20 @@ const BookingModal = ({ service, onClose }) => {
           <label className="input-group full-width recurrence-group">
             <span>Auto-renewal</span>
             <select
+              className="input-like-select recurrence-select"
               value={recurrence}
               onChange={(event) => setRecurrence(event.target.value)}
             >
               <option value="none">One-time booking</option>
-              <option value="monthly">Renew every month</option>
+              {allowWeeklyRecurring && <option value="weekly">Renew every week</option>}
+              <option value="monthly">Renew every month (auto books next month)</option>
               <option value="six-months">Renew every 6 months</option>
               <option value="yearly">Renew every year</option>
             </select>
             <p className="muted subtle">
               Choose a cadence to auto-renew your booking once the selected visits are complete.
+              Weekly renewals are available for all services except boarding, and monthly renewals
+              will automatically line up next month’s bookings for you.
             </p>
           </label>
         )}
