@@ -355,6 +355,18 @@ const PricingStyles = () => (
   position: relative;
 }
 
+.day.scheduled {
+  border-color: rgba(124, 93, 242, 0.6);
+  background: rgba(124, 93, 242, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(124, 93, 242, 0.5);
+}
+
+.day-dot-wrapper {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
 /* Availability dot */
 .day-dot {
   width: 6px;
@@ -364,6 +376,19 @@ const PricingStyles = () => (
   box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.25);
   margin-top: 2px;
 }
+.day-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #0c061a;
+  font-size: 12px;
+  font-weight: 800;
+}
+  
         .info-banner {
           margin-bottom: 10px;
           padding: 8px 12px;

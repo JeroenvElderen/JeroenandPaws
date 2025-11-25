@@ -1039,7 +1039,9 @@ const BookingModal = ({ service, onClose }) => {
                   checked={isMultiDay}
                   onChange={(event) => setIsMultiDay(event.target.checked)}
                 />
-                <span className="muted subtle">Book multiple days at once</span>
+                <span className="muted subtle">
+                  Book multiple days at once (tap calendar dates to add more)
+                </span>
               </label>
             )}
 
@@ -1180,14 +1182,15 @@ const BookingModal = ({ service, onClose }) => {
                     const dayData = availabilityMap[iso];
                     const isAvailable = isDayAvailableForService(dayData);
                     const isSelected = iso === selectedDate;
+                    const isScheduled = Boolean(selectedSlots[iso]);
                     const isPastDate = dateObj < new Date().setHours(0, 0, 0, 0);
                     return (
                       <button
                         key={iso}
                         type="button"
                         className={`day ${isSelected ? "selected" : ""} ${
-                          isCurrentMonth ? "" : "muted"
-                        } ${
+                          isScheduled && !isSelected ? "scheduled" : ""
+                        } ${isCurrentMonth ? "" : "muted"} ${
                           isAvailable ? "day-has-slots" : "day-no-slots"
                         }`}
                         onClick={() => handleDaySelection(iso)}
@@ -1195,7 +1198,10 @@ const BookingModal = ({ service, onClose }) => {
                         disabled={isPastDate || !isAvailable}
                       >
                         <span>{dateObj.getDate()}</span>
-                        {isAvailable && <span className="day-dot" />}
+                        <span className="day-dot-wrapper">
+                          {isAvailable && <span className="day-dot" />}
+                          {isScheduled && !isSelected && <span className="day-check">✓</span>}
+                        </span>
                       </button>
                     );
                   })}
