@@ -1086,7 +1086,7 @@ const BookingModal = ({ service, onClose }) => {
           </div>
           <button
             type="button"
-            className={`add-on-trigger ${additionalsOpen ? "open" : ""}`}
+            className={`add-on-trigger input-like-select ${additionalsOpen ? "open" : ""}`}
             onClick={() => setAdditionalsOpen((open) => !open)}
             aria-expanded={additionalsOpen}
           >

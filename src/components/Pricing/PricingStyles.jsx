@@ -569,42 +569,51 @@ const PricingStyles = () => (
         .add-on-group {
           position: relative;
         }
+        .add-on-group .label-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
         .add-on-trigger {
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 10px;
           width: 100%;
-          border-radius: 12px;
+          border-radius: 10px;
           border: 1px solid rgba(255, 255, 255, 0.12);
-          background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.05), transparent 40%),
-            rgba(0, 0, 0, 0.16);
-          padding: 12px 14px;
-          color: #f2ecff;
+          background: rgba(0, 0, 0, 0.1);
+          padding: 10px 12px;
+          color: #f8f6ff;
+          font-size: 14px;
           cursor: pointer;
-          transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .add-on-trigger:hover {
           border-color: rgba(255, 255, 255, 0.24);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
         .add-on-trigger.open {
           border-color: rgba(144, 166, 255, 0.8);
-          box-shadow: 0 16px 32px rgba(124, 148, 255, 0.28);
+          box-shadow: 0 12px 20px rgba(124, 148, 255, 0.16);
+        }
+        .add-on-trigger:focus-visible {
+          outline: 2px solid rgba(144, 166, 255, 0.9);
+          outline-offset: 2px;
         }
         .add-on-chip-row {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
           align-items: center;
+          color: #e7def9;
         }
         .add-on-chip {
           padding: 8px 10px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          font-weight: 700;
-          color: #f2ecff;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          font-weight: 600;
+          color: #f8f6ff;
           display: inline-flex;
           align-items: center;
           gap: 6px;
@@ -676,15 +685,10 @@ const PricingStyles = () => (
           opacity: 1;
         }
         .add-on-trigger .chevron {
+          margin-left: auto;
           font-size: 12px;
-          color: #dcd0f7;
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 50%;
-          width: 28px;
-          height: 28px;
-          display: grid;
-          place-items: center;
-          border: 1px solid rgba(255, 255, 255, 0.14);
+          color: #e7def9;
+          display: inline-flex;
         }
         .pet-list-group {
           gap: 10px;
