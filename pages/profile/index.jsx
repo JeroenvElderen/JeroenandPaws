@@ -140,9 +140,6 @@ const ProfilePage = () => {
     email: initialProfile?.client?.email || '',
     address: initialProfile?.client?.address || '',
   });
-  const [eircodeInput, setEircodeInput] = useState('');
-  const [eircodeLookup, setEircodeLookup] = useState({ state: 'idle', message: '' });
-  const [resolvingEircode, setResolvingEircode] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPasswordInput, setCurrentPasswordInput] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -180,8 +177,6 @@ const ProfilePage = () => {
       address: payload?.client?.address || '',
     });
     setResetEmail(payload?.client?.email || '');
-    setEircodeInput('');
-    setEircodeLookup({ state: 'idle', message: '' });
   }, []);
 
   const persistProfileState = (nextProfileOrUpdater) => {
@@ -234,62 +229,7 @@ const ProfilePage = () => {
     setContactForm({ fullName: '', phone: '', email: '', address: '' });
     setEmail('');
     setResetEmail('');
-    setEircodeInput('');
-    setEircodeLookup({ state: 'idle', message: '' });
   }, [authProfile, refreshContactForm, useMockProfile]);
-
-  const fillAddressFromEircode = async () => {
-    const trimmed = eircodeInput.trim();
-
-    if (!trimmed) {
-      setEircodeLookup({
-        state: 'error',
-        message: 'Enter your Eircode to look up your address automatically.',
-      });
-      return;
-    }
-
-    setResolvingEircode(true);
-    setEircodeLookup({ state: 'pending', message: '' });
-
-    try {
-      const requestUrl = `${apiBaseUrl}/api/eircode?eircode=${encodeURIComponent(trimmed)}`;
-      const response = await fetch(requestUrl, {
-        headers: { Accept: 'application/json' },
-      });
-
-      const text = await response.text();
-      const payload = text ? JSON.parse(text) : {};
-
-      if (!response.ok) {
-        throw new Error(
-          payload?.message ||
-            "We couldn't find that Eircode. Please double-check it or type your address manually."
-        );
-      }
-
-      if (!payload?.address) {
-        throw new Error(
-          "We couldn't find that Eircode. Please double-check it or type your address manually."
-        );
-      }
-
-      setContactForm((previous) => ({ ...previous, address: payload.address }));
-      setEircodeLookup({
-        state: 'success',
-        message: 'Address filled from your Eircode.',
-      });
-    } catch (lookupError) {
-      const fallbackMessage =
-        "We couldn't find that Eircode. Please double-check it or type your address manually.";
-      setEircodeLookup({
-        state: 'error',
-        message: lookupError?.message || fallbackMessage,
-      });
-    } finally {
-      setResolvingEircode(false);
-    }
-  };
 
   const loadProfile = async () => {
     if (!email || !password) {
@@ -853,61 +793,6 @@ const ProfilePage = () => {
                       }}
                     />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>Irish Eircode (optional)</label>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input
-                        type="text"
-                        value={eircodeInput}
-                        onChange={(event) => {
-                          setEircodeInput(event.target.value);
-                          if (eircodeLookup.state !== 'idle') {
-                            setEircodeLookup({ state: 'idle', message: '' });
-                          }
-                        }}
-                        placeholder="A98 H940"
-                        style={{
-                          padding: '12px',
-                          borderRadius: '12px',
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: 'rgba(255,255,255,0.04)',
-                          color: brand.ink,
-                          flex: '1 1 200px',
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={fillAddressFromEircode}
-                        disabled={resolvingEircode}
-                        style={{
-                          padding: '10px 14px',
-                          borderRadius: '12px',
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: resolvingEircode ? brand.primarySoft : brand.surfaceHighlight,
-                          color: brand.ink,
-                          fontWeight: 700,
-                          cursor: resolvingEircode ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        {resolvingEircode ? 'Finding address…' : 'Fill address'}
-                      </button>
-                    </div>
-                  {eircodeLookup.message && (
-                    <p
-                      style={{
-                        margin: 0,
-                        color:
-                          eircodeLookup.state === 'error'
-                            ? '#e53e3e'
-                            : eircodeLookup.state === 'success'
-                            ? '#38a169'
-                            : brand.subtleText,
-                      }}
-                    >
-                      {eircodeLookup.message}
-                    </p>
-                  )}
-                </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ color: brand.subtleText, fontWeight: 700 }}>Service address</label>
                     <textarea
