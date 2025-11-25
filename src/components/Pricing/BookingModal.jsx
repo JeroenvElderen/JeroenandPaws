@@ -455,6 +455,10 @@ const BookingModal = ({ service, onClose }) => {
 
   const handleDaySelection = (iso) => {
     const existingTime = selectedSlots[iso];
+    if (isMultiDay && existingTime) {
+      removeDateFromSchedule(iso);
+      return;
+    }
     const nextTime = existingTime || getDefaultSlotForDate(iso);
 
     if (isMultiDay) {
@@ -981,6 +985,23 @@ const BookingModal = ({ service, onClose }) => {
             </label>
           </>
         )}
+        {allowRecurring && (
+          <label className="input-group full-width recurrence-group">
+            <span>Auto-renewal</span>
+            <select
+              value={recurrence}
+              onChange={(event) => setRecurrence(event.target.value)}
+            >
+              <option value="none">One-time booking</option>
+              <option value="monthly">Renew every month</option>
+              <option value="six-months">Renew every 6 months</option>
+              <option value="yearly">Renew every year</option>
+            </select>
+            <p className="muted subtle">
+              Choose a cadence to auto-renew your booking once the selected visits are complete.
+            </p>
+          </label>
+        )}
       </div>
       <div className="actions-row">
         <div className="actions-stack">
@@ -1045,24 +1066,6 @@ const BookingModal = ({ service, onClose }) => {
               </label>
             )}
 
-            {allowRecurring && (
-              <label className="input-group recurrence-group">
-                <span>Auto-renewal</span>
-                <select
-                  value={recurrence}
-                  onChange={(event) => setRecurrence(event.target.value)}
-                >
-                  <option value="none">One-time booking</option>
-                  <option value="monthly">Renew every month</option>
-                  <option value="six-months">Renew every 6 months</option>
-                  <option value="yearly">Renew every year</option>
-                </select>
-                <p className="muted subtle">
-                  Choose a cadence to auto-renew your booking once the selected visits are complete.
-                </p>
-              </label>
-            )}
-
             {isMultiDay && (
               <div className="input-group full-width">
                 <span className="muted small">Selected days</span>
@@ -1087,15 +1090,13 @@ const BookingModal = ({ service, onClose }) => {
                                 {entry.time ? formatTime(entry.time) : "Pick a time"}
                               </p>
                             </div>
-                            {scheduleEntries.length > 1 && (
-                              <button
-                                type="button"
-                                className="ghost-button"
-                                onClick={() => removeDateFromSchedule(entry.date)}
-                              >
-                                Remove
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              className="ghost-button"
+                              onClick={() => removeDateFromSchedule(entry.date)}
+                            >
+                              Remove
+                            </button>
                           </li>
                         );
                       })}
