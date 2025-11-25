@@ -105,8 +105,9 @@ module.exports = async (req, res) => {
     try {
       requireSupabase();
 
-      const { id, email, fullName, phone, newEmail } = req.body || {};
+      const { id, email, fullName, phone, address, newEmail } = req.body || {};
       const normalizedEmail = (email || newEmail || "").toLowerCase();
+      const addressToStore = (address || "").trim();
 
       if (!id && !normalizedEmail) {
         res.statusCode = 400;
@@ -142,6 +143,7 @@ module.exports = async (req, res) => {
           full_name: fullName ?? existingClient.full_name,
           phone_number: phone ?? existingClient.phone_number,
           email: nextEmail,
+          address: addressToStore || existingClient.address,
         })
         .eq("id", existingClient.id)
         .select("*")

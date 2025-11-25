@@ -3,8 +3,11 @@ const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { createEvent, sendMail } = require("./_lib/graph");
 const {
   createBookingWithProfiles,
+  findAdjacentBookings,
+  resolveBookingTimes,
   saveBookingCalendarEventId,
 } = require("./_lib/supabase");
+const { DEFAULT_HOME_ADDRESS, validateTravelWindow } = require("./_lib/travel");
 
 const resolveCalendarEmail = (calendarId) =>
   process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
@@ -90,6 +93,7 @@ const buildConfirmationBody = ({
   notes,
   pets,
   passwordDelivery,
+  clientAddress,
 }) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
   const petDetails = renderPetList(pets);
@@ -111,6 +115,12 @@ const buildConfirmationBody = ({
       ? `<ol style="margin: 0; padding-left: 20px;">${petDetails.join("")}</ol>`
       : '<p style="margin: 8px 0 0;">No pets were attached yet.</p>';
 
+  const addressBlock = clientAddress
+    ? `<p style="margin: 12px 0 0;"><strong>Address:</strong><br>${escapeHtml(
+        clientAddress
+      )}</p>`
+    : "";
+
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
       <p style="margin: 0 0 12px;">Hi ${escapeHtml(clientName || "there")},</p>
@@ -128,6 +138,7 @@ const buildConfirmationBody = ({
       </ul>
       <p style="margin: 12px 0 8px;"><strong>Pets:</strong></p>
       ${petsBlock}
+      ${addressBlock}
       ${notesBlock}
        ${passwordBlock}
       <p style="margin: 16px 0 0;">If you need to reschedule or have questions, just reply to this email and we'll be happy to help.</p>
@@ -143,6 +154,12 @@ const buildNotificationBody = ({ service, client, timing, notes, pets }) => {
   const notesBlock = notes
     ? `<p style="margin: 16px 0 0;"><strong>Client notes:</strong><br>${escapeHtml(
         notes
+      )}</p>`
+    : "";
+
+  const addressBlock = client?.address
+    ? `<p style="margin: 12px 0 0;"><strong>Address:</strong><br>${escapeHtml(
+        client.address
       )}</p>`
     : "";
 
@@ -164,6 +181,7 @@ const buildNotificationBody = ({ service, client, timing, notes, pets }) => {
       <p style="margin: 12px 0 8px;"><strong>Pets:</strong></p>
       <ol style="margin: 0; padding-left: 20px;">${petDetails.join("")}</ol>
       ${notesBlock}
+      ${addressBlock}
       <p style="margin: 16px 0 0;">This is an internal notification for Jeroen & Paws.</p>
     </div>
   `;
@@ -198,6 +216,7 @@ module.exports = async (req, res) => {
       serviceTitle,
       clientName,
       clientPhone,
+      clientAddress,
       clientEmail,
       notes,
       timeZone = "UTC",
@@ -206,27 +225,82 @@ module.exports = async (req, res) => {
       dogCount,
     } = body;
 
+    const trimmedName = (clientName || "").trim();
+    const trimmedPhone = (clientPhone || "").trim();
+    const trimmedAddress = (clientAddress || "").trim();
+    const trimmedEmail = (clientEmail || "").trim();
+    const trimmedNotes = (notes || "").trim();
+
     if (!date || !time) {
       res.statusCode = 400;
       res.end(JSON.stringify({ message: "Missing date or time" }));
       return;
     }
 
-  const petsFromBody = Array.isArray(pets) && pets.length ? pets : dogs || [];
+    if (!trimmedName || !trimmedPhone || !trimmedEmail || !trimmedAddress) {
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          message:
+            "Name, phone, email, and address are required to complete a booking",
+        })
+      );
+      return;
+    }
 
-  const bookingResult = await createBookingWithProfiles({
-    date,
-    time,
-    durationMinutes,
-    serviceId,
-    serviceTitle,
-    clientName,
-    clientPhone,
-    clientEmail,
-    notes,
-    timeZone,
-    pets: petsFromBody,
-    dogCount,
+    const { start, end } = resolveBookingTimes({
+      date,
+      time,
+      durationMinutes,
+      timeZone,
+    });
+
+    const adjacentBookings = await findAdjacentBookings({
+      start: start.toUTC().toISO(),
+      end: end.toUTC().toISO(),
+    });
+
+    const travelCheck = await validateTravelWindow({
+      start,
+      end,
+      clientAddress: trimmedAddress,
+      previousBooking: adjacentBookings.previous,
+      nextBooking: adjacentBookings.next,
+      baseAddress:
+        process.env.TRAVEL_HOME_ADDRESS ||
+        process.env.HOME_BASE_ADDRESS ||
+        DEFAULT_HOME_ADDRESS,
+    });
+
+    if (!travelCheck.ok) {
+      res.statusCode = 409;
+      res.end(
+        JSON.stringify({
+          message:
+            travelCheck.message ||
+            "Please choose a different time so we have enough travel time between bookings.",
+        })
+      );
+      return;
+    }
+
+    const petsFromBody =
+      Array.isArray(pets) && pets.length ? pets : dogs || [];
+
+    const bookingResult = await createBookingWithProfiles({
+      date,
+      time,
+      durationMinutes,
+      serviceId,
+      serviceTitle,
+      clientName: trimmedName,
+      clientPhone: trimmedPhone,
+      clientAddress: trimmedAddress,
+      clientEmail: trimmedEmail,
+      notes: trimmedNotes,
+      timeZone,
+      pets: petsFromBody,
+      dogCount,
     });
 
     console.log("➡️ BOOKING RESULT:", bookingResult);
@@ -339,6 +413,7 @@ module.exports = async (req, res) => {
           notes,
           pets: bookingResult.pets,
           passwordDelivery: bookingResult.passwordDelivery,
+          clientAddress,
         });
 
         await sendMail({

@@ -146,6 +146,21 @@ const hashPassword = (value) =>
     .update(value || "")
     .digest("hex");
 
+const resolveBookingTimes = ({
+  date,
+  time,
+  durationMinutes = 60,
+  timeZone = "UTC",
+}) => {
+  const start = DateTime.fromISO(`${date}T${time}`, { zone: timeZone || "UTC" });
+  const safeStart = start.isValid
+    ? start
+    : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
+  const end = safeStart.plus({ minutes: durationMinutes });
+
+  return { start: safeStart, end };
+};
+
 const findAuthUserByEmail = async (email) => {
   requireSupabase();
 
@@ -205,11 +220,12 @@ const ensureAuthUserWithPassword = async ({ email, password, fullName }) => {
 // matching row in the `clients` table using the Auth user's ID. If a client
 // already exists for the normalized email, the existing row is returned
 // without creating or updating Auth state.
-const ensureClientProfile = async ({ email, fullName, phone }) => {
+const ensureClientProfile = async ({ email, fullName, phone, address }) => {
   requireSupabase();
 
   const normalizedEmail = (email || "").trim().toLowerCase();
   const phoneToStore = (phone || "").trim();
+  const addressToStore = (address || "").trim();
 
   if (!normalizedEmail) {
     throw new Error("Client email is required to create a profile");
@@ -226,10 +242,17 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
   }
 
   if (existingClient.data) {
-    if (phoneToStore && existingClient.data.phone_number !== phoneToStore) {
+    const needsUpdate =
+      (phoneToStore && existingClient.data.phone_number !== phoneToStore) ||
+      (addressToStore && existingClient.data.address !== addressToStore);
+
+    if (needsUpdate) {
       const updateResult = await supabaseAdmin
         .from("clients")
-        .update({ phone_number: phoneToStore })
+        .update({
+          phone_number: phoneToStore || existingClient.data.phone_number,
+          address: addressToStore || existingClient.data.address,
+        })
         .eq("id", existingClient.data.id)
         .select("*")
         .maybeSingle();
@@ -266,6 +289,7 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
       email: normalizedEmail,
       full_name: fullName || null,
       phone_number: phoneToStore || null,
+      address: addressToStore || null,
       hashed_password: hashPassword(temporaryPassword),
       password_setup_token: passwordSetupToken,
     })
@@ -299,6 +323,36 @@ const ensureClientProfile = async ({ email, fullName, phone }) => {
     created: true,
     temporaryPassword,
   };
+};
+
+const findAdjacentBookings = async ({ start, end }) => {
+  requireSupabase();
+
+  const { data: previous, error: previousError } = await supabaseAdmin
+    .from("bookings")
+    .select("id, start_at, end_at, client_address")
+    .lt("end_at", start)
+    .order("end_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (previousError) {
+    throw previousError;
+  }
+
+  const { data: next, error: nextError } = await supabaseAdmin
+    .from("bookings")
+    .select("id, start_at, end_at, client_address")
+    .gt("start_at", end)
+    .order("start_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (nextError) {
+    throw nextError;
+  }
+
+  return { previous: previous || null, next: next || null };
 };
 
 const hasPetDetails = (pet = {}) => {
@@ -469,6 +523,7 @@ const createBookingRecord = async ({
   start,
   end,
   timeZone,
+  clientAddress,
   notes,
 }) => {
   requireSupabase();
@@ -482,6 +537,7 @@ const createBookingRecord = async ({
       start_at: start.toUTC().toISO(),
       end_at: end.toUTC().toISO(),
       time_zone: timeZone || "UTC",
+      client_address: clientAddress || null,
       notes: notes || null,
       status: "pending",
     })
@@ -545,6 +601,7 @@ const createBookingWithProfiles = async ({
   timeZone = "UTC",
   clientName,
   clientPhone,
+  clientAddress,
   clientEmail,
   notes,
   pets = [],
@@ -557,13 +614,12 @@ const createBookingWithProfiles = async ({
     ? durationMinutes
     : service?.duration_minutes || 60;
 
-  const start = DateTime.fromISO(`${date}T${time}`, {
-    zone: timeZone || "UTC",
+  const { start: safeStart, end } = resolveBookingTimes({
+    date,
+    time,
+    durationMinutes: duration,
+    timeZone,
   });
-  const safeStart = start.isValid
-    ? start
-    : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
-  const end = safeStart.plus({ minutes: duration });
 
   // The client profile call will create or update the Supabase Auth user first
   // and then insert the `clients` row using the Auth user's ID so both records
@@ -572,6 +628,7 @@ const createBookingWithProfiles = async ({
     email: clientEmail,
     fullName: clientName,
     phone: clientPhone,
+    address: clientAddress,
   });
 
   const ensuredPets = await ensurePetProfiles(client.id, pets);
@@ -583,6 +640,7 @@ const createBookingWithProfiles = async ({
     start: safeStart,
     end,
     timeZone,
+    clientAddress,
     notes,
   });
 
@@ -590,7 +648,7 @@ const createBookingWithProfiles = async ({
 
   return {
     booking,
-    client,
+    client: { ...client, address: clientAddress || client.address },
     pets: ensuredPets,
     service,
     passwordDelivery: created
@@ -612,6 +670,8 @@ module.exports = {
   ensureClientProfile,
   ensurePetProfiles,
   getServiceByIdentifier,
+  resolveBookingTimes,
+  findAdjacentBookings,
   ensureAuthUserWithPassword,
   findAuthUserByEmail,
   hashPassword,

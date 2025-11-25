@@ -310,6 +310,11 @@ const BackendDashboard = () => {
                           <h3 className="heading_h4 margin-bottom_xxsmall">
                             {booking.clients?.full_name || "Client"}
                           </h3>
+                          {booking.client_address && (
+                            <p className="paragraph_small margin-bottom_xxsmall text-color-muted">
+                              {booking.client_address}
+                            </p>
+                          )}
                           {booking.notes && (
                             <p className="paragraph_small margin-bottom_none text-color-muted">
                               {booking.notes}
