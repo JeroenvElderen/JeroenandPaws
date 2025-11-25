@@ -1076,64 +1076,62 @@ const BookingModal = ({ service, onClose }) => {
               </p>
           </label>
         )}
-      </div>
-      <div className="input-group full-width add-on-group" ref={addOnDropdownRef}>
-          <div className="label-row">
-            <span>Additional care (optional)</span>
-            <span className="muted subtle">
-              
-            </span>
-          </div>
-          <button
-            type="button"
-            className={`add-on-trigger input-like-select ${additionalsOpen ? "open" : ""}`}
-            onClick={() => setAdditionalsOpen((open) => !open)}
-            aria-expanded={additionalsOpen}
-          >
-            <div className="add-on-chip-row">
-              {additionals.length === 0 ? (
-                <span className="add-on-chip placeholder">
-                  Feeding • Meds • Enrichment
-                </span>
-              ) : (
-                selectedAdditionalLabels.map((label) => (
-                  <span key={label} className="add-on-chip">
-                    {label}
+        <label
+        className="input-group full-width recurrence-group add-on-group"
+        ref={addOnDropdownRef}
+      >
+        <span>Additional care (optional)</span>
+        <button
+          type="button"
+          className={`add-on-trigger input-like-select recurrence-select ${additionalsOpen ? "open" : ""}`}
+          onClick={() => setAdditionalsOpen((open) => !open)}
+          aria-expanded={additionalsOpen}
+        >
+          <div className="add-on-chip-row">
+            {additionals.length === 0 ? (
+              <span className="add-on-chip placeholder">
+                Feeding • Meds • Enrichment
+              </span>
+            ) : (
+              selectedAdditionalLabels.map((label) => (
+                <span key={label} className="add-on-chip">
+                  {label}
                   </span>
-                ))
-              )}
-            </div>
-            <span className="chevron" aria-hidden="true">
-              {additionalsOpen ? "▲" : "▼"}
-            </span>
-          </button>
-          {additionalsOpen && (
-            <div className="add-on-menu" role="listbox">
-              {ADDITIONAL_OPTIONS.map((option) => {
-                const isSelected = additionals.includes(option.value);
-                return (
-                  <label
-                    key={option.value}
-                    className={`add-on-option ${isSelected ? "selected" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleAdditional(option.value)}
-                    />
-                    <div className="add-on-copy">
-                      <span className="add-on-title">{option.label}</span>
-                      <p className="add-on-description">{option.description}</p>
-                    </div>
-                    <span className="add-on-check" aria-hidden="true">
-                      ✓
+                  ))
+            )}
+          </div>
+          <span className="chevron" aria-hidden="true">
+            {additionalsOpen ? "▲" : "▼"}
+          </span>
+        </button>
+        {additionalsOpen && (
+          <div className="add-on-menu" role="listbox">
+            {ADDITIONAL_OPTIONS.map((option) => {
+              const isSelected = additionals.includes(option.value);
+              return (
+                <label
+                  key={option.value}
+                  className={`add-on-option ${isSelected ? "selected" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleAdditional(option.value)}
+                  />
+                  <div className="add-on-copy">
+                    <span className="add-on-title">{option.label}</span>
+                    <p className="add-on-description">{option.description}</p>
+                  </div>
+                  <span className="add-on-check" aria-hidden="true">
+                    ✓
                     </span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                     </label>
+              );
+            })}
+          </div>
+        )}
+      </label>
+      </div>
       <div className="actions-row">
         <div className="actions-stack">
           {hasAtLeastOneDog ? (
