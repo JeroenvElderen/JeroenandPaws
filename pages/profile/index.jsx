@@ -514,7 +514,11 @@ const ProfilePage = () => {
       const response = await fetch('/api/client-bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId: selectedBooking.id, clientEmail: contactForm.email || email }),
+        body: JSON.stringify({
+          bookingId: selectedBooking.id,
+          clientEmail: contactForm.email || email,
+          removeFromCalendar: true,
+        }),
       });
 
       const payload = await response.json().catch(() => null);
@@ -529,7 +533,7 @@ const ProfilePage = () => {
         );
         return { ...currentProfile, bookings: nextBookings };
       });
-      setSelectedBooking(payload.booking);
+      setSelectedBooking(null);
     } catch (err) {
       setBookingAction({ cancelling: false, error: err.message || 'Unable to cancel booking' });
     } finally {
@@ -1365,7 +1369,7 @@ const ProfilePage = () => {
 
               <SectionCard
                 title="Bookings"
-                description="Tap a booking to view details or cancel. Cancelled bookings are hidden."
+                description="Tap a booking to view details or cancel recurring visits. Cancelling removes the event from your calendar, and cancelled bookings are hidden."
               >
                 {hasBookings ? (
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>
@@ -1545,6 +1549,9 @@ const ProfilePage = () => {
             {selectedBooking.notes && (
               <p style={{ margin: '8px 0 0', color: brand.subtleText }}>{selectedBooking.notes}</p>
             )}
+            <p style={{ margin: '4px 0 0', color: brand.subtleText }}>
+              Cancelling will end any recurrence request and remove this visit from your calendar.
+            </p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               {bookingAction.error && (
                 <span style={{ color: '#b91c1c', fontWeight: 700, marginRight: 'auto' }}>

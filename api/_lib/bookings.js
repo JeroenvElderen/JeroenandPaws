@@ -13,7 +13,7 @@ const cancelBookingInSupabase = async (
 
   let query = supabaseAdmin
     .from('bookings')
-    .update({ status: 'cancelled', calendar_event_id: null })
+    .update({ status: 'cancelled', calendar_event_id: null, recurrence: null })
     .eq('id', bookingId);
 
   if (clientId) {

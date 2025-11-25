@@ -338,6 +338,16 @@ const BackendDashboard = () => {
                               Mark as scheduled
                             </button>
                           )}
+                          {(booking.status || "").toLowerCase() !== "cancelled" && (
+                            <button
+                              type="button"
+                              className="text-button is-secondary is-small w-inline-block"
+                              onClick={() => updateBookingStatus(booking.id, "cancelled")}
+                              style={{ color: "#ef4444" }}
+                            >
+                              Cancel & remove calendar
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

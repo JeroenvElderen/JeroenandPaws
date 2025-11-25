@@ -54,6 +54,7 @@ module.exports = async (req, res) => {
 
     if (['cancelled', 'canceled'].includes(normalizedStatus)) {
       updatePayload.calendar_event_id = null;
+      updatePayload.recurrence = null;
     }
 
     const updateResult = await supabaseAdmin
