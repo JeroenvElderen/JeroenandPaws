@@ -19,7 +19,6 @@ const TRAVEL_PADDING_MINUTES = Number.parseInt(
 );
 
 const geocodeCache = new Map();
-const eircodeCache = new Map();
 
 const haversineDistanceKm = (from, to) => {
   const toRadians = (deg) => (deg * Math.PI) / 180;
@@ -44,19 +43,6 @@ const geocodeAddress = async (address) => {
 
   if (geocodeCache.has(trimmed.toLowerCase())) {
     return geocodeCache.get(trimmed.toLowerCase());
-  }
-
-  const compact = trimmed.replace(/\s+/g, "").toUpperCase();
-  const looksLikeEircode = /^[A-Z0-9]{7}$/i.test(compact);
-
-  if (looksLikeEircode) {
-    const eircodeResult = await lookupAddressFromEircode(trimmed);
-
-    if (eircodeResult?.lat && eircodeResult?.lon) {
-      const coords = { lat: eircodeResult.lat, lon: eircodeResult.lon };
-      geocodeCache.set(trimmed.toLowerCase(), coords);
-      return coords;
-    }
   }
 
   try {
@@ -84,84 +70,6 @@ const geocodeAddress = async (address) => {
     return coords;
   } catch (error) {
     console.error("Geocoding failed", { address: trimmed, error });
-    return null;
-  }
-};
-
-const lookupAddressFromEircode = async (eircode) => {
-  const trimmed = (eircode || "").trim();
-  if (!trimmed) return null;
-
-  const normalized = trimmed.toUpperCase();
-
-  if (eircodeCache.has(normalized)) {
-    return eircodeCache.get(normalized);
-  }
-
-  const baseQuery = new URLSearchParams({
-    format: "json",
-    limit: "1",
-    countrycodes: "ie",
-    postalcode: normalized,
-  });
-
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?${baseQuery.toString()}`,
-      {
-        headers: {
-          "User-Agent": "jeroenandpaws-bookings/1.0",
-          Accept: "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    let match = Array.isArray(data) ? data[0] : null;
-
-    if (!match) {
-      const fallbackQuery = new URLSearchParams({
-        format: "json",
-        limit: "1",
-        countrycodes: "ie",
-        q: `${normalized} Ireland`,
-      });
-
-      const fallbackResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search?${fallbackQuery.toString()}`,
-        {
-          headers: {
-            "User-Agent": "jeroenandpaws-bookings/1.0",
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (fallbackResponse.ok) {
-        const fallbackData = await fallbackResponse.json();
-        match = Array.isArray(fallbackData) ? fallbackData[0] : null;
-      }
-    }
-
-    if (!match) return null;
-
-    const result = {
-      address:
-        match.display_name ||
-        [match.name, match.address?.road, match.address?.town, match.address?.county]
-          .filter(Boolean)
-          .join(", ") ||
-        "",
-      lat: match.lat ? Number(match.lat) : null,
-      lon: match.lon ? Number(match.lon) : null,
-    };
-
-    eircodeCache.set(normalized, result);
-    return result;
-  } catch (error) {
-    console.error("Eircode lookup failed", { eircode: normalized, error });
     return null;
   }
 };
@@ -241,6 +149,5 @@ const validateTravelWindow = async ({
 module.exports = {
   DEFAULT_HOME_ADDRESS,
   estimateTravelMinutes,
-  lookupAddressFromEircode,
   validateTravelWindow,
 };

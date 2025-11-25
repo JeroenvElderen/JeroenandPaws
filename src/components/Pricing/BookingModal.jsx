@@ -23,9 +23,6 @@ const BookingModal = ({ service, onClose }) => {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientAddress, setClientAddress] = useState("");
-  const [eircode, setEircode] = useState("");
-  const [isResolvingEircode, setIsResolvingEircode] = useState(false);
-  const [eircodeStatus, setEircodeStatus] = useState({ state: "idle", message: "" });
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
@@ -288,61 +285,6 @@ const BookingModal = ({ service, onClose }) => {
       setHasAttemptedPetLoad(true);
     }
   }, [apiBaseUrl, clientEmail, parseJsonSafely]);
-
-  const lookupAddressFromEircode = useCallback(async () => {
-    const trimmedEircode = eircode.trim();
-
-    if (!trimmedEircode) {
-      setEircodeStatus({
-        state: "error",
-        message: "Enter your Eircode to look up your address automatically.",
-      });
-      return;
-    }
-
-    setIsResolvingEircode(true);
-    setEircodeStatus({ state: "pending", message: "" });
-
-    try {
-      const requestUrl = `${apiBaseUrl}/api/eircode?eircode=${encodeURIComponent(
-        trimmedEircode
-      )}`;
-      const response = await fetch(requestUrl, {
-        headers: { Accept: "application/json" },
-      });
-
-      const text = await response.text();
-      const payload = text ? JSON.parse(text) : {};
-
-      if (!response.ok) {
-        throw new Error(
-          payload?.message ||
-            "We couldn't find that Eircode. Please double-check it or type your address manually."
-        );
-      }
-
-      if (!payload?.address) {
-        throw new Error(
-          "We couldn't find that Eircode. Please double-check it or type your address manually."
-        );
-      }
-
-      setClientAddress(payload.address);
-      setEircodeStatus({
-        state: "success",
-        message: "Address filled from your Eircode.",
-      });
-    } catch (lookupError) {
-      const fallbackMessage =
-        "We couldn't find that Eircode. Please double-check it or type your address manually.";
-      setEircodeStatus({
-        state: "error",
-        message: lookupError?.message || fallbackMessage,
-      });
-    } finally {
-      setIsResolvingEircode(false);
-    }
-  }, [apiBaseUrl, eircode]);
 
   useEffect(() => {
     const selectedPets = existingPets.filter((pet) =>
@@ -712,54 +654,6 @@ const BookingModal = ({ service, onClose }) => {
               </button>
             )}
           </div>
-        </label>
-        <label className="input-group full-width">
-          <span>Irish Eircode (optional)</span>
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <input
-              type="text"
-              value={eircode}
-              onChange={(event) => {
-                setEircode(event.target.value);
-                if (eircodeStatus.state !== "idle") {
-                  setEircodeStatus({ state: "idle", message: "" });
-                }
-              }}
-              placeholder="A98 H940"
-              style={{ flex: "1 1 180px" }}
-            />
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={lookupAddressFromEircode}
-              disabled={isResolvingEircode}
-            >
-              {isResolvingEircode ? "Finding address…" : "Fill address"}
-            </button>
-          </div>
-          {eircodeStatus.message && (
-            <p
-              className="muted subtle"
-              style={{
-                marginTop: "6px",
-                color:
-                  eircodeStatus.state === "error"
-                    ? "#e53e3e"
-                    : eircodeStatus.state === "success"
-                    ? "#38a169"
-                    : undefined,
-              }}
-            >
-              {eircodeStatus.message}
-            </p>
-          )}
         </label>
         <label className="input-group full-width">
           <span>Service address</span>
