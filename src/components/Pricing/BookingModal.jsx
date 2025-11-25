@@ -22,6 +22,10 @@ const BookingModal = ({ service, onClose }) => {
   const [success, setSuccess] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [eircode, setEircode] = useState("");
+  const [isResolvingEircode, setIsResolvingEircode] = useState(false);
+  const [eircodeStatus, setEircodeStatus] = useState({ state: "idle", message: "" });
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
@@ -240,6 +244,7 @@ const BookingModal = ({ service, onClose }) => {
     setClientName(client.full_name || "");
     setClientPhone(phoneNumber || "");
     setClientEmail(client.email || "");
+    setClientAddress(client.address || "");
   }, [profile]);
 
   const fetchExistingPets = useCallback(async () => {
@@ -283,6 +288,61 @@ const BookingModal = ({ service, onClose }) => {
       setHasAttemptedPetLoad(true);
     }
   }, [apiBaseUrl, clientEmail, parseJsonSafely]);
+
+  const lookupAddressFromEircode = useCallback(async () => {
+    const trimmedEircode = eircode.trim();
+
+    if (!trimmedEircode) {
+      setEircodeStatus({
+        state: "error",
+        message: "Enter your Eircode to look up your address automatically.",
+      });
+      return;
+    }
+
+    setIsResolvingEircode(true);
+    setEircodeStatus({ state: "pending", message: "" });
+
+    try {
+      const requestUrl = `${apiBaseUrl}/api/eircode?eircode=${encodeURIComponent(
+        trimmedEircode
+      )}`;
+      const response = await fetch(requestUrl, {
+        headers: { Accept: "application/json" },
+      });
+
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.message ||
+            "We couldn't find that Eircode. Please double-check it or type your address manually."
+        );
+      }
+
+      if (!payload?.address) {
+        throw new Error(
+          "We couldn't find that Eircode. Please double-check it or type your address manually."
+        );
+      }
+
+      setClientAddress(payload.address);
+      setEircodeStatus({
+        state: "success",
+        message: "Address filled from your Eircode.",
+      });
+    } catch (lookupError) {
+      const fallbackMessage =
+        "We couldn't find that Eircode. Please double-check it or type your address manually.";
+      setEircodeStatus({
+        state: "error",
+        message: lookupError?.message || fallbackMessage,
+      });
+    } finally {
+      setIsResolvingEircode(false);
+    }
+  }, [apiBaseUrl, eircode]);
 
   useEffect(() => {
     const selectedPets = existingPets.filter((pet) =>
@@ -414,9 +474,14 @@ const BookingModal = ({ service, onClose }) => {
       return;
     }
 
-    if (!clientName.trim() || !clientPhone.trim() || !clientEmail.trim()) {
+    if (
+      !clientName.trim() ||
+      !clientPhone.trim() ||
+      !clientEmail.trim() ||
+      !clientAddress.trim()
+    ) {
       setError(
-        "Please add your name, phone number, and email so we can confirm your booking."
+        "Please add your name, phone number, email, and address so we can confirm your booking."
       );
       return;
     }
@@ -442,6 +507,7 @@ const BookingModal = ({ service, onClose }) => {
         serviceTitle: service.title,
         clientName: clientName.trim(),
         clientPhone: clientPhone.trim(),
+        clientAddress: clientAddress.trim(),
         clientEmail: clientEmail.trim(),
         notes: notes.trim(),
         timeZone: availability.timeZone || "UTC",
@@ -540,6 +606,7 @@ const BookingModal = ({ service, onClose }) => {
 
       setClientName("");
       setClientPhone("");
+      setClientAddress("");
       setClientEmail("");
       setNotes("");
       resetDogProfiles();
@@ -645,6 +712,63 @@ const BookingModal = ({ service, onClose }) => {
               </button>
             )}
           </div>
+        </label>
+        <label className="input-group full-width">
+          <span>Irish Eircode (optional)</span>
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <input
+              type="text"
+              value={eircode}
+              onChange={(event) => {
+                setEircode(event.target.value);
+                if (eircodeStatus.state !== "idle") {
+                  setEircodeStatus({ state: "idle", message: "" });
+                }
+              }}
+              placeholder="A98 H940"
+              style={{ flex: "1 1 180px" }}
+            />
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={lookupAddressFromEircode}
+              disabled={isResolvingEircode}
+            >
+              {isResolvingEircode ? "Finding address…" : "Fill address"}
+            </button>
+          </div>
+          {eircodeStatus.message && (
+            <p
+              className="muted subtle"
+              style={{
+                marginTop: "6px",
+                color:
+                  eircodeStatus.state === "error"
+                    ? "#e53e3e"
+                    : eircodeStatus.state === "success"
+                    ? "#38a169"
+                    : undefined,
+              }}
+            >
+              {eircodeStatus.message}
+            </p>
+          )}
+        </label>
+        <label className="input-group full-width">
+          <span>Service address</span>
+          <input
+            type="text"
+            value={clientAddress}
+            onChange={(e) => setClientAddress(e.target.value)}
+            placeholder="Street, city, and any entry details"
+          />
         </label>
         {(existingPets.length > 0 || hasAttemptedPetLoad) && (
           <div className="input-group full-width pet-list-group">

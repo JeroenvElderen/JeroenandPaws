@@ -61,3 +61,7 @@ create table public.testimonials (
   constraint testimonials_pkey primary key (id),
   constraint testimonials_display_order_key unique (display_order)
 ) TABLESPACE pg_default;
+
+-- Ensure client and booking tables store addresses for travel calculations
+alter table public.clients add column if not exists address text;
+alter table public.bookings add column if not exists client_address text;
