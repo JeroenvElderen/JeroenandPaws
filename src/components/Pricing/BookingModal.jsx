@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import SearchableSelect from "./SearchableSelect";
 import { DOG_BREEDS, weekdayLabels } from "./constants";
 import {
@@ -7,6 +7,34 @@ import {
   generateDemoAvailability,
 } from "./utils";
 import { useAuth } from "../../context/AuthContext";
+
+const ADDITIONAL_OPTIONS = [
+  {
+    value: "feeding",
+    label: "Feeding & fresh water",
+    description: "Meal prep, slow feeders, and water refreshes",
+  },
+  {
+    value: "meds",
+    label: "Medication support",
+    description: "Pills, toppers, and timing reminders",
+  },
+  {
+    value: "enrichment",
+    label: "Enrichment time",
+    description: "Puzzle toys, sniffaris, and brain games",
+  },
+  {
+    value: "cleanup",
+    label: "Accident clean-up",
+    description: "Potty spot refresh and light deodorizing",
+  },
+  {
+    value: "house-care",
+    label: "House touches",
+    description: "Plants, mail, and lights while we’re there",
+  },
+];
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
@@ -40,7 +68,10 @@ const BookingModal = ({ service, onClose }) => {
   const [selectedSlots, setSelectedSlots] = useState({});
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [recurrence, setRecurrence] = useState("none");
+  const [additionals, setAdditionals] = useState([]);
+  const [additionalsOpen, setAdditionalsOpen] = useState(false);
   const { profile, isAuthenticated } = useAuth();
+  const addOnDropdownRef = useRef(null);
 
   const allowMultiDay = service?.allowMultiDay !== false;
   const allowRecurring = service?.allowRecurring !== false;
@@ -578,6 +609,7 @@ const BookingModal = ({ service, onClose }) => {
         clientPhone: clientPhone.trim(),
         clientAddress: clientAddress.trim(),
         clientEmail: clientEmail.trim(),
+        additionals,
         notes: notes.trim(),
         timeZone: availability.timeZone || "UTC",
         pets: petPayload,
@@ -706,6 +738,8 @@ const BookingModal = ({ service, onClose }) => {
       setClientAddress("");
       setClientEmail("");
       setNotes("");
+      setAdditionals([]);
+      setAdditionalsOpen(false);
       resetDogProfiles();
       setExistingPets([]);
       setSelectedPetIds([]);
@@ -765,6 +799,40 @@ const BookingModal = ({ service, onClose }) => {
     const query = breedSearch[dogIndex]?.toLowerCase() || "";
     return DOG_BREEDS.filter((breed) => breed.toLowerCase().includes(query));
   };
+
+  const toggleAdditional = (value) => {
+    setAdditionals((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
+  };
+
+  const selectedAdditionalLabels = useMemo(() => {
+    if (!additionals.length) return ["Feeding", "Meds", "Playtime"];
+
+    return additionals
+      .map(
+        (value) =>
+          ADDITIONAL_OPTIONS.find((option) => option.value === value)?.label ||
+          value
+      )
+      .slice(0, 3);
+  }, [additionals]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        addOnDropdownRef.current &&
+        !addOnDropdownRef.current.contains(event.target)
+      ) {
+        setAdditionalsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const renderFormContent = (isPopup = false) => (
     <>
@@ -1005,13 +1073,67 @@ const BookingModal = ({ service, onClose }) => {
               <option value="yearly">Renew every year</option>
             </select>
             <p className="muted subtle">
-              Choose a cadence to auto-renew your booking once the selected visits are complete.
-              Weekly renewals are available for all services except boarding, and monthly renewals
-              will automatically line up next month’s bookings for you.
-            </p>
+              </p>
           </label>
         )}
       </div>
+      <div className="input-group full-width add-on-group" ref={addOnDropdownRef}>
+          <div className="label-row">
+            <span>Additional care (optional)</span>
+            <span className="muted subtle">
+              
+            </span>
+          </div>
+          <button
+            type="button"
+            className={`add-on-trigger ${additionalsOpen ? "open" : ""}`}
+            onClick={() => setAdditionalsOpen((open) => !open)}
+            aria-expanded={additionalsOpen}
+          >
+            <div className="add-on-chip-row">
+              {additionals.length === 0 ? (
+                <span className="add-on-chip placeholder">
+                  Feeding • Meds • Enrichment
+                </span>
+              ) : (
+                selectedAdditionalLabels.map((label) => (
+                  <span key={label} className="add-on-chip">
+                    {label}
+                  </span>
+                ))
+              )}
+            </div>
+            <span className="chevron" aria-hidden="true">
+              {additionalsOpen ? "▲" : "▼"}
+            </span>
+          </button>
+          {additionalsOpen && (
+            <div className="add-on-menu" role="listbox">
+              {ADDITIONAL_OPTIONS.map((option) => {
+                const isSelected = additionals.includes(option.value);
+                return (
+                  <label
+                    key={option.value}
+                    className={`add-on-option ${isSelected ? "selected" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleAdditional(option.value)}
+                    />
+                    <div className="add-on-copy">
+                      <span className="add-on-title">{option.label}</span>
+                      <p className="add-on-description">{option.description}</p>
+                    </div>
+                    <span className="add-on-check" aria-hidden="true">
+                      ✓
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
       <div className="actions-row">
         <div className="actions-stack">
           {hasAtLeastOneDog ? (

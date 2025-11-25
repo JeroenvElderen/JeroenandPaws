@@ -9,6 +9,14 @@ const {
 } = require("./_lib/supabase");
 const { DEFAULT_HOME_ADDRESS, validateTravelWindow } = require("./_lib/travel");
 
+const ADDITIONAL_LABELS = {
+  feeding: "Feeding & fresh water",
+  meds: "Medication support",
+  enrichment: "Enrichment time",
+  cleanup: "Accident clean-up",
+  "house-care": "House touches",
+};
+
 const resolveCalendarEmail = (calendarId) =>
   process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
   process.env.OUTLOOK_SENDER_EMAIL?.trim() ||
@@ -130,9 +138,15 @@ const buildConfirmationBody = ({
   clientAddress,
   schedule = [],
   recurrence = "",
+  additionals = [],
 }) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
   const petDetails = renderPetList(pets);
+  const additionalsBlock = additionals.length
+    ? `<p style="margin: 12px 0 0;"><strong>Extras:</strong></p><ul style="margin: 0; padding-left: 20px;">${additionals
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("")}</ul>`
+    : "";
 
   const passwordBlock = passwordDelivery
     ? `<p style="margin: 16px 0 0;">An account has been created for you so you can update bookings and pets later. Use this temporary password to sign in: <strong>${escapeHtml(
@@ -181,6 +195,7 @@ const buildConfirmationBody = ({
       ${addressBlock}
       ${scheduleBlock}
       ${recurrenceBlock}
+      ${additionalsBlock}
       ${notesBlock}
        ${passwordBlock}
       <p style="margin: 16px 0 0;">If you need to reschedule or have questions, just reply to this email and we'll be happy to help.</p>
@@ -197,10 +212,16 @@ const buildNotificationBody = ({
   pets,
   schedule = [],
   recurrence = "",
+  additionals = [],
 }) => {
   const readableService = service?.title || service?.serviceTitle || "Training";
   const petDetails = renderPetList(pets, { includePhotos: true });
-
+  const additionalsBlock = additionals.length
+    ? `<p style="margin: 8px 0 0;"><strong>Extras:</strong></p><ul style="margin: 0; padding-left: 20px;">${additionals
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("")}</ul>`
+    : "";
+    
   const notesBlock = notes
     ? `<p style="margin: 16px 0 0;"><strong>Client notes:</strong><br>${escapeHtml(
         notes
@@ -239,6 +260,7 @@ const buildNotificationBody = ({
       ${addressBlock}
       ${scheduleBlock}
       ${recurrenceBlock}
+      ${additionalsBlock}
       <p style="margin: 16px 0 0;">This is an internal notification for Jeroen & Paws.</p>
     </div>
   `;
@@ -284,6 +306,7 @@ module.exports = async (req, res) => {
       recurrence = null,
       autoRenew = false,
       bookingMode,
+      additionals = [],
     } = body;
 
     const trimmedName = (clientName || "").trim();
@@ -329,6 +352,11 @@ module.exports = async (req, res) => {
 
     const petsFromBody =
       Array.isArray(pets) && pets.length ? pets : dogs || [];
+    const additionalsList = Array.isArray(additionals)
+      ? additionals
+          .map((entry) => ADDITIONAL_LABELS[entry] || String(entry || "").trim())
+          .filter(Boolean)
+      : [];
 
     const recurrenceLabel =
       recurrence === "weekly"
@@ -349,6 +377,9 @@ module.exports = async (req, res) => {
 
     const aggregatedNotes = [
       trimmedNotes,
+      additionalsList.length
+        ? `Extras requested: ${additionalsList.join(", ")}.`
+        : "",
       recurrenceNote,
       bookingMode === "multi-day" || preparedSchedule.length > 1
         ? `Multi-visit booking with ${preparedSchedule.length} dates.`
@@ -495,6 +526,7 @@ module.exports = async (req, res) => {
               client: entry.bookingResult.client,
               timing: entry.timing,
               notes: aggregatedNotes,
+              additionals: additionalsList,
               pets: entry.bookingResult.pets,
               schedule: bookingResults.map((booking, index) => ({
                 label: `Visit ${index + 1}`,
@@ -573,6 +605,7 @@ module.exports = async (req, res) => {
           clientAddress,
           schedule: scheduleSummary,
           recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
+          additionals: additionalsList,
         });
 
         await sendMail({
@@ -592,6 +625,7 @@ module.exports = async (req, res) => {
             client: bookingResults[0]?.bookingResult.client,
             timing: bookingResults[0]?.timing,
             notes: aggregatedNotes,
+            additionals: additionalsList,
             pets: bookingResults[0]?.bookingResult.pets,
             schedule: scheduleSummary,
             recurrence: recurrenceLabel || (autoRenew ? "requested" : null),

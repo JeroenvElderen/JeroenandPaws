@@ -566,6 +566,126 @@ const PricingStyles = () => (
         .email-group .load-pets-button {
           white-space: nowrap;
         }
+        .add-on-group {
+          position: relative;
+        }
+        .add-on-trigger {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.05), transparent 40%),
+            rgba(0, 0, 0, 0.16);
+          padding: 12px 14px;
+          color: #f2ecff;
+          cursor: pointer;
+          transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .add-on-trigger:hover {
+          border-color: rgba(255, 255, 255, 0.24);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .add-on-trigger.open {
+          border-color: rgba(144, 166, 255, 0.8);
+          box-shadow: 0 16px 32px rgba(124, 148, 255, 0.28);
+        }
+        .add-on-chip-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+        }
+        .add-on-chip {
+          padding: 8px 10px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          font-weight: 700;
+          color: #f2ecff;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .add-on-chip.placeholder {
+          color: #c6b7e8;
+          border-style: dashed;
+          border-color: rgba(255, 255, 255, 0.18);
+        }
+        .add-on-menu {
+          position: relative;
+          margin-top: 10px;
+          padding: 10px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: linear-gradient(145deg, rgba(20, 22, 55, 0.95), rgba(31, 15, 58, 0.9));
+          box-shadow: 0 18px 38px rgba(0, 0, 0, 0.3);
+          display: grid;
+          gap: 8px;
+          z-index: 3;
+        }
+        .add-on-option {
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          gap: 12px;
+          align-items: flex-start;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+          cursor: pointer;
+          transition: border-color 0.2s ease, transform 0.15s ease;
+        }
+        .add-on-option:hover {
+          border-color: rgba(255, 255, 255, 0.26);
+          transform: translateY(-1px);
+        }
+        .add-on-option.selected {
+          border-color: rgba(144, 166, 255, 0.9);
+          background: linear-gradient(135deg, rgba(144, 166, 255, 0.14), rgba(144, 166, 255, 0.04));
+        }
+        .add-on-option input {
+          margin-top: 4px;
+          accent-color: #8f7cf7;
+          cursor: pointer;
+        }
+        .add-on-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          color: #f2ecff;
+        }
+        .add-on-title {
+          font-weight: 800;
+        }
+        .add-on-description {
+          margin: 0;
+          color: #c6b7e8;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        .add-on-check {
+          color: #8cf6c5;
+          font-weight: 800;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        .add-on-option.selected .add-on-check {
+          opacity: 1;
+        }
+        .add-on-trigger .chevron {
+          font-size: 12px;
+          color: #dcd0f7;
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+        }
         .pet-list-group {
           gap: 10px;
         }
