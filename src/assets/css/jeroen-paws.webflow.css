@@ -7313,3 +7313,297 @@
   width: fit-content;
   text-transform: uppercase;
 }
+
+/* GENERAL WRAPPER */
+.about-wrapper {
+  font-family: "Inter", sans-serif;
+  width: 100%;
+  color: #2d2d2d;
+}
+
+/* HERO */
+.about-hero {
+  position: relative;
+  height: 60vh;
+  min-height: 420px;
+  overflow: hidden;
+}
+.about-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.35);
+}
+.hero-content {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  color: #fff; text-align: center;
+  max-width: 700px;
+}
+.hero-content h1 { font-size: 3rem; margin-bottom: .5rem; }
+.hero-content p { font-size: 1.25rem; opacity: .9; }
+
+/* ABOUT + SERVICES */
+.about-container { max-width: 1200px; margin: auto; padding: 80px 20px; }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+.about-text h2 { font-size: 2rem; margin-bottom: 20px; }
+.about-text p { line-height: 1.6; margin-bottom: 16px; }
+.services-label {
+  text-transform: uppercase;
+  font-size: .9rem;
+  letter-spacing: 1px;
+  color: #888;
+}
+.service-item {
+  background: #fafafa;
+  padding: 24px; border-radius: 12px;
+  border: 1px solid #eaeaea;
+  margin-bottom: 16px;
+}
+.service-item h4 { margin-bottom: 8px; }
+
+/* WHY WORK WITH ME */
+.why-work-split {
+  background: #f8f5e9;
+  margin-top: 60px; padding: 80px 20px;
+  display: flex; gap: 60px; align-items: center; justify-content: center;
+  border-radius: 20px;
+}
+.why-heading-h4 {
+  color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-accent-color--accent-primary-hover)
+}
+.why-content { flex: 1; max-width: 500px; }
+.why-content h2 { font-size: 2.4rem; margin-bottom: 20px; }
+.why-content p { line-height: 1.6; margin-bottom: 28px; }
+.cta-btn {
+  border: 2px solid #7faa32;
+  padding: 14px 32px;
+  border-radius: 40px;
+  color: #7faa32;
+  text-decoration: none;
+  transition: .2s;
+}
+.cta-btn:hover { background: #7faa32; color: #fff; }
+.why-image img {
+  border-radius: 20px;
+  width: 100%; 
+  max-width: 450px;
+  height: 500px;
+  object-fit: cover;
+}
+
+/* STATS SECTION */
+.stats-section {
+  background: #eaeedc;
+  padding: 80px 20px;
+}
+.stats-row {
+  max-width: 1100px;
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  gap: 32px; flex-wrap: wrap;
+}
+.stat-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  flex: 1; min-width: 260px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+}
+.stat-number {
+  font-size: 3rem; 
+  font-weight: 600; 
+  color: white !important;
+}
+
+/* ALTERNATING SECTION */
+.split-section {
+  display: flex; gap: 60px; align-items: center; padding: 100px 20px;
+  max-width: 1200px; margin: auto;
+}
+.split-text h2 { font-size: 2.2rem; margin-bottom: 20px; }
+.split-text p { line-height: 1.6; margin-bottom: 16px; }
+.split-image img {
+  width: 100%; max-width: 500px; border-radius: 20px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .about-grid, .why-work-split, .split-section {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+/* ----------------------------------------------------------
+   ABOUT PAGE SECTIONS — JEROEN & PAWS
+   (GLOBAL CSS SAFE VERSION)
+----------------------------------------------------------- */
+
+/* Utility */
+.about-container,
+.split-section,
+.stats {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* HERO */
+.about-hero {
+  position: relative;
+  height: 60vh;
+  min-height: 420px;
+  overflow: hidden;
+}
+.about-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.about-hero .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+}
+.about-hero .hero-content {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  color: #fff;
+  text-align: center;
+  max-width: 700px;
+}
+.about-hero .hero-content h1 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 3.5rem;
+  font-weight: 500;
+  margin-bottom: .5rem;
+}
+.about-hero .hero-content p {
+  font-family: Manrope, sans-serif;
+  font-size: 1.25rem;
+  opacity: .9;
+}
+
+/* WHY WORK WITH ME */
+.why-section {
+  display: flex;
+  align-items: center;
+  gap: 4rem;
+  padding: 6rem;
+}
+.why-section h2 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 2.7rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+.why-section p {
+  font-family: Manrope, sans-serif;
+  line-height: 1.6;
+  margin-bottom: 1.75rem;
+}
+.why-section .button-primary {
+  display: inline-block;
+  padding: 1rem 2rem;
+  border-radius: 0.75rem;
+  background: #7c45f3;
+  color: #fff;
+  text-decoration: none;
+  font-family: Manrope, sans-serif;
+  transition: .25s;
+  border: none;
+}
+.why-section .button-primary:hover {
+  background: #a47ef7;
+}
+.why-section .why-image img {
+  width: 100%;
+  min-width: 500px;
+  border-radius: 1rem;
+  object-fit: cover;
+}
+
+/* STATS SECTION */
+.stats-section {
+  background: #f7f5ff;
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+}
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.stat-card {
+  background: #fff;
+  flex: 1;
+  min-width: 260px;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  font-family: Manrope, sans-serif;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+.stat-card .stat-number {
+  font-family: "DM Sans", sans-serif;
+  font-size: 3rem;
+  font-weight: 600;
+  color: #7c45f3;
+  margin-bottom: .75rem;
+}
+.stat-card h4 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 1.4rem;
+  margin-bottom: .5rem;
+}
+
+/* SPLIT SECTION */
+.split-section {
+  display: flex;
+  align-items: center;
+  gap: 4rem;
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+}
+.split-section .split-image img {
+  width: 100%;
+  border-radius: 1rem;
+  object-fit: cover;
+}
+.split-section h2 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 2.4rem;
+  margin-bottom: 1rem;
+}
+.split-section p {
+  font-family: Manrope, sans-serif;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .why-section,
+  .split-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  .why-section .why-image img,
+  .split-section .split-image img {
+    max-width: 100%;
+  }
+}
+
+.stats-background {
+  background-color: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308---core-color-tint--accent-primary-a90)
+}

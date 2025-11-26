@@ -11,7 +11,7 @@ const AboutHeroSection = () => (
             <div className="image-ratio_3x2">
               <Image
                 src="/images/Jeroen.jpg"
-                alt="Vet assisting an animal"
+                alt="Jeroen's profile"
                 width={800}
                 height={533}
                 className="image_cover"
@@ -34,11 +34,11 @@ const AboutHeroSection = () => (
           id="w-node-_857eff80-a064-80f6-efa6-2aa55402b17a-5402b172"
           className="header w-node-aca1decb-952a-6d03-8948-04348d12084d-0653ac4e"
         >
-          <h1 className="heading_h1">Care for every wagging tail</h1>
+          <h1 className="heading_h1">About me</h1>
           <p className="subheading">
-            Personalized dog training, walks, and loving care—tailored for every
-            pup. From energetic walks to cozy boarding, your dog’s happiness and
-            safety come first. Let’s make every day their best day.
+            As a certified canine specialist with over 7 years of experience working with companion and working dogs, I deliver tailored training, thoughtful care, and a secure, enriching environment for every dog I welcome. From customized walks to structured day care and boarding, your dog receives the same dedication and consistency I give my own.
+
+I prioritize safety, clear communication, and emotional well-being—keeping you updated and your dog happy, relaxed, and fulfilled. Exceptional care starts here.
           </p>
           <div className="button-group">
             <Link href="/contact" className="button w-button">
