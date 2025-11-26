@@ -4,32 +4,32 @@ import ServiceAboutSection from "../../../../components/ServiceAboutSection";
 const AboutSection = () => (
   <ServiceAboutSection
     eyebrow="About this service"
-    title="Boarding — A Cozy Home With Friendly Company"
+    title="Overnight Stays — A Calm, Familiar Home to Settle In"
     description={[
-      "When you’re away, your dog can stay somewhere safe, loving, and relaxed — my home. Alongside my two friendly dogs, your pup will have gentle companionship and a calm, welcoming pack to feel part of.",
-      "I keep routines familiar with daily walks, playtime, rest, and plenty of affection, so your dog can settle in and feel comfortable while you’re gone.",
-      "You’ll get updates and photos throughout their stay, so you can travel with peace of mind, knowing your best friend is happy and well cared for.",
+      "When you are away, your companion stays in a calm and welcoming home environment. With gentle company and steady routines, they can settle in, feel included, and enjoy familiar, household comfort.",
+      "Daily walks, rest, affection, and predictable rhythms help your companion adjust with ease. By keeping routines familiar, they can relax, feel secure, and rest without disruption.",
+      "You will receive thoughtful updates and photographs during their stay, offering clarity and reassurance so you can travel with confidence.",
     ]}
     highlights={[
       {
-        title: "Familiar, loving routine",
+        title: "Familiar routines and calm structure",
         description:
-          "Meals, walks, and nap times kept close to what your dog knows, helping them relax and feel safe from day one.",
+          "Meals, walks, and quiet time follow what your companion already knows, helping them feel settled and supported from the start.",
       },
       {
-        title: "Company of gentle dogs",
+        title: "Gentle companionship",
         description:
-          "My two well-socialized pups offer friendly companionship — perfect for dogs who enjoy having easy-going friends around.",
+          "Calm companionship and steady social presence for companions who enjoy sharing space with others in a low-pressure way.",
       },
       {
-        title: "Safe & home-like environment",
+        title: "Safe, reassuring home environment",
         description:
-          "Clean, cozy spaces and constant supervision. Your dog lives like family — not in a kennel or crowded space.",
+          "Clean, cosy spaces and attentive supervision provide a home environment where your companion lives as part of the household — never in kennels or crowded settings.",
       },
       {
-        title: "Personal attention & updates",
+        title: "Personal attention and clear communication",
         description:
-          "Because I board only a few dogs at once, yours gets plenty of love, play, and one-on-one time. Plus, regular photo and message updates for your peace of mind.",
+          "By welcoming only a small number of companions, I provide individual attention and gentle interaction, along with regular updates so you remain informed throughout their stay.",
       },
     ]}
   />

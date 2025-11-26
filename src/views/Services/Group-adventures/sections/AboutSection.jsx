@@ -4,21 +4,21 @@ import ServiceAboutSection from "../../../../components/ServiceAboutSection";
 const AboutSection = () => (
   <ServiceAboutSection
     eyebrow="About this service"
-    title="Group Adventures — Exploring Together With New Friends"
+    title="Group Adventures — shared journeys and new connections"
     description={[
-      "Group Adventures are all about safe social fun. I bring a small group of friendly, well-matched dogs — including mine — so everyone has a buddy to sniff, run, and wander with. We head to safe spots where dogs can explore, play, and enjoy the outdoors together.",
-      "I personally guide and supervise the whole adventure, making sure every dog feels comfortable and included. Afterward, you’ll get photos and updates so you can see the tail wags and new friendships forming.",
+      "Group Adventures offer enriching, guided outings where companions explore the outdoors alongside a small, well-matched group — including mine. Each journey is designed to be calm, safe, and socially rewarding, with plenty of space for sniffing trails, gentle play, and relaxed discovery.",
+      "I lead and supervise every outing, ensuring each companion feels supported and included at their own pace. After the adventure, you’ll receive thoughtful updates and photos — a glimpse into the moments of curiosity, confidence, and connection that unfold along the way.",
     ]}
     highlights={[
       {
-        title: "Social & safe",
+        title: "Social & secure",
         description:
-          "Your dog meets other friendly pups (including mine) in a calm, controlled group — never too big, always supervised.",
+          "Your companion joins a small, carefully chosen group — always supervised, never overwhelming — so connections form naturally and comfortably.",
       },
       {
-        title: "Fun outdoor adventures",
+        title: "Enriching outdoor journeys",
         description:
-          "Walks, play, sniffing trails, and exploring new places together — perfect for building confidence and burning off energy.",
+          "Gentle exploration, new environments, and shared movement — ideal for nurturing confidence, easing anxiety, and offering meaningful enrichment.",
       },
     ]}
   />

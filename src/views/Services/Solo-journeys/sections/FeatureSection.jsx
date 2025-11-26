@@ -11,20 +11,23 @@ const FeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Solo Journeys — Just Me & Your Pup</h1>
+            <h1 className="heading_h1">
+              Solo Journeys — Focused Adventures at Their Pace
+            </h1>
             <p className="subheading">
-              Perfect for dogs who enjoy one-on-one attention and exploring at
-              their own pace. Whether it’s a calm stroll, a long adventurous
-              hike, or plenty of sniff stops, every journey is tailored to your
-              dog’s personality and comfort. You’ll get updates and photos so
-              you can see their happy, relaxed adventure.
+              Designed for companions who thrive with undivided attention and
+              space to explore at their own rhythm. Whether it’s a steady walk,
+              a longer outing, or time to pause and take in the world, each
+              journey is shaped around their comfort, confidence, and curiosity.
+              After every outing, you receive a brief update and photographs so
+              you can share in their experience.
             </p>
             <div className="button-group">
-          <Link href="/booking/solo-journey-180" className="button w-button">
-            Book a Solo Journey
-          </Link>
+              <Link href="/booking/solo-journey-180" className="button w-button">
+                Book a solo journey
+              </Link>
               <a href="#services" className="button is-secondary w-button">
-                See Services &amp; Pricing
+                View services and pricing
               </a>
             </div>
           </div>
@@ -40,7 +43,7 @@ const FeatureSection = () => {
                 >
                   <img
                     src="/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif"
-                    alt="solo dog walk adventure"
+                    alt="companion walking outdoors alone"
                     className="image image_cover"
                   />
                 </div>
@@ -51,7 +54,7 @@ const FeatureSection = () => {
                 >
                   <img
                     src="/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif"
-                    alt="happy dog on solo journey"
+                    alt="companion on individual outdoor walk"
                     className="image image_cover shadow_xlarge"
                   />
                 </div>

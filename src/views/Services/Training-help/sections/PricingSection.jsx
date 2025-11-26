@@ -4,58 +4,58 @@ import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 
 const services = [
   {
-    id: "quick-sniff",
-    title: "Quick Sniff & Stroll",
-    label: "30-Min Walks",
-    price: "€7/walk",
+    id: "training-intro",
+    title: "Introductory Training Session",
+    label: "30-Min Session",
+    price: "€7/session",
     description:
-      "Perfect for potty breaks, puppy zoomies, or a little leg stretch between naps.",
-    duration: "30 Min Meeting",
+      "A short, focused session ideal for introducing new skills, addressing simple behaviours, or supporting young companions with early foundations.",
+    duration: "30-Min Session",
     durationMinutes: 30,
   },
   {
-    id: "daily-doggie",
-    title: "Daily Doggie Adventure",
-    label: "60-Min Walks",
-    price: "€12/walk",
+    id: "training-standard",
+    title: "Standard Training Session",
+    label: "60-Min Session",
+    price: "€12/session",
     description:
-      "An hour of tail wags, sniffing every tree, and coming home happily tired.",
-    duration: "60 Min Session",
+      "A structured session with time to learn, practise, and reinforce behaviours in a calm, supportive way.",
+    duration: "60-Min Session",
     durationMinutes: 60,
   },
   {
-    id: "mega-adventure",
-    title: "Mega Adventure Walk",
-    label: "120-min walks",
-    price: "€22/walk",
+    id: "training-extended",
+    title: "Extended Training Session",
+    label: "120-Min Session",
+    price: "€22/session",
     description:
-      "Double the time, double the fun — great for big explorers or extra energy days.",
-    duration: "2 Hour Adventure",
+      "An extended session designed for companions who benefit from slower pacing, more repetition, or additional guidance.",
+    duration: "2-Hour Session",
     durationMinutes: 120,
   },
   {
-    id: "custom-walk",
-    title: "Your Walk, Your Way",
-    label: "Custom walk",
+    id: "training-custom",
+    title: "Tailored Training Plan",
+    label: "Flexible Duration",
     price: "Tailored",
     description:
-      "Need a special route or timing? Let’s make it paw-fect for your pup.",
+      "For companions who require something more specific — unique routines, behavioural goals, or varied environments — we will create a plan shaped around their needs.",
     duration: "Custom Plan",
     durationMinutes: null,
-    ctaText: "Plan a training",
+    ctaText: "Plan a tailored session",
     ctaOptions: {
       chatUrl: getPreferredChatUrl(),
       formUrl: "/contact?service=training-help-custom",
-      heading: "How should we plan your custom stay?",
+      heading: "How should we plan your tailored session?",
       description:
-        "Choose WhatsApp for a quick chat about dates and care notes, or send your full request through the form.",
+        "Choose a WhatsApp chat to discuss aims and timings, or outline everything in the form.",
     },
   },
 ];
 
 const PricingSection = () => (
   <DynamicPricingSection
-    title="Walking Plans for Every Pup"
+    title="Training Help — Session Options"
     services={services}
     gridClassName="grid_4-col"
     defaultCta="Check availability"

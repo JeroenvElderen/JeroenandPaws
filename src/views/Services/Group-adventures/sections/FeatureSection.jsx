@@ -10,20 +10,23 @@ const FeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Group Adventures for Social, Happy Dogs</h1>
+            <h1 className="heading_h1">
+              Group Adventures for Confident, Content Companions
+            </h1>
             <p className="subheading">
-              Let your dog join me and my friendly pups for safe, small-group
-              outings full of play, sniffing, and exploring. Perfect for dogs
-              who love making friends, enjoying nature, and coming home tired
-              and happy. Every adventure is carefully planned and supervised by
-              me to keep tails wagging and paws safe.
+              Invite your companion to join calm, small-group adventures designed
+              for movement, exploration, and gentle social time. Ideal for
+              companions who enjoy nature, steady interaction, and returning home
+              relaxed and fulfilled. Each outing is thoughtfully planned and
+              personally supervised to ensure comfort, safety, and a sense of ease
+              throughout.
             </p>
             <div className="button-group">
               <a href="#book" className="button w-button">
-                Join an Adventure
+                Join an adventure
               </a>
               <a href="#services" className="button is-secondary w-button">
-                See Services &amp; Pricing
+                View services and pricing
               </a>
             </div>
           </div>
@@ -39,7 +42,7 @@ const FeatureSection = () => {
                 >
                   <img
                     src="/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif"
-                    alt="dogs on group adventure"
+                    alt="dogs walking outdoors in a group"
                     className="image image_cover"
                   />
                 </div>
@@ -50,7 +53,7 @@ const FeatureSection = () => {
                 >
                   <img
                     src="/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif"
-                    alt="happy dogs on a walk"
+                    alt="dogs walking on a lead outdoors"
                     className="image image_cover shadow_xlarge"
                   />
                 </div>

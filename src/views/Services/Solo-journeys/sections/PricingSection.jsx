@@ -5,33 +5,33 @@ import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 const services = [
   {
     id: "solo-journey-180",
-    title: "Half-Day Explorer",
+    title: "Half-Day Solo Journey",
     label: "3-Hour Journey",
     price: "€60/journey",
     description:
-      "A private half-day adventure — long walks, sniffing trails, playtime, and plenty of breaks just for your pup.",
+      "A half-day, one-to-one outing with steady exploration, time to pause, and space for curiosity — shaped entirely around your companion’s pace and interests.",
     duration: "3-Hour Journey",
     durationMinutes: 180,
-    ctaText: "Book Half-Day",
+    ctaText: "Book half-day journey",
   },
   {
     id: "solo-journey-360",
-    title: "Full-Day Adventure",
+    title: "Full-Day Solo Journey",
     label: "6-Hour Journey",
     price: "€110/journey",
     description:
-      "A full day of exploring together — long walks, rest stops, and plenty of one-on-one attention for your dog’s perfect day out.",
+      "A full day spent exploring together — unhurried movement, rest breaks as needed, and dedicated attention throughout, creating a relaxed and engaging day for your companion.",
     duration: "6-Hour Journey",
     durationMinutes: 360,
-    ctaText: "Book Full-Day",
+    ctaText: "Book full-day journey",
   },
   {
     id: "solo-journey-custom",
-    title: "Custom Journey",
+    title: "Tailored Solo Journey",
     label: "Flexible Hours",
     price: "Tailored",
     description:
-      "Have something special in mind? Let’s design the perfect solo day — custom timing, routes, and pace for your pup.",
+      "For companions with unique needs or routines — choose the timing, route, and pace, and we will create a journey shaped entirely around them.",
     duration: "Custom Journey",
     durationMinutes: null,
     ctaText: "Plan a solo journey",
@@ -40,14 +40,14 @@ const services = [
       formUrl: "/contact?service=solo-journey-custom",
       heading: "How should we plan your custom stay?",
       description:
-        "Choose WhatsApp for a quick chat about dates and care notes, or send your full request through the form.",
+        "Choose a quick WhatsApp chat to discuss dates and details, or outline your full request through the form.",
     },
   },
 ];
 
 const SoloJourneyPricingSection = () => (
   <DynamicPricingSection
-    title="Solo Journey Options"
+    title="Solo Journey Plans"
     services={services}
     gridClassName="grid_3-col"
     defaultCta="Check availability"

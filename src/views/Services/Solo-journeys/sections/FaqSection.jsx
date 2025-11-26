@@ -7,27 +7,52 @@ const FaqSection = () => {
     {
       question: "What is a Solo Journey?",
       answer:
-        "A Solo Journey is a fully personalized outdoor adventure — just me and your dog. Each outing is designed around your pup’s personality and energy level, from peaceful sniffing strolls to longer, more active walks.",
+        "A Solo Journey is a one-to-one outdoor outing tailored to your dog’s pace, confidence, and interests. It is dedicated time for exploration, movement, and calm focus without the distractions of a group walk.",
     },
     {
-      question: "Who are Solo Journeys best for?",
+      question: "Who benefits most from a Solo Journey?",
       answer:
-        "They’re perfect for dogs who prefer one-on-one attention, are shy around other dogs, need a calm environment, or have special needs that make group outings less ideal.",
+        "Solo Journeys suit dogs who enjoy individual attention, feel overwhelmed in groups, need a calmer experience, or have routines, sensitivities, or behaviours that require a more personal approach.",
     },
     {
-      question: "Can you adjust the pace and distance?",
+      question: "Can you adapt the pace and distance?",
       answer:
-        "Absolutely. I adapt every journey to your dog’s comfort — slow and steady for sniffers or seniors, longer and faster for energetic explorers. Your dog sets the rhythm.",
+        "Yes. Every journey follows your dog’s natural rhythm — from slow, scent-led strolls to more active outings. The pace and distance are always adjusted to what feels right for them.",
     },
     {
-      question: "Will I get updates during the journey?",
+      question: "Will I receive updates during the outing?",
       answer:
-        "Yes! You’ll receive photos and a quick note so you can see how your pup is doing and enjoy peace of mind while they’re out adventuring.",
+        "Yes. You will receive photographs and a short message during or after the outing so you always know how your dog is getting on.",
     },
     {
-      question: "Can you give medication or follow special instructions?",
+      question: "Can you follow routines or give medication?",
       answer:
-        "Of course. I can handle medication timing, extra breaks, and any details that help keep your dog comfortable and safe on their solo outing.",
+        "Yes. I can follow feeding routines, offer breaks when needed, and administer medication as instructed to keep your dog comfortable and supported.",
+    },
+    {
+      question: "How long is a Solo Journey?",
+      answer:
+        "Journeys vary depending on the option you choose. They range from a few hours to a full day, with time built in for rest, exploration, and individual attention.",
+    },
+    {
+      question: "Do you pick up and drop off my dog?",
+      answer:
+        "Yes. I collect your dog from home and bring them back after the outing, making the experience simple and stress-free for you.",
+    },
+    {
+      question: "Can nervous dogs take part?",
+      answer:
+        "Yes. Many nervous or unsure dogs benefit greatly from one-on-one outings. Going at their pace helps build confidence without the pressure of a group setting.",
+    },
+    {
+      question: "What should my dog bring?",
+      answer:
+        "Just a secure harness and anything specific they may need, such as medication or preferred treats. Fresh water and essentials are provided.",
+    },
+    {
+      question: "Is there an introduction before the first journey?",
+      answer:
+        "Yes. A brief meet-and-greet helps your dog get to know me, ensures they feel comfortable, and allows us to discuss expectations and routines.",
     },
   ];
 
@@ -39,10 +64,11 @@ const FaqSection = () => {
     <section className="section">
       <div className="container is-small">
         <div className="header is-align-center">
-          <h2>Solo Journey FAQ</h2>
+          <h2>Solo Journeys — Frequently Asked Questions</h2>
           <p className="subheading">
-            Everything you need to know about my one-on-one adventures — fully
-            personalized for your dog’s comfort, safety, and happiness.
+            Clear answers about individual, one-to-one outings designed for dogs
+            who benefit from calm focus, steady attention, and room to explore at
+            their own pace.
           </p>
         </div>
 

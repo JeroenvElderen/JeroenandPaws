@@ -4,32 +4,32 @@ import ServiceAboutSection from "../../../../components/ServiceAboutSection";
 const AboutSection = () => (
   <ServiceAboutSection
     eyebrow="About this service"
-    title="Solo Journeys — One-on-One Adventures for Your Dog"
+    title="Solo Journeys — Individual Outings Shaped Around Your Companion"
     description={[
-      "Solo Journeys are perfect for dogs who thrive with individual attention and a calm, focused experience. Just me and your pup exploring at their own pace — whether that’s an adventurous hike, a peaceful park stroll, or plenty of sniffing and discovery.",
-      "We’ll go beyond the usual routine: drive out to explore new places, discover quiet forest trails, hike in the mountains, wander charming towns, or even enjoy a breezy day by the beach. Each outing is carefully chosen to be safe, fun, and enriching for your dog.",
-      "These journeys are completely tailored to your dog’s needs, personality, and energy level. You’ll receive updates and photos along the way, so you know your best friend is safe, happy, and having a great time.",
+      "Solo Journeys are designed for companions who benefit from individual attention and a calm, focused experience. It is simply the two of us exploring at their pace — whether that means a steady walk, peaceful time outdoors, or space to pause and take things in.",
+      "These outings go beyond everyday walks. We may explore quiet forest paths, visit new areas, enjoy open beaches, or wander through nearby towns. Each location is chosen with care to ensure a safe, enriching, and engaging experience.",
+      "Every journey is shaped around your companion’s needs, confidence, and energy level. You will receive thoughtful updates and photographs along the way, offering reassurance and a clear sense of how they are getting on.",
     ]}
     highlights={[
       {
-        title: "Fully personalized",
+        title: "Tailored for your companion",
         description:
-          "Every journey is built around your dog — their favorite pace, routes, and comfort level. Great for shy pups, solo explorers, or those needing special care.",
+          "Each outing is planned around your companion’s preferred pace, familiarity, and comfort level. Ideal for independent explorers or those who benefit from gentle, individual attention.",
       },
       {
-        title: "Calm & focused care",
+        title: "Calm, focused time outdoors",
         description:
-          "No distractions, no crowds — just me and your dog enjoying time outdoors together, discovering new places safely and happily.",
+          "No distractions or competing demands — simply dedicated time outdoors, discovering new places in a measured, reassuring way.",
       },
       {
-        title: "Big adventures made easy",
+        title: "Exploration without the effort",
         description:
-          "From forest trails to mountain hikes or a relaxed beach day, I handle the planning and driving so your pup can simply enjoy the journey.",
+          "Whether it’s a walk through quiet woods, a gentle hike, or time near the coast, I handle the planning and travel so your companion can simply enjoy the experience.",
       },
       {
-        title: "Regular updates for peace of mind",
+        title: "Clear communication throughout",
         description:
-          "You’ll get photos, notes, and updates throughout the day so you know your dog is safe, happy, and having the time of their life.",
+          "Photographs and notes throughout the outing keep you informed and reassured, offering a clear picture of how your companion is spending their time.",
       },
     ]}
   />

@@ -11,20 +11,23 @@ const FeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Home Check-Ins — Care While You’re Away</h1>
+            <h1 className="heading_h1">
+              Home Check-Ins — Steady Support and Comfort at Home
+            </h1>
             <p className="subheading">
-              Can’t be home for a while? I’ll stop by to check on your dog,
-              making sure they’re safe, happy, and comfortable. Each visit can
-              include fresh water, feeding, potty breaks, playtime, and a little
-              love and attention. I’ll send you updates and photos so you can
-              relax, knowing your pup is in good hands.
+              If you cannot be there, I will visit your companion at home to
+              ensure they remain safe, comfortable, and settled. Each check-in
+              can include feeding, fresh water, outdoor breaks, gentle
+              interaction, and calm companionship. After every visit, you will
+              receive a brief update and photographs, giving you peace of mind
+              while you are away.
             </p>
             <div className="button-group">
               <Link href="/booking/home-check-in-30" className="button w-button">
-                Book a Home Check-In
+                Book a home check-in
               </Link>
               <a href="#services" className="button is-secondary w-button">
-                See Services &amp; Pricing
+                View services and pricing
               </a>
             </div>
           </div>
@@ -40,7 +43,7 @@ const FeatureSection = () => {
                 >
                   <img
                     src="/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif"
-                    alt="dog at home"
+                    alt="companion at home"
                     className="image image_cover"
                   />
                 </div>
@@ -51,7 +54,7 @@ const FeatureSection = () => {
                 >
                   <img
                     src="/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif"
-                    alt="dog relaxing at home"
+                    alt="companion lying indoors"
                     className="image image_cover shadow_xlarge"
                   />
                 </div>

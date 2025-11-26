@@ -5,33 +5,33 @@ import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 const services = [
   {
     id: "overnight-stay-standard",
-    title: "Cozy Overnight Stay",
+    title: "Standard Overnight Stay",
     label: "Boarding — 24 hrs",
     price: "€45/night",
     description:
-      "Safe and loving overnight care in my home — daily walks, playtime, and cozy rest alongside my two friendly pups.",
+      "Overnight care in a calm, home setting — with relaxed routines, outdoor time, and comfortable rest in a lived-in environment.",
     duration: "Overnight Stay",
     durationMinutes: 24 * 60,
-    ctaText: "Book Boarding",
+    ctaText: "Book overnight stay",
     allowRecurring: false,
     allowMultiDay: false,
   },
   {
     id: "overnight-stay-custom",
-    title: "Your Dog’s Perfect Stay",
+    title: "Tailored Overnight Support",
     label: "Custom duration",
     price: "Tailored",
     description:
-      "Need extra nights or special care? We’ll create a plan that fits your schedule and your dog’s needs.",
+      "For companions who require extra nights, special routines, or unique timings — we create a stay shaped around their needs and your schedule.",
     duration: "Custom Duration",
     durationMinutes: null,
-    ctaText: "Plan a custom stay",
+    ctaText: "Plan a tailored stay",
     ctaOptions: {
       chatUrl: getPreferredChatUrl(),
       formUrl: "/contact?service=overnight-stay-custom",
       heading: "How should we plan your custom stay?",
       description:
-        "Choose WhatsApp for a quick chat about dates and care notes, or send your full request through the form.",
+        "Choose a quick WhatsApp chat to discuss dates and care details, or share your full request through the form.",
     },
     allowRecurring: false,
     allowMultiDay: false,
@@ -40,7 +40,7 @@ const services = [
 
 const PricingSection = () => (
   <DynamicPricingSection
-    title="Boarding Rates"
+    title="Overnight Stay Options"
     services={services}
     gridClassName="grid_4-col"
     defaultCta="Check availability"

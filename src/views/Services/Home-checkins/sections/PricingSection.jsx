@@ -5,33 +5,33 @@ import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 const services = [
   {
     id: "home-check-in-30",
-    title: "Standard Check-In",
+    title: "Essential Home Visit",
     label: "30-Min Visit",
     price: "€15/visit",
     description:
-      "A quick but caring visit — fresh water, feeding if needed, potty break, playtime, and a photo update for peace of mind.",
+      "A focused visit to maintain your companion’s routine — fresh water, feeding if required, an outdoor break, and calm interaction, followed by a brief update for reassurance.",
     duration: "30-Min Visit",
     durationMinutes: 30,
-    ctaText: "Book Check-In",
+    ctaText: "Book check-in",
   },
   {
     id: "home-check-in-60",
-    title: "Extended Check-In",
+    title: "Extended Home Visit",
     label: "60-Min Visit",
     price: "€25/visit",
     description:
-      "More time for attention and play — ideal if your dog needs extra exercise, a longer walk, or a bit more companionship while you’re away.",
+      "A longer, unhurried visit offering additional time for movement, engagement, or quiet companionship — ideal for companions who need extra support or settle best with a steady presence.",
     duration: "60-Min Visit",
     durationMinutes: 60,
-    ctaText: "Book Extended Visit",
+    ctaText: "Book extended visit",
   },
   {
     id: "home-check-in-custom",
-    title: "Custom Care",
+    title: "Tailored Home Support",
     label: "Flexible Timing",
     price: "Tailored",
     description:
-      "Need something special — multiple visits, medication, or unique timing? We can create the perfect plan for your dog and your schedule.",
+      "For companions with routines or requirements that don’t fit a standard visit — whether that means multiple check-ins, medication, or specific timings — we create a plan shaped around what they need most.",
     duration: "Custom Plan",
     durationMinutes: null,
     ctaText: "Plan a custom check-in",
@@ -40,14 +40,14 @@ const services = [
       formUrl: "/contact?service=home-check-in-custom",
       heading: "How would you like to plan your custom check-in?",
       description:
-        "Tell us the timing, visit frequency, or medications — chat on WhatsApp or outline everything in the request form.",
+        "Share the details that matter — timings, visit frequency, or any special instructions — then choose whether to discuss them in a chat or outline them in the request form.",
     },
   },
 ];
 
 const PricingSection = () => (
   <DynamicPricingSection
-    title="Home Check-In Options"
+    title="Home Check-Ins — Flexible Care at Home"
     services={services}
     gridClassName="grid_3-col"
     defaultCta="Check availability"
