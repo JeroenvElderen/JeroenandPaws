@@ -3,22 +3,22 @@ import ServiceAboutSection from "../../../../components/ServiceAboutSection";
 
 const AboutSection = () => (
   <ServiceAboutSection
-    eyebrow="About this service"
-    title="Daytime dog care that feels like home"
+    eyebrow="About daytime care"
+    title="Daytime care that feels like home for your companion"
     description={[
-      "While you’re busy, your dog will spend the day in a safe, loving, and fun environment. I provide playtime, socialization, potty breaks, and cozy rest so your pup stays happy and relaxed until you’re back.",
-      "You’ll get simple updates and sweet photos, so you can see how their day is going and feel confident they’re cared for like family.",
+      "While you’re away, your companion enjoys a safe, nurturing, and engaging environment. With playtime, gentle social moments, regular breaks, and calm spaces to rest, they stay content, enriched, and relaxed throughout the day.",
+      "You’ll receive thoughtful updates — including photos and small highlights — so you can follow their day and feel reassured that they’re being cared for with genuine attention.",
     ]}
     highlights={[
       {
-        title: "Comfortable daily routine",
+        title: "A comforting daily rhythm",
         description:
-          "Whether it’s a full day or just a few hours, I’ll keep your dog engaged, well-rested, and on a schedule that suits their needs.",
+          "For a full day or just a few hours, I ensure your companion remains engaged, well-rested, and gently guided by a routine that reflects their natural rhythm.",
       },
       {
-        title: "Safe & caring environment",
+        title: "A safe and caring environment",
         description:
-          "From supervised play to clean spaces and plenty of fresh water, I make sure your pup feels secure and content all day long.",
+          "From supervised interactions to clean spaces and fresh water always available, your companion enjoys an environment designed to feel secure, calm, and comfortably familiar.",
       },
     ]}
   />

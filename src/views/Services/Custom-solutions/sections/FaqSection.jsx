@@ -7,17 +7,17 @@ const FaqSection = () => {
     {
       question: "What services do you offer for dogs?",
       answer:
-        "We provide personalized dog training, daily walks (from 30 minutes to custom durations), boarding, day care, and drop-in visits. Every service is tailored to your dog’s unique needs.",
+        "We offer personalised dog training, daily walks, day care, boarding, and home visits. Every service is shaped around your dog’s personality, routine, and needs — so they always feel understood and supported.",
     },
     {
       question: "How do you handle different dog personalities?",
       answer:
-        "With years of experience and a background in animal care, I adapt my approach to each dog — whether energetic, shy, or somewhere in between.",
+        "Dogs communicate in their own ways, so I adjust my approach to match their energy and comfort level. Whether confident, sensitive, playful, or cautious — every dog is met with patience, understanding, and respect.",
     },
     {
       question: "Can you care for special needs or senior dogs?",
       answer:
-        "Absolutely! I have experience with dogs of all ages and abilities, including those needing medication, extra patience, or special routines.",
+        "Absolutely. I have experience supporting senior dogs, reactive dogs, and those with medical or behavioural needs. With clear routines and gentle care, your dog can feel safe, relaxed, and well looked after.",
     },
   ];
 
@@ -29,9 +29,9 @@ const FaqSection = () => {
     <section className="section">
       <div className="container is-small">
         <div className="header is-align-center">
-          <h2>Your Dog’s Second Home</h2>
+          <h2>Care that feels like home for your dog</h2>
           <p className="subheading">
-            Everything you need to know about our dog care, training, and daily adventures—answered for you below.
+            Your questions answered — from training and walks to tailored care and daily routines.
           </p>
         </div>
 

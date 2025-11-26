@@ -5,22 +5,22 @@ import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 const services = [
   {
     id: "daily-stroll-30",
-    title: "Standard Check-In",
+    title: "Standard stroll",
     label: "30-Min Visit",
     price: "€15/visit",
     description:
-      "Fresh water, feeding, potty break, playtime — everything your dog needs while you’re away.",
+      "A refreshing 30-minute stroll — ideal for movement, fresh air, and a little enrichment during the day.",
     duration: "30-Min Visit",
     durationMinutes: 30,
     ctaText: "Book Check-In",
   },
   {
     id: "daily-stroll-60",
-    title: "Extended Check-In",
+    title: "Extended stroll",
     label: "60-Min Visit",
     price: "€25/visit",
     description:
-      "Extra time for play, longer potty breaks, or more companionship — perfect for pups who need more love.",
+      "A longer outing with extra time for sniffing, exploring, and enjoying the neighbourhood — perfect for companions who love a fuller adventure.",
     duration: "60-Min Visit",
     durationMinutes: 60,
     ctaText: "Book Extended Visit",
@@ -28,26 +28,26 @@ const services = [
   {
     id: "daily-stroll-custom",
     title: "Custom Care",
-    label: "Flexible Visit",
+    label: "Tailored stroll",
     price: "Tailored",
     description:
-      "Need special timing or extra help? Let’s create the perfect plan for your dog’s day.",
+      "Unique schedule? Preferred routes? Special requests? Let’s design a personalised walking plan that fits your companion’s needs.",
     duration: "Custom Plan",
     durationMinutes: null,
     ctaText: "Build a custom visit",
     ctaOptions: {
       chatUrl: getPreferredChatUrl(),
       formUrl: "/contact?service=daily-stroll-custom",
-      heading: "How would you like to plan your custom check-in?",
+      heading: "How would you like to plan your tailored stroll?",
       description:
-        "Tell us what you need — we can coordinate on WhatsApp or you can share details in a quick form.",
+        "Tell us what you have in mind — start a quick WhatsApp chat or share your details through the form.",
     },
   },
 ];
 
 const DailystrollsPricingSection = () => (
   <DynamicPricingSection
-    title="Home Check-In Options"
+    title="Daily stroll options for every companion"
     services={services}
     gridClassName="grid_3-col"
     defaultCta="Check availability"

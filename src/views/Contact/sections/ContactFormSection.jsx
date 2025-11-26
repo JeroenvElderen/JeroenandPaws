@@ -83,7 +83,7 @@ const ContactFormSection = () => {
                     maxLength="256"
                     name="email"
                     data-name="Email"
-                    placeholder="email@website.com"
+                    placeholder="email@hotmail.com"
                     type="email"
                     id="email-5"
                     value={formState.email}
@@ -141,10 +141,9 @@ const ContactFormSection = () => {
             id="w-node-_04da3743-9ce2-6e2d-ee03-df10a8aa6687-6c55b82b"
             className="w-node-b7669384-f90d-3abf-488f-b1efb7b2bf3f-869f6535"
           >
-            <h2 className="heading_h2">Let’s connect about your dog</h2>
+            <h2 className="heading_h2">Let’s talk about what your dog needs</h2>
             <p className="subheading">
-              Curious about training, walks, or care? I’m here to answer your questions and help your dog thrive. Reach out and
-              let’s chat about the best options for your pup.
+              Considering training, walks, day care, or boarding? I’m here to help your dog feel understood, supported, and set up for success. Reach out and let’s explore the options that suit them best.
             </p>
           </div>
         </div>

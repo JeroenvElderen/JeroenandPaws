@@ -11,18 +11,16 @@ const FeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Expert Dog Care, Tailored For You</h1>
+            <h1 className="heading_h1">Bespoke dog care, designed around your life</h1>
             <p className="subheading">
-              From training to daily walks, boarding, and daycare—your dog’s
-              happiness and well-being are my top priority. Let’s create a
-              routine that fits your life and your pup’s needs.
+              From training to daily walks, day care, and boarding — your dog’s comfort and happiness always come first. Together, we’ll create a personalised care plan that suits your lifestyle and supports your dog’s unique needs.
             </p>
                 <div className="button-group">
                   <Link href="/booking/custom-meet-greet" className="button w-button">
                     Book a Meet &amp; Greet
                   </Link>
               <a href="#services" className="button is-secondary w-button">
-                See Services &amp; Pricing
+                View services & pricing
               </a>
             </div>
           </div>

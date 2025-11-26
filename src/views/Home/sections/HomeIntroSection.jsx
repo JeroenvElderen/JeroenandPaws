@@ -5,21 +5,21 @@ const HomeIntroSection = () => (
   <section data-copilot="true" className="section">
       <div className="container">
         <div className="header">
-          <h2 className="heading_h2 max-width_large">Where Comfort Meets Quality Care</h2>
+          <h2 className="heading_h2 max-width_large">Where Your Companion’s Comfort Comes First</h2>
         </div>
         <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617bc-d3a617ba" className="w-layout-grid grid_6-col gap-small w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d54-055fd1ce">
           <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617bd-d3a617ba" className="card w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d2d-055fd1ce">
             <div className="card_body">
               <div className="w-layout-grid grid_2-col tablet-1-col gap-small">
                 <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617c1-d3a617ba" className="w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d28-055fd1ce">
-                  <h3 className="heading_h4">Dedicated dog care</h3>
-                  <p className="margin-bottom_xsmall">Reliable walking, enriching daycare, personalized training, and safe boarding—everything your dog needs to feel happy and secure.</p>
+                  <h3 className="heading_h4">Thoughtful care for your companion</h3>
+                  <p className="margin-bottom_xsmall">Reliable walks, enriching daycare, personalised training, and safe overnight stays — everything your companion needs to feel supported, happy, and secure.</p>
                   <div className="w-layout-grid flex_vertical gap-xsmall">
                     <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617c7-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d19-055fd1ce">
                       <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
                           <path d="M12.5 18.25C16.2279 18.25 19.25 15.2279 19.25 11.5C19.25 7.77208 16.2279 4.75 12.5 4.75C8.77208 4.75 5.75 7.77208 5.75 11.5C5.75 12.6007 6.01345 13.6398 6.48072 14.5578L5 19L9.71819 17.6519C10.5664 18.0361 11.5082 18.25 12.5 18.25Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
                         </svg></div>
-                      <p className="paragraph_small margin-bottom_none">Personalized training programs</p>
+                      <p className="paragraph_small margin-bottom_none">Personalised training, tailored to your companion’s needs</p>
                     </div>
                     <div id="w-node-_9bf402c4-a9d1-a662-f2a4-08af26ba9ae4-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d23-055fd1ce">
                       <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
@@ -29,7 +29,7 @@ const HomeIntroSection = () => (
                           <path d="M16 16L18.5 18.5" stroke="currentColor" strokeWidth="1.5"></path>
                           <path d="M16 8L18.5 5.5" stroke="currentColor" strokeWidth="1.5"></path>
                         </svg></div>
-                      <p className="paragraph_small margin-bottom_none">Walks, daycare & boarding options</p>
+                      <p className="paragraph_small margin-bottom_none">Flexible walking, daycare, and boarding options</p>
                     </div>
                   </div>
                   <div className="button-group">
@@ -45,14 +45,14 @@ const HomeIntroSection = () => (
               <div className="w-layout-grid grid_2-col tablet-1-col gap-small">
                 <div className="image-ratio_auto"><img width="347" height="249" alt="Animal adoption event" src="/images/c31b08aa-4b2c-481d-8870-ba8d752b7145.avif" loading="lazy" data-aisg-image-id="1c895c37-6763-4962-a5e5-03d232e6de78" className="image_cover" /></div>
                 <div id="w-node-e1d6f978-b400-4ad5-acf8-8869285ac4d3-d3a617ba" className="w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d47-055fd1ce">
-                  <h3 className="heading_h4">All-around dog care</h3>
-                  <p>From energizing walks to comfortable overnight stays, we provide dependable care tailored to your dog’s routine.</p>
+                  <h3 className="heading_h4">Complete care for your companion</h3>
+                  <p>From energising walks to reassuring overnight stays, we offer dependable care shaped around your companion’s routine and personality.</p>
                   <div className="w-layout-grid flex_vertical gap-xsmall">
                     <div id="w-node-_32b61d4c-dce5-52fe-303b-c98d654052ca-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d39-055fd1ce">
                       <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
                           <path d="M12.5 18.25C16.2279 18.25 19.25 15.2279 19.25 11.5C19.25 7.77208 16.2279 4.75 12.5 4.75C8.77208 4.75 5.75 7.77208 5.75 11.5C5.75 12.6007 6.01345 13.6398 6.48072 14.5578L5 19L9.71819 17.6519C10.5664 18.0361 11.5082 18.25 12.5 18.25Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"></path>
                         </svg></div>
-                      <p className="paragraph_small margin-bottom_none">Reliable daily walks</p>
+                      <p className="paragraph_small margin-bottom_none">Dependable daily walks</p>
                     </div>
                     <div id="w-node-_32b61d4c-dce5-52fe-303b-c98d654052d0-d3a617ba" className="flex_horizontal is-y-center gap-xxsmall w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d43-055fd1ce">
                       <div className="icon is-small"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none">
@@ -62,7 +62,7 @@ const HomeIntroSection = () => (
                           <path d="M16 16L18.5 18.5" stroke="currentColor" strokeWidth="1.5"></path>
                           <path d="M16 8L18.5 5.5" stroke="currentColor" strokeWidth="1.5"></path>
                         </svg></div>
-                      <p className="paragraph_small margin-bottom_none">Comfortable, trusted boarding</p>
+                      <p className="paragraph_small margin-bottom_none">Comfortable, trusted boarding for peace of mind</p>
                     </div>
                   </div>
                   <Link href="/contact" className="button margin-top_small w-button">Get in touch</Link>
@@ -73,8 +73,8 @@ const HomeIntroSection = () => (
           <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617f5-d3a617ba" className="card w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d53-055fd1ce">
             <div className="card_body">
               <div className="margin_bottom-auto">
-                <h3 className="heading_h4">Trusted dog care</h3>
-                <p className="paragraph_small margin-bottom_none">Become part of a caring community where your dog enjoys safe boarding, joyful daycare, and dependable daily walks.</p>
+                <h3 className="heading_h4">Care you can trust for your companion</h3>
+                <p className="paragraph_small margin-bottom_none">Join a caring community where your companion enjoys uplifting daycare, safe and cosy boarding, and dependable daily walks — all delivered with genuine heart.</p>
               </div>
               <div className="image-ratio_2x3 margin-top_xsmall"><img width="299" height="448" alt="Busy pet store environment" src="/images/f0056c3e-db64-4fae-a858-84b4c370a6a6.avif" loading="lazy" data-aisg-image-id="6fe6aa77-d179-4e0b-90f4-3e55c4498c83" className="image_cover" /></div>
             </div>

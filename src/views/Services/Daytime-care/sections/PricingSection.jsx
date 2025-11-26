@@ -5,7 +5,7 @@ import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 const services = [
   {
     id: "daytime-care-half-day",
-    title: "Half-Day Hangout",
+    title: "Half-day stay",
     label: "Up to 4 Hours",
     price: "€20/day",
     description:
@@ -47,7 +47,7 @@ const services = [
 
 const PricingSection = () => (
   <DynamicPricingSection
-    title="Daytime Care Plans for Happy Dogs"
+    title="Daytime care plans for every companion"
     services={services}
     gridClassName="grid_3-col"
     defaultCta="Check availability"

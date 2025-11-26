@@ -10,18 +10,18 @@ const DailystrollsFeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Daily Dog Walks, Happy Tails</h1>
+            <h1 className="heading_h1">Daily walks, happier companions</h1>
             <p className="subheading">
-              Reliable, safe, and tail-wagging walks — from quick potty breaks
-              to long adventures. Perfect for busy owners who want their pups
-              exercised, loved, and cared for while they’re away.
+              Reliable, safe, and enriching walks — from quick neighbourhood outings
+to longer adventures. Ideal for busy owners who want their companions
+engaged, exercised, and genuinely cared for throughout the day.
             </p>
             <div className="button-group">
               <a href="#book" className="button w-button">
-                Book Your First Walk
+                Book your first walk
               </a>
               <a href="#services" className="button is-secondary w-button">
-                View Walk Plans & Pricing
+                View walk plans & pricing
               </a>
             </div>
           </div>

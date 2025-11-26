@@ -7,28 +7,53 @@ const DailystrollsFaqSection = () => {
     {
       question: "What types of dog walks do you offer?",
       answer:
-        "We offer flexible walk lengths — 30 minutes, 60 minutes, 120 minutes, and fully custom durations. Whether your pup needs a quick potty break or a big adventure, we’ve got it covered.",
+        "We offer flexible walk durations — 30 minutes, 60 minutes, extended options, and fully custom plans. Whether your dog needs a quick outing or a longer adventure, we’ll match the walk to their energy and routine.",
     },
     {
       question: "Will my dog get one-on-one attention?",
       answer:
-        "Yes! Walks are always individual (unless you request otherwise). Your dog gets our full focus, safe adventures, and plenty of sniff time.",
+        "Yes. Walks are individual by default, giving your dog our full attention, a safe environment, and plenty of time to sniff, explore, and relax without distractions.",
     },
     {
       question: "Can you handle high-energy or shy dogs?",
       answer:
-        "Absolutely. Each walk is adapted to your dog’s personality — calm for nervous pups, playful and active for energetic explorers.",
+        "Absolutely. Every walk is adjusted to your dog’s personality — calmer routes for sensitive dogs, more active outings for confident explorers, and a tailored pace for everyone in between.",
     },
     {
       question: "What if it’s raining or the weather is bad?",
       answer:
-        "We still walk! Safety always comes first, but a little rain won’t stop us. If weather becomes dangerous, we’ll discuss options with you.",
+        "We walk in most weather conditions, always prioritising safety. A little rain won’t stop us, but if conditions become unsafe, we’ll discuss alternatives with you.",
     },
     {
       question: "Can you walk senior dogs or those with special needs?",
       answer:
-        "Yes, we adjust pace and distance to your dog’s comfort and can follow any special instructions (like medication timing or gentle routes).",
+        "Yes. We adapt pace, distance, and routes to suit senior dogs or those with special requirements, and we can follow instructions such as medication timing or mobility-friendly paths.",
     },
+    {
+      question: "Do you pick up dogs from home?",
+      answer:
+      "Yes. We collect your dog directly from your home and return them safely after the walk — no extra coordination needed."
+    },
+    {
+      question: "Will my dog walk with other dogs?",
+      answer:
+      "Walks are individual unless you request otherwise. If you'd like social walks, we can arrange safe pairing based on temperament and compatibility."
+    },
+    {
+      question: "How do you ensure my dog is safe during walks?",
+      answer:
+      "We use secure leads, check equipment before every outing, and avoid unsafe routes. Your dog's safety guides every decision we make outdoors."
+    },
+    {
+      question: "Do you send walk updates?",
+      answer:
+      "Yes. After each walk, you'll receive a quick update with highlights — such as distance, behaviour notes, and anything worth knowing from the outing."
+    },
+    {
+      question: "Can I change or cancel a walk?",
+      answer:
+      "Of course. You can update or cancel walks with notice. Just reach out, and we'll adjust your schedule without hassle."
+    }
   ];
 
   const toggleAccordion = (index) => {
@@ -39,9 +64,9 @@ const DailystrollsFaqSection = () => {
     <section className="section">
       <div className="container is-small">
         <div className="header is-align-center">
-          <h2>Dog Walking FAQ</h2>
+          <h2>Dog walking — frequently asked questions</h2>
           <p className="subheading">
-            Everything you want to know about our walks — how we keep tails wagging and paws moving safely.
+            Everything you need to know about our walks — how we keep your dog happy, safe, and confidently exploring the world.
           </p>
         </div>
 

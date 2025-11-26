@@ -9,9 +9,9 @@ const HomeAboutSection = () => (
           <div className="w-layout-grid grid_2-col tablet-1-col margin-bottom_xxlarge position_relative">
             <div className="card">
               <div className="card_body">
-                <h2>Tailored care for your furry friend</h2>
+                <h2>Personalised care for your beloved companion</h2>
                 <div className="rich-text w-richtext">
-                  <p>With over 7 years of experience, I offer personalized training, walking, and boarding services for dogs of all breeds. Your pet will enjoy a safe, fun, and loving environment, just like home.</p>
+                  <p>With over seven years of experience, I provide thoughtful training, walking, and boarding services shaped around your companion’s unique needs. Here, they enjoy a safe, warm, and nurturing environment that feels just like home — because their comfort truly matters.</p>
                 </div>
                 <div className="button-group">
                   <Link href="/about" className="button w-button">Discover more</Link>

@@ -3,22 +3,22 @@ import ServiceAboutSection from "../../../../components/ServiceAboutSection";
 
 const AboutSection = () => (
   <ServiceAboutSection
-    eyebrow="About this service"
-    title="Daily dog walks designed for your pup’s happiness"
+    eyebrow="About this walking service"
+    title="Daily walks designed to enrich your companion’s day"
     description={[
-      "Every walk is tailored to your dog’s pace, personality, and needs. Whether they’re a high-energy explorer or a relaxed stroller, I make sure each outing is safe, comfortable, and enriching.",
-      "You’ll receive quick post-walk updates with photos, highlights from the route, and notes on water breaks or anything else worth sharing — so you’re always connected, even while away.",
+      "Every walk is shaped around your companion’s pace, personality, and preferences. Whether they love exploring new scents or enjoy a calm neighbourhood stroll, each outing is designed to feel safe, comforting, and mentally enriching.",
+      "After each walk, you’ll receive a brief update — photos, route highlights, and any helpful notes — so you always feel connected to your companion’s day, even when you’re not there.",
     ]}
     highlights={[
       {
-        title: "Reliable routine",
+        title: "A routine you can rely on",
         description:
-          "Choose the schedule that works best for you — daily, weekly, or just a few times — and I’ll help keep your dog happy, healthy, and on track.",
+          "Choose a schedule that suits your life — daily, weekly, or as needed — and I’ll keep your companion engaged, active, and joyfully on track.",
       },
       {
-        title: "Safety & comfort first",
+        title: "Safety and comfort, every step of the way",
         description:
-          "I check harnesses and leashes, adjust for weather, and ensure a positive experience every time we step outside.",
+          "From secure harness checks to weather-ready adjustments, every walk is thoughtfully prepared to ensure a positive, comfortable experience — wherever your companion’s paws take us.",
       },
     ]}
   />

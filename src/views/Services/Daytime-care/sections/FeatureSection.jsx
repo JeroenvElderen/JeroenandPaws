@@ -11,16 +11,16 @@ const FeatureSection = () => {
             id="w-node-_2eb957ac-a779-b7e8-c895-939eedaeea12-edaeea0f"
             className="header w-node-f1b26e5a-b33b-e9ba-a521-149172f27d26-6cecf403"
           >
-            <h1 className="heading_h1">Daytime Dog Care with Heart</h1>
+            <h1 className="heading_h1">Daytime care with heart for your companion</h1>
             <p className="subheading">
-              While you’re away, I’ll make sure your dog feels safe, loved, and happy. From playtime and gentle exercise to cozy naps and plenty of attention, your pup will be cared for like part of the family — so you can focus on your day knowing they’re in good hands.
+              While you’re away, your companion enjoys a safe, attentive, and nurturing space. With play, gentle stimulation, cozy naps, and calm supervision, they’re cared for as if they were part of the family — so you can focus on your day knowing they’re truly at ease.
             </p>
             <div className="button-group">
           <Link href="/booking/daytime-care-4h" className="button w-button">
-            Book a Daycare Spot
+            Book a daytime care spot
           </Link>
               <a href="#services" className="button is-secondary w-button">
-                See Daycare Packages & Pricing
+                View daytime care plans & pricing
               </a>
             </div>
           </div>
