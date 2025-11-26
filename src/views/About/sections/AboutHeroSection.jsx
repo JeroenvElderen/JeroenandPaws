@@ -36,11 +36,18 @@ const AboutHeroSection = () => (
         >
           <h1 className="heading_h1">About me</h1>
           <p className="subheading">
-            As a certified canine specialist with over 7 years of experience working with companion and working dogs, I deliver tailored training, thoughtful care, and a secure, enriching environment for every dog I welcome. From customized walks to structured day care and boarding, your dog receives the same dedication and consistency I give my own.
+           As a certified canine specialist with over 7 years of experience, I work with both companion 
+           and working dogs using proven, ethical training methods. I provide personalized training, 
+           thoughtful care, and a safe, enriching environment for every dog I welcome. <br/><br/>
 
-I prioritize safety, clear communication, and emotional well-being—keeping you updated and your dog happy, relaxed, and fulfilled. Exceptional care starts here.
+          From customized walks to structured day care and boarding, your dog receives the same consistency 
+          and dedication I give my own. I prioritize safety, emotional well-being, and clear communication — 
+          keeping you informed and your dog happy, relaxed, and thriving. <br/><br/>
+
+          Exceptional care doesn’t just meet your dog’s needs — it helps them become their best self. 
+          That’s what I deliver.
           </p>
-          <div className="button-group">
+          <div className="button-group-2">
             <Link href="/contact" className="button w-button">
               Book now
             </Link>
