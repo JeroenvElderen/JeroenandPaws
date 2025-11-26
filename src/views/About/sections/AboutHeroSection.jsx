@@ -35,8 +35,8 @@ const AboutHeroSection = () => (
           className="header w-node-aca1decb-952a-6d03-8948-04348d12084d-0653ac4e"
         >
           <h1 className="heading_h1">About me</h1>
-          <p className="subheading">
-           As a certified canine specialist with over 7 years of experience, I work with both companion 
+          <p className="subheading-2">
+           Hi, I'm Jeroen — a certified canine specialist with over 7 years of experience, I work with both companion 
            and working dogs using proven, ethical training methods. I provide personalized training, 
            thoughtful care, and a safe, enriching environment for every dog I welcome. <br/><br/>
 
