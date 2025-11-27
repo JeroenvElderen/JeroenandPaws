@@ -36,14 +36,14 @@ const HomeIntroSection = () => (
                     <Link href="/services" className="button w-button">View services</Link>
                   </div>
                 </div>
-                <div className="image-ratio_auto"><img width="347" height="255" alt="Pet training class" src="/images/6c543c73-d4be-432b-9b82-b7da20b54146.avif" loading="lazy" data-aisg-image-id="900a04ad-6748-45c2-bdcb-93a2ac449288" className="image image_cover" /></div>
+                <div className="image-ratio_auto"><img width="347" height="255" alt="Pet training class" src="/images/31E259FF-C47C-4D99-AAC3-C9D0C3104F2B_1_201_a.jpeg" loading="lazy" data-aisg-image-id="900a04ad-6748-45c2-bdcb-93a2ac449288" className="image image_cover" /></div>
               </div>
             </div>
           </div>
           <div id="w-node-c566b793-7ed4-f098-3301-ccfdd3a617d9-d3a617ba" className="card w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d4a-055fd1ce">
             <div className="card_body">
               <div className="w-layout-grid grid_2-col tablet-1-col gap-small">
-                <div className="image-ratio_auto"><img width="347" height="249" alt="Animal adoption event" src="/images/c31b08aa-4b2c-481d-8870-ba8d752b7145.avif" loading="lazy" data-aisg-image-id="1c895c37-6763-4962-a5e5-03d232e6de78" className="image_cover" /></div>
+                <div className="image-ratio_auto"><img width="347" height="249" alt="Animal adoption event" src="" loading="lazy" data-aisg-image-id="1c895c37-6763-4962-a5e5-03d232e6de78" className="image_cover" /></div>
                 <div id="w-node-e1d6f978-b400-4ad5-acf8-8869285ac4d3-d3a617ba" className="w-node-_1a6e1d88-5744-48ea-d198-9a7dc9601d47-055fd1ce">
                   <h3 className="heading_h4">Complete care for your companion</h3>
                   <p>From energising walks to reassuring overnight stays, we offer dependable care shaped around your companion’s routine and personality.</p>
@@ -76,7 +76,7 @@ const HomeIntroSection = () => (
                 <h3 className="heading_h4">Care you can trust for your companion</h3>
                 <p className="paragraph_small margin-bottom_none">Join a caring community where your companion enjoys uplifting daycare, safe and cosy boarding, and dependable daily walks — all delivered with genuine heart.</p>
               </div>
-              <div className="image-ratio_2x3 margin-top_xsmall"><img width="299" height="448" alt="Busy pet store environment" src="/images/f0056c3e-db64-4fae-a858-84b4c370a6a6.avif" loading="lazy" data-aisg-image-id="6fe6aa77-d179-4e0b-90f4-3e55c4498c83" className="image_cover" /></div>
+              <div className="image-ratio_2x3 margin-top_xsmall"><img width="299" height="448" alt="Busy pet store environment" src="/images/FD1A33D3-FCF3-4DE2-BD1C-B5607D11AEFA_1_201_a.jpeg" loading="lazy" data-aisg-image-id="6fe6aa77-d179-4e0b-90f4-3e55c4498c83" className="image_cover" /></div>
             </div>
           </div>
         </div>
