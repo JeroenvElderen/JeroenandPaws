@@ -236,28 +236,6 @@ const Navbar = () => {
                           </div>
                         </div>
                       </li>
-                      <li id="w-node-_61be48fd-08da-7879-1198-67c4146a01f2-d66a6ef8" className="flex_horizontal w-node-_41e4cb1a-a620-245f-7f74-dc8693dc67af-93dc6729">
-                        <Link
-                          href="/contact"
-                          className="card-link is-inverse flex-child_expand w-inline-block"
-                          onClick={closeAllMenus}
-                        >
-                          <div className="card_body">
-                            <div className="heading_h3">Plan your dog&#x27;s next adventure</div>
-                            <p className="paragraph_small text-color_inverse-secondary">Book a walk, boarding, or custom care today.</p>
-                            <div className="margin_top-auto">
-                              <div className="button-group">
-                                <div className="text-button is-secondary on-accent-primary">
-                                  <div>Contact us</div>
-                                  <div className="button_icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 16 16" fill="none">
-                                      <path d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"></path>
-                                    </svg></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      </li>
                     </ul>
                   </div>
                 </nav>
