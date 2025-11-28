@@ -4,9 +4,9 @@ export default async function handler(req, res) {
   console.log(">>> HIT /api/create-payment-link (LIVE)");
 
   try {
-    const { amount, description, bookingId } = req.body;
-    if (!amount || !bookingId) {
-      return res.status(400).json({ error: "Missing amount or bookingId" });
+    const { amount, description } = req.body; // ⬅️ bookingId removed
+    if (!amount) {
+      return res.status(400).json({ error: "Missing amount" });
     }
 
     const apiKey = process.env.REVOLUT_API_KEY;
@@ -14,11 +14,10 @@ export default async function handler(req, res) {
 
     const body = {
       amount: {
-        value: Math.round(amount * 100), // cents
+        value: Math.round(amount * 100),
         currency: "EUR",
       },
       capture_mode: "AUTOMATIC",
-      merchant_order_ext_ref: bookingId,
       description,
       settle_payment: true,
       redirect_url: `${domain}/payment-success`,
@@ -47,7 +46,10 @@ export default async function handler(req, res) {
     const data = JSON.parse(text);
     console.log("✅ CHECKOUT LINK CREATED:", data);
 
-    return res.status(200).json({ url: data.checkout_url });
+    return res.status(200).json({
+      url: data.checkout_url,          // link to redirect user
+      orderId: data.public_id || data.id, // Revolut order reference
+    });
   } catch (err) {
     console.error("💥 create-payment-link error:", err);
     return res.status(500).json({ error: err.message || err });
