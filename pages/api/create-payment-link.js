@@ -13,25 +13,28 @@ export default async function handler(req, res) {
     const domain = process.env.DOMAIN || "https://www.jeroenandpaws.com";
 
     const body = {
-      amount: Math.round(amount * 100), // cents
-      currency: "EUR",
-      description,
+      amount: {
+        value: Math.round(amount * 100), // cents
+        currency: "EUR",
+      },
       capture_mode: "AUTOMATIC",
       merchant_order_ext_ref: bookingId,
+      description,
+      settle_payment: true,
       redirect_url: `${domain}/payment-success`,
     };
 
     const response = await fetch(
-  "https://merchant.revolut.com/api/1.0/merchant/checkout-link",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  }
-);
+      "https://merchant.revolut.com/api/1.0/merchant/checkout-link",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      }
+    );
 
     const text = await response.text();
     console.log("🔍 Revolut response:", text);
@@ -44,10 +47,9 @@ export default async function handler(req, res) {
     const data = JSON.parse(text);
     console.log("✅ CHECKOUT LINK CREATED:", data);
 
-    return res.status(200).json({ url: data.public_url });
+    return res.status(200).json({ url: data.checkout_url });
   } catch (err) {
-  console.error("💥 create-payment-link error:", err);
-  return res.status(500).json({ error: err.message || err });
+    console.error("💥 create-payment-link error:", err);
+    return res.status(500).json({ error: err.message || err });
+  }
 }
-}
-
