@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import SearchableSelect from "./SearchableSelect";
 import { DOG_BREEDS, weekdayLabels } from "./constants";
 import {
@@ -7,34 +13,6 @@ import {
   generateDemoAvailability,
 } from "./utils";
 import { useAuth } from "../../context/AuthContext";
-
-const ADDITIONAL_OPTIONS = [
-  {
-    value: "feeding",
-    label: "Feeding & fresh water",
-    description: "Meal prep, slow feeders, and water refreshes",
-  },
-  {
-    value: "meds",
-    label: "Medication support",
-    description: "Pills, toppers, and timing reminders",
-  },
-  {
-    value: "enrichment",
-    label: "Enrichment time",
-    description: "Puzzle toys, sniffaris, and brain games",
-  },
-  {
-    value: "cleanup",
-    label: "Accident clean-up",
-    description: "Potty spot refresh and light deodorizing",
-  },
-  {
-    value: "house-care",
-    label: "House touches",
-    description: "Plants, mail, and lights while we’re there",
-  },
-];
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
@@ -70,6 +48,7 @@ const BookingModal = ({ service, onClose }) => {
   const [recurrence, setRecurrence] = useState("none");
   const [additionals, setAdditionals] = useState([]);
   const [additionalsOpen, setAdditionalsOpen] = useState(false);
+  const [addons, setAddons] = useState([]);
   const { profile, isAuthenticated } = useAuth();
   const addOnDropdownRef = useRef(null);
 
@@ -89,7 +68,9 @@ const BookingModal = ({ service, onClose }) => {
       const breed = (dog.breed || "").trim();
       const notes = (dog.notes || "").trim();
 
-      return Boolean(name || breed || notes || dog.photoDataUrl || dog.profileId);
+      return Boolean(
+        name || breed || notes || dog.photoDataUrl || dog.profileId
+      );
     });
   }, [dogCount, dogs, selectedPetIds]);
 
@@ -209,20 +190,23 @@ const BookingModal = ({ service, onClose }) => {
     }
   }, []);
 
-  const initializeSelection = useCallback((data) => {
-    const firstOpenDate = data.dates.find((day) =>
-      isDayAvailableForService(day)
-    );
-    if (firstOpenDate) {
-      setSelectedDate(firstOpenDate.date);
-      const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
-      setSelectedTime(firstSlot?.time || "");
-      setSelectedSlots({
-        [firstOpenDate.date]: firstSlot?.time || "",
-      });
-      setVisibleMonth(new Date(firstOpenDate.date));
-    }
-  }, [isDayAvailableForService]);
+  const initializeSelection = useCallback(
+    (data) => {
+      const firstOpenDate = data.dates.find((day) =>
+        isDayAvailableForService(day)
+      );
+      if (firstOpenDate) {
+        setSelectedDate(firstOpenDate.date);
+        const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
+        setSelectedTime(firstSlot?.time || "");
+        setSelectedSlots({
+          [firstOpenDate.date]: firstSlot?.time || "",
+        });
+        setVisibleMonth(new Date(firstOpenDate.date));
+      }
+    },
+    [isDayAvailableForService]
+  );
 
   const loadAvailability = useCallback(async () => {
     setLoading(true);
@@ -370,7 +354,10 @@ const BookingModal = ({ service, onClose }) => {
       });
 
       for (let i = selectedPets.length; i < newDogs.length; i += 1) {
-        if (newDogs[i]?.profileId && !selectedPetIds.includes(newDogs[i].profileId)) {
+        if (
+          newDogs[i]?.profileId &&
+          !selectedPetIds.includes(newDogs[i].profileId)
+        ) {
           newDogs[i] = createEmptyDogProfile();
         }
       }
@@ -379,24 +366,14 @@ const BookingModal = ({ service, onClose }) => {
     });
 
     setShowDogDetails(true);
-  }, [
-    dogCount,
-    existingPets,
-    hasAttemptedPetLoad,
-    selectedPetIds,
-  ]);
+  }, [dogCount, existingPets, hasAttemptedPetLoad, selectedPetIds]);
 
   useEffect(() => {
     if (!isAuthenticated || !canLoadPets || hasAttemptedPetLoad) return;
 
     fetchExistingPets();
-  }, [
-    canLoadPets,
-    fetchExistingPets,
-    hasAttemptedPetLoad,
-    isAuthenticated,
-  ]);
-  
+  }, [canLoadPets, fetchExistingPets, hasAttemptedPetLoad, isAuthenticated]);
+
   const preparePetPayload = () => {
     const normalizedDogs = dogs.slice(0, dogCount).map((dog) => {
       const name = (dog?.name || "").trim();
@@ -549,7 +526,47 @@ const BookingModal = ({ service, onClose }) => {
       })
     : "Pick a date";
 
-  const handleBook = async () => {
+  const handleBookAndPay = async () => {
+    try {
+      // 1️⃣ Prepare amount
+      const rawPrice = service.price ?? service.cost ?? "0";
+      const numeric = Number(rawPrice.replace(/[^0-9.]/g, ""));
+      const amountInEuro = Number.isFinite(numeric) ? numeric : 0;
+
+      // 2️⃣ Create payment order FIRST
+      const paymentRes = await fetch("/api/create-payment-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: amountInEuro,
+          description: `Booking: ${service.title}`,
+        }),
+      });
+
+      const paymentData = await paymentRes.json();
+      if (!paymentData?.orderId) {
+        throw new Error("Payment order could not be created.");
+      }
+
+      const paymentOrderId = paymentData.orderId;
+
+      // 3️⃣ Now create booking WITH payment_order_id
+      const bookingId = await handleBook(paymentOrderId);
+      if (!bookingId) throw new Error("No booking ID returned!");
+
+      // 4️⃣ Redirect user to Revolut checkout
+      if (paymentData.url) {
+        window.location.href = paymentData.url;
+      } else {
+        alert("Unable to begin payment");
+      }
+    } catch (err) {
+      console.error("💥 Booking + payment error:", err);
+      alert("Unable to start payment. Try again.");
+    }
+  };
+
+  const handleBook = async (paymentOrderId) => {
     const sortedSchedule = Object.entries(selectedSlots || {})
       .map(([date, time]) => ({ date, time }))
       .filter((entry) => entry.date)
@@ -569,7 +586,8 @@ const BookingModal = ({ service, onClose }) => {
 
     const primaryEntry = validSchedule[0];
     const recurrenceSelection = recurrence === "none" ? null : recurrence;
-    const bookingMode = isMultiDay || validSchedule.length > 1 ? "multi-day" : "single";
+    const bookingMode =
+      isMultiDay || validSchedule.length > 1 ? "multi-day" : "single";
 
     if (
       !clientName.trim() ||
@@ -599,6 +617,11 @@ const BookingModal = ({ service, onClose }) => {
         durationMinutes,
       }));
 
+      const rawPrice = service.price ?? service.cost ?? "0";
+      const numeric = Number(rawPrice.replace(/[^0-9.]/g, ""));
+      const amountInEuro = Number.isFinite(numeric) ? numeric : 0;
+
+      // ⭐ ADD PAYMENT ORDER ID INTO BOOKING HERE
       const payload = {
         date: primaryEntry.date,
         time: primaryEntry.time,
@@ -618,6 +641,8 @@ const BookingModal = ({ service, onClose }) => {
         recurrence: recurrenceSelection,
         autoRenew: Boolean(recurrenceSelection),
         bookingMode,
+        amount: amountInEuro,
+        payment_order_id: paymentOrderId, // <-- CRITICAL
       };
 
       const requestUrl = `${apiBaseUrl}/api/book`;
@@ -637,113 +662,19 @@ const BookingModal = ({ service, onClose }) => {
         try {
           const errorText = await response.text();
           const parsedError = errorText ? JSON.parse(errorText) : {};
-
-          if (parsedError?.message) {
-            message = parsedError.message;
-          }
-        } catch (parseError) {
-          console.error("Failed to parse booking error response", parseError);
-        }
+          if (parsedError?.message) message = parsedError.message;
+        } catch (_) {}
 
         throw new Error(message);
       }
 
-      const data = await parseJsonSafely(response, requestUrl);
+      const data = await response.json();
+      console.log("📦 BOOKING API RESPONSE:", data);
 
-      const readableDates = validSchedule.map((entry) => {
-        const start = new Date(`${entry.date}T${entry.time}:00`);
-        return start.toLocaleString(undefined, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      });
+      const bookingId = data?.booking_id;
+      if (!bookingId) throw new Error("No booking ID returned!");
 
-      const passwordDelivery = data?.passwordDelivery;
-      const emailStatus = data?.emailStatus;
-      let emailMessage = "";
-      let passwordNote = "";
-
-      if (emailStatus?.confirmationSent) {
-        emailMessage = "Confirmation emails have been sent.";
-      } else if (emailStatus?.error) {
-        emailMessage =
-          "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
-      } else if (emailStatus?.skipped) {
-        emailMessage =
-          "We saved your booking, but automated confirmation emails are paused. We'll confirm manually.";
-      } else {
-        emailMessage =
-          "We saved your booking, but couldn't send a confirmation email. We'll reach out shortly.";
-      }
-
-      if (passwordDelivery) {
-        const tempPasswordMessage = passwordDelivery.temporaryPassword
-          ? ` Use this temporary password to access your profile: ${passwordDelivery.temporaryPassword}.`
-          : "";
-
-        if (emailStatus?.confirmationSent) {
-          passwordNote =
-            " Check your inbox for your new account password so you can update pets and bookings." +
-            tempPasswordMessage;
-        } else {
-          passwordNote =
-            " Save the password below so you can sign in to manage pets and bookings." +
-            tempPasswordMessage;
-        }
-      }
-      
-      const calendarStatus = data?.calendarStatus;
-      let calendarMessage = "";
-
-      if (calendarStatus?.error) {
-        calendarMessage =
-          " We couldn't add this booking to the calendar automatically; we'll add it manually.";
-      } else if (calendarStatus?.skipped) {
-        calendarMessage =
-          " Calendar sync is currently paused; we'll add this booking manually.";
-      }
-
-      const recurrenceLabel =
-        recurrence === "weekly"
-          ? " This plan will auto-renew each week."
-          : recurrence === "monthly"
-          ? " This plan will auto-renew each month."
-          : recurrence === "six-months"
-          ? " This plan will auto-renew every 6 months."
-          : recurrence === "yearly"
-          ? " This plan will auto-renew each year."
-          : "";
-
-      const scheduleLabel =
-        readableDates.length > 1
-          ? `${readableDates.length} visits booked: ${readableDates.join(", ")}`
-          : readableDates[0];
-
-      setSuccess(
-        `Booked ${service.title} for ${scheduleLabel}. ${emailMessage}${calendarMessage}${passwordNote}${recurrenceLabel}`
-      );
-
-      setAvailabilityNotice("");
-      setSelectedSlots({});
-      setSelectedDate("");
-      setSelectedTime("");
-      setIsMultiDay(false);
-      setRecurrence("none");
-
-      setClientName("");
-      setClientPhone("");
-      setClientAddress("");
-      setClientEmail("");
-      setNotes("");
-      setAdditionals([]);
-      setAdditionalsOpen(false);
-      resetDogProfiles();
-      setExistingPets([]);
-      setSelectedPetIds([]);
-      setError("");
+      return bookingId;
     } catch (bookingError) {
       console.error("Booking failed", bookingError);
       setError(
@@ -759,12 +690,12 @@ const BookingModal = ({ service, onClose }) => {
     if (selectedDate) {
       setVisibleMonth(new Date(selectedDate));
       const day = availabilityMap[selectedDate];
-      
+
       if (!isDayAvailableForService(day)) {
         const nextAvailable = calendarDays.find((entry) =>
           isDayAvailableForService(entry)
         );
-        
+
         if (nextAvailable) {
           setSelectedDate(nextAvailable.date);
           const firstSlot = nextAvailable.slots.find((slot) => slot.available);
@@ -809,16 +740,12 @@ const BookingModal = ({ service, onClose }) => {
   };
 
   const selectedAdditionalLabels = useMemo(() => {
-    if (!additionals.length) return ["Feeding", "Meds", "Playtime"];
+    if (!additionals.length) return addons.slice(0, 3).map((a) => a.label);
 
     return additionals
-      .map(
-        (value) =>
-          ADDITIONAL_OPTIONS.find((option) => option.value === value)?.label ||
-          value
-      )
+      .map((value) => addons.find((a) => a.value === value)?.label || value)
       .slice(0, 3);
-  }, [additionals]);
+  }, [additionals, addons]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -832,6 +759,12 @@ const BookingModal = ({ service, onClose }) => {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/addons")
+      .then((res) => res.json())
+      .then((data) => setAddons(data.addons ?? []));
   }, []);
 
   const renderFormContent = (isPopup = false) => (
@@ -931,7 +864,9 @@ const BookingModal = ({ service, onClose }) => {
                               />
                             ) : (
                               <div className="pet-option__avatar placeholder">
-                                <span className="pet-option__initial">{petInitial}</span>
+                                <span className="pet-option__initial">
+                                  {petInitial}
+                                </span>
                               </div>
                             )}
                             <div className="pet-option__glow" />
@@ -942,9 +877,13 @@ const BookingModal = ({ service, onClose }) => {
                             </span>
                             <div className="pet-option__meta-row">
                               {pet.breed && (
-                                <span className="pet-option__breed">{pet.breed}</span>
+                                <span className="pet-option__breed">
+                                  {pet.breed}
+                                </span>
                               )}
-                              <span className="pet-option__pill">Saved profile</span>
+                              <span className="pet-option__pill">
+                                Saved profile
+                              </span>
                             </div>
                             {noteText && (
                               <p className="pet-option__notes" title={noteText}>
@@ -1067,70 +1006,78 @@ const BookingModal = ({ service, onClose }) => {
               onChange={(event) => setRecurrence(event.target.value)}
             >
               <option value="none">One-time booking</option>
-              {allowWeeklyRecurring && <option value="weekly">Renew every week</option>}
-              <option value="monthly">Renew every month (auto books next month)</option>
+              {allowWeeklyRecurring && (
+                <option value="weekly">Renew every week</option>
+              )}
+              <option value="monthly">
+                Renew every month (auto books next month)
+              </option>
               <option value="six-months">Renew every 6 months</option>
               <option value="yearly">Renew every year</option>
             </select>
-            <p className="muted subtle">
-              </p>
+            <p className="muted subtle"></p>
           </label>
         )}
         <label
-        className="input-group full-width recurrence-group add-on-group"
-        ref={addOnDropdownRef}
-      >
-        <span>Additional care (optional)</span>
-        <button
-          type="button"
-          className={`add-on-trigger input-like-select recurrence-select ${additionalsOpen ? "open" : ""}`}
-          onClick={() => setAdditionalsOpen((open) => !open)}
-          aria-expanded={additionalsOpen}
+          className="input-group full-width recurrence-group add-on-group"
+          ref={addOnDropdownRef}
         >
-          <div className="add-on-chip-row">
-            {additionals.length === 0 ? (
-              <span className="add-on-chip placeholder">
-                Feeding • Meds • Enrichment
-              </span>
-            ) : (
-              selectedAdditionalLabels.map((label) => (
-                <span key={label} className="add-on-chip">
-                  {label}
+          <span>Additional care (optional)</span>
+          <button
+            type="button"
+            className={`add-on-trigger input-like-select recurrence-select ${
+              additionalsOpen ? "open" : ""
+            }`}
+            onClick={() => setAdditionalsOpen((open) => !open)}
+            aria-expanded={additionalsOpen}
+          >
+            <div className="add-on-chip-row">
+              {additionals.length === 0 ? (
+                <span className="add-on-chip placeholder">
+                  {addons
+                    .slice(0, 3)
+                    .map((a) => a.label)
+                    .join(" • ") || "Additional care"}
+                </span>
+              ) : (
+                selectedAdditionalLabels.map((label) => (
+                  <span key={label} className="add-on-chip">
+                    {label}
                   </span>
-                  ))
-            )}
-          </div>
-          <span className="chevron" aria-hidden="true">
-            {additionalsOpen ? "▲" : "▼"}
-          </span>
-        </button>
-        {additionalsOpen && (
-          <div className="add-on-menu" role="listbox">
-            {ADDITIONAL_OPTIONS.map((option) => {
-              const isSelected = additionals.includes(option.value);
-              return (
-                <label
-                  key={option.value}
-                  className={`add-on-option ${isSelected ? "selected" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleAdditional(option.value)}
-                  />
-                  <div className="add-on-copy">
-                    <span className="add-on-title">{option.label}</span>
-                    <p className="add-on-description">{option.description}</p>
-                  </div>
-                  <span className="add-on-check" aria-hidden="true">
-                    ✓
+                ))
+              )}
+            </div>
+            <span className="chevron" aria-hidden="true">
+              {additionalsOpen ? "▲" : "▼"}
+            </span>
+          </button>
+          {additionalsOpen && (
+            <div className="add-on-menu" role="listbox">
+              {addons.map((option) => {
+                const isSelected = additionals.includes(option.value);
+                return (
+                  <label
+                    key={option.value}
+                    className={`add-on-option ${isSelected ? "selected" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleAdditional(option.value)}
+                    />
+                    <div className="add-on-copy">
+                      <span className="add-on-title">{option.label}</span>
+                      <p className="add-on-description">{option.description}</p>
+                    </div>
+                    <span className="add-on-check" aria-hidden="true">
+                      ✓
                     </span>
-                     </label>
-              );
-            })}
-          </div>
-        )}
-      </label>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </label>
       </div>
       <div className="actions-row">
         <div className="actions-stack">
@@ -1138,7 +1085,7 @@ const BookingModal = ({ service, onClose }) => {
             <button
               type="button"
               className="button w-button"
-              onClick={handleBook}
+              onClick={handleBookAndPay}
               disabled={isBooking || loading}
             >
               {isBooking ? "Booking…" : "Confirm / Book"}
@@ -1200,7 +1147,9 @@ const BookingModal = ({ service, onClose }) => {
                 <span className="muted small">Selected days</span>
                 <div className="schedule-summary">
                   {scheduleEntries.length === 0 ? (
-                    <p className="muted subtle">Pick dates on the calendar to add them here.</p>
+                    <p className="muted subtle">
+                      Pick dates on the calendar to add them here.
+                    </p>
                   ) : (
                     <ul className="schedule-list">
                       {scheduleEntries.map((entry) => {
@@ -1216,7 +1165,9 @@ const BookingModal = ({ service, onClose }) => {
                             <div>
                               <strong>{readableDate}</strong>
                               <p className="muted small">
-                                {entry.time ? formatTime(entry.time) : "Pick a time"}
+                                {entry.time
+                                  ? formatTime(entry.time)
+                                  : "Pick a time"}
                               </p>
                             </div>
                             <button
@@ -1313,7 +1264,8 @@ const BookingModal = ({ service, onClose }) => {
                     const isAvailable = isDayAvailableForService(dayData);
                     const isSelected = iso === selectedDate;
                     const isScheduled = Boolean(selectedSlots[iso]);
-                    const isPastDate = dateObj < new Date().setHours(0, 0, 0, 0);
+                    const isPastDate =
+                      dateObj < new Date().setHours(0, 0, 0, 0);
                     return (
                       <button
                         key={iso}
@@ -1330,7 +1282,9 @@ const BookingModal = ({ service, onClose }) => {
                         <span>{dateObj.getDate()}</span>
                         <span className="day-dot-wrapper">
                           {isAvailable && <span className="day-dot" />}
-                          {isScheduled && !isSelected && <span className="day-check">✓</span>}
+                          {isScheduled && !isSelected && (
+                            <span className="day-check">✓</span>
+                          )}
                         </span>
                       </button>
                     );
@@ -1362,15 +1316,16 @@ const BookingModal = ({ service, onClose }) => {
               {!selectedDay && (
                 <p className="muted">Select a date to see times.</p>
               )}
-              
+
               {selectedDay && !isDayAvailableForService(selectedDay) && (
                 <p className="muted">
-                  No compatible start times are available for this service on this
-                  date because of other bookings.
+                  No compatible start times are available for this service on
+                  this date because of other bookings.
                 </p>
               )}
 
-              {selectedDay && isDayAvailableForService(selectedDay) &&
+              {selectedDay &&
+                isDayAvailableForService(selectedDay) &&
                 selectedDay.slots
                   ?.filter((slot) => slot.available)
                   .map((slot) => {
@@ -1392,7 +1347,7 @@ const BookingModal = ({ service, onClose }) => {
                   })}
 
               {selectedDay &&
-              isDayAvailableForService(selectedDay) &&
+                isDayAvailableForService(selectedDay) &&
                 selectedDay.slots.every((slot) => !slot.available) && (
                   <p className="muted">All slots are full for this day.</p>
                 )}

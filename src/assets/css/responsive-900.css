@@ -1,0 +1,17 @@
+@media (max-width: 900px) {
+  .why-section,
+  .split-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .why-section .why-image img,
+  .split-section .split-image img {
+    max-width: 100%;
+  }
+
+  .about-grid, .why-work-split, .split-section {
+    flex-direction: column;
+    text-align: center;
+  }
+}

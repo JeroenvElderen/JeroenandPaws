@@ -7,11 +7,23 @@ const isAdmin = (req) => {
 };
 
 module.exports = async (req, res) => {
+  //
+  // 🟢 GET — Load services (optionally filtered by category)
+  //
   if (req.method === 'GET') {
-    const servicesResult = await supabaseAdmin
+    const { category } = req.query;
+
+    let query = supabaseAdmin
       .from('services_catalog')
       .select('*')
+      .eq('is_active', true)
       .order('sort_order', { ascending: true });
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const servicesResult = await query;
 
     if (servicesResult.error) {
       res.statusCode = 500;
@@ -24,6 +36,9 @@ module.exports = async (req, res) => {
     return;
   }
 
+  //
+  // 🔐 POST — Create or update a service (admin only)
+  //
   if (req.method === 'POST') {
     if (!isAdmin(req)) {
       res.statusCode = 401;
@@ -41,12 +56,17 @@ module.exports = async (req, res) => {
 
     const payload = {
       title: service.title,
-      slug: service.slug || service.id || service.title.toLowerCase().replace(/\s+/g, '-'),
+      slug:
+        service.slug ||
+        service.id ||
+        service.title.toLowerCase().replace(/\s+/g, '-'),
       description: service.description || null,
       price: service.price || null,
-      duration_minutes: service.duration_minutes || service.durationMinutes || 60,
+      duration_minutes:
+        service.duration_minutes || service.durationMinutes || 60,
       sort_order: service.sort_order ?? 0,
       is_active: service.is_active ?? true,
+      category: service.category || 'General', // 👈 NEW CATEGORY SUPPORT
     };
 
     const upsertResult = await supabaseAdmin
@@ -66,6 +86,9 @@ module.exports = async (req, res) => {
     return;
   }
 
+  //
+  // ❌ Unsupported method
+  //
   res.statusCode = 405;
   res.setHeader('Allow', 'GET, POST');
   res.end('Method Not Allowed');

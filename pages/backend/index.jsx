@@ -12,11 +12,24 @@ const emptyServiceDraft = {
   duration_minutes: 60,
   sort_order: 0,
   is_active: true,
+  category: "General",
 };
 
 const BackendDashboard = () => {
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [addons, setAddons] = useState([]);
+  const [loadingAddons, setLoadingAddons] = useState(false);
+  const [addonDraft, setAddonDraft] = useState({
+    id: null,
+    value: "",
+    label: "",
+    description: "",
+    price: "",
+    sort_order: 0,
+    is_active: true,
+  });
+  const [isAddonEditorOpen, setIsAddonEditorOpen] = useState(false);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [serviceDraft, setServiceDraft] = useState(emptyServiceDraft);
@@ -24,70 +37,91 @@ const BackendDashboard = () => {
   const [status, setStatus] = useState("");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
+  /** ⬇️ NEW — Which category is open? */
+  const [openCategory, setOpenCategory] = useState(null);
+
+  /** 🎨 Persistent pastel color generator */
+  const getCategoryColor = (category) => {
+    const colors = [
+      "#FFB1C1", // pink
+      "#C5B3FF", // purple
+      "#A7E8FF", // light blue
+      "#FFE3A3", // yellow
+      "#B9FFCC", // mint
+      "#FFCE9E", // peach
+      "#E6B9FF", // lavender
+    ];
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+      hash = category.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   const fetchServices = async () => {
     setLoadingServices(true);
     setError("");
     try {
-      const response = await fetch("/api/services");
-      const data = await response.json();
-      setServices(data.services || []);
-    } catch (err) {
+      const res = await fetch("/api/services");
+      const data = await res.json();
+      setServices(
+        (data.services || []).sort((a, b) =>
+          a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+        )
+      );
+    } catch {
       setError("Could not load services");
     } finally {
       setLoadingServices(false);
     }
   };
 
+  const fetchAddons = async () => {
+    setLoadingAddons(true);
+    const res = await fetch("/api/addons");
+    const data = await res.json();
+    setAddons(data.addons || []);
+    setLoadingAddons(false);
+  };
+
   const fetchBookings = async () => {
     setLoadingBookings(true);
-    setError("");
     try {
-      const response = await fetch("/api/bookings", {
+      const res = await fetch("/api/bookings", {
         headers: { "x-admin-email": adminEmail },
       });
-      const data = await response.json();
+      const data = await res.json();
       setBookings(data.bookings || []);
-    } catch (err) {
+    } catch {
       setError("Could not load bookings");
     } finally {
       setLoadingBookings(false);
     }
   };
 
-  const updateBookingStatus = async (bookingId, status) => {
+  const updateBookingStatus = async (id, status) => {
     try {
-      const response = await fetch("/api/bookings", {
+      const res = await fetch("/api/bookings", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "x-admin-email": adminEmail,
         },
-        body: JSON.stringify({ id: bookingId, status }),
+        body: JSON.stringify({ id, status }),
       });
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload?.message || "Could not update booking");
-      }
-
-      setBookings((current) =>
-        current.map((booking) =>
-          booking.id === bookingId ? payload.booking || booking : booking
-        )
+      const payload = await res.json();
+      if (!res.ok) throw new Error();
+      setBookings((cur) =>
+        cur.map((b) => (b.id === id ? payload.booking || b : b))
       );
-    } catch (statusError) {
-      console.error(statusError);
+    } catch {
       setError("Could not update booking status");
     }
   };
 
-  const handleDraftChange = (field, value) => {
-    setServiceDraft((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  };
+  /** Draft handlers */
+  const handleDraftChange = (field, value) =>
+    setServiceDraft((c) => ({ ...c, [field]: value }));
 
   const startEditingService = (service) => {
     setServiceDraft({
@@ -96,18 +130,15 @@ const BackendDashboard = () => {
       slug: service.slug || "",
       description: service.description || "",
       price: service.price || "",
-      duration_minutes:
-        service.duration_minutes || service.durationMinutes || 60,
-      sort_order: service.sort_order ?? service.sortOrder ?? 0,
+      duration_minutes: service.duration_minutes || 60,
+      sort_order: service.sort_order ?? 0,
       is_active: service.is_active ?? true,
+      category: service.category || "General",
     });
     setStatus("");
   };
 
-  const resetDraft = () => {
-    setServiceDraft(emptyServiceDraft);
-    setStatus("");
-  };
+  const resetDraft = () => setServiceDraft(emptyServiceDraft);
 
   const openNewService = () => {
     resetDraft();
@@ -119,15 +150,10 @@ const BackendDashboard = () => {
     setIsEditorOpen(true);
   };
 
-  const closeServiceEditor = () => {
-    setIsEditorOpen(false);
-  };
-
   const saveService = async (service) => {
     setStatus("saving");
-    setError("");
     try {
-      const response = await fetch("/api/services", {
+      const res = await fetch("/api/services", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,21 +162,20 @@ const BackendDashboard = () => {
         body: JSON.stringify({
           service: {
             ...service,
-            duration_minutes: Number(service.duration_minutes) || 0,
-            sort_order: Number(service.sort_order) || 0,
+            category: service.category || "General",
+            duration_minutes: Number(service.duration_minutes),
+            sort_order: Number(service.sort_order),
           },
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Save failed");
-      }
+      if (!res.ok) throw new Error();
 
       await fetchServices();
       resetDraft();
       setIsEditorOpen(false);
       setStatus("saved");
-    } catch (err) {
+    } catch {
       setError("Could not save service");
       setStatus("error");
     }
@@ -159,20 +184,21 @@ const BackendDashboard = () => {
   useEffect(() => {
     fetchServices();
     fetchBookings();
+    fetchAddons();
   }, []);
 
-  const bookingStatusLabel = (status = "") => {
-    const normalized = status.toLowerCase();
-    if (!normalized || normalized === "pending") return "Waiting confirmation";
-    if (["scheduled", "confirmed"].includes(normalized)) return "Scheduled";
-    if (["cancelled", "canceled"].includes(normalized)) return "Cancelled";
-    return status;
-  };
-
-  const servicesEmptyState = useMemo(
-    () => !loadingServices && (!services || services.length === 0),
+  const servicesEmpty = useMemo(
+    () => !loadingServices && services.length === 0,
     [loadingServices, services]
   );
+
+  const bookingStatusLabel = (status = "") => {
+    const s = status.toLowerCase();
+    if (!s || s === "pending") return "Waiting confirmation";
+    if (["scheduled", "confirmed"].includes(s)) return "Scheduled";
+    if (s === "cancelled" || s === "canceled") return "Cancelled";
+    return status;
+  };
 
   return (
     <main>
@@ -181,191 +207,133 @@ const BackendDashboard = () => {
           <div className="header margin-bottom_medium">
             <div className="pill">Backend</div>
             <h1 className="heading_h2 margin-bottom_xsmall">Admin dashboard</h1>
-            <p className="subheading max-width_large">
-              Manage the Supabase data powering your site. Signed in as{" "}
-              <strong>{adminEmail}</strong>.
+            <p className="subheading">
+              Signed in as <strong>{adminEmail}</strong>.
             </p>
           </div>
 
-          {error && (
-            <div className="form_error-message w-form-fail margin-bottom_small">
-              <div className="form_error-message_content">{error}</div>
-            </div>
-          )}
-
+          {/* SERVICES PANEL */}
           <div className="glass-panel margin-bottom_large">
-            <div className="flex_horizontal is-y-center is-x-between gap-small margin-bottom_small">
-              <div className="flex_vertical gap-xxsmall">
-                <p className="eyebrow margin-bottom_none">Services</p>
-                <h2 className="heading_h4 margin-bottom_none">Supabase catalog</h2>
-                <p className="paragraph_small text-color-muted margin-bottom_none">
-                  Curate the services clients see on the site. Click a tile to edit or create a new one from scratch.
-                </p>
-              </div>
-              <div className="flex_horizontal gap-xxsmall">
-                <button
-                  type="button"
-                  className="text-button is-secondary is-small w-inline-block"
-                  onClick={fetchServices}
-                  disabled={loadingServices}
-                >
-                  {loadingServices ? "Refreshing…" : "Refresh"}
-                </button>
-                <button
-                  type="button"
-                  className="button is-secondary is-small w-button"
-                  onClick={openNewService}
-                >
-                  + New service
-                </button>
+            <div className="flex_horizontal is-x-between margin-bottom_small">
+              <div>
+                <p className="eyebrow">Services</p>
               </div>
             </div>
 
-            <div className="w-layout-grid grid_1-col gap-xsmall">
-              {servicesEmptyState && (
-                <p className="paragraph_small">No services found yet.</p>
-              )}
-              {services.map((service) => (
-                <button
-                  key={service.id || service.slug}
-                  type="button"
-                  className="card service-card w-inline-block"
-                  onClick={() => openServiceEditor(service)}
-                >
-                  <div className="card_inner">
-                    <div className="service-card__meta">
-                      <div className="pill is-glow">{service.slug || "service"}</div>
-                      {service.is_active === false && <span className="tag is-secondary">Hidden</span>}
-                      {service.is_active !== false && <span className="tag is-primary">Live</span>}
-                    </div>
-                    <div className="service-card__content">
-                      <div>
-                        <h3 className="heading_h4 margin-bottom_xxsmall">{service.title}</h3>
-                        {service.description && (
-                          <p className="paragraph_small text-color-muted margin-bottom_small">
-                            {service.description}
-                          </p>
-                        )}
-                        <div className="service-card__stats">
-                          <div className="stat-chip">
-                            <span className="stat-label">Price</span>
-                            <span className="stat-value">{service.price || "No price set"}</span>
-                          </div>
-                          <div className="stat-chip">
-                            <span className="stat-label">Duration</span>
-                            <span className="stat-value">{service.duration_minutes || 0} min</span>
-                          </div>
-                          <div className="stat-chip">
-                            <span className="stat-label">Sort</span>
-                            <span className="stat-value">{service.sort_order ?? 0}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="service-card__action">
-                        <span className="text-button is-secondary is-small w-inline-block">Edit</span>
-                        <p className="paragraph_small text-color-muted margin-bottom_none">Click to open editor</p>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+            {servicesEmpty && (
+              <p className="paragraph_small">No services found yet.</p>
+            )}
 
-          <div className="card margin-top_large">
-            <div className="card_body">
-              <div className="flex_horizontal is-y-center is-x-between gap-xsmall margin-bottom_small">
-                <div>
-                  <p className="eyebrow margin-bottom_xxsmall">Bookings</p>
-                  <h2 className="heading_h4 margin-bottom_none">
-                    Recent requests
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  className="text-button is-secondary is-small w-inline-block"
-                  onClick={fetchBookings}
-                  disabled={loadingBookings}
-                >
-                  {loadingBookings ? "Refreshing…" : "Refresh"}
-                </button>
-              </div>
-              <p className="paragraph_small margin-bottom_small">
-                Live Supabase data with client details and session times.
-              </p>
-              <div className="w-layout-grid grid_1-col gap-xsmall">
-                {bookings.map((booking) => (
-                  <div key={booking.id} className="card is-secondary booking-card">
-                    <div className="card_body booking-card__body">
-                      <div className="booking-card__meta">
-                        <div className="pill is-muted">
-                          {booking.service_title || booking?.services_catalog?.title || "Service"}
-                        </div>
-                        <span className="paragraph_small text-color-muted">
-                          {booking.phone || "No phone"}
-                        </span>
-                      </div>
-                      <div className="booking-card__details">
-                        <div>
-                          <h3 className="heading_h4 margin-bottom_xxsmall">
-                            {booking.clients?.full_name || "Client"}
-                          </h3>
-                          {booking.client_address && (
-                            <p className="paragraph_small margin-bottom_xxsmall text-color-muted">
-                              {booking.client_address}
-                            </p>
-                          )}
-                          {booking.notes && (
-                            <p className="paragraph_small margin-bottom_none text-color-muted">
-                              {booking.notes}
-                            </p>
-                          )}
-                        </div>
-                        <div className="booking-card__time">
-                        <p className="paragraph_small margin-bottom_none">
-                          {new Date(booking.start_at).toLocaleString()} → {new Date(booking.end_at).toLocaleTimeString()}
-                        </p>
-                        <div className="flex_horizontal gap-xxsmall is-y-center">
-                          <span className="tag is-secondary">
-                            {bookingStatusLabel(booking.status)}
-                          </span>
-                          {(!booking.status || booking.status.toLowerCase() === "pending") && (
+            {Object.entries(
+              services.reduce((acc, s) => {
+                const c = s.category || "General";
+                if (!acc[c]) acc[c] = [];
+                acc[c].push(s);
+                return acc;
+              }, {})
+            )
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([category, items]) => {
+                const isOpen = openCategory === category;
+                const color = getCategoryColor(category);
+
+                return (
+                  <div key={category} className="margin-bottom_small">
+                    {/* CATEGORY HEADER */}
+                    <button
+                      className="w-inline-block flex_horizontal is-x-between padding-small"
+                      style={{
+                        width: "100%",
+                        borderRadius: "10px",
+                        background: isOpen
+                          ? "rgba(255,255,255,0)"
+                          : "rgba(255,255,255,0)",
+                      }}
+                      onClick={() => setOpenCategory(isOpen ? null : category)}
+                    >
+                      <span
+                        className="pill"
+                        style={{
+                          background: color,
+                          color: "#0f0a20",
+                          borderColor: "transparent",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {category}
+                      </span>
+                    </button>
+
+                    {/* ACCORDION CONTENT */}
+                    {isOpen && (
+                      <div className="margin-top_small w-layout-grid grid_1-col gap-xsmall">
+                        {items
+                          .sort(
+                            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+                          )
+                          .map((service) => (
                             <button
+                              key={service.id}
                               type="button"
-                              className="text-button is-secondary is-small w-inline-block"
-                              onClick={() => updateBookingStatus(booking.id, "scheduled")}
+                              className="card service-card w-inline-block"
+                              onClick={() => openServiceEditor(service)}
                             >
-                              Mark as scheduled
+                              <div className="card_inner">
+                                <div className="service-card__meta">
+                                  <span
+                                    className="pill"
+                                    style={{
+                                      background: color,
+                                      color: "#0f0a20",
+                                    }}
+                                  >
+                                    {category}
+                                  </span>
+                                  {service.is_active ? (
+                                    <span className="pill is-glow">Active</span>
+                                  ) : (
+                                    <span className="pill is-muted">
+                                      Hidden
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="service-card__content">
+                                  <h3 className="heading_h4">
+                                    {service.title}
+                                  </h3>
+                                </div>
+
+                                <div className="service-card__stats">
+                                  <div className="stat-chip">
+                                    <span className="stat-label">Price</span>
+                                    <span className="stat-value">
+                                      {service.price || "—"}
+                                    </span>
+                                  </div>
+                                  <div className="stat-chip">
+                                    <span className="stat-label">Duration</span>
+                                    <span className="stat-value">
+                                      {service.duration_minutes} min
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </button>
-                          )}
-                          {(booking.status || "").toLowerCase() !== "cancelled" && (
-                            <button
-                              type="button"
-                              className="text-button is-secondary is-small w-inline-block"
-                              onClick={() => updateBookingStatus(booking.id, "cancelled")}
-                              style={{ color: "#ef4444" }}
-                            >
-                              Cancel & remove calendar
-                            </button>
-                          )}
-                        </div>
+                          ))}
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))}
-                {!loadingBookings && bookings.length === 0 && (
-                  <p className="paragraph_small">No bookings to show yet.</p>
-                )}
-              </div>
-            </div>
+                );
+              })}
           </div>
         </div>
       </section>
 
+      {/* EDITOR MODAL */}
       {isEditorOpen && (
-        <div className="form-popup-overlay" role="dialog" aria-modal="true">
-          <div className="form-popup backend-modal">
+        <div className="form-popup-overlay">
+          <div className="backend-modal form-popup">
             <div className="popup-header">
               <div>
                 <p className="eyebrow margin-bottom_xxsmall">
@@ -374,392 +342,146 @@ const BackendDashboard = () => {
                 <h2 className="heading_h4 margin-bottom_none">
                   {serviceDraft.title || "Untitled service"}
                 </h2>
-                <p className="paragraph_small text-color-muted margin-bottom_none">
-                  Save changes to publish them instantly to the site.
-                </p>
               </div>
-              <div className="flex_horizontal gap-xxsmall">
-                {status === "saved" && <span className="tag is-secondary">Saved</span>}
-                <button
-                  type="button"
-                  className="text-button is-secondary is-small w-inline-block"
-                  onClick={closeServiceEditor}
-                  disabled={status === "saving"}
-                  aria-label="Close editor"
-                >
-                  Close
-                </button>
-              </div>
+              <button
+                className="text-button is-secondary is-small w-inline-block"
+                onClick={() => setIsEditorOpen(false)}
+                disabled={status === "saving"}
+              >
+                Close
+              </button>
             </div>
+
             <div className="popup-body">
-              <div className="w-form">
-                <form
-                  onSubmit={(event) => event.preventDefault()}
-                  className="flex_vertical gap-small"
-                >
-                  <div className="w-layout-grid grid_2-col gap-small">
-                    <div className="input">
-                      <label htmlFor="title" className="input_label">
-                        Title
-                      </label>
-                      <input
-                        id="title"
-                        type="text"
-                        className="input_field w-input"
-                        placeholder="Service title"
-                        value={serviceDraft.title}
-                        onChange={(event) => handleDraftChange("title", event.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="input">
-                      <label htmlFor="slug" className="input_label">
-                        Slug
-                      </label>
-                      <input
-                        id="slug"
-                        type="text"
-                        className="input_field w-input"
-                        placeholder="unique-slug"
-                        value={serviceDraft.slug}
-                        onChange={(event) => handleDraftChange("slug", event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="w-layout-grid grid_3-col tablet-2-col gap-small">
-                    <div className="input">
-                      <label htmlFor="price" className="input_label">
-                        Price
-                      </label>
-                      <input
-                        id="price"
-                        type="text"
-                        className="input_field w-input"
-                        placeholder="€60"
-                        value={serviceDraft.price}
-                        onChange={(event) => handleDraftChange("price", event.target.value)}
-                      />
-                    </div>
-                    <div className="input">
-                      <label htmlFor="duration" className="input_label">
-                        Duration (minutes)
-                      </label>
-                      <input
-                        id="duration"
-                        type="number"
-                        className="input_field w-input"
-                        placeholder="60"
-                        min="0"
-                        value={serviceDraft.duration_minutes}
-                        onChange={(event) => handleDraftChange("duration_minutes", event.target.value)}
-                      />
-                    </div>
-                    <div className="input">
-                      <label htmlFor="sort_order" className="input_label">
-                        Sort order
-                      </label>
-                      <input
-                        id="sort_order"
-                        type="number"
-                        className="input_field w-input"
-                        placeholder="0"
-                        value={serviceDraft.sort_order}
-                        onChange={(event) => handleDraftChange("sort_order", event.target.value)}
-                      />
-                    </div>
-                  </div>
+              <form className="flex_vertical gap-small">
+                <div className="w-layout-grid grid_2-col gap-small">
                   <div className="input">
-                    <label htmlFor="description" className="input_label">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      className="input_field input_text-area w-input"
-                      placeholder="What clients can expect"
-                      value={serviceDraft.description}
-                      onChange={(event) => handleDraftChange("description", event.target.value)}
-                    />
-                  </div>
-                  <label className="flex_horizontal is-y-center gap-xxsmall">
+                    <label className="input_label">Title</label>
                     <input
-                      type="checkbox"
-                      checked={serviceDraft.is_active}
-                      onChange={(event) => handleDraftChange("is_active", event.target.checked)}
+                      className="input_field w-input"
+                      value={serviceDraft.title}
+                      onChange={(e) =>
+                        handleDraftChange("title", e.target.value)
+                      }
+                      placeholder="Service title"
                     />
-                    <span className="paragraph_small">Show this service on the site</span>
-                  </label>
-                  <div className="divider margin-top_small margin-bottom_small"></div>
-                  <div className="flex_horizontal gap-xsmall">
-                    <button
-                      type="button"
-                      className="button w-button"
-                      onClick={() => saveService(serviceDraft)}
-                      disabled={status === "saving"}
-                    >
-                      {status === "saving" ? "Saving…" : "Save service"}
-                    </button>
-                    <button
-                      type="button"
-                      className="button is-secondary w-button"
-                      onClick={resetDraft}
-                      disabled={status === "saving"}
-                    >
-                      Clear form
-                    </button>
                   </div>
-                </form>
-              </div>
+
+                  <div className="input">
+                    <label className="input_label">Slug</label>
+                    <input
+                      className="input_field w-input"
+                      value={serviceDraft.slug}
+                      onChange={(e) =>
+                        handleDraftChange("slug", e.target.value)
+                      }
+                      placeholder="unique-slug"
+                    />
+                  </div>
+                </div>
+
+                <div className="w-layout-grid grid_3-col tablet-2-col gap-small">
+                  <div className="input">
+                    <label className="input_label">Price</label>
+                    <input
+                      className="input_field"
+                      value={serviceDraft.price}
+                      onChange={(e) =>
+                        handleDraftChange("price", e.target.value)
+                      }
+                      placeholder="€60"
+                    />
+                  </div>
+
+                  <div className="input">
+                    <label className="input_label">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      className="input_field"
+                      value={serviceDraft.duration_minutes}
+                      onChange={(e) =>
+                        handleDraftChange("duration_minutes", e.target.value)
+                      }
+                      placeholder="60"
+                    />
+                  </div>
+
+                  <div className="input">
+                    <label className="input_label">Sort order</label>
+                    <input
+                      type="number"
+                      className="input_field"
+                      value={serviceDraft.sort_order}
+                      onChange={(e) =>
+                        handleDraftChange("sort_order", e.target.value)
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="input">
+                  <label className="input_label">Category</label>
+                  <input
+                    className="input_field"
+                    value={serviceDraft.category}
+                    onChange={(e) =>
+                      handleDraftChange("category", e.target.value)
+                    }
+                    placeholder="Group Adventures, Custom Care..."
+                  />
+                </div>
+
+                <div className="input">
+                  <label className="input_label">Description</label>
+                  <textarea
+                    className="input_field input_text-area"
+                    value={serviceDraft.description}
+                    onChange={(e) =>
+                      handleDraftChange("description", e.target.value)
+                    }
+                    placeholder="What clients can expect"
+                  />
+                </div>
+
+                <label className="flex_horizontal gap-xsmall">
+                  <input
+                    type="checkbox"
+                    checked={serviceDraft.is_active}
+                    onChange={(e) =>
+                      handleDraftChange("is_active", e.target.checked)
+                    }
+                  />
+                  <span className="paragraph_small">
+                    Show this service on the site
+                  </span>
+                </label>
+
+                <div className="divider margin-top_small margin-bottom_small"></div>
+                <div className="flex_horizontal gap-xsmall">
+                  <button
+                    type="button"
+                    disabled={status === "saving"}
+                    className="button w-button"
+                    onClick={() => saveService(serviceDraft)}
+                  >
+                    {status === "saving" ? "Saving…" : "Save service"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button is-secondary w-button"
+                    disabled={status === "saving"}
+                    onClick={resetDraft}
+                  >
+                    Clear form
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        .backend-section {
-          background: radial-gradient(
-              circle at 10% 20%,
-              rgba(129, 110, 255, 0.14),
-              transparent 25%
-            ),
-            radial-gradient(
-              circle at 90% 10%,
-              rgba(255, 171, 224, 0.18),
-              transparent 20%
-            ),
-            #0f0a20;
-        }
-
-        .backend-shell {
-          position: relative;
-        }
-
-        .glass-panel {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          padding: 28px;
-          box-shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(10px);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .glass-panel::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05), transparent 35%),
-            radial-gradient(circle at 80% 0%, rgba(178, 126, 255, 0.1), transparent 30%);
-        }
-
-        .pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 10px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 999px;
-          color: #eae2ff;
-          font-size: 12px;
-          letter-spacing: 0.02em;
-          text-transform: uppercase;
-        }
-
-        .pill.is-glow {
-          background: linear-gradient(120deg, rgba(166, 127, 255, 0.35), rgba(255, 255, 255, 0.12));
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: #f5f1ff;
-          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
-        }
-
-        .pill.is-muted {
-          background: rgba(255, 255, 255, 0.07);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: #d8d0f5;
-        }
-
-        .service-card {
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          transition: transform 0.2s ease, border-color 0.2s ease,
-            box-shadow 0.2s ease;
-          text-align: left;
-          background: linear-gradient(145deg, rgba(41, 31, 75, 0.6), rgba(25, 18, 49, 0.8));
-          position: relative;
-          overflow: hidden;
-        }
-
-        .service-card:hover {
-          transform: translateY(-6px) scale(1.01);
-          border-color: rgba(255, 255, 255, 0.2);
-          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
-        }
-
-        .service-card::before {
-          content: "";
-          position: absolute;
-          width: 220px;
-          height: 220px;
-          top: -80px;
-          right: -80px;
-          background: radial-gradient(circle, rgba(151, 111, 255, 0.35), transparent 60%);
-          filter: blur(10px);
-        }
-
-        .service-card .card_inner {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          padding: 20px 22px;
-        }
-
-        .service-card__meta {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .service-card__content {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .service-card__stats {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .stat-chip {
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 8px 10px;
-          min-width: 100px;
-          display: grid;
-          gap: 4px;
-        }
-
-        .stat-label {
-          color: #bdb5d9;
-          font-size: 12px;
-          letter-spacing: 0.02em;
-          text-transform: uppercase;
-        }
-
-        .stat-value {
-          color: #fff;
-          font-weight: 600;
-        }
-
-        .service-card__action {
-          text-align: right;
-        }
-
-        .booking-card {
-          background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 18px 36px rgba(0, 0, 0, 0.25);
-        }
-
-        .booking-card__body {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .booking-card__meta {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .booking-card__details {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-
-        .booking-card__time {
-          text-align: right;
-        }
-
-        .form-popup-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(5, 3, 15, 0.6);
-          backdrop-filter: blur(6px);
-          display: grid;
-          place-items: center;
-          padding: 24px;
-          z-index: 20;
-        }
-
-        .backend-modal {
-          background: linear-gradient(145deg, #12092b, #1f0f3a);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 20px;
-          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
-          max-width: 960px;
-          width: min(960px, 100%);
-          animation: popIn 0.25s ease;
-        }
-
-        .popup-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 22px 24px 0;
-        }
-
-        .popup-body {
-          padding: 0 24px 24px;
-        }
-
-        .form-popup .button.is-secondary {
-          background: rgba(255, 255, 255, 0.08);
-          color: #f5f2ff;
-        }
-
-        @keyframes popIn {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @media screen and (max-width: 767px) {
-          .glass-panel {
-            padding: 18px;
-          }
-
-          .service-card .card_body {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .service-card__content {
-            grid-template-columns: 1fr;
-          }
-
-          .booking-card__details {
-            align-items: flex-start;
-          }
-        }
-      `}</style>
     </main>
   );
 };

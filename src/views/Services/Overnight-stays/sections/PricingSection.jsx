@@ -1,50 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import DynamicPricingSection from "../../../../components/Pricing/DynamicPricingSection";
 import { getPreferredChatUrl } from "../../../../utils/chatLinks";
 
-const services = [
-  {
-    id: "overnight-stay-standard",
-    title: "Standard Overnight Stay",
-    label: "Boarding — 24 hrs",
-    price: "€45/night",
-    description:
-      "Overnight care in a calm, home setting — with relaxed routines, outdoor time, and comfortable rest in a lived-in environment.",
-    duration: "Overnight Stay",
-    durationMinutes: 24 * 60,
-    ctaText: "Book overnight stay",
-    allowRecurring: false,
-    allowMultiDay: false,
-  },
-  {
-    id: "overnight-stay-custom",
-    title: "Tailored Overnight Support",
-    label: "Custom duration",
-    price: "Tailored",
-    description:
-      "For companions who require extra nights, special routines, or unique timings — we create a stay shaped around their needs and your schedule.",
-    duration: "Custom Duration",
-    durationMinutes: null,
-    ctaText: "Plan a tailored stay",
-    ctaOptions: {
-      chatUrl: getPreferredChatUrl(),
-      formUrl: "/contact?service=overnight-stay-custom",
-      heading: "How should we plan your custom stay?",
-      description:
-        "Choose a quick WhatsApp chat to discuss dates and care details, or share your full request through the form.",
-    },
-    allowRecurring: false,
-    allowMultiDay: false,
-  },
-];
+const PricingSection = () => {
+  const [services, setServices] = useState([]);
 
-const PricingSection = () => (
-  <DynamicPricingSection
-    title="Overnight Stay Options"
-    services={services}
-    gridClassName="grid_4-col"
-    defaultCta="Check availability"
-  />
-);
+  useEffect(() => {
+    async function load() {
+      const res = await fetch(`/api/services?category=Overnight Support`);
+      const data = await res.json();
+
+      setServices(
+        (data.services || []).map((s) => ({
+          id: s.slug,
+          title: s.title,
+          description: s.description || "",
+          price: s.price || "Tailored",
+          label: s.duration_minutes === 1440 ? "Boarding — 24 hrs" : "Custom duration",
+          duration: s.duration_minutes === 1440 ? "Overnight Stay" : "Custom Duration",
+          durationMinutes: s.duration_minutes || null,
+          allowRecurring: false,
+          allowMultiDay: false,
+          ctaText: s.price ? "Check availability" : "Plan a tailored stay",
+          ...(s.price === null && {
+            ctaOptions: {
+              chatUrl: getPreferredChatUrl(),
+              formUrl: `/contact?service=${s.slug}`,
+              heading: "How should we plan your custom stay?",
+              description: "Discuss dates via WhatsApp or request form.",
+            },
+          }),
+        }))
+      );
+    }
+
+    load();
+  }, []);
+
+  return (
+    <DynamicPricingSection
+      title="Overnight Stay Options"
+      services={services}
+      gridClassName="grid_4-col"
+      defaultCta="Check availability"
+    />
+  );
+};
 
 export default PricingSection;

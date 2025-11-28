@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@azure/msal-node": "^3.8.3",
     "@calcom/embed-react": "^1.5.3",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@supabase/supabase-js": "^2.58.0",
     "dotenv": "^17.2.3",
     "luxon": "^3.7.2",
     "next": "^14.2.4",
+    "pdfkit": "^0.17.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

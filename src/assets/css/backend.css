@@ -1,0 +1,343 @@
+.backend-section {
+  background: radial-gradient(circle at 10% 20%, rgba(129, 110, 255, 0.14), transparent 25%),
+    radial-gradient(circle at 90% 10%, rgba(255, 171, 224, 0.18), transparent 20%),
+    #0f0a20;
+}
+
+.backend-shell {
+  position: relative;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(178, 126, 255, 0.1), transparent 30%);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #eae2ff;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pill.is-glow {
+  background: linear-gradient(120deg, rgba(166, 127, 255, 0.35), rgba(255, 255, 255, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f5f1ff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.pill.is-muted {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #d8d0f5;
+}
+
+.service-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+  background: linear-gradient(145deg, rgba(41, 31, 75, 0.6), rgba(25, 18, 49, 0.8));
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+.service-card::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  top: -80px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(151, 111, 255, 0.35), transparent 60%);
+  filter: blur(10px);
+}
+
+.service-card .card_inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.service-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.service-card__content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.service-card__stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stat-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 10px;
+  min-width: 100px;
+  display: grid;
+  gap: 4px;
+}
+
+.stat-label {
+  color: #bdb5d9;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  color: #fff;
+  font-weight: 600;
+}
+
+.service-card__action {
+  text-align: right;
+}
+
+.booking-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.25);
+}
+
+.booking-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-card__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-card__details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.booking-card__time {
+  text-align: right;
+}
+
+.form-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 3, 15, 0.6);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 20;
+}
+
+.backend-modal {
+  background: linear-gradient(145deg, #12092b, #1f0f3a);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  max-width: 960px;
+  width: min(960px, 100%);
+  animation: popIn 0.25s ease;
+}
+
+.popup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 0;
+}
+
+.popup-body {
+  padding: 0 24px 24px;
+}
+
+.form-popup .button.is-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f2ff;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .glass-panel {
+    padding: 18px;
+  }
+  .service-card__content {
+    grid-template-columns: 1fr;
+  }
+  .booking-card__details {
+    align-items: flex-start;
+  }
+}
+
+/* ------------------------------------------------------------ */
+/* 🔥 NEW CATEGORY SYSTEM CSS (added below your existing styles) */
+/* ------------------------------------------------------------ */
+
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.category-pill {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border: none !important;
+  color: #0f0a20 !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.category-toggle {
+  cursor: pointer;
+  opacity: 0.75;
+  font-size: 12px;
+  text-transform: uppercase;
+  transition: opacity 0.2s ease;
+}
+
+.category-toggle:hover {
+  opacity: 1;
+}
+
+/* Fix overflowing editor modal */
+.backend-modal {
+  max-height: 90vh;        /* prevent it from going off screen */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;        /* avoid leaking content outside */
+}
+
+/* make only the form scroll */
+.popup-body {
+  overflow-y: auto;
+  max-height: calc(90vh - 120px); /* adjusts to header height */
+  padding-bottom: 32px;           /* breathing room */
+}
+
+/* ensure scroll styling looks nice */
+.popup-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.popup-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* Ensure backend editor always appears above sticky nav */
+.form-popup-overlay {
+  z-index: 9998 !important; /* higher than navbar */
+}
+
+.backend-modal {
+  z-index: 9999 !important;
+  position: relative; /* ensures z-index is applied */
+}
+
+.accordion-panel {
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+  opacity: 0;
+  max-height: 0;
+}
+
+.accordion-open {
+  opacity: 1;
+  max-height: 2000px; /* large enough */
+}
+
+.service-accordion-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Make category pills keep their original colors when toggled */
+.category-header .pill,
+.category-header .pill.is-muted,
+.category-header .pill.is-glow {
+  filter: none !important;
+  opacity: 1 !important;
+  background: inherit !important;
+  border: inherit !important;
+  color: inherit !important;
+  transition: transform 0.2s ease;
+}
+
+/* Small hover feedback */
+.category-header:hover .pill {
+  transform: scale(1.03);
+}
+
+/* Prevent Webflow "link" resets if any */
+.category-header:active .pill,
+.category-header:focus .pill {
+  background: inherit !important;
+  color: inherit !important;
+}
+
+/* Keep toggle text consistent */
+.category-toggle {
+  color: #eae2ff !important;
+}

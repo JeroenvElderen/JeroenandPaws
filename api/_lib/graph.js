@@ -151,6 +151,7 @@ const createEvent = async ({
   attendeeEmail,
   attendeeEmails = [],
   timeZone = "UTC",
+  locationDisplayName,
 }) => {
   const principalPath = buildPrincipalPath(calendarId);
 
@@ -195,7 +196,10 @@ const createEvent = async ({
     end: { dateTime: end, timeZone },
     attendees,
     isReminderOn: true,
-    reminderMinutesBeforeStart: 15,
+    reminderMinutesBeforeStart: 60,
+    ...(locationDisplayName
+      ? { location: { displayName: locationDisplayName } }
+      : {}),
   }),
 });
 

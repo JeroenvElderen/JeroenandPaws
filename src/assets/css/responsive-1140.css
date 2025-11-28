@@ -1,0 +1,17 @@
+@media (max-width: 1140px) {
+  .why-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 2.5rem;
+  }
+
+  .why-section .why-image img {
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .why-section .why-image {
+    width: 100%;
+  }
+}
