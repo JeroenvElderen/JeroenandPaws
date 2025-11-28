@@ -24,16 +24,16 @@ export default async function handler(req, res) {
     };
 
     const response = await fetch(
-      "https://merchant.revolut.com/api/1.0/merchant/checkout-link",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+  "https://merchant.revolut.com/api/1.0/checkout-links",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  }
+);
 
     const text = await response.text();
     console.log("🔍 Revolut response:", text);
