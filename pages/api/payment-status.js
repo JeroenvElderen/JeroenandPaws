@@ -1,5 +1,6 @@
 // pages/api/payment-status.js
-import { supabase } from "../../utils/supabase-client";
+import { supabase } from "../../api/_lib/supabase";
+
 
 export default async function handler(req, res) {
   const { id } = req.query;

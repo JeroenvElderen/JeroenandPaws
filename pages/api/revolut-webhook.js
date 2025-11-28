@@ -1,18 +1,23 @@
 import crypto from "crypto";
-import { supabase } from "../../utils/supabase-client";
-import { getAppOnlyAccessToken } from "./_lib/auth";
-import { createEvent, sendMail } from "./_lib/graph";
-import { saveBookingCalendarEventId } from "./_lib/supabase";
-import { DateTime } from "luxon";
-import { buildConfirmationBody, buildNotificationBody } from "./_lib/emails";
-
-// 🧾 NEW IMPORTS
-import { generateInvoiceNumber } from "./_lib/invoices";
-import { createInvoicePdf } from "./_lib/pdf";
-import { uploadToOneDrive } from "./_lib/onedrive";
-
 import fs from "fs";
 import path from "path";
+import { DateTime } from "luxon";
+
+// Correct shared lib imports
+import { supabase } from "../../api/_lib/supabase";
+import { getAppOnlyAccessToken } from "../../api/_lib/auth";
+import { createEvent, sendMail } from "../../api/_lib/graph";
+import { saveBookingCalendarEventId } from "../../api/_lib/supabase";
+import {
+  buildConfirmationBody,
+  buildNotificationBody,
+} from "./emails";
+
+// Invoice + OneDrive
+import { generateInvoiceNumber } from "../../api/_lib/invoices";
+import { createInvoicePdf } from "../../api/_lib/invoicePdf";
+import { uploadToOneDrive } from "../../api/_lib/onedrive";
+
 
 export const config = { api: { bodyParser: false } };
 

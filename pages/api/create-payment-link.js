@@ -1,3 +1,5 @@
+import { supabase } from "../../api/_lib/supabase";
+
 export default async function handler(req, res) {
   console.log(">>> HIT /api/create-payment-link (LIVE)");
 
