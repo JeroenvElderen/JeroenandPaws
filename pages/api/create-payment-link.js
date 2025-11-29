@@ -7,24 +7,37 @@ export default async function handler(req, res) {
 
   try {
     const { amount, description } = req.body;
+
+    // 🔍 Check input
+    console.log("💰 Amount received:", amount);
+    console.log("📝 Description received:", description);
+
     if (!amount) {
       return res.status(400).json({ error: "Missing amount" });
     }
 
-    // Revolut secret key (live)
+    // 🔑 Check environment variable
     const apiKey = process.env.REVOLUT_API_KEY;
-    const domain = process.env.DOMAIN || "https://www.jeroenandpaws.com";
+    console.log("🔐 Has REVOLUT_API_KEY?", Boolean(apiKey));
+    console.log("🔑 Key prefix:", apiKey ? apiKey.substring(0, 3) : "undefined");
 
-    // 🚀 Correct payload format (NO nested amount object)
+    const domain = process.env.DOMAIN || "https://www.jeroenandpaws.com";
+    console.log("🌍 Domain:", domain);
+
+    // 🚀 Request body
     const body = {
-      amount: Math.round(amount * 100), // cents
+      amount: Math.round(amount * 100),
       currency: "EUR",
       description: description || "Payment",
-      capture_mode: "AUTOMATIC",      // optional but valid
-      settle_payment: true,           // auto-settle after capture
+      capture_mode: "AUTOMATIC",
+      settle_payment: true,
       redirect_url: `${domain}/payment-success`,
-      cancel_url: `${domain}/payment-cancelled`, // OPTIONAL but recommended
+      cancel_url: `${domain}/payment-cancelled`,
     };
+    console.log("📦 Request body being sent:", body);
+
+    // 🎯 Make request to Revolut
+    console.log("🌐 Sending request to Revolut...");
 
     const response = await fetch(
       "https://merchant.revolut.com/api/1.0/checkout-links",
@@ -32,10 +45,7 @@ export default async function handler(req, res) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-
-          // 🔥 REQUIRED — prevents silent Revolut errors
           "Revolut-Api-Version": "2024-09-01",
-
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(body),
