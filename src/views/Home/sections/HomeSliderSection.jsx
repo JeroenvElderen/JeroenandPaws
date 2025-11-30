@@ -6,7 +6,7 @@ const slides = [
     title: "Daily walks, done right",
     description: "Personalised walks designed around your companion’s pace, energy, and daily routine.",
     href: "/services/daily-strolls",
-    imageSrc: "/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif",
+    imageSrc: "/images/Bonnie.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
   },
   {
@@ -27,7 +27,7 @@ const slides = [
     title: "Overnight stays",
     description: "A calm, homely overnight experience where your companion rests comfortably and feels right at home.",
     href: "/services/overnight-stays",
-    imageSrc: "/images/25c0c9d1-2e99-484e-817b-bf1e3505d5e8.avif",
+    imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
     imageAlt: "Dog resting comfortably indoors",
   },
   {
@@ -197,6 +197,11 @@ const HomeSliderSection = () => {
                         src={slide.imageSrc}
                         loading="lazy"
                         className="image_cover"
+                        style={{
+                          width: "100%",
+                          height: "405px",
+                          objectFit: "cover",
+                        }}
                       />
                     </div>
                     <div
