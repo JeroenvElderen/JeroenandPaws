@@ -33,7 +33,7 @@ const PricingStyles = () => (
           width: min(1100px, 100%);
           color: #f2ecff;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-          overflow: hidden;
+          overflow: visible;
           position: relative;
           height: calc(100vh - 64px);
           max-height: 880px;
@@ -999,7 +999,7 @@ const PricingStyles = () => (
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 14px;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
-          z-index: 5;
+          z-index: 10000;
         }
         .searchable-select .option {
           display: flex;
@@ -1036,6 +1036,12 @@ const PricingStyles = () => (
           text-align: center;
           border-radius: 10px;
           background: rgba(255, 255, 255, 0.03);
+        }
+          @media (min-width: 1024px) {
+          .searchable-select .options-list {
+            max-height: none;
+            overflow: visible;
+          }
         }
         .dog-row__actions {
           grid-column: 1 / -1;
