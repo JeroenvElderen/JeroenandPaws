@@ -734,6 +734,54 @@ const PricingStyles = () => (
           color: #e7def9;
           display: inline-flex;
         }
+        .price-summary-card {
+          margin: 12px 0 4px;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: linear-gradient(160deg, rgba(34, 36, 76, 0.9), rgba(24, 22, 52, 0.92));
+          color: #f2ecff;
+          box-shadow: 0 16px 26px rgba(0, 0, 0, 0.32);
+        }
+
+        .price-summary__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .price-summary__header h4 {
+          margin: 2px 0 0;
+        }
+
+        .price-summary__meta {
+          margin: 0;
+          color: #c6b7e8;
+          text-align: right;
+        }
+
+        .price-summary__list {
+          margin: 10px 0 0;
+          padding-left: 18px;
+          display: grid;
+          gap: 6px;
+          color: #e7def9;
+        }
+
+        .price-summary__list li {
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        .price-summary-card .muted.subtle,
+        .price-summary-card .muted.small {
+          color: #c6b7e8;
+        }
+
+        .price-summary-card .add-on-price {
+          color: #c6b7e8;
+        }
         .pet-list-group {
           gap: 10px;
         }

@@ -60,6 +60,19 @@ const BookingModal = ({ service, onClose }) => {
   const bookingModalRef = useRef(null);
   const calendarSectionRef = useRef(null);
   const timesSectionRef = useRef(null);
+  const parsePriceValue = useCallback((value) => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return value;
+
+    const normalized = String(value).replace(/,/g, ".");
+    const numeric = Number(normalized.replace(/[^0-9.]/g, ""));
+    return Number.isFinite(numeric) ? numeric : 0;
+  }, []);
+
+  const formatCurrency = useCallback((value) => {
+    const numeric = Number.isFinite(value) ? value : 0;
+    return `€${numeric.toFixed(2)}`;
+  }, []);
 
   const allowMultiDay = service?.allowMultiDay !== false;
   const allowRecurring = service?.allowRecurring !== false;
@@ -535,10 +548,13 @@ const BookingModal = ({ service, onClose }) => {
 
   const handleBookAndPay = async () => {
     try {
+      if (!pricing.dogCount || !pricing.visitCount) {
+        setError("Add at least one dog and choose a time to see the price.");
+        return;
+      }
+
       // 1️⃣ Prepare amount
-      const rawPrice = service.price ?? service.cost ?? "0";
-      const numeric = Number(rawPrice.replace(/[^0-9.]/g, ""));
-      const amountInEuro = Number.isFinite(numeric) ? numeric : 0;
+      const amountInEuro = Number(pricing.totalPrice.toFixed(2));
 
       // 2️⃣ Create payment order FIRST
       const paymentRes = await fetch("/api/create-payment-link", {
@@ -546,7 +562,7 @@ const BookingModal = ({ service, onClose }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amountInEuro,
-          description: `Booking: ${service.title}`,
+          description: pricing.description || `Booking: ${service.title}`,
         }),
       });
 
@@ -624,9 +640,7 @@ const BookingModal = ({ service, onClose }) => {
         durationMinutes,
       }));
 
-      const rawPrice = service.price ?? service.cost ?? "0";
-      const numeric = Number(rawPrice.replace(/[^0-9.]/g, ""));
-      const amountInEuro = Number.isFinite(numeric) ? numeric : 0;
+      const amountInEuro = Number(pricing.totalPrice.toFixed(2));
 
       // ⭐ ADD PAYMENT ORDER ID INTO BOOKING HERE
       const payload = {
@@ -753,6 +767,83 @@ const BookingModal = ({ service, onClose }) => {
       .map((value) => addons.find((a) => a.value === value)?.label || value)
       .slice(0, 3);
   }, [additionals, addons]);
+
+  const selectedAddonObjects = useMemo(() => {
+    return additionals
+      .map((value) => addons.find((addon) => addon.value === value))
+      .filter(Boolean);
+  }, [additionals, addons]);
+
+  const pricing = useMemo(() => {
+    const servicePrice = parsePriceValue(service.price ?? service.cost ?? "0");
+    const addonTotal = selectedAddonObjects.reduce(
+      (sum, addon) => sum + parsePriceValue(addon.price),
+      0
+    );
+
+    const activeDogsCount = dogs
+      .slice(0, dogCount)
+      .map((dog) => {
+        const name = (dog?.name || "").trim();
+        const breed = (dog?.breed || "").trim();
+        const notes = (dog?.notes || "").trim();
+        const profileId = dog?.profileId;
+        return name || breed || notes || profileId ? dog : null;
+      })
+      .filter(Boolean).length;
+
+    const visitsWithTime = scheduleEntries.filter(
+      (entry) => entry.date && entry.time
+    ).length;
+
+    const visitCount = visitsWithTime || 0;
+    const perDogPerVisit = servicePrice + addonTotal;
+    const totalPrice =
+      activeDogsCount && visitCount
+        ? perDogPerVisit * activeDogsCount * visitCount
+        : 0;
+
+    const descriptionParts = [service.title];
+
+    if (activeDogsCount) {
+      descriptionParts.push(
+        `${activeDogsCount} dog${activeDogsCount > 1 ? "s" : ""}`
+      );
+    }
+
+    if (visitCount) {
+      descriptionParts.push(
+        `${visitCount} visit${visitCount > 1 ? "s" : ""}`
+      );
+    }
+
+    if (selectedAddonObjects.length) {
+      const addonNames = selectedAddonObjects
+        .map((addon) => addon.label || addon.value)
+        .join(", ");
+      descriptionParts.push(`Add-ons: ${addonNames}`);
+    }
+
+    return {
+      servicePrice,
+      addonTotal,
+      perDogPerVisit,
+      dogCount: activeDogsCount,
+      visitCount,
+      totalPrice,
+      description: descriptionParts.join(" · "),
+      selectedAddons: selectedAddonObjects,
+    };
+  }, [
+    dogCount,
+    dogs,
+    parsePriceValue,
+    scheduleEntries,
+    selectedAddonObjects,
+    service.cost,
+    service.price,
+    service.title,
+  ]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -1086,6 +1177,9 @@ const BookingModal = ({ service, onClose }) => {
                     />
                     <div className="add-on-copy">
                       <span className="add-on-title">{option.label}</span>
+                      <span className="add-on-price">
+                        {formatCurrency(parsePriceValue(option.price))} per dog
+                      </span>
                       <p className="add-on-description">{option.description}</p>
                     </div>
                     <span className="add-on-check" aria-hidden="true">
@@ -1097,6 +1191,40 @@ const BookingModal = ({ service, onClose }) => {
             </div>
           )}
         </label>
+      </div>
+      <div className="price-summary-card">
+        <div className="price-summary__header">
+          <div>
+            <p className="muted small">Current price</p>
+            <h4>{formatCurrency(pricing.totalPrice)}</h4>
+          </div>
+          <p className="muted subtle price-summary__meta">
+            {pricing.dogCount && pricing.visitCount
+              ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""} × ${
+                  pricing.visitCount
+                } visit${pricing.visitCount > 1 ? "s" : ""}`
+              : "Add dogs and pick dates to calculate"}
+          </p>
+        </div>
+        <ul className="price-summary__list">
+          <li>
+            Service: {formatCurrency(pricing.servicePrice)} per dog / visit
+          </li>
+          {pricing.selectedAddons.map((addon) => (
+            <li key={addon.id || addon.value}>
+              + {addon.label}: {formatCurrency(parsePriceValue(addon.price))} per
+              dog / visit
+            </li>
+          ))}
+          <li>
+            Total per dog / visit: {formatCurrency(pricing.perDogPerVisit)}
+          </li>
+        </ul>
+        {pricing.selectedAddons.length > 0 && (
+          <p className="muted subtle">
+            Add-on pricing applied per dog alongside the base service price.
+          </p>
+        )}
       </div>
       <div className="actions-row">
         <div className="actions-stack">

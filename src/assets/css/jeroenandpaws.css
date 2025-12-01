@@ -1788,3 +1788,39 @@ textarea.w-select {
 .wf-layout-layout {
   display: grid;
 }
+.price-summary-card {
+  margin: 20px 0;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e7ebf0;
+  background: #f9fbff;
+}
+
+.price-summary__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.price-summary__meta {
+  margin: 0;
+  text-align: right;
+}
+
+.price-summary__list {
+  margin: 8px 0 0;
+  padding: 0 0 0 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.price-summary__list li {
+  margin: 0;
+}
+
+.add-on-price {
+  display: block;
+  color: #5f6368;
+  font-size: 12px;
+}
