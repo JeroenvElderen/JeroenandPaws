@@ -51,6 +51,8 @@ const BookingModal = ({ service, onClose }) => {
   const [addons, setAddons] = useState([]);
   const { profile, isAuthenticated } = useAuth();
   const addOnDropdownRef = useRef(null);
+  const formPopupRef = useRef(null);
+  const bookingModalRef = useRef(null);
 
   const allowMultiDay = service?.allowMultiDay !== false;
   const allowRecurring = service?.allowRecurring !== false;
@@ -767,6 +769,18 @@ const BookingModal = ({ service, onClose }) => {
       .then((data) => setAddons(data.addons ?? []));
   }, []);
 
+  useEffect(() => {
+    if (showFormPopup && formPopupRef.current) {
+      formPopupRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [showFormPopup]);
+
+  useEffect(() => {
+    if (bookingModalRef.current) {
+      bookingModalRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
   const renderFormContent = (isPopup = false) => (
     <>
       {error && <p className="error-banner">{error}</p>}
@@ -1109,7 +1123,12 @@ const BookingModal = ({ service, onClose }) => {
   );
 
   return (
-    <div className="booking-overlay" role="dialog" aria-modal="true">
+    <div
+      className="booking-overlay"
+      role="dialog"
+      aria-modal="true"
+      ref={bookingModalRef}
+    >
       <div className="booking-modal">
         <header className="booking-header">
           <div>
@@ -1357,7 +1376,12 @@ const BookingModal = ({ service, onClose }) => {
         </div>
 
         {showFormPopup && (
-          <div className="form-popup-overlay" role="dialog" aria-modal="true">
+          <div
+            className="form-popup-overlay"
+            role="dialog"
+            aria-modal="true"
+            ref={formPopupRef}
+          >
             <div className="form-popup">
               <header className="popup-header">
                 <div>

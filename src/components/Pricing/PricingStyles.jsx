@@ -1007,6 +1007,8 @@ const PricingStyles = () => (
           align-items: center;
           justify-content: center;
           padding: 20px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
           z-index: 1200;
           backdrop-filter: blur(3px);
         }
