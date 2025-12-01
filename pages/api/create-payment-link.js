@@ -1,4 +1,4 @@
-import { supabase } from "../../api/_lib/supabase";
+import { randomUUID } from "crypto";
 
 // pages/api/create-payment-link.js
 
@@ -17,9 +17,25 @@ export default async function handler(req, res) {
     }
 
     // 🔑 Check environment variable
-    const apiKey = process.env.REVOLUT_API_KEY;
+    const rawApiKey = process.env.REVOLUT_API_KEY;
+    const apiKey = rawApiKey?.trim();
     console.log("🔐 Has REVOLUT_API_KEY?", Boolean(apiKey));
     console.log("🔑 Key prefix:", apiKey ? apiKey.substring(0, 3) : "undefined");
+
+    if (!apiKey) {
+      console.error("❌ Missing REVOLUT_API_KEY env var");
+      return res
+        .status(500)
+        .json({ error: "Server misconfigured: missing Revolut API key" });
+    }
+
+    const revolutEnv = (process.env.REVOLUT_ENV || "live").toLowerCase();
+    const revolutBaseUrl =
+      revolutEnv === "sandbox"
+        ? "https://sandbox-merchant.revolut.com"
+        : "https://merchant.revolut.com";
+
+    console.log("🏷 Revolut environment:", revolutEnv);
 
     const domain = process.env.DOMAIN || "https://www.jeroenandpaws.com";
     console.log("🌍 Domain:", domain);
@@ -39,18 +55,19 @@ export default async function handler(req, res) {
     // 🎯 Make request to Revolut
     console.log("🌐 Sending request to Revolut...");
 
-    const response = await fetch(
-      "https://merchant.revolut.com/api/1.0/checkout-links",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Revolut-Api-Version": "2024-09-01",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const idempotencyKey = randomUUID();
+    console.log("🧩 Idempotency-Key:", idempotencyKey);
+
+    const response = await fetch(`${revolutBaseUrl}/api/1.0/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Revolut-Api-Version": "2024-09-01",
+        Authorization: `Bearer ${apiKey}`,
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: JSON.stringify(body),
+    });
 
     const text = await response.text();
     console.log("🔍 RAW Revolut response:", text);
