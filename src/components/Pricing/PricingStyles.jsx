@@ -934,6 +934,109 @@ const PricingStyles = () => (
         .dog-row .input-group {
           width: 100%;
         }
+        .searchable-select .select-shell {
+          position: relative;
+          z-index: 9999;
+        }
+        .searchable-select .select-input {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 12px;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .searchable-select .select-input:focus-within {
+          border-color: rgba(255, 255, 255, 0.35);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        .searchable-select .select-input input {
+          width: 100%;
+          background: transparent;
+          border: none;
+          color: #f7f7ff;
+          font-size: 15px;
+          padding: 10px 4px;
+          outline: none;
+        }
+        .searchable-select .select-input input::placeholder {
+          color: #98a2ff;
+          opacity: 0.65;
+        }
+        .searchable-select .chevron {
+          color: #d8d2f8;
+          font-size: 12px;
+          pointer-events: none;
+        }
+        .searchable-select .clear-button {
+          border: none;
+          background: rgba(255, 255, 255, 0.08);
+          color: #f2f1ff;
+          border-radius: 8px;
+          padding: 6px 8px;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .searchable-select .clear-button:hover {
+          background: rgba(255, 255, 255, 0.14);
+          transform: translateY(-1px);
+        }
+        .searchable-select .options-list {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          right: 0;
+          max-height: 240px;
+          overflow: auto;
+          padding: 6px;
+          margin: 0;
+          list-style: none;
+          background: #0f1330;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 14px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+          z-index: 5;
+        }
+        .searchable-select .option {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          margin: 2px 0;
+          border-radius: 10px;
+          cursor: pointer;
+          color: #e8ebff;
+          transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+        }
+        .searchable-select .option:hover,
+        .searchable-select .option.highlight {
+          background: rgba(255, 255, 255, 0.06);
+          transform: translateY(-1px);
+        }
+        .searchable-select .option.selected {
+          background: rgba(144, 166, 255, 0.12);
+          border: 1px solid rgba(144, 166, 255, 0.28);
+        }
+        .searchable-select .option-label {
+          font-weight: 600;
+          letter-spacing: 0.01em;
+        }
+        .searchable-select .option-check {
+          color: #7dd3fc;
+          font-weight: 700;
+        }
+        .searchable-select .no-results {
+          padding: 10px;
+          margin: 2px 0;
+          color: #a2a5c7;
+          text-align: center;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.03);
+        }
         .dog-row__actions {
           grid-column: 1 / -1;
           display: flex;

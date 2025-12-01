@@ -1,4 +1,5 @@
 export const DOG_BREEDS = [
+  "Mixed breed",
   "Affenpinscher",
   "Afghan Hound",
   "Airedale Terrier",
