@@ -3,6 +3,7 @@ const {
   uploadPetPhoto,
   deletePetPhotoFromStorage,
   createSignedPetPhotoUrl,
+  ensureClientProfile,
 } = require("./_lib/supabase");
 
 module.exports = async (req, res) => {
@@ -28,9 +29,8 @@ module.exports = async (req, res) => {
     }
 
     if (!clientResult.data) {
-      res.statusCode = 404;
-      res.end(JSON.stringify({ message: "Owner not found" }));
-      return;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ pets: [] }));
     }
 
     const petsResult = await supabaseAdmin
@@ -59,15 +59,12 @@ module.exports = async (req, res) => {
         req.body || {};
       const normalizedEmail = (ownerEmail || "").toLowerCase();
 
-      const clientResult = await supabaseAdmin
-        .from("clients")
-        .select("id")
-        .eq("email", normalizedEmail)
-        .maybeSingle();
+      const ensuredClient = await ensureClientProfile({ email: normalizedEmail });
+      const clientId = ensuredClient?.client?.id;
 
-      if (clientResult.error || !clientResult.data) {
-        res.statusCode = 404;
-        res.end(JSON.stringify({ message: "Owner not found" }));
+      if (!clientId) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: "Failed to ensure owner profile" }));
         return;
       }
 
@@ -80,7 +77,7 @@ module.exports = async (req, res) => {
         const uploadResult = await uploadPetPhoto({
           dataUrl: photoDataUrl,
           fileName: photoName,
-          clientId: clientResult.data.id,
+          clientId,
         });
 
         photoUrl = uploadResult.publicUrl;
@@ -89,7 +86,7 @@ module.exports = async (req, res) => {
       const insertResult = await supabaseAdmin
         .from("pets")
         .insert({
-          owner_id: clientResult.data.id,
+          owner_id: clientId,
           name: name || "New pet",
           breed: breed || null,
           notes: notes || null,

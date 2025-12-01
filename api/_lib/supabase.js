@@ -332,6 +332,7 @@ const findAdjacentBookings = async ({ start, end }) => {
     .from("bookings")
     .select("id, start_at, end_at, client_address")
     .lt("end_at", start)
+    .not("status", "in", "(cancelled,canceled)")
     .order("end_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -344,6 +345,7 @@ const findAdjacentBookings = async ({ start, end }) => {
     .from("bookings")
     .select("id, start_at, end_at, client_address")
     .gt("start_at", end)
+    .not("status", "in", "(cancelled,canceled)")
     .order("start_at", { ascending: true })
     .limit(1)
     .maybeSingle();
