@@ -60,6 +60,50 @@ const PricingStyles = () => (
           flex: 1;
           min-height: 0;
         }
+        .booking-wayfinding {
+          grid-column: 1 / -1;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 14px 16px;
+        }
+        .step-chip-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .step-chip {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 999px;
+          color: #f2ecff;
+          padding: 8px 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .step-chip:hover {
+          background: rgba(255, 255, 255, 0.15);
+          transform: translateY(-1px);
+        }
+        .wayfinding-summary {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .summary-chip {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 8px;
+          padding: 8px 10px;
+          font-weight: 700;
+          color: #e9e5ff;
+        }
         .calendar-card,
         .times-card {
           background: rgba(255, 255, 255, 0.05);
@@ -890,6 +934,13 @@ const PricingStyles = () => (
             gap: 14px;
             height: auto;
             min-width: 0;
+          }
+          .booking-wayfinding {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .wayfinding-summary {
+            justify-content: flex-start;
           }
           .calendar-card {
             grid-row: auto;

@@ -13,6 +13,11 @@ import {
   generateDemoAvailability,
 } from "./utils";
 import { useAuth } from "../../context/AuthContext";
+import {
+  computeApiBaseUrl,
+  getCachedAvailability,
+  prefetchAvailability,
+} from "./availabilityCache";
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
@@ -53,6 +58,8 @@ const BookingModal = ({ service, onClose }) => {
   const addOnDropdownRef = useRef(null);
   const formPopupRef = useRef(null);
   const bookingModalRef = useRef(null);
+  const calendarSectionRef = useRef(null);
+  const timesSectionRef = useRef(null);
 
   const allowMultiDay = service?.allowMultiDay !== false;
   const allowRecurring = service?.allowRecurring !== false;
@@ -80,19 +87,7 @@ const BookingModal = ({ service, onClose }) => {
   const trimmedEmail = clientEmail.trim();
   const canLoadPets = Boolean(trimmedName && trimmedEmail);
 
-  const apiBaseUrl = useMemo(() => {
-    const configuredBase = (
-      process.env.NEXT_PUBLIC_BACKEND_BASE_URL || ""
-    ).replace(/\/$/, "");
-
-    if (configuredBase) return configuredBase;
-
-    if (typeof window !== "undefined") {
-      return window.location.origin.replace(/\/$/, "");
-    }
-
-    return "";
-  }, []);
+  const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
   const isDayAvailableForService = useCallback((day) => {
     if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
@@ -219,20 +214,14 @@ const BookingModal = ({ service, onClose }) => {
     setIsMultiDay(false);
     setRecurrence("none");
     try {
-      const durationMinutes = Number.isFinite(service.durationMinutes)
-        ? service.durationMinutes
-        : 60;
-      const requestUrl = `${apiBaseUrl}/api/availability?serviceId=${service.id}&durationMinutes=${durationMinutes}`;
-      const response = await fetch(requestUrl, {
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) {
-        throw new Error(
-          "Availability could not be loaded right now. Try again shortly."
-        );
+      const cached = getCachedAvailability(service.id);
+      if (cached) {
+        setAvailability(cached);
+        initializeSelection(cached);
+        return;
       }
 
-      const data = await parseJsonSafely(response, requestUrl);
+      const data = await prefetchAvailability(service, apiBaseUrl);
       setAvailability(data);
       initializeSelection(data);
     } catch (error) {
@@ -249,7 +238,6 @@ const BookingModal = ({ service, onClose }) => {
   }, [
     apiBaseUrl,
     initializeSelection,
-    parseJsonSafely,
     service.durationMinutes,
     service.id,
   ]);
@@ -487,6 +475,23 @@ const BookingModal = ({ service, onClose }) => {
     setSelectedSlots({ [iso]: nextTime });
     setSelectedDate(iso);
     setSelectedTime(nextTime);
+  };
+
+  const scrollToSection = (ref) => {
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const openDetailsStep = () => {
+    setShowFormPopup(true);
+    requestAnimationFrame(() => {
+      scrollToSection(formPopupRef);
+      const firstField = formPopupRef.current?.querySelector(
+        "input, textarea, select"
+      );
+      firstField?.focus?.();
+    });
   };
 
   const handleTimeSelection = (time) => {
@@ -1205,7 +1210,7 @@ const BookingModal = ({ service, onClose }) => {
               </div>
             )}
           </div>
-          <div className="calendar-card">
+          <div className="calendar-card" ref={calendarSectionRef}>
             <div className="calendar-toolbar">
               <div>
                 <p className="muted small">{availability.timeZone}</p>
@@ -1312,7 +1317,7 @@ const BookingModal = ({ service, onClose }) => {
               </>
             )}
           </div>
-          <div className="times-card">
+          <div className="times-card" ref={timesSectionRef}>
             <div className="times-header">
               <div>
                 <p className="muted small">{selectedDateLabel}</p>

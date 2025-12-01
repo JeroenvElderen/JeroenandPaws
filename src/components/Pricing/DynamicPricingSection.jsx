@@ -1,8 +1,9 @@
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import BookingModal from "./BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
+import { prefetchAvailability } from "./availabilityCache";
 
 const DynamicPricingSection = ({
   title = "Walking Plans for Every Pup",
@@ -13,6 +14,14 @@ const DynamicPricingSection = ({
   const [activeService, setActiveService] = useState(null);
   const [ctaChoiceService, setCtaChoiceService] = useState(null);
 
+  useEffect(() => {
+    services.forEach((service) => {
+      if (!service?.ctaHref) {
+        prefetchAvailability(service);
+      }
+    });
+  }, [services]);
+  
   const handleSelect = (service) => {
     if (service.ctaOptions) {
       setCtaChoiceService(service);
