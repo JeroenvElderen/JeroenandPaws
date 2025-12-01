@@ -382,7 +382,11 @@ const hasPetDetails = (pet = {}) => {
   return Boolean(name || breed || notes || photo);
 };
 
-const ensurePetProfiles = async (clientId, pets = []) => {
+const ensurePetProfiles = async (
+  clientId,
+  pets = [],
+  { allowNewPetCreation = true } = {}
+) => {
   requireSupabase();
 
   if (!clientId) return [];
@@ -392,66 +396,82 @@ const ensurePetProfiles = async (clientId, pets = []) => {
   for (const pet of pets) {
     if (!pet) continue;
 
-    if (pet?.id) {
-      const existing = await supabaseAdmin
-        .from("pets")
-        .select("*")
-        .eq("id", pet.id)
-        .eq("owner_id", clientId)
-        .maybeSingle();
+    const hasDetails = hasPetDetails(pet);
 
-      if (existing.error) {
-        throw existing.error;
-      }
+    const normalizedName = (pet?.name || "").trim();
 
-      if (existing.data) {
-        const hasIncomingPhoto = parseDataUrlImage(
-          pet.photoDataUrl || pet.photo_data_url
-        );
-        const shouldUpdate = hasPetDetails(pet) || hasIncomingPhoto;
-
-        if (!shouldUpdate) {
-          ensuredPets.push(existing.data);
-          continue;
-        }
-
-        let nextPhotoUrl = existing.data.photo_data_url;
-
-        if (hasIncomingPhoto) {
-          const uploadResult = await uploadPetPhoto({
-            dataUrl: pet.photoDataUrl || pet.photo_data_url,
-            fileName: pet.photoName,
-            clientId,
-            replace: true,
-          });
-
-          nextPhotoUrl = uploadResult.publicUrl || nextPhotoUrl;
-
-          if (uploadResult.publicUrl && existing.data.photo_data_url) {
-            await deletePetPhotoFromStorage(existing.data.photo_data_url);
-          }
-        }
-
-        const updateResult = await supabaseAdmin
+    const resolvedExisting = pet?.id
+      ? await supabaseAdmin
           .from("pets")
-          .update({
-            name: pet?.name || existing.data.name || "New pet",
-            breed: pet?.breed || existing.data.breed || null,
-            notes: pet?.notes || existing.data.notes || null,
-            photo_data_url: nextPhotoUrl || null,
-          })
+          .select("*")
           .eq("id", pet.id)
           .eq("owner_id", clientId)
+          .maybeSingle()
+      : normalizedName
+      ? await supabaseAdmin
+          .from("pets")
           .select("*")
-          .single();
+          .ilike("name", normalizedName)
+          .eq("owner_id", clientId)
+          .maybeSingle()
+      : null;
 
-        if (updateResult.error) {
-          throw updateResult.error;
-        }
+    if (resolvedExisting?.error) {
+      throw resolvedExisting.error;
+    }
 
-        ensuredPets.push(updateResult.data);
+    if (resolvedExisting?.data) {
+      const existingPet = resolvedExisting.data;
+      const hasIncomingPhoto = parseDataUrlImage(
+        pet.photoDataUrl || pet.photo_data_url
+      );
+      const shouldUpdate = hasPetDetails(pet) || hasIncomingPhoto;      
+
+      if (!shouldUpdate) {
+        ensuredPets.push(existingPet);
         continue;
       }
+
+      let nextPhotoUrl = existingPet.photo_data_url;
+
+      if (hasIncomingPhoto) {
+        const uploadResult = await uploadPetPhoto({
+          dataUrl: pet.photoDataUrl || pet.photo_data_url,
+          fileName: pet.photoName,
+          clientId,
+          replace: true,
+        });
+
+        nextPhotoUrl = uploadResult.publicUrl || nextPhotoUrl;
+
+        if (uploadResult.publicUrl && existingPet.photo_data_url) {
+          await deletePetPhotoFromStorage(existingPet.photo_data_url);
+        }
+      }
+
+      const updateResult = await supabaseAdmin
+        .from("pets")
+        .update({
+          name: pet?.name || existingPet.name || "New pet",
+          breed: pet?.breed || existingPet.breed || null,
+          notes: pet?.notes || existingPet.notes || null,
+          photo_data_url: nextPhotoUrl || null,
+        })
+        .eq("id", existingPet.id)
+        .eq("owner_id", clientId)
+        .select("*")
+        .single();
+
+      if (updateResult.error) {
+        throw updateResult.error;
+      }
+
+      ensuredPets.push(updateResult.data);
+      continue;
+    }
+
+    if (!allowNewPetCreation || !hasDetails) {
+      continue;
     }
 
     let uploadedPhotoUrl = null;
@@ -649,7 +669,9 @@ const createBookingWithProfiles = async ({
     address: clientAddress,
   });
 
-  const ensuredPets = await ensurePetProfiles(client.id, pets);
+  const ensuredPets = await ensurePetProfiles(client.id, pets, {
+    allowNewPetCreation: created,
+  });
 
   const booking = await createBookingRecord({
     clientId: client.id,
