@@ -300,18 +300,34 @@ const ensureClientProfile = async ({ email, fullName, phone, address }) => {
     // Gracefully handle race conditions or case-only email differences that can
     // happen when a client already exists with the same email.
     if (insertResult.error.code === "23505") {
-      const conflict = await supabaseAdmin
+      const conflictByEmail = await supabaseAdmin
         .from("clients")
         .select("*")
         .ilike("email", normalizedEmail)
         .maybeSingle();
 
-      if (conflict.error) {
-        throw conflict.error;
+      if (conflictByEmail.error) {
+        throw conflictByEmail.error;
       }
 
-      if (conflict.data) {
-        return { client: conflict.data, created: false };
+      if (conflictByEmail.data) {
+        return { client: conflictByEmail.data, created: false };
+      }
+
+      // Fallback to checking by the Auth user ID in case the conflict was
+      // caused by a primary key collision rather than the email column.
+      const conflictById = await supabaseAdmin
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .maybeSingle();
+
+      if (conflictById.error) {
+        throw conflictById.error;
+      }
+
+      if (conflictById.data) {
+        return { client: conflictById.data, created: false };
       }
     }
     

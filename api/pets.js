@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
     if (!clientResult.data) {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ pets: [] }));
+      return;
     }
 
     const petsResult = await supabaseAdmin
