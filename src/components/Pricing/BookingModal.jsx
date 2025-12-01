@@ -5,8 +5,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import SearchableSelect from "./SearchableSelect";
-import { DOG_BREEDS, weekdayLabels } from "./constants";
+import { weekdayLabels, DOG_BREEDS } from "./constants";
 import {
   buildMonthMatrix,
   createEmptyDogProfile,
@@ -18,6 +17,9 @@ import {
   getCachedAvailability,
   prefetchAvailability,
 } from "./availabilityCache";
+import CalendarSection from "./components/CalendarSection";
+import TimesSection from "./components/TimesSection";
+import BookingForm from "./components/BookingForm";
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
@@ -200,18 +202,12 @@ const BookingModal = ({ service, onClose }) => {
     }
   }, []);
 
-  const initializeSelection = useCallback(
+  const setInitialVisibleMonth = useCallback(
     (data) => {
       const firstOpenDate = data.dates.find((day) =>
         isDayAvailableForService(day)
       );
       if (firstOpenDate) {
-        setSelectedDate(firstOpenDate.date);
-        const firstSlot = firstOpenDate.slots.find((slot) => slot.available);
-        setSelectedTime(firstSlot?.time || "");
-        setSelectedSlots({
-          [firstOpenDate.date]: firstSlot?.time || "",
-        });
         setVisibleMonth(new Date(firstOpenDate.date));
       }
     },
@@ -224,24 +220,26 @@ const BookingModal = ({ service, onClose }) => {
     setSuccess("");
     setAvailabilityNotice("");
     setSelectedSlots({});
+    setSelectedDate("");
+    setSelectedTime("");
     setIsMultiDay(false);
     setRecurrence("none");
     try {
       const cached = getCachedAvailability(service.id);
       if (cached) {
         setAvailability(cached);
-        initializeSelection(cached);
+        setInitialVisibleMonth(cached);
         return;
       }
 
       const data = await prefetchAvailability(service, apiBaseUrl);
       setAvailability(data);
-      initializeSelection(data);
+      setInitialVisibleMonth(cached);
     } catch (error) {
       console.error("Unable to load live availability", error);
       const fallback = generateDemoAvailability(service.durationMinutes);
       setAvailability(fallback);
-      initializeSelection(fallback);
+      setInitialVisibleMonth(cached);
       setAvailabilityNotice(
         "Live calendar is unreachable — displaying demo slots so you can keep booking."
       );
@@ -250,7 +248,7 @@ const BookingModal = ({ service, onClose }) => {
     }
   }, [
     apiBaseUrl,
-    initializeSelection,
+    setInitialVisibleMonth,
     service.durationMinutes,
     service.id,
   ]);
@@ -482,29 +480,20 @@ const BookingModal = ({ service, onClose }) => {
       }));
       setSelectedDate(iso);
       setSelectedTime(nextTime);
+      requestAnimationFrame(() => scrollToSection(timesSectionRef));
       return;
     }
 
     setSelectedSlots({ [iso]: nextTime });
     setSelectedDate(iso);
     setSelectedTime(nextTime);
+    requestAnimationFrame(() => scrollToSection(timesSectionRef));
   };
 
   const scrollToSection = (ref) => {
     if (ref?.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  };
-
-  const openDetailsStep = () => {
-    setShowFormPopup(true);
-    requestAnimationFrame(() => {
-      scrollToSection(formPopupRef);
-      const firstField = formPopupRef.current?.querySelector(
-        "input, textarea, select"
-      );
-      firstField?.focus?.();
-    });
   };
 
   const handleTimeSelection = (time) => {
@@ -797,11 +786,12 @@ const BookingModal = ({ service, onClose }) => {
     ).length;
 
     const visitCount = visitsWithTime || 0;
-    const perDogPerVisit = servicePrice + addonTotal;
-    const totalPrice =
+    const perDogPerVisit = servicePrice;
+    const baseTotal =
       activeDogsCount && visitCount
         ? perDogPerVisit * activeDogsCount * visitCount
         : 0;
+    const totalPrice = baseTotal + addonTotal;
 
     const descriptionParts = [service.title];
 
@@ -877,383 +867,6 @@ const BookingModal = ({ service, onClose }) => {
     }
   }, []);
 
-  const renderFormContent = (isPopup = false) => (
-    <>
-      {error && <p className="error-banner">{error}</p>}
-      {success && <p className="success-banner">{success}</p>}
-      <div className="form-grid">
-        <label className="input-group">
-          <span>Your name</span>
-          <input
-            type="text"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            placeholder="Client name"
-          />
-        </label>
-        <label className="input-group">
-          <span>Your phone</span>
-          <input
-            type="tel"
-            value={clientPhone}
-            onChange={(e) => setClientPhone(e.target.value)}
-            placeholder="Best number to reach you"
-          />
-        </label>
-        <label className="input-group email-group">
-          <span>Your email</span>
-          <div className="email-row">
-            <input
-              type="email"
-              value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
-              placeholder="name@email.com"
-            />
-            {canLoadPets && (
-              <button
-                type="button"
-                className="ghost-button load-pets-button"
-                onClick={fetchExistingPets}
-                disabled={isLoadingPets}
-              >
-                {isLoadingPets ? "Loading…" : "Load pets"}
-              </button>
-            )}
-          </div>
-        </label>
-        <label className="input-group full-width">
-          <span>Service address</span>
-          <input
-            type="text"
-            value={clientAddress}
-            onChange={(e) => setClientAddress(e.target.value)}
-            placeholder="Street, city, and any entry details"
-          />
-        </label>
-        {(existingPets.length > 0 || hasAttemptedPetLoad) && (
-          <div className="input-group full-width pet-list-group">
-            {existingPets.length === 0 ? (
-              <p className="muted subtle">
-                No pets found for this email. Start a new pet profile below.
-              </p>
-            ) : (
-              <div className="pet-list">
-                {existingPets.map((pet) => {
-                  const isSelected = selectedPetIds.includes(pet.id);
-                  const petInitial = (pet.name || pet.breed || "🐾")
-                    .charAt(0)
-                    .toUpperCase();
-                  const noteText = pet.notes || pet.bio || "";
-
-                  return (
-                    <label
-                      key={pet.id}
-                      className={`pet-option ${isSelected ? "selected" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(event) => {
-                          const checked = event.target.checked;
-                          setSelectedPetIds((prev) => {
-                            if (checked) {
-                              return [...prev, pet.id];
-                            }
-                            return prev.filter((id) => id !== pet.id);
-                          });
-                        }}
-                      />
-                      <div className="pet-option__details">
-                        <div className="pet-option__identity">
-                          <div className="pet-option__thumb" aria-hidden="true">
-                            {pet.photo_data_url || pet.photoDataUrl ? (
-                              <img
-                                src={pet.photo_data_url || pet.photoDataUrl}
-                                alt={`${pet.name} avatar`}
-                                className="pet-option__avatar"
-                              />
-                            ) : (
-                              <div className="pet-option__avatar placeholder">
-                                <span className="pet-option__initial">
-                                  {petInitial}
-                                </span>
-                              </div>
-                            )}
-                            <div className="pet-option__glow" />
-                          </div>
-                          <div className="pet-option__text">
-                            <span className="pet-option__name">
-                              {pet.name || "Your pup"}
-                            </span>
-                            <div className="pet-option__meta-row">
-                              {pet.breed && (
-                                <span className="pet-option__breed">
-                                  {pet.breed}
-                                </span>
-                              )}
-                              <span className="pet-option__pill">
-                                Saved profile
-                              </span>
-                            </div>
-                            {noteText && (
-                              <p className="pet-option__notes" title={noteText}>
-                                {noteText}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-        {existingPets.length > 0 && !showDogDetails && (
-          <div className="input-group full-width">
-            <div className="label-row">
-              <span className="muted subtle">
-                Need to share details for another dog?
-              </span>
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={() => setShowDogDetails(true)}
-                disabled={dogCount >= MAX_DOGS}
-              >
-                {dogCount >= MAX_DOGS ? "Dog limit reached" : "Add another dog"}
-              </button>
-            </div>
-          </div>
-        )}
-        {showDogDetails && (
-          <>
-            <div className="input-group full-width">
-              <div className="label-row">
-                <span>Dog details</span>
-                <button
-                  type="button"
-                  className="ghost-button"
-                  onClick={addAnotherDog}
-                  disabled={dogCount >= MAX_DOGS}
-                >
-                  Add another dog
-                </button>
-              </div>
-            </div>
-            {Array.from({ length: dogCount }).map((_, index) => {
-              const dogProfile = dogs[index] || createEmptyDogProfile();
-              return (
-                <div className="dog-row" key={index}>
-                  <label className="input-group">
-                    <span>Dog {index + 1} Name</span>
-                    <input
-                      type="text"
-                      value={dogProfile.name}
-                      onChange={(e) =>
-                        updateDogField(index, "name", e.target.value)
-                      }
-                      placeholder="e.g. Bella"
-                    />
-                  </label>
-
-                  <SearchableSelect
-                    label={`Dog ${index + 1} Breed`}
-                    options={["Mixed breed", ...DOG_BREEDS]}
-                    value={dogProfile.breed}
-                    onChange={(value) => updateDogField(index, "breed", value)}
-                    className="dog-breed-select"
-                    fullWidth={false}
-                  />
-                  <label className="input-group">
-                    <span>Dog {index + 1} Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(event) =>
-                        handleDogPhotoChange(index, event.target.files?.[0])
-                      }
-                    />
-                    {dogProfile.photoDataUrl && (
-                      <img
-                        src={dogProfile.photoDataUrl}
-                        alt={`Dog ${index + 1} preview`}
-                        className="dog-photo-preview"
-                      />
-                    )}
-                  </label>
-                  <div className="dog-row__actions">
-                    <button
-                      type="button"
-                      className="ghost-button remove-dog-button"
-                      onClick={() => removeDog(index)}
-                      aria-label={`Remove dog ${index + 1}`}
-                    >
-                      Remove dog
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            <label className="input-group full-width">
-              <span>Notes for Jeroen</span>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Tell us about your pup or preferences"
-                rows={3}
-              />
-            </label>
-          </>
-        )}
-        {allowRecurring && (
-          <label className="input-group full-width recurrence-group">
-            <span>Auto-renewal</span>
-            <select
-              className="input-like-select recurrence-select"
-              value={recurrence}
-              onChange={(event) => setRecurrence(event.target.value)}
-            >
-              <option value="none">One-time booking</option>
-              {allowWeeklyRecurring && (
-                <option value="weekly">Renew every week</option>
-              )}
-              <option value="monthly">
-                Renew every month (auto books next month)
-              </option>
-              <option value="six-months">Renew every 6 months</option>
-              <option value="yearly">Renew every year</option>
-            </select>
-            <p className="muted subtle"></p>
-          </label>
-        )}
-        <label
-          className="input-group full-width recurrence-group add-on-group"
-          ref={addOnDropdownRef}
-        >
-          <span>Additional care (optional)</span>
-          <button
-            type="button"
-            className={`add-on-trigger input-like-select recurrence-select ${
-              additionalsOpen ? "open" : ""
-            }`}
-            onClick={() => setAdditionalsOpen((open) => !open)}
-            aria-expanded={additionalsOpen}
-          >
-            <div className="add-on-chip-row">
-              {additionals.length === 0 ? (
-                <span className="add-on-chip placeholder">
-                  {addons
-                    .slice(0, 3)
-                    .map((a) => a.label)
-                    .join(" • ") || "Additional care"}
-                </span>
-              ) : (
-                selectedAdditionalLabels.map((label) => (
-                  <span key={label} className="add-on-chip">
-                    {label}
-                  </span>
-                ))
-              )}
-            </div>
-            <span className="chevron" aria-hidden="true">
-              {additionalsOpen ? "▲" : "▼"}
-            </span>
-          </button>
-          {additionalsOpen && (
-            <div className="add-on-menu" role="listbox">
-              {addons.map((option) => {
-                const isSelected = additionals.includes(option.value);
-                return (
-                  <label
-                    key={option.value}
-                    className={`add-on-option ${isSelected ? "selected" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleAdditional(option.value)}
-                    />
-                    <div className="add-on-copy">
-                      <span className="add-on-title">{option.label}</span>
-                      <span className="add-on-price">
-                        {formatCurrency(parsePriceValue(option.price))} per dog
-                      </span>
-                      <p className="add-on-description">{option.description}</p>
-                    </div>
-                    <span className="add-on-check" aria-hidden="true">
-                      ✓
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </label>
-      </div>
-      <div className="price-summary-card">
-        <div className="price-summary__header">
-          <div>
-            <p className="muted small">Current price</p>
-            <h4>{formatCurrency(pricing.totalPrice)}</h4>
-          </div>
-          <p className="muted subtle price-summary__meta">
-            {pricing.dogCount && pricing.visitCount
-              ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""} × ${
-                  pricing.visitCount
-                } visit${pricing.visitCount > 1 ? "s" : ""}`
-              : "Add dogs and pick dates to calculate"}
-          </p>
-        </div>
-        <ul className="price-summary__list">
-          <li>
-            Service: {formatCurrency(pricing.servicePrice)} per dog / visit
-          </li>
-          {pricing.selectedAddons.map((addon) => (
-            <li key={addon.id || addon.value}>
-              + {addon.label}: {formatCurrency(parsePriceValue(addon.price))} per
-              dog / visit
-            </li>
-          ))}
-          <li>
-            Total per dog / visit: {formatCurrency(pricing.perDogPerVisit)}
-          </li>
-        </ul>
-        {pricing.selectedAddons.length > 0 && (
-          <p className="muted subtle">
-            Add-on pricing applied per dog alongside the base service price.
-          </p>
-        )}
-      </div>
-      <div className="actions-row">
-        <div className="actions-stack">
-          {hasAtLeastOneDog ? (
-            <button
-              type="button"
-              className="button w-button"
-              onClick={handleBookAndPay}
-              disabled={isBooking || loading}
-            >
-              {isBooking ? "Booking…" : "Confirm / Book"}
-            </button>
-          ) : (
-            <p className="muted subtle">Add at least one dog to continue.</p>
-          )}
-          {isPopup && (
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={() => setShowFormPopup(false)}
-            >
-              Close form
-            </button>
-          )}
-        </div>
-      </div>
-      <p className="muted subtle">Times shown in your timezone</p>
-    </>
-  );
 
   return (
     <div
@@ -1338,174 +951,43 @@ const BookingModal = ({ service, onClose }) => {
               </div>
             )}
           </div>
-          <div className="calendar-card" ref={calendarSectionRef}>
-            <div className="calendar-toolbar">
-              <div>
-                <p className="muted small">{availability.timeZone}</p>
-                <h4>{monthLabel}</h4>
-              </div>
-              <div className="toolbar-controls">
-                <div className="month-nav" aria-label="Month navigation">
-                  <button
-                    type="button"
-                    className="nav-button"
-                    onClick={() =>
-                      setVisibleMonth(
-                        (prev) =>
-                          new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-                      )
-                    }
-                    aria-label="Previous month"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    className="nav-button"
-                    onClick={() =>
-                      setVisibleMonth(
-                        (prev) =>
-                          new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-                      )
-                    }
-                    aria-label="Next month"
-                  >
-                    ›
-                  </button>
-                </div>
-                <div
-                  className="toggle-group"
-                  role="group"
-                  aria-label="Time display format"
-                >
-                  <button
-                    type="button"
-                    className={`pill ${is24h ? "active" : ""}`}
-                    onClick={() => setIs24h(true)}
-                  >
-                    24h
-                  </button>
-                  <button
-                    type="button"
-                    className={`pill ${!is24h ? "active" : ""}`}
-                    onClick={() => setIs24h(false)}
-                  >
-                    12h
-                  </button>
-                </div>
-              </div>
-            </div>
-            {availabilityNotice && (
-              <p className="info-banner">{availabilityNotice}</p>
-            )}
-            {loading ? (
-              <p className="muted">Loading availability…</p>
-            ) : (
-              <>
-                <div className="weekday-row">
-                  {weekdayLabels.map((label) => (
-                    <span key={label}>{label}</span>
-                  ))}
-                </div>
-                <div className="calendar-grid" aria-label="Calendar">
-                  {monthMatrix.map((dateObj) => {
-                    const iso = dateObj.toISOString().slice(0, 10);
-                    const isCurrentMonth =
-                      dateObj.getMonth() === visibleMonth.getMonth();
-                    const dayData = availabilityMap[iso];
-                    const isAvailable = isDayAvailableForService(dayData);
-                    const isSelected = iso === selectedDate;
-                    const isScheduled = Boolean(selectedSlots[iso]);
-                    const isPastDate =
-                      dateObj < new Date().setHours(0, 0, 0, 0);
-                    return (
-                      <button
-                        key={iso}
-                        type="button"
-                        className={`day ${isSelected ? "selected" : ""} ${
-                          isScheduled && !isSelected ? "scheduled" : ""
-                        } ${isCurrentMonth ? "" : "muted"} ${
-                          isAvailable ? "day-has-slots" : "day-no-slots"
-                        }`}
-                        onClick={() => handleDaySelection(iso)}
-                        aria-pressed={isSelected}
-                        disabled={isPastDate || !isAvailable}
-                      >
-                        <span>{dateObj.getDate()}</span>
-                        <span className="day-dot-wrapper">
-                          {isAvailable && <span className="day-dot" />}
-                          {isScheduled && !isSelected && (
-                            <span className="day-check">✓</span>
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-          <div className="times-card" ref={timesSectionRef}>
-            <div className="times-header">
-              <div>
-                <p className="muted small">{selectedDateLabel}</p>
-                <h4>Available slots</h4>
-              </div>
-              <div className="times-actions">
-                <p className="muted subtle">
-                  {selectedTime ? formatTime(selectedTime) : "Choose a time"}
-                </p>
-                <button
-                  type="button"
-                  className="ghost-button"
-                  onClick={() => setShowFormPopup(true)}
-                >
-                  Book time
-                </button>
-              </div>
-            </div>
-            <div className="times-list" aria-label="Time options">
-              {!selectedDay && (
-                <p className="muted">Select a date to see times.</p>
-              )}
-
-              {selectedDay && !isDayAvailableForService(selectedDay) && (
-                <p className="muted">
-                  No compatible start times are available for this service on
-                  this date because of other bookings.
-                </p>
-              )}
-
-              {selectedDay &&
-                isDayAvailableForService(selectedDay) &&
-                selectedDay.slots
-                  ?.filter((slot) => slot.available)
-                  .map((slot) => {
-                    const isActive = selectedTime === slot.time;
-                    return (
-                      <button
-                        key={`${selectedDay.date}-${slot.time}`}
-                        type="button"
-                        className={`time-slot ${isActive ? "active" : ""}`}
-                        onClick={() => handleTimeSelection(slot.time)}
-                        aria-pressed={isActive}
-                      >
-                        <span className="dot" />
-                        <span className="time-slot__label">
-                          {formatTime(slot.time)}
-                        </span>
-                      </button>
-                    );
-                  })}
-
-              {selectedDay &&
-                isDayAvailableForService(selectedDay) &&
-                selectedDay.slots.every((slot) => !slot.available) && (
-                  <p className="muted">All slots are full for this day.</p>
-                )}
-              <p className="muted subtle">Times shown in your timezone</p>
-            </div>
-          </div>
+          <CalendarSection
+            availabilityNotice={availabilityNotice}
+            loading={loading}
+            monthLabel={monthLabel}
+            weekdayLabels={weekdayLabels}
+            monthMatrix={monthMatrix}
+            visibleMonth={visibleMonth}
+            onPrevMonth={() =>
+              setVisibleMonth(
+                (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+              )
+            }
+            onNextMonth={() =>
+              setVisibleMonth(
+                (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+              )
+            }
+            is24h={is24h}
+            onToggleTimeFormat={(value) => setIs24h(value)}
+            availabilityMap={availabilityMap}
+            isDayAvailableForService={isDayAvailableForService}
+            selectedDate={selectedDate}
+            selectedSlots={selectedSlots}
+            handleDaySelection={handleDaySelection}
+            calendarSectionRef={calendarSectionRef}
+            timeZoneLabel={availability.timeZone}
+          />
+          <TimesSection
+            selectedDay={selectedDay}
+            isDayAvailableForService={isDayAvailableForService}
+            selectedDateLabel={selectedDateLabel}
+            selectedTime={selectedTime}
+            handleTimeSelection={handleTimeSelection}
+            formatTime={formatTime}
+            setShowFormPopup={setShowFormPopup}
+            timesSectionRef={timesSectionRef}
+          />
         </div>
 
         {showFormPopup && (
@@ -1533,7 +1015,57 @@ const BookingModal = ({ service, onClose }) => {
                   ×
                 </button>
               </header>
-              <div className="popup-body">{renderFormContent(true)}</div>
+              <div className="popup-body">
+                <BookingForm
+                  error={error}
+                  success={success}
+                  clientName={clientName}
+                  setClientName={setClientName}
+                  clientPhone={clientPhone}
+                  setClientPhone={setClientPhone}
+                  clientEmail={clientEmail}
+                  setClientEmail={setClientEmail}
+                  clientAddress={clientAddress}
+                  setClientAddress={setClientAddress}
+                  canLoadPets={canLoadPets}
+                  fetchExistingPets={fetchExistingPets}
+                  isLoadingPets={isLoadingPets}
+                  existingPets={existingPets}
+                  hasAttemptedPetLoad={hasAttemptedPetLoad}
+                  selectedPetIds={selectedPetIds}
+                  setSelectedPetIds={setSelectedPetIds}
+                  showDogDetails={showDogDetails}
+                  setShowDogDetails={setShowDogDetails}
+                  dogCount={dogCount}
+                  addAnotherDog={addAnotherDog}
+                  removeDog={removeDog}
+                  dogs={dogs}
+                  updateDogField={updateDogField}
+                  handleDogPhotoChange={handleDogPhotoChange}
+                  MAX_DOGS={MAX_DOGS}
+                  breedSearch={breedSearch}
+                  setBreedSearch={setBreedSearch}
+                  notes={notes}
+                  setNotes={setNotes}
+                  additionals={additionals}
+                  additionalsOpen={additionalsOpen}
+                  setAdditionalsOpen={setAdditionalsOpen}
+                  toggleAdditional={toggleAdditional}
+                  addons={addons}
+                  selectedAdditionalLabels={selectedAdditionalLabels}
+                  formatCurrency={formatCurrency}
+                  parsePriceValue={parsePriceValue}
+                  pricing={pricing}
+                  hasAtLeastOneDog={hasAtLeastOneDog}
+                  handleBookAndPay={handleBookAndPay}
+                  isBooking={isBooking}
+                  loading={loading}
+                  isPopup
+                  setShowFormPopup={setShowFormPopup}
+                  addOnDropdownRef={addOnDropdownRef}
+                  filteredBreeds={filteredBreeds}
+                />
+              </div>
             </div>
           </div>
         )}
