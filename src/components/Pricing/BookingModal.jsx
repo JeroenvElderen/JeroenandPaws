@@ -90,6 +90,7 @@ const BookingModal = ({ service, onClose }) => {
   // Refs
   const calendarRef = useRef(null);
   const timeRef = useRef(null);
+  const bookingBodyRef = useRef(null);
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
@@ -159,6 +160,19 @@ const BookingModal = ({ service, onClose }) => {
     [availability]
   );
 
+  const scrollToTimeSection = useCallback(() => {
+    if (!timeRef.current) return;
+
+    // Prefer scrolling inside the booking body to keep the modal centered
+    if (bookingBodyRef.current) {
+      const offset = timeRef.current.offsetTop - 12;
+      bookingBodyRef.current.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+      return;
+    }
+
+    timeRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const getDayAvailabilityStatus = useCallback((day) => {
     const slots = day?.slots || [];
     const availableCount = slots.filter((s) => s.available).length;
@@ -175,6 +189,7 @@ const BookingModal = ({ service, onClose }) => {
     const first = availabilityMap[iso]?.slots.find((s) => s.available)?.time;
     setSelectedDate(iso);
     setSelectedTime(first || "");
+    scrollToTimeSection();
   };
 
   const handleTimeSelect = (time) => setSelectedTime(time);
@@ -381,48 +396,50 @@ const BookingModal = ({ service, onClose }) => {
         </header>
 
         {/* BODY */}
-        <div className="premium-booking-layout">
-          <CalendarSection
-            loading={loading}
-            availabilityNotice={availabilityNotice}
-            monthLabel={visibleMonth.toLocaleString(undefined, {
-              month: "long",
-              year: "numeric",
-            })}
-            weekdayLabels={weekdayLabels}
-            monthMatrix={buildMonthMatrix(visibleMonth)}
-            visibleMonth={visibleMonth}
-            onPrevMonth={() =>
-              setVisibleMonth(
-                (p) => new Date(p.getFullYear(), p.getMonth() - 1, 1)
-              )
-            }
-            onNextMonth={() =>
-              setVisibleMonth(
-                (p) => new Date(p.getFullYear(), p.getMonth() + 1, 1)
-              )
-            }
-            is24h={is24h}
-            onToggleTimeFormat={setIs24h}
-            availabilityMap={availabilityMap}
-            getDayAvailabilityStatus={getDayAvailabilityStatus}
-            selectedDate={selectedDate}
-            onDaySelect={handleDaySelect}
-            timeZoneLabel={availability.timeZone}
-            ref={calendarRef}
-          />
+        <div className="booking-body">
+          <div className="premium-booking-layout">
+            <CalendarSection
+              loading={loading}
+              availabilityNotice={availabilityNotice}
+              monthLabel={visibleMonth.toLocaleString(undefined, {
+                month: "long",
+                year: "numeric",
+              })}
+              weekdayLabels={weekdayLabels}
+              monthMatrix={buildMonthMatrix(visibleMonth)}
+              visibleMonth={visibleMonth}
+              onPrevMonth={() =>
+                setVisibleMonth(
+                  (p) => new Date(p.getFullYear(), p.getMonth() - 1, 1)
+                )
+              }
+              onNextMonth={() =>
+                setVisibleMonth(
+                  (p) => new Date(p.getFullYear(), p.getMonth() + 1, 1)
+                )
+              }
+              is24h={is24h}
+              onToggleTimeFormat={setIs24h}
+              availabilityMap={availabilityMap}
+              getDayAvailabilityStatus={getDayAvailabilityStatus}
+              selectedDate={selectedDate}
+              onDaySelect={handleDaySelect}
+              timeZoneLabel={availability.timeZone}
+              ref={calendarRef}
+            />
 
-          <TimeSection
-            selectedDate={selectedDate}
-            selectedDateLabel={selectedDateLabel}
-            selectedDay={availabilityMap[selectedDate]}
-            selectedTime={selectedTime}
-            onTimeSelect={handleTimeSelect}
-            canContinue={canContinue}
-            onContinue={handleContinue}
-            formatTime={formatTime}
-            ref={timeRef}
-          />
+            <TimeSection
+              selectedDate={selectedDate}
+              selectedDateLabel={selectedDateLabel}
+              selectedDay={availabilityMap[selectedDate]}
+              selectedTime={selectedTime}
+              onTimeSelect={handleTimeSelect}
+              canContinue={canContinue}
+              onContinue={handleContinue}
+              formatTime={formatTime}
+              ref={timeRef}
+            />
+          </div>
         </div>
 
         {/* DRAWERS */}

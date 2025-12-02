@@ -121,14 +121,16 @@ const PricingStyles = () => (
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 18px;
+  overflow: hidden;
   z-index: 1000;
 }
 
 .booking-modal {
   background: linear-gradient(135deg, var(--brand-bg-1), var(--brand-bg-2));
   width: min(1150px, 100%);
-  height: calc(100vh - 70px);
+  height: calc(100vh - 48px);
+  max-height: calc(100vh - 48px);
   border-radius: 22px;
   color: var(--brand-text-light);
   display: flex;
@@ -151,7 +153,19 @@ const PricingStyles = () => (
   gap: 24px;
   padding: 24px;
   height: 100%;
+  max-width: 1050px;
+  width: 100%;
+  margin: 0 auto;
   min-height: 0;
+}
+
+.booking-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+  display: flex;
+  justify-content: center;
 }
 
 
@@ -709,14 +723,22 @@ const PricingStyles = () => (
 ────────────────────────────────────────────── */
 
 @media (max-width: 820px) {
-  .premium-booking-layout {
-    grid-template-columns: 1fr;
-    height: auto;
+  .booking-overlay {
+    padding: 12px;
   }
 
   .booking-modal {
+  height: calc(100vh - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .booking-body {
+    padding: 0 14px 18px;
+  }
+
+  .premium-booking-layout {
+    grid-template-columns: 1fr;
     height: auto;
-    max-height: none;
   }
 
   .drawer {
