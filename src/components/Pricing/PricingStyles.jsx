@@ -1220,7 +1220,7 @@ const PricingStyles = () => (
             max-height: calc(100vh - 160px);
           }
           .stepper {
-            grid-template-columns: 1fr 1fr;
+            display: none;
           }
           .step-chip {
             padding: 10px;
