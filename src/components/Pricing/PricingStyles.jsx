@@ -130,7 +130,7 @@ const PricingStyles = () => (
   background: linear-gradient(135deg, var(--brand-bg-1), var(--brand-bg-2));
   width: min(1150px, 100%);
   height: auto;
-  max-height: 90vh;
+  max-height: min(820px, 90vh);
   border-radius: 22px;
   color: var(--brand-text-light);
   display: flex;
@@ -157,6 +157,7 @@ const PricingStyles = () => (
   margin: 0 auto;
   min-height: 0;
   align-items: flex-start;
+  justify-content: center;
 }
 
 .booking-body {
@@ -182,6 +183,7 @@ const PricingStyles = () => (
   display: flex;
   flex-direction: column;
   gap: 14px;
+  align-self: center;
 }
 
 /* Calendar Header */
@@ -391,7 +393,8 @@ const PricingStyles = () => (
   border: 1px solid rgba(255,255,255,0.08);
   min-height: 0;
   height: auto;
-  max-height: 640px;
+  max-height: 520px;
+  align-self: center;
 }
 
 .times-header {
@@ -427,7 +430,7 @@ const PricingStyles = () => (
   overflow-y: auto;
   padding-right: 6px;
   min-height: 0;
-  max-height: 420px;
+  max-height: 340px;
 }
 
 .time-slot {
@@ -766,6 +769,7 @@ const PricingStyles = () => (
   .premium-booking-layout {
     grid-template-columns: 1fr;
     height: auto;
+    gap: 16px;
   }
 
   .drawer {
@@ -789,6 +793,7 @@ const PricingStyles = () => (
   .calendar-card {
     padding: 16px;
     gap: 10px;
+    align-self: stretch;
   }
 
   .calendar-toolbar {
@@ -803,6 +808,7 @@ const PricingStyles = () => (
 
   .calendar-grid {
     gap: 8px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
   .day {
