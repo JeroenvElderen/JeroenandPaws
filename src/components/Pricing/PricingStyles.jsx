@@ -398,6 +398,28 @@ const PricingStyles = () => (
   margin-bottom: 10px;
 }
 
+.times-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.change-date-button {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--brand-text-light);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.change-date-button:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.2);
+}
+
 .times-list {
   flex: 1;
   overflow-y: auto;

@@ -11,6 +11,7 @@ const TimeSection = forwardRef(
       formatTime,
       canContinue,
       onContinue,
+      onChangeDate,
     },
     ref
   ) => {
@@ -26,9 +27,17 @@ const TimeSection = forwardRef(
             <h4>Available slots</h4>
           </div>
 
-          <p className="muted subtle">
-            {selectedTime ? formatTime(selectedTime) : "Choose a time"}
-          </p>
+          <div className="times-actions">
+            {onChangeDate && (
+              <button type="button" className="change-date-button" onClick={onChangeDate}>
+                Change date
+              </button>
+            )}
+
+            <p className="muted subtle">
+              {selectedTime ? formatTime(selectedTime) : "Choose a time"}
+            </p>
+          </div>
         </div>
 
         <div className="times-list">

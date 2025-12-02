@@ -87,6 +87,9 @@ const BookingModal = ({ service, onClose }) => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileStep, setMobileStep] = useState("calendar");
+
   // Refs
   const calendarRef = useRef(null);
   const timeRef = useRef(null);
@@ -160,6 +163,36 @@ const BookingModal = ({ service, onClose }) => {
     [availability]
   );
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 820);
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) setMobileStep("calendar");
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || mobileStep !== "time") return;
+
+    if (!timeRef.current) return;
+
+    if (bookingBodyRef.current) {
+      const offset = timeRef.current.offsetTop - 12;
+      bookingBodyRef.current.scrollTo({
+        top: Math.max(0, offset),
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    timeRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [isMobile, mobileStep]);
+
   const scrollToTimeSection = useCallback(() => {
     if (!timeRef.current) return;
 
@@ -189,6 +222,11 @@ const BookingModal = ({ service, onClose }) => {
     const first = availabilityMap[iso]?.slots.find((s) => s.available)?.time;
     setSelectedDate(iso);
     setSelectedTime(first || "");
+    if (isMobile) {
+      setMobileStep("time");
+      return;
+    }
+
     scrollToTimeSection();
   };
 
@@ -376,6 +414,19 @@ const BookingModal = ({ service, onClose }) => {
     setLoginModalOpen(false);
   };
 
+  const openCalendar = () => {
+    if (isMobile) {
+      setMobileStep("calendar");
+      if (bookingBodyRef.current) {
+        bookingBodyRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    if (!calendarRef.current) return;
+    calendarRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   // ─────────────────────────────────────────────
   // RENDER MODAL
   // ─────────────────────────────────────────────
@@ -396,49 +447,54 @@ const BookingModal = ({ service, onClose }) => {
         </header>
 
         {/* BODY */}
-        <div className="booking-body">
+        <div className="booking-body" ref={bookingBodyRef}>
           <div className="premium-booking-layout">
-            <CalendarSection
-              loading={loading}
-              availabilityNotice={availabilityNotice}
-              monthLabel={visibleMonth.toLocaleString(undefined, {
-                month: "long",
-                year: "numeric",
-              })}
-              weekdayLabels={weekdayLabels}
-              monthMatrix={buildMonthMatrix(visibleMonth)}
-              visibleMonth={visibleMonth}
-              onPrevMonth={() =>
-                setVisibleMonth(
-                  (p) => new Date(p.getFullYear(), p.getMonth() - 1, 1)
-                )
-              }
-              onNextMonth={() =>
-                setVisibleMonth(
-                  (p) => new Date(p.getFullYear(), p.getMonth() + 1, 1)
-                )
-              }
-              is24h={is24h}
-              onToggleTimeFormat={setIs24h}
-              availabilityMap={availabilityMap}
-              getDayAvailabilityStatus={getDayAvailabilityStatus}
-              selectedDate={selectedDate}
-              onDaySelect={handleDaySelect}
-              timeZoneLabel={availability.timeZone}
-              ref={calendarRef}
-            />
+            {(!isMobile || mobileStep === "calendar") && (
+              <CalendarSection
+                loading={loading}
+                availabilityNotice={availabilityNotice}
+                monthLabel={visibleMonth.toLocaleString(undefined, {
+                  month: "long",
+                  year: "numeric",
+                })}
+                weekdayLabels={weekdayLabels}
+                monthMatrix={buildMonthMatrix(visibleMonth)}
+                visibleMonth={visibleMonth}
+                onPrevMonth={() =>
+                  setVisibleMonth(
+                    (p) => new Date(p.getFullYear(), p.getMonth() - 1, 1)
+                  )
+                }
+                onNextMonth={() =>
+                  setVisibleMonth(
+                    (p) => new Date(p.getFullYear(), p.getMonth() + 1, 1)
+                  )
+                }
+                is24h={is24h}
+                onToggleTimeFormat={setIs24h}
+                availabilityMap={availabilityMap}
+                getDayAvailabilityStatus={getDayAvailabilityStatus}
+                selectedDate={selectedDate}
+                onDaySelect={handleDaySelect}
+                timeZoneLabel={availability.timeZone}
+                ref={calendarRef}
+              />
+            )}
 
-            <TimeSection
-              selectedDate={selectedDate}
-              selectedDateLabel={selectedDateLabel}
-              selectedDay={availabilityMap[selectedDate]}
-              selectedTime={selectedTime}
-              onTimeSelect={handleTimeSelect}
-              canContinue={canContinue}
-              onContinue={handleContinue}
-              formatTime={formatTime}
-              ref={timeRef}
-            />
+            {(!isMobile || mobileStep === "time") && (
+              <TimeSection
+                selectedDate={selectedDate}
+                selectedDateLabel={selectedDateLabel}
+                selectedDay={availabilityMap[selectedDate]}
+                selectedTime={selectedTime}
+                onTimeSelect={handleTimeSelect}
+                canContinue={canContinue}
+                onContinue={handleContinue}
+                formatTime={formatTime}
+                onChangeDate={openCalendar}
+                ref={timeRef}
+              />
+            )}
           </div>
         </div>
 
@@ -502,7 +558,7 @@ const BookingModal = ({ service, onClose }) => {
           }}
           onEditDateTime={() => {
             setSummaryOpen(false);
-            // optional: scroll calendar into view on mobile
+            openCalendar();
           }}
         />
 
