@@ -14,6 +14,8 @@ const TimeSection = forwardRef(
     },
     ref
   ) => {
+    const availableSlots = selectedDay?.slots?.filter((s) => s.available) || [];
+
     return (
       <div className="times-card" ref={ref}>
         <div className="times-header">
@@ -36,9 +38,8 @@ const TimeSection = forwardRef(
 
           {selectedDate &&
             selectedDay &&
-            selectedDay.slots
-              ?.filter((s) => s.available)
-              .map((slot) => {
+            (availableSlots.length > 0 ? (
+              availableSlots.map((slot) => {
                 const active = selectedTime === slot.time;
 
                 return (
@@ -53,7 +54,12 @@ const TimeSection = forwardRef(
                     <span className="time-arrow">→</span>
                   </button>
                 );
-              })}
+              })
+            ) : (
+              <p className="muted">
+                No available times on this date. Please select another day.
+              </p>
+            ))}
         </div>
 
         <div className="times-continue-footer">

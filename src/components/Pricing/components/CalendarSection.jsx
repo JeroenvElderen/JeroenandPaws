@@ -14,7 +14,7 @@ const CalendarSection = forwardRef(
       is24h,
       onToggleTimeFormat,
       availabilityMap,
-      isDayAvailable,
+      getDayAvailabilityStatus,
       selectedDate,
       onDaySelect,
       timeZoneLabel,
@@ -92,7 +92,8 @@ const CalendarSection = forwardRef(
                   dateObj.getMonth() === visibleMonth.getMonth();
 
                 const dayData = availabilityMap[iso];
-                const available = isDayAvailable(dayData);
+                const dayStatus = getDayAvailabilityStatus(dayData);
+                const available = dayStatus !== "unavailable";
 
                 const isSelected = iso === selectedDate;
                 const isPast = dateObj < new Date().setHours(0, 0, 0, 0);
@@ -104,7 +105,7 @@ const CalendarSection = forwardRef(
                     className={[
                       "day",
                       isSelected ? "selected" : "",
-                      available ? "available" : "unavailable",
+                      dayStatus,
                       inThisMonth ? "" : "muted",
                     ].join(" ")}
                     disabled={isPast || !available}
@@ -112,7 +113,7 @@ const CalendarSection = forwardRef(
                   >
                     <span>{dateObj.getDate()}</span>
                     <span className="day-dot-wrapper">
-                      {available && <span className="day-dot" />}
+                      <span className="day-dot" />
                     </span>
                   </button>
                 );

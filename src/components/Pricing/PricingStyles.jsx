@@ -259,6 +259,20 @@ const PricingStyles = () => (
   animation: fadeDay 0.4s ease both;
 }
 
+.day-dot-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 12px;
+}
+
+.day .day-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+}
+
 /* Individual fade */
 @keyframes fadeDay {
   0% { opacity: 0; transform: scale(.96); }
@@ -275,6 +289,16 @@ const PricingStyles = () => (
   box-shadow: 0 0 0 4px rgba(34,197,94,0.25);
 }
 
+.day.limited .day-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245,158,11,0.18);
+}
+
+.day.unavailable .day-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+}
+
 @keyframes pulse-dot {
   0% { transform: scale(1); }
   50% { transform: scale(1.25); }
@@ -286,6 +310,11 @@ const PricingStyles = () => (
   border-color: rgba(34,197,94,0.58);
 }
 
+.day.limited:hover {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.45);
+}
+  
 .day.available::after {
   content: "";
   position: absolute;
@@ -396,7 +425,6 @@ const PricingStyles = () => (
   position: sticky;
   bottom: 0;
   padding-top: 12px;
-  background: linear-gradient(180deg, rgba(26,17,50,0), rgba(26,17,50,1));
 }
 
 

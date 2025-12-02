@@ -159,7 +159,17 @@ const BookingModal = ({ service, onClose }) => {
     [availability]
   );
 
-  const isDayAvailable = (day) => day?.slots?.some((s) => s.available);
+  const getDayAvailabilityStatus = useCallback((day) => {
+    const slots = day?.slots || [];
+    const availableCount = slots.filter((s) => s.available).length;
+
+    if (!slots.length || availableCount === 0) return "unavailable";
+    if (availableCount <= 2) return "limited";
+    return "available";
+  }, []);
+
+  const isDayAvailable = (day) =>
+    getDayAvailabilityStatus(day) !== "unavailable";
 
   const handleDaySelect = (iso) => {
     const first = availabilityMap[iso]?.slots.find((s) => s.available)?.time;
@@ -395,7 +405,7 @@ const BookingModal = ({ service, onClose }) => {
             is24h={is24h}
             onToggleTimeFormat={setIs24h}
             availabilityMap={availabilityMap}
-            isDayAvailable={isDayAvailable}
+            getDayAvailabilityStatus={getDayAvailabilityStatus}
             selectedDate={selectedDate}
             onDaySelect={handleDaySelect}
             timeZoneLabel={availability.timeZone}
