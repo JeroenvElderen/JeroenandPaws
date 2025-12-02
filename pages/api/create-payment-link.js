@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { supabase } from "../../api/_lib/supabase";
+const { supabaseAdmin } = require("../../api/_lib/supabase");
 
 // pages/api/create-payment-link.js
 
@@ -24,7 +24,10 @@ export default async function handler(req, res) {
     const rawApiKey = process.env.REVOLUT_API_KEY;
     const apiKey = rawApiKey?.trim();
     console.log("🔐 Has REVOLUT_API_KEY?", Boolean(apiKey));
-    console.log("🔑 Key prefix:", apiKey ? apiKey.substring(0, 3) : "undefined");
+    console.log(
+      "🔑 Key prefix:",
+      apiKey ? apiKey.substring(0, 3) : "undefined"
+    );
 
     if (!apiKey) {
       console.error("❌ Missing REVOLUT_API_KEY env var");
@@ -52,9 +55,13 @@ export default async function handler(req, res) {
       capture_mode: "AUTOMATIC",
       settle_payment: true,
       redirect_url:
-        redirectUrl || `${domain}/payment-success${bookingId ? `?booking=${bookingId}` : ""}`,
+        redirectUrl ||
+        `${domain}/payment-success${bookingId ? `?booking=${bookingId}` : ""}`,
       cancel_url:
-        cancelUrl || `${domain}/payment-cancelled${bookingId ? `?booking=${bookingId}` : ""}`,
+        cancelUrl ||
+        `${domain}/payment-cancelled${
+          bookingId ? `?booking=${bookingId}` : ""
+        }`,
     };
     console.log("📦 Request body being sent:", body);
 
@@ -88,14 +95,19 @@ export default async function handler(req, res) {
 
     const paymentOrderId = data.public_id || data.id;
 
-    if (bookingId && paymentOrderId) {
-      const { error: updateError } = await supabase
+    if (bookingId && paymentOrderId && supabaseAdmin) {
+      const { error: updateError } = await supabaseAdmin
         .from("bookings")
         .update({ payment_order_id: paymentOrderId })
         .eq("id", bookingId);
 
-      if (updateError) console.error("⚠️ Failed to link payment order", updateError);
+      if (updateError)
+        console.error("⚠️ Failed to link payment order", updateError);
       else console.log("🔗 Linked payment order to booking", bookingId);
+    } else if (!supabaseAdmin) {
+      console.warn(
+        "⚠️ Supabase admin client unavailable; booking not linked to payment order"
+      );
     }
 
     return res.status(200).json({
