@@ -7,7 +7,9 @@ const TimesSection = ({
   selectedTime,
   handleTimeSelection,
   formatTime,
-  setShowFormPopup,
+  onContinue,
+  onBack,
+  canContinue,
   timesSectionRef,
 }) => {
   return (
@@ -21,9 +23,25 @@ const TimesSection = ({
           <p className="muted subtle">
             {selectedTime ? formatTime(selectedTime) : "Choose a time"}
           </p>
-          <button type="button" className="ghost-button" onClick={() => setShowFormPopup(true)}>
-            Book time
-          </button>
+          <div className="actions-stack">
+            {onBack && (
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={onBack}
+              >
+                Back to calendar
+              </button>
+            )}
+            <button
+              type="button"
+              className="button w-button"
+              onClick={onContinue}
+              disabled={!canContinue}
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </div>
       <div className="times-list" aria-label="Time options">

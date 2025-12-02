@@ -52,13 +52,13 @@ const PricingStyles = () => (
           margin: 6px 0 4px;
         }
         .booking-body {
-          display: grid;
-          grid-template-columns: 1.6fr 0.8fr;
-          grid-template-rows: minmax(240px, 0.9fr) minmax(360px, 1.1fr);
+          display: flex;
+          flex-direction: column;
           gap: 16px;
           padding: 20px 24px 24px;
           flex: 1;
           min-height: 0;
+          overflow: hidden;
         }
         .booking-wayfinding {
           grid-column: 1 / -1;
@@ -116,10 +116,62 @@ const PricingStyles = () => (
           min-height: 0;
         }
         .calendar-card {
-          grid-row: 1 / span 2;
+          grid-row: auto;
         }
         .times-card {
-          grid-row: 1 / span 2;
+          grid-row: auto;
+        }
+
+        .step-flow {
+          overflow: hidden;
+        }
+
+        .stepper {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 10px;
+        }
+
+        .step-chip {
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 12px;
+          padding: 10px 12px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #dcd4f2;
+        }
+
+        .step-chip.complete {
+          border-color: rgba(124, 93, 242, 0.5);
+          background: rgba(124, 93, 242, 0.12);
+        }
+
+        .step-chip.active {
+          background: linear-gradient(145deg, #6e4bd8, #7c5df2);
+          color: #0c061a;
+          box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
+        }
+
+        .step-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
+          padding: 16px;
+          min-height: 0;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .step-toolbar {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
         }
         .actions-stack {
           display: flex;
@@ -963,6 +1015,58 @@ const PricingStyles = () => (
           padding: 10px 4px;
           outline: none;
         }
+        
+        @media (max-width: 900px) {
+          .booking-overlay {
+            padding: 12px;
+            align-items: flex-start;
+          }
+          .booking-modal {
+            height: auto;
+            max-height: none;
+            min-height: 0;
+          }
+          .booking-body {
+            padding: 16px;
+            gap: 12px;
+          }
+          .step-card {
+            padding: 12px;
+          }
+          .booking-header {
+            padding: 18px 18px 12px;
+          }
+          .times-actions {
+            width: 100%;
+            justify-content: flex-start;
+          }
+          .actions-stack {
+            flex-wrap: wrap;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .booking-modal {
+            width: 100%;
+            border-radius: 12px;
+          }
+          .booking-body {
+            overflow-y: auto;
+            max-height: calc(100vh - 160px);
+          }
+          .stepper {
+            grid-template-columns: 1fr 1fr;
+          }
+          .step-chip {
+            padding: 10px;
+            font-size: 14px;
+          }
+          .step-toolbar {
+            flex-wrap: wrap;
+            justify-content: flex-start;
+          }
+        }
+          
         .searchable-select .select-input input::placeholder {
           color: #98a2ff;
           opacity: 0.65;
