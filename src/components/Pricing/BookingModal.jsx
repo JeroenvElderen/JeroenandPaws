@@ -17,6 +17,7 @@ import TimeSection from "./components/TimeSection";
 import ClientDrawer from "./components/ClientDrawer";
 import PetDrawer from "./components/PetDrawer";
 import SummaryDrawer from "./components/SummaryDrawer";
+import LoginModal from "./components/LoginModal";
 
 // Helpers
 import { weekdayLabels } from "./constants";
@@ -38,7 +39,8 @@ import { useAuth } from "../../context/AuthContext";
 // ─────────────────────────────────────────────
 const BookingModal = ({ service, onClose }) => {
   // Auth
-  const { isAuthenticated, user, login } = useAuth();
+  const { profile, isAuthenticated, setProfile } = useAuth();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   // ─────────────────────────────────────────────
   // AVAILABILITY
@@ -184,11 +186,20 @@ const BookingModal = ({ service, onClose }) => {
     if (!canContinue) return;
 
     // Autofill data if logged in
-    if (isAuthenticated && user) {
-      if (user.name) setClientName(user.name);
-      if (user.email) setClientEmail(user.email);
-      if (user.phone) setClientPhone(user.phone);
-      if (user.address) setClientAddress(user.address);
+    if (isAuthenticated && profile?.client) {
+      const client = profile.client;
+
+      if (client.full_name || client.name) {
+        setClientName(client.full_name || client.name);
+      }
+
+      if (client.email) setClientEmail(client.email);
+
+      if (client.phone_number || client.phone) {
+        setClientPhone(client.phone_number || client.phone);
+      }
+
+      if (client.address) setClientAddress(client.address);
     }
 
     setClientDrawerOpen(true);
@@ -260,7 +271,14 @@ const BookingModal = ({ service, onClose }) => {
   // PAY & BOOK
   // ─────────────────────────────────────────────
   const handlePay = async () => {
+    if (totalPrice <= 0) {
+      setError("Add at least one dog to continue.");
+      return;
+    }
+
     setIsBooking(true);
+    setError("");
+    setSuccess("");
 
     try {
       const payload = {
@@ -282,20 +300,55 @@ const BookingModal = ({ service, onClose }) => {
         amount: totalPrice,
       };
 
-      const res = await fetch(`${apiBaseUrl}/api/book`, {
+      const bookingRes = await fetch(`${apiBaseUrl}/api/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Booking failed");
+      if (!bookingRes.ok) throw new Error("Booking failed");
 
-      setSuccess("Booking confirmed!");
+      const bookingData = await bookingRes.json();
+      const bookingId = bookingData?.booking_id;
+
+      if (!bookingId) throw new Error("Could not create booking.");
+
+      const description = `${service.title} — ${dogCount} dog${dogCount === 1 ? "" : "s"}`;
+      const successUrl = `${window.location.origin}/payment-success?booking=${bookingId}`;
+      const cancelUrl = `${window.location.origin}/payment-cancelled?booking=${bookingId}`;
+
+      const paymentRes = await fetch(`${apiBaseUrl}/api/create-payment-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: totalPrice,
+          description,
+          bookingId,
+          redirectUrl: successUrl,
+          cancelUrl,
+        }),
+      });
+
+      const paymentData = await paymentRes.json();
+
+      if (!paymentRes.ok || !paymentData?.url) {
+        const errMessage = paymentData?.error || "Payment link creation failed.";
+        throw new Error(errMessage);
+      }
+
+      window.location.href = paymentData.url;
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setIsBooking(false);
     }
+  };
+
+  const handleLoginClick = () => setLoginModalOpen(true);
+
+  const handleLoginSuccess = (newProfile) => {
+    setProfile(newProfile);
+    setLoginModalOpen(false);
   };
 
   // ─────────────────────────────────────────────
@@ -383,8 +436,9 @@ const BookingModal = ({ service, onClose }) => {
             clientAddress.trim()
           }
           onSave={handleClientSaved}
-          login={login}
+          login={handleLoginClick}
           isAuthenticated={isAuthenticated}
+          user={profile?.client}
         />
 
         <PetDrawer
@@ -423,6 +477,12 @@ const BookingModal = ({ service, onClose }) => {
             setSummaryOpen(false);
             // optional: scroll calendar into view on mobile
           }}
+        />
+
+        <LoginModal
+          isOpen={loginModalOpen}
+          onClose={() => setLoginModalOpen(false)}
+          onLogin={handleLoginSuccess}
         />
       </div>
     </div>

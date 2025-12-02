@@ -26,12 +26,13 @@ const ClientDrawer = ({
   // Autofill when logged in
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.name) setName(user.name);
+      if (user.full_name || user.name) setName(user.full_name || user.name);
       if (user.email) setEmail(user.email);
-      if (user.phone) setPhone(user.phone);
+      if (user.phone_number || user.phone)
+        setPhone(user.phone_number || user.phone);
       if (user.address) setAddress(user.address);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, setName, setEmail, setPhone, setAddress]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";

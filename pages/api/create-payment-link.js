@@ -1,12 +1,16 @@
 import { randomUUID } from "crypto";
+import { supabase } from "../../api/_lib/supabase";
 
 // pages/api/create-payment-link.js
 
 export default async function handler(req, res) {
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "Method not allowed" });
+
   console.log(">>> HIT /api/create-payment-link (LIVE)");
 
   try {
-    const { amount, description } = req.body;
+    const { amount, description, bookingId, redirectUrl, cancelUrl } = req.body;
 
     // 🔍 Check input
     console.log("💰 Amount received:", amount);
@@ -47,8 +51,10 @@ export default async function handler(req, res) {
       description: description || "Payment",
       capture_mode: "AUTOMATIC",
       settle_payment: true,
-      redirect_url: `${domain}/payment-success`,
-      cancel_url: `${domain}/payment-cancelled`,
+      redirect_url:
+        redirectUrl || `${domain}/payment-success${bookingId ? `?booking=${bookingId}` : ""}`,
+      cancel_url:
+        cancelUrl || `${domain}/payment-cancelled${bookingId ? `?booking=${bookingId}` : ""}`,
     };
     console.log("📦 Request body being sent:", body);
 
@@ -80,9 +86,21 @@ export default async function handler(req, res) {
     const data = JSON.parse(text);
     console.log("✅ CHECKOUT LINK CREATED:", data);
 
+    const paymentOrderId = data.public_id || data.id;
+
+    if (bookingId && paymentOrderId) {
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({ payment_order_id: paymentOrderId })
+        .eq("id", bookingId);
+
+      if (updateError) console.error("⚠️ Failed to link payment order", updateError);
+      else console.log("🔗 Linked payment order to booking", bookingId);
+    }
+
     return res.status(200).json({
       url: data.checkout_url,
-      orderId: data.public_id || data.id,
+      orderId: paymentOrderId,
     });
   } catch (err) {
     console.error("💥 Handler crashed:", err);
