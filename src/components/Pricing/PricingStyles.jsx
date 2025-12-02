@@ -129,8 +129,8 @@ const PricingStyles = () => (
 .booking-modal {
   background: linear-gradient(135deg, var(--brand-bg-1), var(--brand-bg-2));
   width: min(1150px, 100%);
-  height: calc(100vh - 48px);
-  max-height: calc(100vh - 48px);
+  height: auto;
+  max-height: min(820px, 90vh);
   border-radius: 22px;
   color: var(--brand-text-light);
   display: flex;
@@ -152,20 +152,22 @@ const PricingStyles = () => (
   grid-template-columns: 1.45fr 1fr;
   gap: 24px;
   padding: 24px;
-  height: 100%;
   max-width: 1050px;
   width: 100%;
   margin: 0 auto;
   min-height: 0;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .booking-body {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
   padding: 0 24px 24px;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
 
@@ -181,6 +183,7 @@ const PricingStyles = () => (
   display: flex;
   flex-direction: column;
   gap: 14px;
+  align-self: center;
 }
 
 /* Calendar Header */
@@ -389,7 +392,9 @@ const PricingStyles = () => (
   padding: 18px;
   border: 1px solid rgba(255,255,255,0.08);
   min-height: 0;
-  height: 100%;
+  height: auto;
+  max-height: 520px;
+  align-self: center;
 }
 
 .times-header {
@@ -425,6 +430,7 @@ const PricingStyles = () => (
   overflow-y: auto;
   padding-right: 6px;
   min-height: 0;
+  max-height: 340px;
 }
 
 .time-slot {
@@ -750,17 +756,20 @@ const PricingStyles = () => (
   }
 
   .booking-modal {
-  height: calc(100vh - 24px);
-    max-height: calc(100vh - 24px);
+    height: auto;
+    max-height: none;
+    min-height: calc(100vh - 24px);
   }
 
   .booking-body {
     padding: 0 14px 18px;
+    align-items: stretch;
   }
 
   .premium-booking-layout {
     grid-template-columns: 1fr;
     height: auto;
+    gap: 16px;
   }
 
   .drawer {
@@ -779,6 +788,43 @@ const PricingStyles = () => (
 
   .drawer.open {
     bottom: 0;
+  }
+
+  .calendar-card {
+    padding: 16px;
+    gap: 10px;
+    align-self: stretch;
+  }
+
+  .calendar-toolbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .weekday-row {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .calendar-grid {
+    gap: 8px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .day {
+    aspect-ratio: 1 / 1;
+    height: auto;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    font-size: 15px;
+  }
+
+  .day .day-dot-wrapper {
+    top: auto;
+    bottom: 8px;
+    right: 50%;
+    transform: translateX(50%);
   }
 }
 
