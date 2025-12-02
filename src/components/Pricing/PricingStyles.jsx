@@ -253,16 +253,20 @@ const PricingStyles = () => (
   color: var(--brand-text-subtle);
   font-weight: 600;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: flex-start;
   position: relative;
   transition: 0.25s ease;
   animation: fadeDay 0.4s ease both;
 }
 
 .day-dot-wrapper {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   min-width: 12px;
 }
 
@@ -314,7 +318,7 @@ const PricingStyles = () => (
   background: rgba(245,158,11,0.12);
   border-color: rgba(245,158,11,0.45);
 }
-  
+
 .day.available::after {
   content: "";
   position: absolute;
