@@ -60,6 +60,26 @@ const PricingStyles = () => (
           min-height: 0;
           overflow: hidden;
         }
+        .booking-layout {
+          display: grid;
+          grid-template-columns: 1fr 320px;
+          gap: 16px;
+          align-items: start;
+          height: 100%;
+        }
+        .booking-main {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-height: 0;
+        }
+        .booking-sidebar {
+          position: sticky;
+          top: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
         .booking-wayfinding {
           grid-column: 1 / -1;
           display: flex;
@@ -168,6 +188,130 @@ const PricingStyles = () => (
           gap: 14px;
         }
 
+        .calendar-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 6px;
+        }
+        .multi-day-toggle {
+          margin-top: 6px;
+        }
+        .multi-day-summary {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .multi-day-summary__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+        }
+        .schedule-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .schedule-list.inline {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+        .schedule-list__item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 10px;
+          padding: 10px 12px;
+        }
+        .schedule-list__date {
+          font-weight: 700;
+          margin: 0;
+        }
+        .badge {
+          background: rgba(124, 93, 242, 0.2);
+          border: 1px solid rgba(124, 93, 242, 0.5);
+          color: #f2ecff;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-weight: 700;
+        }
+        .addon-card,
+        .floating-summary-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .addon-card__header {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .addon-card__description {
+          max-width: 180px;
+          text-align: right;
+        }
+        .addon-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .addon-row {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 10px;
+          align-items: start;
+          padding: 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .addon-row.selected {
+          border-color: rgba(124, 93, 242, 0.4);
+          background: rgba(124, 93, 242, 0.08);
+        }
+        .addon-row__title-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: center;
+        }
+        .addon-row__price {
+          font-weight: 700;
+        }
+        .floating-summary__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .floating-summary__section {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          padding-top: 10px;
+        }
+        .floating-summary__totals {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          padding-top: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .recurrence-card {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
         .step-toolbar {
           display: flex;
           justify-content: flex-end;
@@ -193,12 +337,33 @@ const PricingStyles = () => (
           background: rgba(255, 255, 255, 0.15);
           transform: translateY(-1px);
         }
+        .ghost-button.tiny {
+          padding: 6px 10px;
+          font-size: 12px;
+        }
         .selection-summary {
           display: flex;
           justify-content: space-between;
           gap: 12px;
           flex-wrap: wrap;
           align-items: flex-start;
+        }
+        .pill-button-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .pill-toggle {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          padding: 10px;
+          border-radius: 12px;
+        }
+        .pill-toggle small {
+          display: block;
         }
         .selection-summary h4 {
           margin: 6px 0 2px;
@@ -1066,7 +1231,7 @@ const PricingStyles = () => (
             justify-content: flex-start;
           }
         }
-          
+
         .searchable-select .select-input input::placeholder {
           color: #98a2ff;
           opacity: 0.65;
@@ -1349,6 +1514,15 @@ const PricingStyles = () => (
         }
         .popup-body .actions-row {
           position: static;
+        }
+        @media (max-width: 960px) {
+          .booking-layout {
+            grid-template-columns: 1fr;
+          }
+          .booking-sidebar {
+            position: relative;
+            top: auto;
+          }
         }
       `}</style>
 );
