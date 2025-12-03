@@ -1016,7 +1016,7 @@ const BookingModal = ({ service, onClose }) => {
                 additionals={additionals}
                 additionalsOpen={additionalsOpen}
                 setAdditionalsOpen={setAdditionalsOpen}
-                toggleAdditional={toggleAdditional}
+                toggleAdditional={toggleAdditional} 
                 addons={addons}
                 selectedAdditionalLabels={selectedAdditionalLabels}
                 formatCurrency={formatCurrency}

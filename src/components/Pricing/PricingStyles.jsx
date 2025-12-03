@@ -1524,6 +1524,52 @@ const PricingStyles = () => (
             top: auto;
           }
         }
+        .mobile-summary-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(30, 20, 60, 0.62);
+  backdrop-filter: blur(18px);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 999;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+@media (min-width: 1024px) {
+  .mobile-summary-bar {
+    display: none;
+  }
+}
+
+        .desktop-summary {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .desktop-summary {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    opacity: 0.85;
+    font-size: 0.9rem;
+    line-height: 1.3rem;
+    margin-left: auto;
+    padding-left: 2rem;
+  }
+
+  .desktop-summary .price {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 4px;
+  }
+}
+
       `}</style>
 );
 

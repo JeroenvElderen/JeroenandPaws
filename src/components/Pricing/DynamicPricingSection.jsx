@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import BookingModal from "./BookingModal";
+import { BookingModal } from "../booking/BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
 import { prefetchAvailability } from "./availabilityCache";
