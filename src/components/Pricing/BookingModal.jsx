@@ -65,6 +65,7 @@ const BookingModal = ({ service, onClose }) => {
   const [supportOpen, setSupportOpen] = useState(false);
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
+  const addonsSectionRef = useRef(null);
   const bookingModalRef = useRef(null);
   const calendarSectionRef = useRef(null);
   const timesSectionRef = useRef(null);
@@ -110,12 +111,20 @@ const BookingModal = ({ service, onClose }) => {
   const trimmedEmail = clientEmail.trim();
   const canLoadPets = Boolean(trimmedName && trimmedEmail);
 
-  const stepOrder = ["calendar", "time", "customer", "pet", "summary"];
+  const stepOrder = [
+    "calendar",
+    "time",
+    "customer",
+    "pet",
+    "addons",
+    "summary",
+  ];
   const stepLabels = {
     calendar: "Calendar",
     time: "Choose time",
     customer: "Customer",
     pet: "Pets",
+    addons: "Additional care",
     summary: "Summary",
   };
 
@@ -994,6 +1003,7 @@ const BookingModal = ({ service, onClose }) => {
     setCurrentStep(step);
     if (step === "calendar") scrollToSection(calendarSectionRef);
     if (step === "time") scrollToSection(timesSectionRef);
+    if (step === "addons") scrollToSection(addonsSectionRef);
     if (step === "summary") scrollToSection(summarySectionRef);
   };
 
@@ -1362,6 +1372,86 @@ const BookingModal = ({ service, onClose }) => {
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
                       visibleStage="pet"
+                      onContinue={() => goToStepAndScroll("addons")}
+                    />
+                  </div>
+                )}
+
+                {currentStep === "addons" && (
+                  <div className="step-card" ref={addonsSectionRef}>
+                    <div className="step-toolbar">
+                      <div className="actions-stack">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => goToStepAndScroll("pet")}
+                        >
+                          Back to pets
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => goToStepAndScroll("time")}
+                        >
+                          Change time
+                        </button>
+                      </div>
+                    </div>
+                    <BookingForm
+                      error={error}
+                      success={success}
+                      customerMode={customerMode}
+                      onSelectCustomerMode={handleCustomerModeChange}
+                      service={service}
+                      scheduleEntries={scheduleEntries}
+                      timeZoneLabel={availability.timeZone}
+                      formatTime={formatTime}
+                      clientName={clientName}
+                      setClientName={setClientName}
+                      clientPhone={clientPhone}
+                      setClientPhone={setClientPhone}
+                      clientEmail={clientEmail}
+                      setClientEmail={setClientEmail}
+                      clientAddress={clientAddress}
+                      setClientAddress={setClientAddress}
+                      canLoadPets={canLoadPets}
+                      fetchExistingPets={fetchExistingPets}
+                      isLoadingPets={isLoadingPets}
+                      existingPets={existingPets}
+                      hasAttemptedPetLoad={hasAttemptedPetLoad}
+                      selectedPetIds={selectedPetIds}
+                      setSelectedPetIds={setSelectedPetIds}
+                      showDogDetails={showDogDetails}
+                      setShowDogDetails={setShowDogDetails}
+                      dogCount={dogCount}
+                      addAnotherDog={addAnotherDog}
+                      removeDog={removeDog}
+                      dogs={dogs}
+                      updateDogField={updateDogField}
+                      handleDogPhotoChange={handleDogPhotoChange}
+                      MAX_DOGS={MAX_DOGS}
+                      breedSearch={breedSearch}
+                      setBreedSearch={setBreedSearch}
+                      notes={notes}
+                      setNotes={setNotes}
+                      additionals={additionals}
+                      additionalsOpen={additionalsOpen}
+                      setAdditionalsOpen={setAdditionalsOpen}
+                      toggleAdditional={toggleAdditional}
+                      addons={addons}
+                      selectedAdditionalLabels={selectedAdditionalLabels}
+                      formatCurrency={formatCurrency}
+                      parsePriceValue={parsePriceValue}
+                      pricing={pricing}
+                      hasAtLeastOneDog={hasAtLeastOneDog}
+                      handleBookAndPay={handleBookAndPay}
+                      isBooking={isBooking}
+                      loading={loading}
+                      isPopup={false}
+                      addOnDropdownRef={addOnDropdownRef}
+                      filteredBreeds={filteredBreeds}
+                      customerDetailsRef={customerDetailsRef}
+                      visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
                   </div>
@@ -1373,9 +1463,9 @@ const BookingModal = ({ service, onClose }) => {
                       <button
                         type="button"
                         className="ghost-button"
-                        onClick={() => goToStepAndScroll("pet")}
+                        onClick={() => goToStepAndScroll("addons")}
                       >
-                        Back to pets
+                        Back to additional care
                       </button>
                     </div>
                     <BookingForm
@@ -1467,15 +1557,7 @@ const BookingModal = ({ service, onClose }) => {
                       Total per dog / visit: {formatCurrency(pricing.servicePrice)}
                     </li>
                   </ul>
-                  <div className="actions-stack sticky-cta">
-                    <button
-                      type="button"
-                      className="button w-button"
-                      onClick={handleBookAndPay}
-                      disabled={!hasAtLeastOneDog || isBooking || loading}
-                    >
-                      {isBooking ? "Booking…" : "Book now"}
-                    </button>
+                  <div className="sticky-cta">
                     <p className="muted subtle">Secure payment after confirmation.</p>
                   </div>
                 </div>
