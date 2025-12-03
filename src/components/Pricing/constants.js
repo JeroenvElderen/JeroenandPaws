@@ -177,3 +177,6 @@ export const DOG_BREEDS = [
 ];
 
 export const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+export const cancellationPolicy =
+  "Free changes up to 24 hours before the visit. Within 24 hours we charge 50% to protect your sitter’s time.";

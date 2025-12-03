@@ -11,6 +11,8 @@ const TimesSection = ({
   onBack,
   canContinue,
   timesSectionRef,
+  recommendedSlot,
+  onUseRecommended,
 }) => {
   return (
     <div className="times-card" ref={timesSectionRef}>
@@ -47,6 +49,18 @@ const TimesSection = ({
       <div className="times-list" aria-label="Time options">
         {!selectedDay && <p className="muted">Select a date to see times.</p>}
 
+        {!selectedTime && recommendedSlot && (
+          <div className="recommendation-banner">
+            <div>
+              <p className="muted small">Next best time</p>
+              <p className="strong">{formatTime(recommendedSlot.time)}</p>
+            </div>
+            <button type="button" className="ghost-button" onClick={onUseRecommended}>
+              Use suggestion
+            </button>
+          </div>
+        )}
+        
         {selectedDay && !isDayAvailableForService(selectedDay) && (
           <p className="muted">
             No compatible start times are available for this service on this date because of other bookings.

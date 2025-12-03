@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import { BookingModal } from "../booking/BookingModal";
+import BookingModal from "./BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
 import { prefetchAvailability } from "./availabilityCache";
@@ -22,6 +22,19 @@ const DynamicPricingSection = ({
     });
   }, [services]);
   
+  const getCtaLabel = (service) => {
+    if (service.ctaText) return service.ctaText;
+    if (service.duration) return `Book ${service.duration}`;
+    if (service.title) return `Book ${service.title}`;
+    return defaultCta;
+  };
+
+  const handlePrefetch = (service) => {
+    if (!service?.ctaHref) {
+      prefetchAvailability(service);
+    }
+  };
+
   const handleSelect = (service) => {
     if (service.ctaOptions) {
       setCtaChoiceService(service);
@@ -51,7 +64,7 @@ const DynamicPricingSection = ({
                 <div className="button-group is-align-center">
                   {service.ctaHref ? (
                     <Link className="button w-button" href={service.ctaHref}>
-                      {service.ctaText || defaultCta}
+                      {getCtaLabel(service)}
                     </Link>
                   ) : (
                     <button
@@ -59,7 +72,7 @@ const DynamicPricingSection = ({
                       className="button w-button"
                       onClick={() => handleSelect(service)}
                     >
-                      {service.ctaText || defaultCta}
+                      {getCtaLabel(service)}
                     </button>
                   )}
                 </div>

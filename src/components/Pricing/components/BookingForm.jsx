@@ -136,6 +136,26 @@ const BookingForm = ({
                     No pets found for this email. Start a new pet profile below.
                   </p>
                 ) : (
+                  <>
+                  <div className="pet-chip-row">
+                    {existingPets.map((pet) => {
+                      const isSelected = selectedPetIds.includes(pet.id);
+                      return (
+                        <button
+                          type="button"
+                          key={`chip-${pet.id}`}
+                          className={`pet-chip ${isSelected ? "selected" : ""}`}
+                          onClick={() => {
+                            setSelectedPetIds((prev) =>
+                              isSelected ? prev.filter((id) => id !== pet.id) : [...prev, pet.id]
+                            );
+                          }}
+                        >
+                          {pet.name || pet.breed || "Saved pet"}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="pet-list">
                     {existingPets.map((pet) => {
                       const isSelected = selectedPetIds.includes(pet.id);
@@ -207,10 +227,11 @@ const BookingForm = ({
                               </div>
                             </div>
                           </div>
-              </label>
+                        </label>
                       );
                     })}
                   </div>
+                  </>
                 )}
                 </div>
             )}
@@ -345,72 +366,52 @@ const BookingForm = ({
 
       {(visibleStage === "pet" || visibleStage === "summary") && (
         <>
-          <div className="pricing-row">
-            <label
-              className="input-group full-width add-on-group"
-              ref={addOnDropdownRef}
-            >
-              <span>Additional care (optional)</span>
-              <button
-                type="button"
-                className={`add-on-trigger input-like-select recurrence-select ${
-                  additionalsOpen ? "open" : ""
-                }`}
-                onClick={() => setAdditionalsOpen((open) => !open)}
-                aria-expanded={additionalsOpen}
-              >
-                <div className="add-on-chip-row">
-                  {additionals.length === 0 ? (
-                    <span className="add-on-chip placeholder">
-                      {addons
-                        .slice(0, 3)
-                        .map((a) => a.label)
-                        .join(" • ") || "Additional care"}
-                    </span>
-                  ) : (
-                    selectedAdditionalLabels.map((label) => (
-                      <span key={label} className="add-on-chip">
-                        {label}
-                      </span>
-                    ))
-                  )}
-                </div>
-                <span className="chevron" aria-hidden="true">
-                  {additionalsOpen ? "▲" : "▼"}
-                </span>
-              </button>
+          <div className="pricing-row" ref={addOnDropdownRef}>
+            <div className="input-group full-width add-on-group">
+              <div className="label-row">
+                <span>Additional care (optional)</span>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => setAdditionalsOpen((open) => !open)}
+                  aria-expanded={additionalsOpen}
+                >
+                  {additionalsOpen ? "Hide" : "Browse"} add-ons
+                </button>
+              </div>
               {additionalsOpen && (
-                <div className="add-on-menu" role="listbox">
+                <div className="add-on-carousel" role="listbox">
                   {addons.map((option) => {
                     const isSelected = additionals.includes(option.value);
                     return (
-                      <label
+                      <button
                         key={option.value}
-                        className={`add-on-option ${
-                          isSelected ? "selected" : ""
-                        }`}
+                        type="button"
+                        className={`add-on-card ${isSelected ? "selected" : ""}`}
+                        onClick={() => toggleAdditional(option.value)}
+                        aria-pressed={isSelected}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleAdditional(option.value)}
-                        />
-                        <div className="add-on-copy">
+                        <div className="add-on-card__header">
                           <span className="add-on-title">{option.label}</span>
                           <span className="add-on-price">
-                            {formatCurrency(parsePriceValue(option.price))} one-time
+                            {formatCurrency(parsePriceValue(option.price))}
                           </span>
-                          <p className="add-on-description">{option.description}</p>
+                        <p className="add-on-description">{option.description}</p>
+                        <span className="add-on-chip">{option.benefit || "Popular"}</span>
                         </div>
                         <span className="add-on-check" aria-hidden="true">
                           ✓
                         </span>
-                      </label>
+                      </button>
                     );
                   })}
                 </div>
               )}
-            </label>
+            <div className="add-on-running-total">
+                <span>Running add-on total</span>
+                <strong>{formatCurrency(pricing.addonTotal || 0)}</strong>
+              </div>
+            </div>
           </div>
 
           {showPricingSummary && (

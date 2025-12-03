@@ -13,6 +13,8 @@ export function BookingDialog({ open, onClose, service, state }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
+        unstyled
+        hideClose
         className={cn(
           // Fullscreen mobile modal
           "fixed inset-0 p-0 glass border-none rounded-none shadow-none",
