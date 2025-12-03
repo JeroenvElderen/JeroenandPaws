@@ -1250,10 +1250,18 @@ const PricingStyles = () => (
           .booking-modal {
             width: 100%;
             border-radius: 12px;
+            height: calc(100dvh - 24px);
+            max-height: calc(100dvh - 24px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
           }
           .booking-body {
             overflow-y: auto;
-            max-height: calc(100vh - 160px);
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
           }
           booking-wayfinding {
             flex-direction: column;
@@ -1498,10 +1506,12 @@ const PricingStyles = () => (
           .booking-modal {
             width: 100%;
             border-radius: 14px;
-            height: auto;
-            max-height: none;
+            height: calc(100dvh - 24px);
+            max-height: calc(100dvh - 24px);
             min-height: 0;
-            overflow: visible;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
           }
           .booking-header {
             padding: 18px 18px 12px;
@@ -1511,6 +1521,9 @@ const PricingStyles = () => (
           .booking-body {
             padding: 14px 14px 18px;
             gap: 12px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
           }
           .calendar-card,
           .times-card {
