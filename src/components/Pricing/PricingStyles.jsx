@@ -1784,6 +1784,8 @@ const PricingStyles = () => (
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
   position: relative;
+  display: grid;
+  gap: 8px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1796,9 +1798,16 @@ const PricingStyles = () => (
 .add-on-card__header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.add-on-price-chip {
+  background: rgba(124, 93, 242, 0.14);
+  border-color: rgba(124, 93, 242, 0.6);
+  color: #e9e5ff;
+  font-weight: 800;
 }
 
 .add-on-running-total {
