@@ -53,10 +53,9 @@ const BookingForm = ({
   filteredBreeds,
   visibleStage = "summary",
   onContinue,
+  customerDetailsRef,
 }) => {
-  const showCustomerDetails = ["customer", "pet", "summary"].includes(
-    visibleStage
-  );
+  const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
   const showPetDetails = ["pet", "summary"].includes(visibleStage);
   const showPricingSummary = ["summary"].includes(visibleStage);
   const canAdvanceToPets = Boolean(
@@ -73,7 +72,7 @@ const BookingForm = ({
     <>
       {error && <p className="error-banner">{error}</p>}
       {success && <p className="success-banner">{success}</p>}
-      <div className="form-grid">
+      <div className="form-grid" ref={customerDetailsRef}>
         {showCustomerDetails && (
           <>
             <label className="input-group">

@@ -24,6 +24,12 @@ import BookingForm from "./components/BookingForm";
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
+  const { profile, isAuthenticated, setProfile } = useAuth();
+  const [customerMode, setCustomerMode] = useState(() => (profile ? "login" : "new"));
+  const [loginEmail, setLoginEmail] = useState(profile?.client?.email || "");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
   const [is24h, setIs24h] = useState(true);
   const [availability, setAvailability] = useState({
     dates: [],
@@ -39,7 +45,6 @@ const BookingModal = ({ service, onClose }) => {
   const [clientAddress, setClientAddress] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
-  const [customerMode, setCustomerMode] = useState(profile ? "login" : "new");
   const [isBooking, setIsBooking] = useState(false);
   const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => new Date());
@@ -58,7 +63,7 @@ const BookingModal = ({ service, onClose }) => {
   const [additionalsOpen, setAdditionalsOpen] = useState(false);
   const [addons, setAddons] = useState([]);
   const [supportOpen, setSupportOpen] = useState(false);
-  const { profile, isAuthenticated } = useAuth();
+  const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
   const bookingModalRef = useRef(null);
   const calendarSectionRef = useRef(null);
@@ -285,6 +290,7 @@ const BookingModal = ({ service, onClose }) => {
     setClientPhone(phoneNumber || "");
     setClientEmail(client.email || "");
     setClientAddress(client.address || "");
+    setLoginEmail(client.email || "");
   }, [profile]);
 
   useEffect(() => {
@@ -295,21 +301,62 @@ const BookingModal = ({ service, onClose }) => {
 
   const handleCustomerModeChange = (mode) => {
     setCustomerMode(mode);
-
+    setAuthError("");
     if (mode === "login") {
+      setLoginPassword("");
       if (profile?.client) {
         applyProfileDetails();
-      } else {
-        setClientName("Returning client");
-        setClientPhone("+353 87 000 0000");
-        setClientEmail("you@example.com");
-        setClientAddress("Your saved address");
       }
-    } else {
+    return;
+    }
+
+    setLoginPassword("");
+    if (!profile?.client) {
       setClientName("");
       setClientPhone("");
       setClientEmail("");
       setClientAddress("");
+    }
+  };
+
+  const handleSupabaseLogin = async (event) => {
+    event?.preventDefault?.();
+
+    const email = loginEmail.trim();
+    const password = loginPassword.trim();
+
+    if (!email || !password) {
+      setAuthError("Please enter your email and password to log in.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const response = await fetch("/api/client-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "Unable to log in.");
+      }
+
+      setProfile(payload);
+      setCustomerMode("login");
+      setClientEmail(payload?.client?.email || email);
+      setClientName(payload?.client?.full_name || "");
+      setClientPhone(payload?.client?.phone_number || "");
+      setClientAddress(payload?.client?.address || "");
+      setLoginPassword("");
+    } catch (loginError) {
+      console.error("Client login failed", loginError);
+      setAuthError(loginError.message || "Incorrect email or password.");
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -962,11 +1009,6 @@ const BookingModal = ({ service, onClose }) => {
               <p className="eyebrow">{service.duration || "Premium care"}</p>
               <h3>{service.title}</h3>
               <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
-              <div className="trust-row">
-                <span className="trust-chip">Licensed & insured</span>
-                <span className="trust-chip">Avg. response &lt;10 min</span>
-                <span className="trust-chip">5★ local care</span>
-              </div>
             </div>
             <div className="hero-actions">
               <button type="button" className="ghost-button" onClick={() => setSupportOpen(true)}>
@@ -1106,6 +1148,91 @@ const BookingModal = ({ service, onClose }) => {
                         Change time
                       </button>
                     </div>
+                    <div className="input-group full-width">
+                      <div className="label-row">
+                        <span>Account access</span>
+                        <div className="actions-stack">
+                          <button
+                            type="button"
+                            className={`ghost-button ${
+                              customerMode === "login" ? "active" : ""
+                            }`}
+                            onClick={() => handleCustomerModeChange("login")}
+                            aria-pressed={customerMode === "login"}
+                          >
+                            Login
+                          </button>
+                          <button
+                            type="button"
+                            className={`ghost-button ${
+                              customerMode === "new" ? "active" : ""
+                            }`}
+                            onClick={() => handleCustomerModeChange("new")}
+                            aria-pressed={customerMode === "new"}
+                          >
+                            Register
+                          </button>
+                        </div>
+                      </div>
+
+                      {customerMode === "login" ? (
+                        <form className="auth-form" onSubmit={handleSupabaseLogin}>
+                          {authError && <p className="error-banner">{authError}</p>}
+                          <div className="form-grid">
+                            <label className="input-group">
+                              <span>Email</span>
+                              <input
+                                type="email"
+                                value={loginEmail}
+                                onChange={(e) => setLoginEmail(e.target.value)}
+                                placeholder="you@example.com"
+                                autoComplete="email"
+                              />
+                            </label>
+                            <label className="input-group">
+                              <span>Password</span>
+                              <input
+                                type="password"
+                                value={loginPassword}
+                                onChange={(e) => setLoginPassword(e.target.value)}
+                                placeholder="Enter your password"
+                                autoComplete="current-password"
+                              />
+                            </label>
+                          </div>
+                          <div className="actions-row">
+                            <div className="actions-stack">
+                              <button
+                                type="submit"
+                                className="button w-button"
+                                disabled={authLoading}
+                              >
+                                {authLoading ? "Logging in…" : "Login with Supabase"}
+                              </button>
+                            </div>
+                          </div>
+                          {isAuthenticated && (
+                            <p className="success-banner subtle">
+                              You’re logged in as {clientEmail || loginEmail}.
+                            </p>
+                          )}
+                        </form>
+                      ) : (
+                        <div className="actions-stack">
+                          <p className="muted subtle">
+                            Fill out the customer details below and we’ll create your account when
+                            you finish booking.
+                          </p>
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => scrollToSection(customerDetailsRef)}
+                          >
+                            Continue to customer details
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <BookingForm
                       error={error}
                       success={success}
@@ -1159,6 +1286,7 @@ const BookingModal = ({ service, onClose }) => {
                       isPopup={false}
                       addOnDropdownRef={addOnDropdownRef}
                       filteredBreeds={filteredBreeds}
+                      customerDetailsRef={customerDetailsRef}
                       visibleStage="customer"
                       onContinue={() => goToStepAndScroll("pet")}
                     />
@@ -1238,6 +1366,7 @@ const BookingModal = ({ service, onClose }) => {
                       isPopup={false}
                       addOnDropdownRef={addOnDropdownRef}
                       filteredBreeds={filteredBreeds}
+                      customerDetailsRef={customerDetailsRef}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -1308,6 +1437,7 @@ const BookingModal = ({ service, onClose }) => {
                       isPopup={false}
                       addOnDropdownRef={addOnDropdownRef}
                       filteredBreeds={filteredBreeds}
+                      customerDetailsRef={customerDetailsRef}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
