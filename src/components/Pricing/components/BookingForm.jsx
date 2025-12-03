@@ -551,12 +551,11 @@ const BookingForm = ({
                       >
                         <div className="add-on-card__header">
                           <span className="add-on-title">{option.label}</span>
-                          <span className="add-on-price">
+                          <span className="add-on-chip add-on-price-chip">
                             {formatCurrency(parsePriceValue(option.price))}
                           </span>
-                        <p className="add-on-description">{option.description}</p>
-                        <span className="add-on-chip">{option.benefit || "Popular"}</span>
                         </div>
+                        <p className="add-on-description">{option.description}</p>
                         <span className="add-on-check" aria-hidden="true">
                           ✓
                         </span>
