@@ -39,6 +39,7 @@ const BookingModal = ({ service, onClose }) => {
   const [clientAddress, setClientAddress] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
+  const [customerMode, setCustomerMode] = useState(profile ? "login" : "new");
   const [isBooking, setIsBooking] = useState(false);
   const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => new Date());
@@ -274,7 +275,7 @@ const BookingModal = ({ service, onClose }) => {
     setShowDogDetails(true);
   }, [clientEmail]);
 
-  useEffect(() => {
+  const applyProfileDetails = useCallback(() => {
     const client = profile?.client;
     if (!client) return;
 
@@ -285,6 +286,32 @@ const BookingModal = ({ service, onClose }) => {
     setClientEmail(client.email || "");
     setClientAddress(client.address || "");
   }, [profile]);
+
+  useEffect(() => {
+    if (!profile) return;
+    setCustomerMode("login");
+    applyProfileDetails();
+  }, [applyProfileDetails, profile]);
+
+  const handleCustomerModeChange = (mode) => {
+    setCustomerMode(mode);
+
+    if (mode === "login") {
+      if (profile?.client) {
+        applyProfileDetails();
+      } else {
+        setClientName("Returning client");
+        setClientPhone("+353 87 000 0000");
+        setClientEmail("you@example.com");
+        setClientAddress("Your saved address");
+      }
+    } else {
+      setClientName("");
+      setClientPhone("");
+      setClientEmail("");
+      setClientAddress("");
+    }
+  };
 
   const fetchExistingPets = useCallback(async () => {
     if (!clientEmail) {
@@ -1082,6 +1109,12 @@ const BookingModal = ({ service, onClose }) => {
                     <BookingForm
                       error={error}
                       success={success}
+                      customerMode={customerMode}
+                      onSelectCustomerMode={handleCustomerModeChange}
+                      service={service}
+                      scheduleEntries={scheduleEntries}
+                      timeZoneLabel={availability.timeZone}
+                      formatTime={formatTime}
                       clientName={clientName}
                       setClientName={setClientName}
                       clientPhone={clientPhone}
@@ -1155,6 +1188,12 @@ const BookingModal = ({ service, onClose }) => {
                     <BookingForm
                       error={error}
                       success={success}
+                      customerMode={customerMode}
+                      onSelectCustomerMode={handleCustomerModeChange}
+                      service={service}
+                      scheduleEntries={scheduleEntries}
+                      timeZoneLabel={availability.timeZone}
+                      formatTime={formatTime}
                       clientName={clientName}
                       setClientName={setClientName}
                       clientPhone={clientPhone}
@@ -1219,6 +1258,12 @@ const BookingModal = ({ service, onClose }) => {
                     <BookingForm
                       error={error}
                       success={success}
+                      customerMode={customerMode}
+                      onSelectCustomerMode={handleCustomerModeChange}
+                      service={service}
+                      scheduleEntries={scheduleEntries}
+                      timeZoneLabel={availability.timeZone}
+                      formatTime={formatTime}
                       clientName={clientName}
                       setClientName={setClientName}
                       clientPhone={clientPhone}
@@ -1266,41 +1311,6 @@ const BookingModal = ({ service, onClose }) => {
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
-                    <div className="transparent-summary">
-                      <div className="summary-grid">
-                        <div>
-                          <p className="muted small">Service</p>
-                          <p>{service.title}</p>
-                        </div>
-                        <div className="summary-price">{formatCurrency(pricing.servicePrice)}</div>
-                        <div>
-                          <p className="muted small">Visits</p>
-                          <p>{pricing.visitCount || 1}x</p>
-                        </div>
-                        <div className="summary-price">{formatCurrency(pricing.servicePrice * (pricing.visitCount || 1))}</div>
-                        {pricing.selectedAddons.map((addon) => (
-                          <React.Fragment key={addon.id || addon.value}>
-                            <div>
-                              <p className="muted small">Add-on</p>
-                              <p>{addon.label}</p>
-                            </div>
-                            <div className="summary-price">
-                              {formatCurrency(parsePriceValue(addon.price))}
-                            </div>
-                          </React.Fragment>
-                        ))}
-                      </div>
-                      <div className="summary-footer">
-                        <div>
-                          <p className="muted small">Cancellation</p>
-                          <p className="muted subtle">{cancellationPolicy}</p>
-                        </div>
-                        <div className="total-row">
-                          <span>Total</span>
-                          <strong>{formatCurrency(pricing.totalPrice)}</strong>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>

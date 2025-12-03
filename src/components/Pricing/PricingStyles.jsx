@@ -30,13 +30,13 @@ const PricingStyles = () => (
         .booking-modal {
           background: linear-gradient(135deg, #1a1132, #1f0f3a);
           border-radius: 16px;
-          width: min(1100px, 100%);
+          width: min(1280px, 100%);
           color: #f2ecff;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
           overflow: visible;
           position: relative;
-          height: calc(100vh - 64px);
-          max-height: 880px;
+          height: auto;
+          max-height: calc(100vh - 48px);
           min-height: 560px;
           display: flex;
           flex-direction: column;
@@ -90,12 +90,13 @@ const PricingStyles = () => (
           padding: 20px 24px 24px;
           flex: 1;
           min-height: 0;
-          overflow: hidden;
+          overflow-y: auto;
+          padding-right: 8px;
         }
         .booking-layout {
           display: grid;
-          grid-template-columns: 1fr 320px;
-          gap: 16px;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 20px;
           align-items: start;
           height: 100%;
         }
