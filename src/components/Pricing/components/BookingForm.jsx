@@ -522,7 +522,7 @@ const BookingForm = ({
         />
       </label>
 
-      {(visibleStage === "pet" || visibleStage === "summary") && (
+      {visibleStage === "addons" && (
         <>
           <div className="pricing-row" ref={addOnDropdownRef}>
             <div className="input-group full-width add-on-group">
@@ -628,6 +628,24 @@ const BookingForm = ({
       )}
 
       {visibleStage === "pet" && (
+        <div className="actions-row">
+          <div className="actions-stack">
+            {hasAtLeastOneDog ? (
+              <button
+                type="button"
+                className="button w-button"
+                onClick={() => handleAdvance("addons")}
+              >
+                Continue to additional care
+              </button>
+            ) : (
+              <p className="muted subtle">Add at least one dog to continue.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {visibleStage === "addons" && (
         <div className="actions-row">
           <div className="actions-stack">
             {hasAtLeastOneDog ? (
