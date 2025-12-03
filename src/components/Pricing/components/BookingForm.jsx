@@ -6,6 +6,10 @@ import { createEmptyDogProfile } from "../utils";
 const BookingForm = ({
   error,
   success,
+  service,
+  scheduleEntries = [],
+  timeZoneLabel,
+  formatTime,
   clientName,
   setClientName,
   clientPhone,
@@ -55,6 +59,7 @@ const BookingForm = ({
   onContinue,
   customerDetailsRef,
 }) => {
+  const isSummaryMode = visibleStage === "summary";
   const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
   const showPetDetails = ["pet", "summary"].includes(visibleStage);
   const showPricingSummary = ["summary"].includes(visibleStage);
@@ -67,6 +72,163 @@ const BookingForm = ({
       onContinue(nextStage);
     }
   };
+
+  const savedPets = existingPets.filter((pet) =>
+    selectedPetIds.includes(pet.id)
+  );
+
+  const newDogDetails = dogs
+    .slice(0, dogCount)
+    .filter((dog) => {
+      const name = (dog?.name || "").trim();
+      const breed = (dog?.breed || "").trim();
+      const notesText = (dog?.notes || "").trim();
+      return Boolean(name || breed || notesText) && !selectedPetIds.includes(dog?.profileId);
+    });
+
+  if (isSummaryMode) {
+    return (
+      <>
+        {error && <p className="error-banner">{error}</p>}
+        {success && <p className="success-banner">{success}</p>}
+
+        <div className="summary-readonly">
+          <div className="summary-card">
+            <h4>Service</h4>
+            <p className="summary-value">{service?.title || "Selected service"}</p>
+            {service?.duration && (
+              <p className="muted subtle">{service.duration}</p>
+            )}
+          </div>
+
+          <div className="summary-card">
+            <h4>Schedule</h4>
+            {scheduleEntries.length ? (
+              <ul className="summary-list">
+                {scheduleEntries.map((entry, index) => (
+                  <li key={`${entry.date}-${index}`} className="summary-item">
+                    <div>
+                      <p className="summary-label">
+                        {new Date(entry.date).toLocaleDateString(undefined, {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <p className="summary-value">{formatTime(entry.time)}</p>
+                    </div>
+                    {timeZoneLabel && (
+                      <span className="muted subtle">{timeZoneLabel}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted subtle">Choose a date and time to confirm.</p>
+            )}
+          </div>
+
+          <div className="summary-card">
+            <h4>Customer</h4>
+            <div className="summary-list">
+              <div className="summary-item">
+                <span className="summary-label">Name</span>
+                <span className="summary-value">{clientName || "—"}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Email</span>
+                <span className="summary-value">{clientEmail || "—"}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Phone</span>
+                <span className="summary-value">{clientPhone || "—"}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Address</span>
+                <span className="summary-value">{clientAddress || "—"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="summary-card">
+            <h4>Pets</h4>
+            {savedPets.length || newDogDetails.length ? (
+              <div className="summary-list">
+                {savedPets.map((pet) => (
+                  <div key={pet.id} className="summary-item">
+                    <span className="summary-label">Saved dog</span>
+                    <span className="summary-value">
+                      {pet.name || "Your pup"}
+                      {pet.breed ? ` · ${pet.breed}` : ""}
+                    </span>
+                  </div>
+                ))}
+                {newDogDetails.map((dog, index) => (
+                  <div key={`new-dog-${index}`} className="summary-item">
+                    <span className="summary-label">New dog</span>
+                    <span className="summary-value">
+                      {(dog.name || "Your pup").trim()}
+                      {dog.breed ? ` · ${dog.breed}` : ""}
+                    </span>
+                    {dog.notes && (
+                      <p className="muted subtle">{dog.notes}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted subtle">Add at least one dog to confirm.</p>
+            )}
+          </div>
+
+          <div className="summary-card">
+            <h4>Notes</h4>
+            <p className="summary-value">{notes || "No notes added."}</p>
+          </div>
+
+          {selectedAdditionalLabels?.length > 0 && (
+            <div className="summary-card">
+              <h4>Add-ons</h4>
+              <ul className="summary-list">
+                {selectedAdditionalLabels.map((label) => (
+                  <li key={label} className="summary-item">
+                    <span className="summary-value">{label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="actions-row">
+          <div className="actions-stack">
+            {hasAtLeastOneDog ? (
+              <button
+                type="button"
+                className="button w-button"
+                onClick={handleBookAndPay}
+                disabled={isBooking || loading}
+              >
+                {isBooking ? "Booking…" : "Confirm / Book"}
+              </button>
+            ) : (
+              <p className="muted subtle">Add at least one dog to continue.</p>
+            )}
+            {isPopup && (
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setShowFormPopup(false)}
+              >
+                Close form
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="muted subtle">Times shown in your timezone</p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -208,15 +370,12 @@ const BookingForm = ({
                                 <span className="pet-option__name">
                                   {pet.name || "Your pup"}
                                 </span>
-                              <div className="pet-option__meta-row">
+                                <div className="pet-option__meta-row">
                                   {pet.breed && (
                                     <span className="pet-option__breed">
                                       {pet.breed}
                                     </span>
                                   )}
-                                  <span className="pet-option__pill">
-                                    Saved profile
-                                  </span>
                                 </div>
                                 {noteText && (
                                   <p className="pet-option__notes" title={noteText}>

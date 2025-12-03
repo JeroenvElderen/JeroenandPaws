@@ -1255,12 +1255,24 @@ const PricingStyles = () => (
             overflow-y: auto;
             max-height: calc(100vh - 160px);
           }
+          booking-wayfinding {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          .step-chip-row {
+            display: none;
+          }
           .stepper {
             display: none;
           }
           .step-chip {
             padding: 10px;
             font-size: 14px;
+          }
+          .summary-chip {
+            padding: 6px 8px;
+            font-size: 12px;
           }
           .step-toolbar {
             flex-wrap: wrap;
@@ -1341,6 +1353,54 @@ const PricingStyles = () => (
           text-align: center;
           border-radius: 10px;
           background: rgba(255, 255, 255, 0.03);
+        }
+
+        .summary-readonly {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+
+        .summary-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .summary-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+
+        .summary-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          padding: 6px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .summary-item:last-child {
+          border-bottom: none;
+        }
+
+        .summary-label {
+          color: #d2cef7;
+          font-weight: 600;
+        }
+
+        .summary-value {
+          color: #f5f3ff;
+          font-weight: 700;
         }
           @media (min-width: 1024px) {
           .searchable-select .options-list {

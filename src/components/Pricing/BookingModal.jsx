@@ -25,7 +25,7 @@ import BookingForm from "./components/BookingForm";
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
   const { profile, isAuthenticated, setProfile } = useAuth();
-  const [customerMode, setCustomerMode] = useState(() => (profile ? "login" : "new"));
+  const [customerMode, setCustomerMode] = useState(() => (profile ? "login" : "null"));
   const [loginEmail, setLoginEmail] = useState(profile?.client?.email || "");
   const [loginPassword, setLoginPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -307,7 +307,7 @@ const BookingModal = ({ service, onClose }) => {
       if (profile?.client) {
         applyProfileDetails();
       }
-    return;
+      return;
     }
 
     setLoginPassword("");
@@ -390,8 +390,10 @@ const BookingModal = ({ service, onClose }) => {
       if (!hasPets) {
         setDogCount(1);
         resetDogProfiles();
+        setShowDogDetails(true);
+      } else {
+        setShowDogDetails(false);
       }
-      setShowDogDetails(true);
     } catch (loadError) {
       console.error("Failed to load pets", loadError);
       setExistingPets([]);
@@ -451,7 +453,7 @@ const BookingModal = ({ service, onClose }) => {
       return newDogs.slice(0, desiredCount);
     });
 
-    setShowDogDetails(true);
+    setShowDogDetails(selectedPets.length === 0);
   }, [dogCount, existingPets, hasAttemptedPetLoad, selectedPetIds]);
 
   useEffect(() => {
@@ -985,8 +987,8 @@ const BookingModal = ({ service, onClose }) => {
   const summaryChips = [
     selectedDateLabel || "Pick a date",
     selectedTime ? formatTime(selectedTime) : "Pick a time",
-    pricing.dogCount ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""}` : "Add pets",
-  ];
+    pricing.dogCount ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""}` : null,
+  ].filter(Boolean);
 
   const goToStepAndScroll = (step) => {
     setCurrentStep(step);
@@ -1207,7 +1209,7 @@ const BookingModal = ({ service, onClose }) => {
                                 className="button w-button"
                                 disabled={authLoading}
                               >
-                                {authLoading ? "Logging in…" : "Login with Supabase"}
+                                {authLoading ? "Logging in…" : "Login to Jeroen & Paws"}
                               </button>
                             </div>
                           </div>
@@ -1217,79 +1219,71 @@ const BookingModal = ({ service, onClose }) => {
                             </p>
                           )}
                         </form>
-                      ) : (
+                      ) : customerMode === "new" ? (
                         <div className="actions-stack">
-                          <p className="muted subtle">
-                            Fill out the customer details below and we’ll create your account when
-                            you finish booking.
-                          </p>
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => scrollToSection(customerDetailsRef)}
-                          >
-                            Continue to customer details
-                          </button>
+                          <p className="muted subtle">We’ll create your account after booking.</p>
                         </div>
-                      )}
+                      ) : null}
                     </div>
-                    <BookingForm
-                      error={error}
-                      success={success}
-                      customerMode={customerMode}
-                      onSelectCustomerMode={handleCustomerModeChange}
-                      service={service}
-                      scheduleEntries={scheduleEntries}
-                      timeZoneLabel={availability.timeZone}
-                      formatTime={formatTime}
-                      clientName={clientName}
-                      setClientName={setClientName}
-                      clientPhone={clientPhone}
-                      setClientPhone={setClientPhone}
-                      clientEmail={clientEmail}
-                      setClientEmail={setClientEmail}
-                      clientAddress={clientAddress}
-                      setClientAddress={setClientAddress}
-                      canLoadPets={canLoadPets}
-                      fetchExistingPets={fetchExistingPets}
-                      isLoadingPets={isLoadingPets}
-                      existingPets={existingPets}
-                      hasAttemptedPetLoad={hasAttemptedPetLoad}
-                      selectedPetIds={selectedPetIds}
-                      setSelectedPetIds={setSelectedPetIds}
-                      showDogDetails={showDogDetails}
-                      setShowDogDetails={setShowDogDetails}
-                      dogCount={dogCount}
-                      addAnotherDog={addAnotherDog}
-                      removeDog={removeDog}
-                      dogs={dogs}
-                      updateDogField={updateDogField}
-                      handleDogPhotoChange={handleDogPhotoChange}
-                      MAX_DOGS={MAX_DOGS}
-                      breedSearch={breedSearch}
-                      setBreedSearch={setBreedSearch}
-                      notes={notes}
-                      setNotes={setNotes}
-                      additionals={additionals}
-                      additionalsOpen={additionalsOpen}
-                      setAdditionalsOpen={setAdditionalsOpen}
-                      toggleAdditional={toggleAdditional}
-                      addons={addons}
-                      selectedAdditionalLabels={selectedAdditionalLabels}
-                      formatCurrency={formatCurrency}
-                      parsePriceValue={parsePriceValue}
-                      pricing={pricing}
-                      hasAtLeastOneDog={hasAtLeastOneDog}
-                      handleBookAndPay={handleBookAndPay}
-                      isBooking={isBooking}
-                      loading={loading}
-                      isPopup={false}
-                      addOnDropdownRef={addOnDropdownRef}
-                      filteredBreeds={filteredBreeds}
-                      customerDetailsRef={customerDetailsRef}
-                      visibleStage="customer"
-                      onContinue={() => goToStepAndScroll("pet")}
-                    />
+                    {(customerMode === "new" || isAuthenticated) && (
+                      <BookingForm
+                        error={error}
+                        success={success}
+                        customerMode={customerMode}
+                        onSelectCustomerMode={handleCustomerModeChange}
+                        service={service}
+                        scheduleEntries={scheduleEntries}
+                        timeZoneLabel={availability.timeZone}
+                        formatTime={formatTime}
+                        clientName={clientName}
+                        setClientName={setClientName}
+                        clientPhone={clientPhone}
+                        setClientPhone={setClientPhone}
+                        clientEmail={clientEmail}
+                        setClientEmail={setClientEmail}
+                        clientAddress={clientAddress}
+                        setClientAddress={setClientAddress}
+                        canLoadPets={canLoadPets}
+                        fetchExistingPets={fetchExistingPets}
+                        isLoadingPets={isLoadingPets}
+                        existingPets={existingPets}
+                        hasAttemptedPetLoad={hasAttemptedPetLoad}
+                        selectedPetIds={selectedPetIds}
+                        setSelectedPetIds={setSelectedPetIds}
+                        showDogDetails={showDogDetails}
+                        setShowDogDetails={setShowDogDetails}
+                        dogCount={dogCount}
+                        addAnotherDog={addAnotherDog}
+                        removeDog={removeDog}
+                        dogs={dogs}
+                        updateDogField={updateDogField}
+                        handleDogPhotoChange={handleDogPhotoChange}
+                        MAX_DOGS={MAX_DOGS}
+                        breedSearch={breedSearch}
+                        setBreedSearch={setBreedSearch}
+                        notes={notes}
+                        setNotes={setNotes}
+                        additionals={additionals}
+                        additionalsOpen={additionalsOpen}
+                        setAdditionalsOpen={setAdditionalsOpen}
+                        toggleAdditional={toggleAdditional}
+                        addons={addons}
+                        selectedAdditionalLabels={selectedAdditionalLabels}
+                        formatCurrency={formatCurrency}
+                        parsePriceValue={parsePriceValue}
+                        pricing={pricing}
+                        hasAtLeastOneDog={hasAtLeastOneDog}
+                        handleBookAndPay={handleBookAndPay}
+                        isBooking={isBooking}
+                        loading={loading}
+                        isPopup={false}
+                        addOnDropdownRef={addOnDropdownRef}
+                        filteredBreeds={filteredBreeds}
+                        customerDetailsRef={customerDetailsRef}
+                        visibleStage="customer"
+                        onContinue={() => goToStepAndScroll("pet")}
+                      />
+                    )}
                   </div>
                 )}
 
