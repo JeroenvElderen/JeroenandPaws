@@ -73,7 +73,18 @@ const BookingForm = ({
     }
   };
 
-  const savedPets = existingPets.filter((pet) =>
+  const normalizeName = (name = "") =>
+    name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const filteredExistingPets = existingPets.filter((pet) => {
+    const normalizedName = normalizeName(pet.name || "");
+    return normalizedName !== "lakta" && normalizedName !== "compass";
+  });
+
+  const savedPets = filteredExistingPets.filter((pet) =>
     selectedPetIds.includes(pet.id)
   );
 
@@ -290,16 +301,16 @@ const BookingForm = ({
 
         {showPetDetails && (
           <>
-            {(existingPets.length > 0 || hasAttemptedPetLoad) && (
+            {(filteredExistingPets.length > 0 || hasAttemptedPetLoad) && (
               <div className="input-group full-width pet-list-group">
-                {existingPets.length === 0 ? (
+                {filteredExistingPets.length === 0 ? (
                   <p className="muted subtle">
                     No pets found for this email. Start a new pet profile below.
                   </p>
                 ) : (
                   <>
                   <div className="pet-chip-row">
-                    {existingPets.map((pet) => {
+                    {filteredExistingPets.map((pet) => {
                       const isSelected = selectedPetIds.includes(pet.id);
                       return (
                         <button
@@ -318,7 +329,7 @@ const BookingForm = ({
                     })}
                   </div>
                   <div className="pet-list">
-                    {existingPets.map((pet) => {
+                    {filteredExistingPets.map((pet) => {
                       const isSelected = selectedPetIds.includes(pet.id);
                       const petInitial = (pet.name || pet.breed || "🐾")
                         .charAt(0)
@@ -393,7 +404,7 @@ const BookingForm = ({
                 )}
                 </div>
             )}
-          {existingPets.length > 0 && !showDogDetails && (
+          {filteredExistingPets.length > 0 && !showDogDetails && (
               <div className="input-group full-width">
                 <div className="label-row">
                   <span className="muted subtle">
@@ -555,7 +566,6 @@ const BookingForm = ({
                             {formatCurrency(parsePriceValue(option.price))}
                           </span>
                         </div>
-                        <p className="add-on-description">{option.description}</p>
                         <span className="add-on-check" aria-hidden="true">
                           ✓
                         </span>
