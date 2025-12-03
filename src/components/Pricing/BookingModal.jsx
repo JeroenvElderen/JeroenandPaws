@@ -107,9 +107,8 @@ const BookingModal = ({ service, onClose }) => {
     });
   }, [dogCount, dogs, selectedPetIds]);
 
-  const trimmedName = clientName.trim();
   const trimmedEmail = clientEmail.trim();
-  const canLoadPets = Boolean(trimmedName && trimmedEmail);
+  const canLoadPets = Boolean(trimmedEmail);
 
   const stepOrder = [
     "calendar",
@@ -294,6 +293,20 @@ const BookingModal = ({ service, onClose }) => {
     setHasAttemptedPetLoad(false);
     setShowDogDetails(true);
   }, [clientEmail]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!canLoadPets) return;
+    if (hasAttemptedPetLoad || isLoadingPets) return;
+
+    fetchExistingPets();
+  }, [
+    canLoadPets,
+    fetchExistingPets,
+    hasAttemptedPetLoad,
+    isAuthenticated,
+    isLoadingPets,
+  ]);
 
   const applyProfileDetails = useCallback(() => {
     const client = profile?.client;
