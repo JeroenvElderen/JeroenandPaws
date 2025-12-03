@@ -94,10 +94,10 @@ const PricingStyles = () => (
           padding-right: 8px;
         }
         .booking-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 320px;
+          display: flex;
+          flex-direction: column;
           gap: 20px;
-          align-items: start;
+          align-items: stretch;
           height: 100%;
         }
         .booking-main {
@@ -107,11 +107,7 @@ const PricingStyles = () => (
           min-height: 0;
         }
         .booking-sidebar {
-          position: sticky;
-          top: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+          display: none;
         }
         .booking-wayfinding {
           grid-column: 1 / -1;
@@ -978,6 +974,9 @@ const PricingStyles = () => (
           opacity: 0;
           transition: opacity 0.2s ease;
         }
+        .add-on-card.selected .add-on-check {
+          opacity: 1;
+        }
         .add-on-option.selected .add-on-check {
           opacity: 1;
         }
@@ -995,6 +994,12 @@ const PricingStyles = () => (
           background: linear-gradient(160deg, rgba(34, 36, 76, 0.9), rgba(24, 22, 52, 0.92));
           color: #f2ecff;
           box-shadow: 0 16px 26px rgba(0, 0, 0, 0.32);
+        }
+
+        .inline-price-summary {
+          position: relative;
+          top: auto;
+          margin-top: 4px;
         }
 
         .price-summary__header {
@@ -1728,8 +1733,7 @@ const PricingStyles = () => (
 }
 
 .sticky-cta {
-  position: sticky;
-  bottom: 0;
+  position: relative;
   background: linear-gradient(145deg, rgba(124, 93, 242, 0.15), rgba(31, 15, 58, 0.8));
   border-radius: 12px;
   padding: 10px;
@@ -1786,19 +1790,19 @@ const PricingStyles = () => (
 
 .add-on-carousel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
 }
 
 .add-on-card {
   text-align: left;
-  padding: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
   position: relative;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1813,7 +1817,11 @@ const PricingStyles = () => (
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.add-on-title {
+  line-height: 1.25;
 }
 
 .add-on-price-chip {

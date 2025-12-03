@@ -130,6 +130,12 @@ const BookingModal = ({ service, onClose }) => {
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      setCustomerMode("new");
+    }
+  }, [isAuthenticated]);
+
   const isDayAvailableForService = useCallback((day) => {
     if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
       return false;
@@ -1160,81 +1166,85 @@ const BookingModal = ({ service, onClose }) => {
                         Change time
                       </button>
                     </div>
-                    <div className="input-group full-width">
-                      <div className="label-row">
-                        <span>Account access</span>
-                        <div className="actions-stack">
-                          <button
-                            type="button"
-                            className={`ghost-button ${
-                              customerMode === "login" ? "active" : ""
-                            }`}
-                            onClick={() => handleCustomerModeChange("login")}
-                            aria-pressed={customerMode === "login"}
-                          >
-                            Login
-                          </button>
-                          <button
-                            type="button"
-                            className={`ghost-button ${
-                              customerMode === "new" ? "active" : ""
-                            }`}
-                            onClick={() => handleCustomerModeChange("new")}
-                            aria-pressed={customerMode === "new"}
-                          >
-                            Register
-                          </button>
+                    {!isAuthenticated && (
+                      <div className="input-group full-width">
+                        <div className="label-row">
+                          <span>Account access</span>
+                          <div className="actions-stack">
+                            <button
+                              type="button"
+                              className={`ghost-button ${
+                                customerMode === "login" ? "active" : ""
+                              }`}
+                              onClick={() => handleCustomerModeChange("login")}
+                              aria-pressed={customerMode === "login"}
+                            >
+                              Login
+                            </button>
+                            <button
+                              type="button"
+                              className={`ghost-button ${
+                                customerMode === "new" ? "active" : ""
+                              }`}
+                              onClick={() => handleCustomerModeChange("new")}
+                              aria-pressed={customerMode === "new"}
+                            >
+                              Register
+                            </button>
+                          </div>
                         </div>
-                      </div>
 
-                      {customerMode === "login" ? (
-                        <form className="auth-form" onSubmit={handleSupabaseLogin}>
-                          {authError && <p className="error-banner">{authError}</p>}
-                          <div className="form-grid">
-                            <label className="input-group">
-                              <span>Email</span>
-                              <input
-                                type="email"
-                                value={loginEmail}
-                                onChange={(e) => setLoginEmail(e.target.value)}
-                                placeholder="you@example.com"
-                                autoComplete="email"
-                              />
-                            </label>
-                            <label className="input-group">
-                              <span>Password</span>
-                              <input
-                                type="password"
-                                value={loginPassword}
-                                onChange={(e) => setLoginPassword(e.target.value)}
-                                placeholder="Enter your password"
-                                autoComplete="current-password"
-                              />
-                            </label>
-                          </div>
-                          <div className="actions-row">
-                            <div className="actions-stack">
-                              <button
-                                type="submit"
-                                className="button w-button"
-                                disabled={authLoading}
-                              >
-                                {authLoading ? "Logging in…" : "Login to Jeroen & Paws"}
-                              </button>
+                        {customerMode === "login" ? (
+                          <form className="auth-form" onSubmit={handleSupabaseLogin}>
+                            {authError && <p className="error-banner">{authError}</p>}
+                            <div className="form-grid">
+                              <label className="input-group">
+                                <span>Email</span>
+                                <input
+                                  type="email"
+                                  value={loginEmail}
+                                  onChange={(e) => setLoginEmail(e.target.value)}
+                                  placeholder="you@example.com"
+                                  autoComplete="email"
+                                />
+                              </label>
+                              <label className="input-group">
+                                <span>Password</span>
+                                <input
+                                  type="password"
+                                  value={loginPassword}
+                                  onChange={(e) => setLoginPassword(e.target.value)}
+                                  placeholder="Enter your password"
+                                  autoComplete="current-password"
+                                />
+                              </label>
                             </div>
+                            <div className="actions-row">
+                              <div className="actions-stack">
+                                <button
+                                  type="submit"
+                                  className="button w-button"
+                                  disabled={authLoading}
+                                >
+                                  {authLoading ? "Logging in…" : "Login to Jeroen & Paws"}
+                                </button>
+                              </div>
+                            </div>
+                          </form>
+                        ) : customerMode === "new" ? (
+                          <div className="actions-stack">
+                            <p className="muted subtle">We’ll create your account after booking.</p>
                           </div>
-                          {isAuthenticated && (
-                            <p className="success-banner subtle">
-                              You’re logged in as {clientEmail || loginEmail}.
-                            </p>
-                          )}
-                        </form>
-                      ) : customerMode === "new" ? (
-                        <div className="actions-stack">
-                          <p className="muted subtle">We’ll create your account after booking.</p>
-                        </div>
-                      ) : null}
-                    </div>
+                        ) : null}
+                      </div>
+                    )}
+                    {isAuthenticated && (
+                      <div className="input-group full-width">
+                        <p className="success-banner subtle">
+                          You’re logged in as {clientEmail || loginEmail}.
+                        </p>
+                      </div>
+                    )}
                     {(customerMode === "new" || isAuthenticated) && (
                       <BookingForm
                         error={error}
@@ -1529,39 +1539,37 @@ const BookingModal = ({ service, onClose }) => {
                 )}
               </div>
 
-              <aside className="booking-sidebar">
-                <div className="price-summary-card sticky">
-                  <div className="price-summary__header">
-                    <div>
-                      <p className="muted small">Current total</p>
-                      <h4>{formatCurrency(pricing.totalPrice)}</h4>
-                    </div>
-                    <p className="muted subtle price-summary__meta">
-                      {pricing.dogCount && pricing.visitCount
-                        ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""} × ${pricing.visitCount} visit${
-                            pricing.visitCount > 1 ? "s" : ""
-                          }`
-                        : "Add dogs and pick dates"}
-                    </p>
+              <div className="price-summary-card inline-price-summary">
+                <div className="price-summary__header">
+                  <div>
+                    <p className="muted small">Current total</p>
+                    <h4>{formatCurrency(pricing.totalPrice)}</h4>
                   </div>
-                  <ul className="price-summary__list">
-                    <li>
-                      Service: {formatCurrency(pricing.servicePrice)} per dog / visit
-                    </li>
-                    {pricing.selectedAddons.map((addon) => (
-                      <li key={addon.id || addon.value}>
-                        + {addon.label}: {formatCurrency(parsePriceValue(addon.price))} one-time
-                      </li>
-                    ))}
-                    <li>
-                      Total per dog / visit: {formatCurrency(pricing.servicePrice)}
-                    </li>
-                  </ul>
-                  <div className="sticky-cta">
-                    <p className="muted subtle">Secure payment after confirmation.</p>
-                  </div>
+                  <p className="muted subtle price-summary__meta">
+                    {pricing.dogCount && pricing.visitCount
+                      ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""} × ${pricing.visitCount} visit${
+                          pricing.visitCount > 1 ? "s" : ""
+                        }`
+                      : "Add dogs and pick dates"}
+                  </p>
                 </div>
-              </aside>
+                <ul className="price-summary__list">
+                  <li>
+                    Service: {formatCurrency(pricing.servicePrice)} per dog / visit
+                  </li>
+                  {pricing.selectedAddons.map((addon) => (
+                    <li key={addon.id || addon.value}>
+                      + {addon.label}: {formatCurrency(parsePriceValue(addon.price))} one-time
+                    </li>
+                  ))}
+                  <li>
+                    Total per dog / visit: {formatCurrency(pricing.servicePrice)}
+                  </li>
+                </ul>
+                <div className="sticky-cta">
+                  <p className="muted subtle">Secure payment after confirmation.</p>
+                </div>
+              </div>
               </div>
             </div>
           </div>
