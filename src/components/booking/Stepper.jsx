@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils"
+
 export function Stepper({ current }) {
   const steps = ["calendar", "time", "customer", "pet", "summary"]
 

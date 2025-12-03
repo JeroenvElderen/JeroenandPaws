@@ -1,15 +1,14 @@
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
 export function SummaryStep({ state }) {
   const {
     service,
-    selectedSlots,
     scheduleEntries, // derived: [{ date, time }]
     pricing,
     notes,
     setNotes,
     formatCurrency,
+    formatTime,
     setCurrentStep,
     handleBookAndPay,
     isBooking,
@@ -41,7 +40,7 @@ export function SummaryStep({ state }) {
                 day: "numeric",
               })}
             </span>
-            <span className="text-white opacity-90">{entry.time}</span>
+            <span className="text-white opacity-90">{formatTime(entry.time)}</span>
           </div>
         ))}
       </div>

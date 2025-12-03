@@ -5,10 +5,9 @@ import { TimeStep } from "./TimeStep"
 import { CustomerStep } from "./CustomerStep"
 import { PetStep } from "./PetStep"
 import { SummaryStep } from "./SummaryStep"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-export function BookingModal({ open, onClose, service, state }) {
+export function BookingDialog({ open, onClose, service, state }) {
   const { currentStep } = state
 
   return (
