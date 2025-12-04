@@ -3,7 +3,6 @@ import React from "react";
 const TimesSection = ({
   selectedDay,
   isDayAvailableForService,
-  selectedDateLabel,
   selectedTime,
   handleTimeSelection,
   formatTime,
@@ -17,14 +16,8 @@ const TimesSection = ({
   return (
     <div className="times-card" ref={timesSectionRef}>
       <div className="times-header">
-        <div>
-          <p className="muted small">{selectedDateLabel}</p>
-          <h4>Available slots</h4>
-        </div>
+        <h4>Available slots</h4>
         <div className="times-actions">
-          <p className="muted subtle">
-            {selectedTime ? formatTime(selectedTime) : "Choose a time"}
-          </p>
           <div className="actions-stack">
             {onBack && (
               <button
@@ -37,7 +30,7 @@ const TimesSection = ({
             )}
             <button
               type="button"
-              className="button w-button"
+              className="ghost-button"
               onClick={onContinue}
               disabled={!canContinue}
             >

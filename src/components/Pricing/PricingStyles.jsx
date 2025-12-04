@@ -17,13 +17,14 @@ const PricingStyles = () => (
         .booking-overlay {
           position: fixed;
           inset: 0;
+          height: 100dvh;
           background: rgba(9, 5, 20, 0.5);
           backdrop-filter: blur(3px);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
-          overflow-y: auto;
+          padding: 12px;
+          overflow: hidden;
           -webkit-overflow-scrolling: touch;
           z-index: 1000;
         }
@@ -33,10 +34,10 @@ const PricingStyles = () => (
           width: min(1280px, 100%);
           color: #f2ecff;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-          overflow: visible;
+          overflow: hidden;
           position: relative;
-          height: auto;
-          max-height: calc(100vh - 48px);
+          height: 100%;
+          max-height: 100dvh;
           min-height: 560px;
           display: flex;
           flex-direction: column;
@@ -95,7 +96,7 @@ const PricingStyles = () => (
         }
         .booking-layout {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 320px;
+          grid-template-columns: 1fr;
           gap: 20px;
           align-items: start;
           height: 100%;
@@ -107,11 +108,7 @@ const PricingStyles = () => (
           min-height: 0;
         }
         .booking-sidebar {
-          position: sticky;
-          top: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+          display: none;
         }
         .booking-wayfinding {
           grid-column: 1 / -1;
@@ -360,8 +357,8 @@ const PricingStyles = () => (
           align-items: center;
         }
         .ghost-button {
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.4);
           color: #f2ecff;
           border-radius: 12px;
           padding: 10px 14px;
@@ -370,7 +367,7 @@ const PricingStyles = () => (
           transition: background 0.2s ease, transform 0.2s ease;
         }
         .ghost-button:hover {
-          background: rgba(255, 255, 255, 0.15);
+          background: rgba(255, 255, 255, 0.08);
           transform: translateY(-1px);
         }
         .ghost-button.tiny {
@@ -995,6 +992,8 @@ const PricingStyles = () => (
           background: linear-gradient(160deg, rgba(34, 36, 76, 0.9), rgba(24, 22, 52, 0.92));
           color: #f2ecff;
           box-shadow: 0 16px 26px rgba(0, 0, 0, 0.32);
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
 
         .price-summary__header {
@@ -1012,6 +1011,8 @@ const PricingStyles = () => (
           margin: 0;
           color: #c6b7e8;
           text-align: right;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
 
         .price-summary__list {
@@ -1034,6 +1035,9 @@ const PricingStyles = () => (
 
         .price-summary-card .add-on-price {
           color: #c6b7e8;
+        }
+        .inline-price-summary {
+          margin-top: 8px;
         }
         .pet-list-group {
           gap: 10px;
@@ -1397,13 +1401,32 @@ const PricingStyles = () => (
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        .summary-item.stacked {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
         .summary-item:last-child {
           border-bottom: none;
+        }
+
+        .summary-list.plain {
+          gap: 6px;
         }
 
         .summary-label {
           color: #d2cef7;
           font-weight: 600;
+          max-width: 100%;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        .summary-card {
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
 
         .summary-value {
@@ -1722,20 +1745,6 @@ const PricingStyles = () => (
   gap: 10px;
 }
 
-.price-summary-card.sticky {
-  position: sticky;
-  top: 0;
-}
-
-.sticky-cta {
-  position: sticky;
-  bottom: 0;
-  background: linear-gradient(145deg, rgba(124, 93, 242, 0.15), rgba(31, 15, 58, 0.8));
-  border-radius: 12px;
-  padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1798,7 +1807,10 @@ const PricingStyles = () => (
   background: rgba(255, 255, 255, 0.04);
   position: relative;
   display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
   gap: 8px;
+  align-items: start;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1813,7 +1825,15 @@ const PricingStyles = () => (
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+  grid-column: 1 / -1;
+}
+
+.add-on-description {
+  grid-column: 1 / 2;
+  margin: 4px 0 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .add-on-price-chip {

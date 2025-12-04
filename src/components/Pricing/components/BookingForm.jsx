@@ -8,7 +8,6 @@ const BookingForm = ({
   success,
   service,
   scheduleEntries = [],
-  timeZoneLabel,
   formatTime,
   clientName,
   setClientName,
@@ -106,20 +105,15 @@ const BookingForm = ({
             {scheduleEntries.length ? (
               <ul className="summary-list">
                 {scheduleEntries.map((entry, index) => (
-                  <li key={`${entry.date}-${index}`} className="summary-item">
-                    <div>
-                      <p className="summary-label">
-                        {new Date(entry.date).toLocaleDateString(undefined, {
-                          weekday: "long",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                      <p className="summary-value">{formatTime(entry.time)}</p>
-                    </div>
-                    {timeZoneLabel && (
-                      <span className="muted subtle">{timeZoneLabel}</span>
-                    )}
+                  <li key={`${entry.date}-${index}`} className="summary-item stacked">
+                    <p className="summary-label">
+                      {new Date(entry.date).toLocaleDateString(undefined, {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                    <p className="summary-value">{formatTime(entry.time)}</p>
                   </li>
                 ))}
               </ul>
@@ -130,23 +124,11 @@ const BookingForm = ({
 
           <div className="summary-card">
             <h4>Customer</h4>
-            <div className="summary-list">
-              <div className="summary-item">
-                <span className="summary-label">Name</span>
-                <span className="summary-value">{clientName || "—"}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Email</span>
-                <span className="summary-value">{clientEmail || "—"}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Phone</span>
-                <span className="summary-value">{clientPhone || "—"}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Address</span>
-                <span className="summary-value">{clientAddress || "—"}</span>
-              </div>
+            <div className="summary-list plain">
+              <p className="summary-value">{clientName || "—"}</p>
+              <p className="summary-value">{clientEmail || "—"}</p>
+              <p className="summary-value">{clientPhone || "—"}</p>
+              <p className="summary-value">{clientAddress || "—"}</p>
             </div>
           </div>
 
@@ -156,7 +138,6 @@ const BookingForm = ({
               <div className="summary-list">
                 {savedPets.map((pet) => (
                   <div key={pet.id} className="summary-item">
-                    <span className="summary-label">Saved dog</span>
                     <span className="summary-value">
                       {pet.name || "Your pup"}
                       {pet.breed ? ` · ${pet.breed}` : ""}
@@ -165,7 +146,6 @@ const BookingForm = ({
                 ))}
                 {newDogDetails.map((dog, index) => (
                   <div key={`new-dog-${index}`} className="summary-item">
-                    <span className="summary-label">New dog</span>
                     <span className="summary-value">
                       {(dog.name || "Your pup").trim()}
                       {dog.breed ? ` · ${dog.breed}` : ""}
@@ -298,25 +278,6 @@ const BookingForm = ({
                   </p>
                 ) : (
                   <>
-                  <div className="pet-chip-row">
-                    {existingPets.map((pet) => {
-                      const isSelected = selectedPetIds.includes(pet.id);
-                      return (
-                        <button
-                          type="button"
-                          key={`chip-${pet.id}`}
-                          className={`pet-chip ${isSelected ? "selected" : ""}`}
-                          onClick={() => {
-                            setSelectedPetIds((prev) =>
-                              isSelected ? prev.filter((id) => id !== pet.id) : [...prev, pet.id]
-                            );
-                          }}
-                        >
-                          {pet.name || pet.breed || "Saved pet"}
-                        </button>
-                      );
-                    })}
-                  </div>
                   <div className="pet-list">
                     {existingPets.map((pet) => {
                       const isSelected = selectedPetIds.includes(pet.id);
@@ -616,7 +577,7 @@ const BookingForm = ({
           <div className="actions-stack">
             <button
               type="button"
-              className="button w-button"
+              className="ghost-button"
               onClick={() => handleAdvance("pet")}
               disabled={!canAdvanceToPets}
             >
@@ -632,7 +593,7 @@ const BookingForm = ({
             {hasAtLeastOneDog ? (
               <button
                 type="button"
-                className="button w-button"
+                className="ghost-button"
                 onClick={() => handleAdvance("addons")}
               >
                 Continue to additional care
@@ -650,7 +611,7 @@ const BookingForm = ({
             {hasAtLeastOneDog ? (
               <button
                 type="button"
-                className="button w-button"
+                className="ghost-button"
                 onClick={() => handleAdvance("summary")}
               >
                 Continue to summary

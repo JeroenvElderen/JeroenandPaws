@@ -25,12 +25,14 @@ import BookingForm from "./components/BookingForm";
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
   const { profile, isAuthenticated, setProfile } = useAuth();
-  const [customerMode, setCustomerMode] = useState(() => (profile ? "login" : "null"));
+  const [customerMode, setCustomerMode] = useState(() =>
+    profile ? "login" : "null"
+  );
   const [loginEmail, setLoginEmail] = useState(profile?.client?.email || "");
   const [loginPassword, setLoginPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
-  const [is24h, setIs24h] = useState(true);
+  const is24h = true;
   const [availability, setAvailability] = useState({
     dates: [],
     timeZone: "UTC",
@@ -272,12 +274,7 @@ const BookingModal = ({ service, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, [
-    apiBaseUrl,
-    setInitialVisibleMonth,
-    service.durationMinutes,
-    service.id,
-  ]);
+  }, [apiBaseUrl, setInitialVisibleMonth, service.durationMinutes, service.id]);
   useEffect(() => {
     loadAvailability();
   }, [loadAvailability]);
@@ -901,9 +898,7 @@ const BookingModal = ({ service, onClose }) => {
     }
 
     if (visitCount) {
-      descriptionParts.push(
-        `${visitCount} visit${visitCount > 1 ? "s" : ""}`
-      );
+      descriptionParts.push(`${visitCount} visit${visitCount > 1 ? "s" : ""}`);
     }
 
     if (selectedAddonObjects.length) {
@@ -956,7 +951,10 @@ const BookingModal = ({ service, onClose }) => {
 
   useEffect(() => {
     if (bookingModalRef.current) {
-      bookingModalRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      bookingModalRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }
   }, []);
 
@@ -970,7 +968,8 @@ const BookingModal = ({ service, onClose }) => {
     return { date: availableDays[0].date, time: slot.time };
   }, [calendarDays, isDayAvailableForService]);
 
-  const progressPercent = ((stepOrder.indexOf(currentStep) + 1) / stepOrder.length) * 100;
+  const progressPercent =
+    ((stepOrder.indexOf(currentStep) + 1) / stepOrder.length) * 100;
 
   const handleUseRecommended = () => {
     if (!recommendedSlot) return;
@@ -996,7 +995,9 @@ const BookingModal = ({ service, onClose }) => {
   const summaryChips = [
     selectedDateLabel || "Pick a date",
     selectedTime ? formatTime(selectedTime) : "Pick a time",
-    pricing.dogCount ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""}` : null,
+    pricing.dogCount
+      ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""}`
+      : null,
   ].filter(Boolean);
 
   const goToStepAndScroll = (step) => {
@@ -1023,7 +1024,11 @@ const BookingModal = ({ service, onClose }) => {
               <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
             </div>
             <div className="hero-actions">
-              <button type="button" className="ghost-button" onClick={() => setSupportOpen(true)}>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setSupportOpen(true)}
+              >
                 Need help?
               </button>
               <button
@@ -1044,7 +1049,10 @@ const BookingModal = ({ service, onClose }) => {
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+            <div
+              className="progress-fill"
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
 
           <div className="booking-body">
@@ -1064,7 +1072,9 @@ const BookingModal = ({ service, onClose }) => {
                       }`}
                       onClick={() => goToStepAndScroll(step)}
                     >
-                      <span className="step-icon">{isComplete ? "✓" : stepIndex + 1}</span>
+                      <span className="step-icon">
+                        {isComplete ? "✓" : stepIndex + 1}
+                      </span>
                       <span className="step-label">{stepLabels[step]}</span>
                     </button>
                   );
@@ -1079,19 +1089,29 @@ const BookingModal = ({ service, onClose }) => {
               </div>
             </div>
 
-          <div className="booking-layout">
+            <div className="booking-layout">
               <div className="booking-main">
                 {error && (
                   <div className="error-banner actionable">
                     <div>
                       <p>{error}</p>
-                      <p className="muted subtle">Try another time or message us for concierge scheduling.</p>
+                      <p className="muted subtle">
+                        Try another time or message us for concierge scheduling.
+                      </p>
                     </div>
                     <div className="actions-stack">
-                      <button type="button" className="ghost-button" onClick={() => goToStepAndScroll("time")}>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => goToStepAndScroll("time")}
+                      >
                         Pick another time
                       </button>
-                      <button type="button" className="ghost-button" onClick={() => setSupportOpen(true)}>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => setSupportOpen(true)}
+                      >
                         Message us
                       </button>
                     </div>
@@ -1107,25 +1127,12 @@ const BookingModal = ({ service, onClose }) => {
                       weekdayLabels={weekdayLabels}
                       monthMatrix={monthMatrix}
                       visibleMonth={visibleMonth}
-                      onPrevMonth={() =>
-                        setVisibleMonth(
-                          (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-                        )
-                      }
-                      onNextMonth={() =>
-                        setVisibleMonth(
-                          (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-                        )
-                      }
-                      is24h={is24h}
-                      onToggleTimeFormat={(value) => setIs24h(value)}
                       availabilityMap={availabilityMap}
                       isDayAvailableForService={isDayAvailableForService}
                       selectedDate={selectedDate}
                       selectedSlots={selectedSlots}
                       handleDaySelection={handleDaySelection}
                       calendarSectionRef={calendarSectionRef}
-                      timeZoneLabel={availability.timeZone}
                     />
                   </div>
                 )}
@@ -1135,7 +1142,6 @@ const BookingModal = ({ service, onClose }) => {
                     <TimesSection
                       selectedDay={selectedDay}
                       isDayAvailableForService={isDayAvailableForService}
-                      selectedDateLabel={selectedDateLabel}
                       selectedTime={selectedTime}
                       handleTimeSelection={handleTimeSelection}
                       formatTime={formatTime}
@@ -1188,8 +1194,13 @@ const BookingModal = ({ service, onClose }) => {
                       </div>
 
                       {customerMode === "login" ? (
-                        <form className="auth-form" onSubmit={handleSupabaseLogin}>
-                          {authError && <p className="error-banner">{authError}</p>}
+                        <form
+                          className="auth-form"
+                          onSubmit={handleSupabaseLogin}
+                        >
+                          {authError && (
+                            <p className="error-banner">{authError}</p>
+                          )}
                           <div className="form-grid">
                             <label className="input-group">
                               <span>Email</span>
@@ -1206,7 +1217,9 @@ const BookingModal = ({ service, onClose }) => {
                               <input
                                 type="password"
                                 value={loginPassword}
-                                onChange={(e) => setLoginPassword(e.target.value)}
+                                onChange={(e) =>
+                                  setLoginPassword(e.target.value)
+                                }
                                 placeholder="Enter your password"
                                 autoComplete="current-password"
                               />
@@ -1219,7 +1232,9 @@ const BookingModal = ({ service, onClose }) => {
                                 className="button w-button"
                                 disabled={authLoading}
                               >
-                                {authLoading ? "Logging in…" : "Login to Jeroen & Paws"}
+                                {authLoading
+                                  ? "Logging in…"
+                                  : "Login to Jeroen & Paws"}
                               </button>
                             </div>
                           </div>
@@ -1231,7 +1246,9 @@ const BookingModal = ({ service, onClose }) => {
                         </form>
                       ) : customerMode === "new" ? (
                         <div className="actions-stack">
-                          <p className="muted subtle">We’ll create your account after booking.</p>
+                          <p className="muted subtle">
+                            We’ll create your account after booking.
+                          </p>
                         </div>
                       ) : null}
                     </div>
@@ -1243,7 +1260,6 @@ const BookingModal = ({ service, onClose }) => {
                         onSelectCustomerMode={handleCustomerModeChange}
                         service={service}
                         scheduleEntries={scheduleEntries}
-                        timeZoneLabel={availability.timeZone}
                         formatTime={formatTime}
                         clientName={clientName}
                         setClientName={setClientName}
@@ -1324,7 +1340,6 @@ const BookingModal = ({ service, onClose }) => {
                       onSelectCustomerMode={handleCustomerModeChange}
                       service={service}
                       scheduleEntries={scheduleEntries}
-                      timeZoneLabel={availability.timeZone}
                       formatTime={formatTime}
                       clientName={clientName}
                       setClientName={setClientName}
@@ -1404,7 +1419,6 @@ const BookingModal = ({ service, onClose }) => {
                       onSelectCustomerMode={handleCustomerModeChange}
                       service={service}
                       scheduleEntries={scheduleEntries}
-                      timeZoneLabel={availability.timeZone}
                       formatTime={formatTime}
                       clientName={clientName}
                       setClientName={setClientName}
@@ -1475,7 +1489,6 @@ const BookingModal = ({ service, onClose }) => {
                       onSelectCustomerMode={handleCustomerModeChange}
                       service={service}
                       scheduleEntries={scheduleEntries}
-                      timeZoneLabel={availability.timeZone}
                       formatTime={formatTime}
                       clientName={clientName}
                       setClientName={setClientName}
@@ -1527,10 +1540,8 @@ const BookingModal = ({ service, onClose }) => {
                     />
                   </div>
                 )}
-              </div>
 
-              <aside className="booking-sidebar">
-                <div className="price-summary-card sticky">
+                <div className="price-summary-card inline-price-summary">
                   <div className="price-summary__header">
                     <div>
                       <p className="muted small">Current total</p>
@@ -1538,7 +1549,9 @@ const BookingModal = ({ service, onClose }) => {
                     </div>
                     <p className="muted subtle price-summary__meta">
                       {pricing.dogCount && pricing.visitCount
-                        ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""} × ${pricing.visitCount} visit${
+                        ? `${pricing.dogCount} dog${
+                            pricing.dogCount > 1 ? "s" : ""
+                          } × ${pricing.visitCount} visit${
                             pricing.visitCount > 1 ? "s" : ""
                           }`
                         : "Add dogs and pick dates"}
@@ -1546,27 +1559,32 @@ const BookingModal = ({ service, onClose }) => {
                   </div>
                   <ul className="price-summary__list">
                     <li>
-                      Service: {formatCurrency(pricing.servicePrice)} per dog / visit
+                      Service: {formatCurrency(pricing.servicePrice)} per dog /
+                      visit
                     </li>
                     {pricing.selectedAddons.map((addon) => (
                       <li key={addon.id || addon.value}>
-                        + {addon.label}: {formatCurrency(parsePriceValue(addon.price))} one-time
+                        + {addon.label}:{" "}
+                        {formatCurrency(parsePriceValue(addon.price))} one-time
                       </li>
                     ))}
                     <li>
-                      Total per dog / visit: {formatCurrency(pricing.servicePrice)}
+                      Total per dog / visit:{" "}
+                      {formatCurrency(pricing.servicePrice)}
                     </li>
                   </ul>
-                  <div className="sticky-cta">
-                    <p className="muted subtle">Secure payment after confirmation.</p>
-                  </div>
                 </div>
-              </aside>
               </div>
             </div>
           </div>
         </div>
-      {supportOpen && <ChatOrFormModal service={supportService} onClose={() => setSupportOpen(false)} />}
+      </div>
+      {supportOpen && (
+        <ChatOrFormModal
+          service={supportService}
+          onClose={() => setSupportOpen(false)}
+        />
+      )}
     </>
   );
 };

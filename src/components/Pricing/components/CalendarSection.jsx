@@ -7,51 +7,17 @@ const CalendarSection = ({
   weekdayLabels,
   monthMatrix,
   visibleMonth,
-  onPrevMonth,
-  onNextMonth,
-  is24h,
-  onToggleTimeFormat,
   availabilityMap,
   isDayAvailableForService,
   selectedDate,
   selectedSlots,
   handleDaySelection,
   calendarSectionRef,
-  timeZoneLabel,
 }) => {
   return (
     <div className="calendar-card" ref={calendarSectionRef}>
       <div className="calendar-toolbar">
-        <div>
-          <p className="muted small">{timeZoneLabel}</p>
-          <h4>{monthLabel}</h4>
-        </div>
-        <div className="toolbar-controls">
-          <div className="month-nav" aria-label="Month navigation">
-            <button type="button" className="nav-button" onClick={onPrevMonth} aria-label="Previous month">
-              ‹
-            </button>
-            <button type="button" className="nav-button" onClick={onNextMonth} aria-label="Next month">
-              ›
-            </button>
-          </div>
-          <div className="toggle-group" role="group" aria-label="Time display format">
-            <button
-              type="button"
-              className={`pill ${is24h ? "active" : ""}`}
-              onClick={() => onToggleTimeFormat(true)}
-            >
-              24h
-            </button>
-            <button
-              type="button"
-              className={`pill ${!is24h ? "active" : ""}`}
-              onClick={() => onToggleTimeFormat(false)}
-            >
-              12h
-            </button>
-          </div>
-        </div>
+        <h4>{monthLabel}</h4>
       </div>
       {availabilityNotice && <p className="info-banner">{availabilityNotice}</p>}
       {loading ? (
