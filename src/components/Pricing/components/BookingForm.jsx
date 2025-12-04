@@ -555,7 +555,7 @@ const BookingForm = ({
                 </li>
                 {pricing.selectedAddons.map((addon) => (
                   <li key={addon.id || addon.value}>
-                    + {addon.label}: {formatCurrency(parsePriceValue(addon.price))} one-time
+                    + {addon.label}: {formatCurrency(parsePriceValue(addon.price))}
                   </li>
                 ))}
                 <li>
