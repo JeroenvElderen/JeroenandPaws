@@ -3,6 +3,7 @@ const PricingStyles = () => (
         .card.on-secondary {
           transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
+        
         .card.on-secondary:hover {
           transform: translateY(-6px);
           box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
@@ -116,8 +117,6 @@ const PricingStyles = () => (
           align-items: flex-start;
           justify-content: space-between;
           gap: 12px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 12px;
           padding: 14px 16px;
         }
@@ -159,8 +158,8 @@ const PricingStyles = () => (
         }
         .calendar-card,
         .times-card {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          
+          
           border-radius: 12px;
           padding: 18px;
           display: flex;

@@ -36,7 +36,7 @@ engaged, exercised, and genuinely cared for throughout the day.
                   className="image-ratio_4x3 w-node-f1b26e5a-b33b-e9ba-a521-149172f27d28-6cecf403"
                 >
                   <img
-                    src="/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif"
+                    src="/images/background/bg2.jpg"
                     alt="dog walking"
                     className="image image_cover"
                   />
@@ -47,9 +47,13 @@ engaged, exercised, and genuinely cared for throughout the day.
                   className="image-ratio_4x3 w-node-f1b26e5a-b33b-e9ba-a521-149172f27d2a-6cecf403"
                 >
                   <img
-                    src="/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif"
+                    src="/images/dogs/kaiser/kaiser1.jpeg"
                     alt="happy dog on walk"
                     className="image image_cover shadow_xlarge"
+                    style={{
+                      objectFit: "cover",
+                      objectPosition: "0% 42.5%",
+                    }}
                   />
                 </div>
               </div>

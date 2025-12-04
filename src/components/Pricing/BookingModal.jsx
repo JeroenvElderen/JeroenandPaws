@@ -1042,7 +1042,7 @@ const BookingModal = ({ service, onClose }) => {
             </div>
           </header>
 
-          <div
+          {/* <div
             className="progress-track"
             role="progressbar"
             aria-valuenow={progressPercent}
@@ -1053,7 +1053,7 @@ const BookingModal = ({ service, onClose }) => {
               className="progress-fill"
               style={{ width: `${progressPercent}%` }}
             />
-          </div>
+          </div> */}
 
           <div className="booking-body">
             <div className="booking-wayfinding">

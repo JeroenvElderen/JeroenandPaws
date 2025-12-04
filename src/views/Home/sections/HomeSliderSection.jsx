@@ -199,7 +199,7 @@ const HomeSliderSection = () => {
                         className="image_cover"
                         style={{
                           width: "100%",
-                          height: "405px",
+                          height: "450px",
                           objectFit: "cover",
                         }}
                       />
