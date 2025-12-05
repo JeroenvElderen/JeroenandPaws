@@ -87,13 +87,17 @@ const CalendarSection = ({
             ))}
           </div>
           <div className="calendar-grid" aria-label="Calendar">
-            {monthMatrix.map((dateObj) => {
+            {monthMatrix.map((dateObj, index) => {
               const iso = dateObj.toISOString().slice(0, 10);
               const dayData = availabilityMap[iso];
               const isAvailable = isDayAvailableForService(dayData);
               const isSelected = iso === selectedDate;
               const isScheduled = Boolean(selectedSlots[iso]);
               const isPastDate = dateObj < new Date().setHours(0, 0, 0, 0);
+              const isFirstDay = index === 0;
+              const gridColumnStart = isFirstDay
+                ? ((dateObj.getDay() + 6) % 7) + 1
+                : undefined;
               return (
                 <button
                   key={iso}
@@ -104,6 +108,7 @@ const CalendarSection = ({
                   onClick={() => handleDaySelection(iso)}
                   aria-pressed={isSelected}
                   disabled={isPastDate || !isAvailable}
+                  style={{ gridColumnStart }}
                 >
                   <span>{dateObj.getDate()}</span>
                   <span className="day-dot-wrapper">
