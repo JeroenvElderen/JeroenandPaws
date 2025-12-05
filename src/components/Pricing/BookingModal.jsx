@@ -242,6 +242,21 @@ const BookingModal = ({ service, onClose }) => {
     [isDayAvailableForService]
   );
 
+  const handleMonthChange = useCallback((offset) => {
+    setVisibleMonth((prev) => {
+      const next = new Date(prev);
+      next.setDate(1);
+      next.setMonth(prev.getMonth() + offset);
+      return next;
+    });
+  }, []);
+
+  const handleNextMonth = useCallback(() => handleMonthChange(1), [handleMonthChange]);
+  const handlePreviousMonth = useCallback(
+    () => handleMonthChange(-1),
+    [handleMonthChange]
+  );
+
   const loadAvailability = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -1133,6 +1148,8 @@ const BookingModal = ({ service, onClose }) => {
                       selectedSlots={selectedSlots}
                       handleDaySelection={handleDaySelection}
                       calendarSectionRef={calendarSectionRef}
+                      onPreviousMonth={handlePreviousMonth}
+                      onNextMonth={handleNextMonth}
                     />
                   </div>
                 )}

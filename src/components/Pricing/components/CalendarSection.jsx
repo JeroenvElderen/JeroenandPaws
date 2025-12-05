@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 
 const CalendarSection = ({
   availabilityNotice,
@@ -13,11 +13,68 @@ const CalendarSection = ({
   selectedSlots,
   handleDaySelection,
   calendarSectionRef,
+  onPreviousMonth,
+  onNextMonth,
 }) => {
+  const touchStartX = useRef(null);
+
+  const handleWheel = (event) => {
+    if (!onPreviousMonth || !onNextMonth) return;
+
+    const { deltaX, deltaY } = event;
+    const primaryDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : 0;
+
+    if (primaryDelta > 16) {
+      onNextMonth();
+    } else if (primaryDelta < -16) {
+      onPreviousMonth();
+    }
+  };
+
+  const handleTouchStart = (event) => {
+    touchStartX.current = event.touches[0]?.clientX || null;
+  };
+
+  const handleTouchEnd = (event) => {
+    if (!onPreviousMonth || !onNextMonth) return;
+
+    const startX = touchStartX.current;
+    const endX = event.changedTouches[0]?.clientX;
+
+    if (startX == null || endX == null) return;
+
+    const delta = endX - startX;
+    const swipeThreshold = 30;
+
+    if (delta > swipeThreshold) {
+      onPreviousMonth();
+    } else if (delta < -swipeThreshold) {
+      onNextMonth();
+    }
+
+    touchStartX.current = null;
+  };
+
   return (
-    <div className="calendar-card" ref={calendarSectionRef}>
+    <div
+      className="calendar-card"
+      ref={calendarSectionRef}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="calendar-toolbar">
         <h4>{monthLabel}</h4>
+        <div className="toolbar-controls">
+          <div className="month-nav" aria-label="Change month">
+            <button type="button" onClick={onPreviousMonth} aria-label="Previous month">
+              ←
+            </button>
+            <button type="button" onClick={onNextMonth} aria-label="Next month">
+              →
+            </button>
+          </div>
+        </div>
       </div>
       {availabilityNotice && <p className="info-banner">{availabilityNotice}</p>}
       {loading ? (

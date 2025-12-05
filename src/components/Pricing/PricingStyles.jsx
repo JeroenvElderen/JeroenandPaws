@@ -475,6 +475,20 @@ const PricingStyles = () => (
           border-radius: 12px;
           padding: 4px;
         }
+        .month-nav button {
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.08);
+          color: #f4f1ff;
+          padding: 6px 10px;
+          border-radius: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .month-nav button:hover {
+          background: rgba(255, 255, 255, 0.14);
+          transform: translateY(-1px);
+        }
           /* Allow the right column to shrink */
 .times-card {
   min-width: 260px;
