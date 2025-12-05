@@ -12,9 +12,10 @@ const DailystrollsFeatureSection = ({ onBook }) => {
           >
             <h1 className="heading_h1">Daily walks, happier companions</h1>
             <p className="subheading">
-              Reliable, safe, and enriching walks — from quick neighbourhood outings
-to longer adventures. Ideal for busy owners who want their companions
-engaged, exercised, and genuinely cared for throughout the day.
+              Reliable, safe, and enriching walks — from quick neighbourhood
+              outings to longer adventures. Ideal for busy owners who want their
+              companions engaged, exercised, and genuinely cared for throughout
+              the day.
             </p>
             <div className="button-group">
               <button

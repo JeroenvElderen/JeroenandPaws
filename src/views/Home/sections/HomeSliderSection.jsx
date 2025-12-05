@@ -4,56 +4,56 @@ import React, { useEffect, useState } from "react";
 const slides = [
   {
     title: "Daily walks, done right",
-    description: "Personalised walks designed around your companion’s pace, energy, and daily routine.",
+    description: "Personalised walks matched to your companion’s pace and routine.",
     href: "/services/daily-strolls",
     imageSrc: "/images/Bonnie.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
   },
   {
     title: "Group adventures",
-    description: "Confidence-building group outings where companions explore, play, and enjoy time together.",
+    description: "Fun, confidence-building outings where companions explore and play together.",
     href: "/services/group-adventures",
     imageSrc: "/images/1a2eb736-6cd3-4d5b-9798-f040dc1d80b9.avif",
     imageAlt: "Group of dogs playing together outdoors",
   },
   {
     title: "Solo journeys",
-    description: "Individual attention and peaceful one-to-one walks shaped around your companion’s needs.",
+    description: "One-to-one walks that provide calm, focused attention just for your companion.",
     href: "/services/solo-journeys",
     imageSrc: "/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif",
     imageAlt: "Dog sitting attentively on a trail",
   },
   {
     title: "Overnight stays",
-    description: "A calm, homely overnight experience where your companion rests comfortably and feels right at home.",
+    description: "A homely stay where your companion rests comfortably and feels safe.",
     href: "/services/overnight-stays",
     imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
     imageAlt: "Dog resting comfortably indoors",
   },
   {
     title: "Daytime care",
-    description: "A day filled with reassurance, stimulation, and fun — perfect for companions who thrive on company.",
+    description: "Stimulating, reassuring days perfect for companions who love company.",
     href: "/services/daytime-care",
     imageSrc: "/images/a58085e9-4555-461c-9f59-6029e44d0a55.avif",
     imageAlt: "Dog being cared for during daytime playtime",
   },
   {
     title: "Home check-ins",
-    description: "Thoughtful drop-ins that ensure your companion is relaxed, supported, and well cared for while you’re away.",
+    description: "Comforting drop-ins that keep your companion relaxed and well looked after.",
     href: "/services/home-check-ins",
     imageSrc: "/images/bc30b5db-c4fa-466a-a797-7ef1e270262b.avif",
     imageAlt: "Person greeting a dog inside a home",
   },
   {
     title: "Training help",
-    description: "Clear, encouraging training support to help your companion learn good habits with confidence.",
+    description: "Supportive guidance to build good habits and boost your companion’s confidence.",
     href: "/services/training-help",
     imageSrc: "/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif",
     imageAlt: "Trainer working with a dog",
   },
   {
     title: "Custom solutions",
-    description: "Bespoke care tailored to your companion’s personality, preferences, and lifestyle.",
+    description: "Tailored care shaped around your companion’s personality and lifestyle.",
     href: "/services/custom-solutions",
     imageSrc: "/images/d801bc7b-4e2e-4836-8ed2-f4f819ecc79a.avif",
     imageAlt: "Owner cuddling with a relaxed dog",
@@ -126,7 +126,7 @@ const HomeSliderSection = () => {
   const renderedSlides = [...slides, ...slides, ...slides];
 
   return (
-    <section data-copilot="true" className="section overflow_hidden">
+    <section data-copilot="true" className="section overflow_hidden" style={{ marginTop: -150}}>
       <div className="container">
         <div className="header is-align-center">
           <div className="eyebrow">Welcome to your companion’s second home</div>
