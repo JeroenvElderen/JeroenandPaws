@@ -40,12 +40,14 @@ const PricingSection = () => {
   }, []);
 
   return (
+    <section id="services">
     <DynamicPricingSection
       title="Training Help — Session Options"
       services={services}
       gridClassName="grid_4-col"
       defaultCta="Check availability"
     />
+    </section>
   );
 };
 

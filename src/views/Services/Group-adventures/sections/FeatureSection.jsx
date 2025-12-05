@@ -1,6 +1,6 @@
 import React from "react";
 
-const FeatureSection = () => {
+const FeatureSection = ({ onBook }) => {
   return (
     <header className="section">
       <div className="container">
@@ -22,9 +22,9 @@ const FeatureSection = () => {
               throughout.
             </p>
             <div className="button-group">
-              <a href="#book" className="button w-button">
+              <button type="button" onClick={onBook} className="button w-button">
                 Join an adventure
-              </a>
+              </button>
               <a href="#services" className="button is-secondary w-button">
                 View services and pricing
               </a>

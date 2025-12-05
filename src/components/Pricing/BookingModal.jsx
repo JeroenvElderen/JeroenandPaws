@@ -262,12 +262,12 @@ const BookingModal = ({ service, onClose }) => {
 
       const data = await prefetchAvailability(service, apiBaseUrl);
       setAvailability(data);
-      setInitialVisibleMonth(cached);
+      setInitialVisibleMonth(data);
     } catch (error) {
       console.error("Unable to load live availability", error);
       const fallback = generateDemoAvailability(service.durationMinutes);
       setAvailability(fallback);
-      setInitialVisibleMonth(cached);
+      setInitialVisibleMonth(fallback);
       setAvailabilityNotice(
         "Live calendar is unreachable — displaying demo slots so you can keep booking."
       );

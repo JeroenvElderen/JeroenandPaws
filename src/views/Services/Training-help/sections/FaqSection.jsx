@@ -20,7 +20,7 @@ const FaqSection = () => {
         "Absolutely! I have experience with dogs of all ages and abilities, including those needing medication, extra patience, or special routines.",
     },
   ];
-
+ 
   const toggleAccordion = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
   };
@@ -35,7 +35,7 @@ const FaqSection = () => {
           </p>
         </div>
 
-        <div className="flex_vertical">
+        <div className="flex_vertical is_align-center-flex">
           {faqs.map((faq, index) => (
             <div className="accordion is-transparent" key={index}>
               <button
@@ -45,7 +45,7 @@ const FaqSection = () => {
                 <div className="accordion_icon">
                   {activeIndex === index ? "−" : "+"}
                 </div>
-                <div className="paragraph_large margin-bottom_none">
+                <div className="paragraph_large margin-bottom_none text-center">
                   {faq.question}
                 </div>
               </button>

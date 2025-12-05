@@ -40,12 +40,14 @@ const PricingSection = () => {
   }, []);
 
   return (
+    <section id="services">
     <DynamicPricingSection
       title="Daytime care plans for every companion"
       services={services}
       gridClassName="grid_3-col"
       defaultCta="Check availability"
     />
+    </section>
   );
 };
 

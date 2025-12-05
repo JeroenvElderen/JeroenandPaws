@@ -43,6 +43,47 @@ const PricingStyles = () => (
           display: flex;
           flex-direction: column;
         }
+        .service-chooser {
+          width: min(980px, 100%);
+          background: linear-gradient(135deg, #170f2c, #1c1235);
+          border-radius: 16px;
+          color: #f2ecff;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+          padding: 20px 24px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .service-chooser__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .service-chooser__body {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .service-chooser__grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 12px;
+        }
+        .service-chooser__card .card_body {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .service-chooser__empty {
+          text-align: center;
+          padding: 28px 16px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+        }
         .booking-hero {
           display: flex;
           justify-content: space-between;

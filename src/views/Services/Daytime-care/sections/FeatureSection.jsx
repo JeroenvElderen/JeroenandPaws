@@ -1,7 +1,6 @@
 import React from "react";
-import Link from "next/link";
 
-const FeatureSection = () => {
+const FeatureSection = ({ onBook }) => {
   return (
     <header className="section">
       <div className="container">
@@ -16,9 +15,9 @@ const FeatureSection = () => {
               While you’re away, your companion enjoys a safe, attentive, and nurturing space. With play, gentle stimulation, cozy naps, and calm supervision, they’re cared for as if they were part of the family — so you can focus on your day knowing they’re truly at ease.
             </p>
             <div className="button-group">
-          <Link href="/booking/daytime-care-4h" className="button w-button">
-            Book a daytime care spot
-          </Link>
+              <button type="button" onClick={onBook} className="button w-button">
+                Book a daytime care spot
+              </button>
               <a href="#services" className="button is-secondary w-button">
                 View daytime care plans & pricing
               </a>

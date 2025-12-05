@@ -46,12 +46,14 @@ const DailystrollsPricingSection = () => {
   }, []);
 
   return (
+    <section id="services">
     <DynamicPricingSection
       title="Daily stroll options for every companion"
       services={services}
       gridClassName="grid_3-col"
       defaultCta="Check availability"
     />
+    </section>
   );
 };
 

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 
-const FeatureSection = () => {
+const FeatureSection = ({ onBook }) => {
   return (
     <header className="section">
       <div className="container">
@@ -23,9 +23,9 @@ const FeatureSection = () => {
               booking.
             </p>
             <div className="button-group">
-              <Link href="/booking/overnight-stay" className="button w-button">
+              <button type="button" onClick={onBook} className="button w-button">
                 Book an overnight stay
-              </Link>
+              </button>
               <a href="#services" className="button is-secondary w-button">
                 View services and pricing
               </a>

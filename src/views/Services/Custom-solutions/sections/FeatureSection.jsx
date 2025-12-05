@@ -1,7 +1,6 @@
 import React from "react";
-import Link from "next/link";
 
-const FeatureSection = () => {
+const FeatureSection = ({ onBook }) => {
   return (
     <header className="section">
       <div className="container">
@@ -15,10 +14,10 @@ const FeatureSection = () => {
             <p className="subheading">
               From training to daily walks, day care, and boarding — your dog’s comfort and happiness always come first. Together, we’ll create a personalised care plan that suits your lifestyle and supports your dog’s unique needs.
             </p>
-                <div className="button-group">
-                  <Link href="/booking/custom-meet-greet" className="button w-button">
-                    Book a Meet &amp; Greet
-                  </Link>
+              <div className="button-group">
+              <button type="button" onClick={onBook} className="button w-button">
+                Book a Meet &amp; Greet
+              </button>
               <a href="#services" className="button is-secondary w-button">
                 View services & pricing
               </a>

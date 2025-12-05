@@ -40,12 +40,14 @@ const SoloJourneyPricingSection = () => {
   }, []);
 
   return (
+    <section id="services">
     <DynamicPricingSection
       title="Solo Journey Plans"
       services={services}
       gridClassName="grid_3-col"
       defaultCta="Check availability"
     />
+    </section>
   );
 };
 

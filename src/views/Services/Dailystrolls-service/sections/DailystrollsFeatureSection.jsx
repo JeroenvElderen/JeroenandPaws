@@ -1,6 +1,6 @@
 import React from "react";
 
-const DailystrollsFeatureSection = () => {
+const DailystrollsFeatureSection = ({ onBook }) => {
   return (
     <header className="section">
       <div className="container">
@@ -17,9 +17,13 @@ to longer adventures. Ideal for busy owners who want their companions
 engaged, exercised, and genuinely cared for throughout the day.
             </p>
             <div className="button-group">
-              <a href="#book" className="button w-button">
+              <button
+                type="button"
+                className="button w-button"
+                onClick={onBook}
+              >
                 Book your first walk
-              </a>
+              </button>
               <a href="#services" className="button is-secondary w-button">
                 View walk plans & pricing
               </a>

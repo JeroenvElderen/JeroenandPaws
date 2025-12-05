@@ -40,12 +40,14 @@ const PricingSection = () => {
   }, []);
 
   return (
+    <section id="services">
     <DynamicPricingSection
       title="Home Check-Ins — Flexible Care at Home"
       services={services}
       gridClassName="grid_3-col"
       defaultCta="Check availability"
     />
+    </section>
   );
 };
 

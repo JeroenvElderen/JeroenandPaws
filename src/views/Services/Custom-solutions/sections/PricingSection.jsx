@@ -42,12 +42,14 @@ const PricingSection = () => {
   }, []);
 
   return (
+    <section id="services">
     <DynamicPricingSection
       title="Tailored solutions for every dog"
       services={services}
       gridClassName="grid_4-col"
       defaultCta="Check availability"
     />
+    </section>
   );
 };
 
