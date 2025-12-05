@@ -1,16 +1,12 @@
 export const buildMonthMatrix = (visibleDate) => {
-  const firstOfMonth = new Date(
-    visibleDate.getFullYear(),
-    visibleDate.getMonth(),
-    1
-  );
-  const startOffset = (firstOfMonth.getDay() + 6) % 7;
-  const firstVisible = new Date(firstOfMonth);
-  firstVisible.setDate(firstOfMonth.getDate() - startOffset);
+  const year = visibleDate.getFullYear();
+  const month = visibleDate.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  return Array.from({ length: 42 }, (_, index) => {
-    const day = new Date(firstVisible);
-    day.setDate(firstVisible.getDate() + index);
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const day = new Date(firstOfMonth);
+    day.setDate(index + 1);
     return day;
   });
 };

@@ -89,7 +89,6 @@ const CalendarSection = ({
           <div className="calendar-grid" aria-label="Calendar">
             {monthMatrix.map((dateObj) => {
               const iso = dateObj.toISOString().slice(0, 10);
-              const isCurrentMonth = dateObj.getMonth() === visibleMonth.getMonth();
               const dayData = availabilityMap[iso];
               const isAvailable = isDayAvailableForService(dayData);
               const isSelected = iso === selectedDate;
@@ -100,8 +99,8 @@ const CalendarSection = ({
                   key={iso}
                   type="button"
                   className={`day ${isSelected ? "selected" : ""} ${isScheduled && !isSelected ? "scheduled" : ""} ${
-                    isCurrentMonth ? "" : "muted"
-                  } ${isAvailable ? "day-has-slots" : "day-no-slots"}`}
+                    isAvailable ? "day-has-slots" : "day-no-slots"
+                  }`}
                   onClick={() => handleDaySelection(iso)}
                   aria-pressed={isSelected}
                   disabled={isPastDate || !isAvailable}
