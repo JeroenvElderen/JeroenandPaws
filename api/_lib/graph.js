@@ -2,6 +2,8 @@ const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 const MAX_GRAPH_WINDOW_DAYS = 62;
 
+const BUSINESS_TIME_ZONE = "Europe/Dublin";
+
 const mapBusyIntervals = (items) =>
   items.map((item) => ({
     start: new Date(item.start.dateTime),
@@ -75,8 +77,11 @@ const postScheduleRequest = async ({
       },
       body: JSON.stringify({
         schedules: [calendarId || "me"],
-        startTime: { dateTime: startTime.toISOString(), timeZone: "UTC" },
-        endTime: { dateTime: endTime.toISOString(), timeZone: "UTC" },
+        startTime: {
+          dateTime: startTime.toISOString(),
+          timeZone: BUSINESS_TIME_ZONE,
+        },
+        endTime: { dateTime: endTime.toISOString(), timeZone: BUSINESS_TIME_ZONE },
         availabilityViewInterval: 30,
       }),
     }
@@ -99,7 +104,7 @@ const getSchedule = async ({
   const totalDays = Math.max(windowDays, 1);
   const startTime = new Date();
   const busy = [];
-  let timeZone = "UTC";
+  const timeZone = BUSINESS_TIME_ZONE;
 
   for (let offset = 0; offset < totalDays; offset += MAX_GRAPH_WINDOW_DAYS) {
     const chunkStart = new Date(startTime);
@@ -117,9 +122,6 @@ const getSchedule = async ({
     });
 
     const schedule = data.value?.[0];
-    if (schedule?.workingHours?.timeZone?.name) {
-      timeZone = schedule.workingHours.timeZone.name;
-    }
 
     busy.push(...mapBusyIntervals(schedule?.scheduleItems || []));
   }
@@ -150,7 +152,7 @@ const createEvent = async ({
   end,
   attendeeEmail,
   attendeeEmails = [],
-  timeZone = "UTC",
+  timeZone = BUSINESS_TIME_ZONE,
   locationDisplayName,
 }) => {
   const principalPath = buildPrincipalPath(calendarId);

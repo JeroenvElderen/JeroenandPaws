@@ -85,7 +85,7 @@ const TimesSection = ({
           selectedDay.slots.every((slot) => !slot.available) && (
             <p className="muted">All slots are full for this day.</p>
           )}
-        <p className="muted subtle">Times shown in your timezone</p>
+        <p className="muted subtle">Times shown in Ireland (Europe/Dublin)</p>
       </div>
     </div>
   );

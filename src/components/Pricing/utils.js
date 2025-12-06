@@ -1,3 +1,5 @@
+const BUSINESS_TIME_ZONE = "Europe/Dublin";
+
 export const buildMonthMatrix = (visibleDate) => {
   const year = visibleDate.getFullYear();
   const month = visibleDate.getMonth();
@@ -21,7 +23,10 @@ const generateRandomSlots = (date, durationMinutes) => {
       const formattedDate = `${date}T${formattedHour}:00:00`;
       const slotDate = new Date(formattedDate);
       const time = `${slotDate
-        .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
+        .toLocaleTimeString(
+          [],
+          { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: BUSINESS_TIME_ZONE }
+        )
         .padStart(5, "0")}`;
 
       const endTime = `${formattedEndHour.padStart(2, "0")}:${slotDate
@@ -44,7 +49,10 @@ const generateRandomSlots = (date, durationMinutes) => {
     const formattedDate = `${date}T${formattedHour}:00:00`;
     const slotDate = new Date(formattedDate);
     const time = `${slotDate
-      .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
+      .toLocaleTimeString(
+        [],
+        { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: BUSINESS_TIME_ZONE }
+      )
       .padStart(5, "0")}`;
 
     return {
@@ -57,7 +65,7 @@ const generateRandomSlots = (date, durationMinutes) => {
 
 export const generateDemoAvailability = (durationMinutes) => {
   const today = new Date();
-  const timeZone = "GMT Standard Time";
+  const timeZone = BUSINESS_TIME_ZONE;
   const dates = Array.from({ length: 42 }, (_, index) => {
     const d = new Date(today);
     d.setDate(today.getDate() + index);

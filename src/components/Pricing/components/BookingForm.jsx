@@ -205,7 +205,7 @@ const BookingForm = ({
             )}
           </div>
         </div>
-        <p className="muted subtle">Times shown in your timezone</p>
+        <p className="muted subtle">Times shown in Ireland (Europe/Dublin)</p>
       </>
     );
   }
@@ -650,7 +650,7 @@ const BookingForm = ({
               )}
             </div>
           </div>
-          <p className="muted subtle">Times shown in your timezone</p>
+          <p className="muted subtle">Times shown in Ireland (Europe/Dublin)</p>
         </>
       )}
     </>

@@ -2,6 +2,8 @@ const { createClient } = require("@supabase/supabase-js");
 const crypto = require("crypto");
 const { DateTime } = require("luxon");
 
+const BUSINESS_TIME_ZONE = "Europe/Dublin";
+
 const PET_PHOTO_BUCKET =
   process.env.SUPABASE_PET_PHOTO_BUCKET || "pet-photos";
 
@@ -150,12 +152,14 @@ const resolveBookingTimes = ({
   date,
   time,
   durationMinutes = 60,
-  timeZone = "UTC",
+  timeZone = BUSINESS_TIME_ZONE,
 }) => {
-  const start = DateTime.fromISO(`${date}T${time}`, { zone: timeZone || "UTC" });
+  const start = DateTime.fromISO(`${date}T${time}`, {
+    zone: timeZone || BUSINESS_TIME_ZONE,
+  });
   const safeStart = start.isValid
     ? start
-    : DateTime.fromISO(`${date}T${time}`, { zone: "UTC" });
+    : DateTime.fromISO(`${date}T${time}`, { zone: BUSINESS_TIME_ZONE });
   const end = safeStart.plus({ minutes: durationMinutes });
 
   return { start: safeStart, end };
@@ -574,7 +578,7 @@ const createBookingRecord = async ({
       service_title: serviceTitle || null,
       start_at: start.toUTC().toISO(),
       end_at: end.toUTC().toISO(),
-      time_zone: timeZone || "UTC",
+      time_zone: timeZone || BUSINESS_TIME_ZONE,
       client_address: clientAddress || null,
       notes: notes || null,
       status: "pending",
@@ -636,7 +640,7 @@ const createBookingWithProfiles = async ({
   durationMinutes = 60,
   serviceId,
   serviceTitle,
-  timeZone = "UTC",
+  timeZone = BUSINESS_TIME_ZONE,
   clientName,
   clientPhone,
   clientAddress,

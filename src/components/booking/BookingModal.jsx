@@ -12,6 +12,8 @@ import {
 } from "../Pricing/availabilityCache"
 import { useAuth } from "@/context/AuthContext"
 
+const BUSINESS_TIME_ZONE = "Europe/Dublin"
+
 const MAX_DOGS = 4
 
 export function BookingModal({ service, onClose }) {
@@ -19,7 +21,10 @@ export function BookingModal({ service, onClose }) {
   const { profile } = useAuth()
 
   const [currentStep, setCurrentStep] = useState("calendar")
-  const [availability, setAvailability] = useState({ dates: [], timeZone: "UTC" })
+  const [availability, setAvailability] = useState({
+    dates: [],
+    timeZone: BUSINESS_TIME_ZONE,
+  })
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
   const [selectedSlots, setSelectedSlots] = useState({})
@@ -76,7 +81,11 @@ export function BookingModal({ service, onClose }) {
       const date = new Date()
       date.setHours(Number(hours), Number(minutes), 0, 0)
 
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: BUSINESS_TIME_ZONE,
+      })
     },
     []
   )
@@ -155,22 +164,31 @@ export function BookingModal({ service, onClose }) {
     setDogCount(1)
   }, [])
 
+  const normalizeAvailability = useCallback(
+    (data = {}) => ({
+      ...data,
+      dates: data?.dates || [],
+      timeZone: BUSINESS_TIME_ZONE,
+    }),
+    []
+  )
+
   const loadAvailability = useCallback(async () => {
     try {
       const cached = getCachedAvailability(service?.id)
       if (cached) {
-        setAvailability(cached)
+        setAvailability(normalizeAvailability(cached))
         return
       }
 
       const data = await prefetchAvailability(service, apiBaseUrl)
-      setAvailability(data)
+      setAvailability(normalizeAvailability(data))
     } catch (error) {
       console.error("Unable to load live availability", error)
       const fallback = generateDemoAvailability(service?.durationMinutes)
-      setAvailability(fallback)
+      setAvailability(normalizeAvailability(fallback))
     }
-  }, [apiBaseUrl, service])
+  }, [apiBaseUrl, normalizeAvailability, service])
 
   useEffect(() => {
     if (!service) return
@@ -246,7 +264,7 @@ export function BookingModal({ service, onClose }) {
         clientAddress: clientAddress.trim(),
         clientEmail: clientEmail.trim(),
         notes: notes.trim(),
-        timeZone: availability.timeZone || "UTC",
+        timeZone: availability.timeZone || BUSINESS_TIME_ZONE,
         pets: dogs.slice(0, dogCount),
         dogCount: dogs.slice(0, dogCount).length,
         schedule: validSchedule.map((entry) => ({ ...entry, durationMinutes })),

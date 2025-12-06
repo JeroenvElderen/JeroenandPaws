@@ -22,6 +22,8 @@ import CalendarSection from "./components/CalendarSection";
 import TimesSection from "./components/TimesSection";
 import BookingForm from "./components/BookingForm";
 
+const BUSINESS_TIME_ZONE = "Europe/Dublin";
+
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
   const { profile, isAuthenticated, setProfile } = useAuth();
@@ -35,7 +37,7 @@ const BookingModal = ({ service, onClose }) => {
   const is24h = true;
   const [availability, setAvailability] = useState({
     dates: [],
-    timeZone: "UTC",
+    timeZone: BUSINESS_TIME_ZONE,
   });
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -92,6 +94,14 @@ const BookingModal = ({ service, onClose }) => {
   const serviceLabel = (service?.label || service?.title || "").toLowerCase();
   const isBoardingService = serviceLabel.includes("boarding");
   const allowWeeklyRecurring = allowRecurring && !isBoardingService;
+  const normalizeAvailability = useCallback(
+    (data = {}) => ({
+      ...data,
+      dates: data?.dates || [],
+      timeZone: BUSINESS_TIME_ZONE,
+    }),
+    []
+  );
 
   const hasAtLeastOneDog = useMemo(() => {
     if (selectedPetIds.length > 0) return true;
@@ -270,17 +280,21 @@ const BookingModal = ({ service, onClose }) => {
     try {
       const cached = getCachedAvailability(service.id);
       if (cached) {
-        setAvailability(cached);
-        setInitialVisibleMonth(cached);
+        const normalized = normalizeAvailability(cached);
+        setAvailability(normalized);
+        setInitialVisibleMonth(normalized);
         return;
       }
 
       const data = await prefetchAvailability(service, apiBaseUrl);
-      setAvailability(data);
-      setInitialVisibleMonth(data);
+      const normalized = normalizeAvailability(cached);
+        setAvailability(normalized);
+        setInitialVisibleMonth(normalized);
     } catch (error) {
       console.error("Unable to load live availability", error);
-      const fallback = generateDemoAvailability(service.durationMinutes);
+      const fallback = normalizeAvailability(
+        generateDemoAvailability(service.durationMinutes)
+      );
       setAvailability(fallback);
       setInitialVisibleMonth(fallback);
       setAvailabilityNotice(
@@ -289,7 +303,13 @@ const BookingModal = ({ service, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, setInitialVisibleMonth, service.durationMinutes, service.id]);
+  }, [
+    apiBaseUrl,
+    normalizeAvailability,
+    setInitialVisibleMonth,
+    service.durationMinutes,
+    service.id,
+  ]);
   useEffect(() => {
     loadAvailability();
   }, [loadAvailability]);
@@ -755,7 +775,7 @@ const BookingModal = ({ service, onClose }) => {
         clientEmail: clientEmail.trim(),
         additionals,
         notes: notes.trim(),
-        timeZone: availability.timeZone || "UTC",
+        timeZone: availability.timeZone || BUSINESS_TIME_ZONE,
         pets: petPayload,
         dogCount: petPayload.length,
         schedule: schedulePayload,
