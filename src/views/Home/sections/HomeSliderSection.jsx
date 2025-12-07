@@ -7,15 +7,17 @@ const slides = [
     title: "Daily walks, done right",
     description: "Personalised walks matched to your companion’s pace and routine.",
     href: "/services/daily-strolls",
-    imageSrc: "/images/Bonnie.jpeg",
+    imageSrc: "/images/dogs/lola/lola1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
-  },
+    translateY: "-10%",
+  }, 
   {
     title: "Group adventures",
     description: "Fun, confidence-building outings where companions explore and play together.",
     href: "/services/group-adventures",
     imageSrc: "/images/dogs/lakta/lakta2.jpg",
     imageAlt: "Group of dogs playing together outdoors",
+    translateY: "-10%",
   },
   {
     title: "Solo journeys",
@@ -37,6 +39,7 @@ const slides = [
     href: "/services/daytime-care",
     imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
+    translateY: "-15%",
   },
   {
     title: "Home check-ins",
@@ -44,6 +47,7 @@ const slides = [
     href: "/services/home-check-ins",
     imageSrc: "/images/dogs/Nola/nola2.jpg",
     imageAlt: "Person greeting a dog inside a home",
+    translateY: "-15%",
   },
   {
     title: "Training help",
@@ -58,6 +62,7 @@ const slides = [
     href: "/services/custom-solutions",
     imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Owner cuddling with a relaxed dog",
+    translateY: "-10%",
   },
 ];
 
@@ -201,8 +206,10 @@ const HomeSliderSection = () => {
                           width: "100%",
                           height: "450px",
                           objectFit: "cover",
+                          transform: `translateY(${slide.translateY || "0"})`,
                         }}
                         sizes="(min-width: 1024px) 405px, 80vw"
+                        
                       />
                     </div>
                     <div

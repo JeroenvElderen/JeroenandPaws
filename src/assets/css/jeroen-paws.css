@@ -1871,6 +1871,7 @@ html {
   border-bottom-right-radius: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---spacing--0-25x);
   background-color: color-mix(in srgb, currentColor 5%, transparent);
   width: 100%;
+  z-index: 0;
 }
 
 .accordion:hover {

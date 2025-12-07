@@ -40,7 +40,7 @@ const FeatureSection = ({ onBook }) => {
                   className="image-ratio_4x3 w-node-f1b26e5a-b33b-e9ba-a521-149172f27d28-6cecf403"
                 >
                   <img
-                    src="/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif"
+                    src="/images/background/bg2.jpg"
                     alt="companion during training session"
                     className="image image_cover"
                   />
@@ -51,9 +51,10 @@ const FeatureSection = ({ onBook }) => {
                   className="image-ratio_4x3 w-node-f1b26e5a-b33b-e9ba-a521-149172f27d2a-6cecf403"
                 >
                   <img
-                    src="/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif"
+                    src="/images/dogs/pancho/pancho2.jpeg"
                     alt="companion indoors beside trainer"
                     className="image image_cover shadow_xlarge"
+                    style={{ objectPosition: "50% 35%" }}
                   />
                 </div>
               </div>

@@ -52,12 +52,12 @@ const DailystrollsFeatureSection = ({ onBook }) => {
                   className="image-ratio_4x3 w-node-f1b26e5a-b33b-e9ba-a521-149172f27d2a-6cecf403"
                 >
                   <img
-                    src="/images/dogs/kaiser/kaiser1.jpeg"
+                    src="/images/dogs/lola/lola1.jpeg"
                     alt="happy dog on walk"
                     className="image image_cover shadow_xlarge"
                     style={{
                       objectFit: "cover",
-                      objectPosition: "0% 42.5%",
+                      objectPosition: "0% 45%",
                     }}
                   />
                 </div>

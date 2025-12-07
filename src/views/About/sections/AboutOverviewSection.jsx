@@ -34,13 +34,6 @@ const AboutOverviewSection = () => {
             Book an Appointment
           </a>
         </div>
-
-        <div className="why-image">
-          <img
-            src="/images/a58085e9-4555-461c-9f59-6029e44d0a55.avif"
-            alt="Dog care"
-          />
-        </div>
       </section>
 
     </section>

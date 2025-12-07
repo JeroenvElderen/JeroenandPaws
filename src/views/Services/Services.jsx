@@ -7,7 +7,7 @@ const services = [
     path: "/services/daily-strolls",
     title: "Daily strolls",
     description: "Tailored walks for your furry friend.",
-    imageSrc: "/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif",
+    imageSrc: "/images/dogs/lola/lola1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
   },
   {
