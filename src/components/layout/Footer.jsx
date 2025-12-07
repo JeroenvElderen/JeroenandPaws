@@ -31,27 +31,6 @@ const Footer = () => (
                 <div className="screen-reader">Join us on Instagram</div>
               </a>
             </li>
-            <li className="margin-bottom_none">
-              <a href="https://twitter.com/" target="_blank" rel="noreferrer noopener" className="footer_icon-link w-inline-block"><svg width="100%" height="100%" viewBox="0 0 16 16">
-                  <path d="M12.3723 1.16992H14.6895L9.6272 6.95576L15.5825 14.829H10.9196L7.26734 10.0539L3.08837 14.829H0.769833L6.18442 8.64037L0.471436 1.16992H5.2528L8.55409 5.53451L12.3723 1.16992ZM11.5591 13.4421H12.843L4.55514 2.48399H3.17733L11.5591 13.4421Z" fill="currentColor"></path>
-                </svg>
-                <div className="screen-reader">Connect on X</div>
-              </a>
-            </li>
-            <li className="margin-bottom_none">
-              <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer noopener" className="footer_icon-link w-inline-block"><svg width="100%" height="100%" viewBox="0 0 16 16">
-                  <path d="M15.3,0H0.7C0.3,0,0,0.3,0,0.7v14.7C0,15.7,0.3,16,0.7,16h14.7c0.4,0,0.7-0.3,0.7-0.7V0.7 C16,0.3,15.7,0,15.3,0z M4.7,13.6H2.4V6h2.4V13.6z M3.6,5C2.8,5,2.2,4.3,2.2,3.6c0-0.8,0.6-1.4,1.4-1.4c0.8,0,1.4,0.6,1.4,1.4 C4.9,4.3,4.3,5,3.6,5z M13.6,13.6h-2.4V9.9c0-0.9,0-2-1.2-2c-1.2,0-1.4,1-1.4,2v3.8H6.2V6h2.3v1h0c0.3-0.6,1.1-1.2,2.2-1.2 c2.4,0,2.8,1.6,2.8,3.6V13.6z" fill="currentColor"></path>
-                </svg>
-                <div className="screen-reader">Network on LinkedIn</div>
-              </a>
-            </li>
-            <li className="margin-bottom_none">
-              <a href="https://www.youtube.com/" target="_blank" rel="noreferrer noopener" className="footer_icon-link w-inline-block"><svg width="100%" height="100%" viewBox="0 0 16 16">
-                  <path d="M15.8,4.8c-0.2-1.3-0.8-2.2-2.2-2.4C11.4,2,8,2,8,2S4.6,2,2.4,2.4C1,2.6,0.3,3.5,0.2,4.8C0,6.1,0,8,0,8 s0,1.9,0.2,3.2c0.2,1.3,0.8,2.2,2.2,2.4C4.6,14,8,14,8,14s3.4,0,5.6-0.4c1.4-0.3,2-1.1,2.2-2.4C16,9.9,16,8,16,8S16,6.1,15.8,4.8z M6,11V5l5,3L6,11z" fill="currentColor"></path>
-                </svg>
-                <div className="screen-reader">Watch on YouTube</div>
-              </a>
-            </li>
           </ul>
         </div>
         <ul className="margin-bottom_none w-list-unstyled">
@@ -60,34 +39,61 @@ const Footer = () => (
           </li>
           <li>
             <Link
-              href="/services?service=walk-and-train#walk-and-train"
+              href="/services/daily-strolls#daily-strolls"
               className="footer_link on-inverse w-inline-block"
             >
-              <div>Walks</div>
+              <div>Daily strolls</div>
             </Link>
           </li>
           <li>
             <Link
-              href="/services?service=boarding#boarding"
+              href="/services/group-adventures#group-adventures"
               className="footer_link on-inverse w-inline-block"
             >
-              <div>Boarding</div>
+              <div>Group adventures</div>
             </Link>
           </li>
           <li>
             <Link
-              href="/services?service=day-care#day-care"
+              href="/services/solo-journeys#solo-journeys"
               className="footer_link on-inverse w-inline-block"
             >
-              <div>Daycare</div>
+              <div>Solo journeys</div>
             </Link>
           </li>
           <li>
             <Link
-              href="/services?service=training-help#training-help"
+              href="/services/overnight-stays#overnight-stays"
               className="footer_link on-inverse w-inline-block"
             >
-              <div>Training</div>
+              <div>overnight stays</div>
+            </Link>
+          </li>
+          <li>
+            <Link 
+              href="/services/daytime-care#daytime-care" 
+              className="footer_link on-inverse w-inline-block">
+            <div>
+              Daytime care
+            </div>
+            </Link>
+          </li>
+          <li>
+            <Link 
+            href="/services/home-check-ins#home-check-ins" 
+            className="footer_link on-inverse w-inline-block">
+            <div>
+              Home check-ins
+            </div>
+            </Link>
+          </li>
+          <li>
+            <Link 
+            href="/services/training-help#training-help" 
+            className="footer_link on-inverse w-inline-block">
+            <div>
+              Training help
+            </div>
             </Link>
           </li>
           <li>
@@ -95,7 +101,7 @@ const Footer = () => (
               href="/services?service=custom-solutions#custom-solutions"
               className="footer_link on-inverse w-inline-block"
             >
-              <div>Grooming</div>
+              <div>Custom Solutions</div>
             </Link>
           </li>
         </ul>
@@ -108,7 +114,7 @@ const Footer = () => (
               <div>About</div>
             </Link>
           </li>
-          <li>
+          {/*<li>
             <span className="footer_link on-inverse w-inline-block" aria-disabled="true">
               <div>Team</div>
             </span>
@@ -122,7 +128,7 @@ const Footer = () => (
             <span className="footer_link on-inverse w-inline-block" aria-disabled="true">
               <div>Blog</div>
             </span>
-          </li>
+          </li>*/}
           <li>
             <Link href="/contact" className="footer_link on-inverse w-inline-block">
               <div>Contact</div>
@@ -139,11 +145,11 @@ const Footer = () => (
             </Link>
           </li>
           <li>
-            <a href="mailto:hello@jeroenandpaws.com" className="footer_link on-inverse w-inline-block">
+            <a href="mailto:jeroen@jeroenandpaws.com" className="footer_link on-inverse w-inline-block">
               <div>Help</div>
             </a>
           </li>
-          <li>
+          {/*<li>
             <span className="footer_link on-inverse w-inline-block" aria-disabled="true">
               <div>Terms</div>
             </span>
@@ -157,13 +163,13 @@ const Footer = () => (
             <span className="footer_link on-inverse w-inline-block" aria-disabled="true">
               <div>Access</div>
             </span>
-          </li>
+          </li>*/}
         </ul>
       </div>
       <div className="divider margin-top_xsmall margin-bottom_xsmall"></div>
       <div className="footer_bottom">
         <div className="text-color_secondary">All rights reserved © 2025 Jeroen &amp; Paws</div>
-        <ul className="button-group gap-xsmall margin-top_none w-list-unstyled">
+        {/*<ul className="button-group gap-xsmall margin-top_none w-list-unstyled">
           <li className="margin-bottom_none">
             <span className="footer_link on-inverse w-inline-block" aria-disabled="true">
               <div>Privacy</div>
@@ -179,7 +185,7 @@ const Footer = () => (
               <div>Legal</div>
             </span>
           </li>
-        </ul>
+        </ul>*/}
       </div>
     </div>
   </footer>

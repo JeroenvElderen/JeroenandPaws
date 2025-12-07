@@ -39,6 +39,11 @@ public/images/*/**
 # Allow core branding assets at root
 !public/images/favicon.ico
 !public/images/logo*.png
+!public/images/background/
+!public/images/background/*.jpg
+!public/images/dogs/
+!public/images/me/
+
 
 # Misc
 coverage/

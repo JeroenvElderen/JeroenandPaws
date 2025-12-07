@@ -9,7 +9,7 @@ const HomeCtaSection = () => (
     <div className="w-layout-grid grid_1-col">
       <div id="w-node-_05e54f8c-7d0c-01e1-5321-d818b7d69662-5ebb016a" className="position_relative w-node-_851fc987-fbf0-69dc-8fc4-d770671b8b0d-055fd1ce">
           <Image
-            src="/images/dogs/kaiser/kaiser2.jpeg"
+            src="/images/background/bg4.jpg"
             alt="Editing software displayed on a studio screen"
             fill
             sizes="100vw"
@@ -31,6 +31,7 @@ const HomeCtaSection = () => (
                   Caring for your companion like family
                 </h2>
                 <div className="flex_vertical gap-xsmall">
+                  <div style={{ marginTop: "20px" }}></div>
                   <div className="flex_horizontal gap-xxsmall">
                     <div className="icon is-small">
                       <svg
@@ -99,6 +100,7 @@ const HomeCtaSection = () => (
                     </p>
                   </div>
                 </div>
+                <div style={{ marginTop: "20px" }}></div>
                 <div className="button-group">
                   <Link href="/contact" className="button w-button">
                     Begin your journey
@@ -107,7 +109,7 @@ const HomeCtaSection = () => (
               </div>
               <div className="image-ratio_auto">
                   <Image
-                    src="/images/dogs/kaiser/kaiser2.jpeg"
+                    src="/images/me/me.jpg"
                     alt="Distillery community involvement"
                     width={352}
                     height={289}

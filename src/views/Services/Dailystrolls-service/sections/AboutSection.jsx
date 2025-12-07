@@ -3,7 +3,6 @@ import ServiceAboutSection from "../../../../components/ServiceAboutSection";
 
 const AboutSection = () => (
   <ServiceAboutSection
-    eyebrow="About this walking service"
     title="Daily walks designed to enrich your companion’s day"
     description={[
       "Every walk is shaped around your companion’s pace, personality, and preferences. Whether they love exploring new scents or enjoy a calm neighbourhood stroll, each outing is designed to feel safe, comforting, and mentally enriching.",

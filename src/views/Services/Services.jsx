@@ -7,57 +7,61 @@ const services = [
     path: "/services/daily-strolls",
     title: "Daily strolls",
     description: "Tailored walks for your furry friend.",
-    imageSrc: "/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif",
+    imageSrc: "/images/dogs/kaiser/kaiser1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
   },
   {
     path: "/services/group-adventures",
     title: "Group adventures",
     description: "Join friendly packs for social fun.",
-    imageSrc: "/images/1a2eb736-6cd3-4d5b-9798-f040dc1d80b9.avif",
+    imageSrc: "/images/dogs/lakta/lakta2.jpg",
     imageAlt: "Group of dogs playing together outdoors",
   },
   {
     path: "/services/solo-journeys",
     title: "Solo journeys",
     description: "Dedicated care for your pet.",
-    imageSrc: "/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif",
+    imageSrc: "/images/dogs/lakta/lakta1.jpg",
     imageAlt: "Dog sitting attentively on a trail",
   },
   {
     path: "/services/overnight-stays",
     title: "Overnight stays",
     description: "Safe and cozy nights.",
-    imageSrc: "/images/25c0c9d1-2e99-484e-817b-bf1e3505d5e8.avif",
+    imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
     imageAlt: "Dog resting comfortably indoors",
+    objectPosition: "center 35%",
   },
   {
     path: "/services/daytime-care",
     title: "Daytime care",
     description: "Engaging and secure day care.",
-    imageSrc: "/images/a58085e9-4555-461c-9f59-6029e44d0a55.avif",
+    imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
+    objectPosition: "center 90%",
   },
   {
     path: "/services/home-check-ins",
     title: "Home check-ins",
     description: "Quick visits for your pet's needs.",
-    imageSrc: "/images/bc30b5db-c4fa-466a-a797-7ef1e270262b.avif",
+    imageSrc: "/images/dogs/Nola/nola2.jpg",
     imageAlt: "Person greeting a dog inside a home",
   },
   {
     path: "/services/training-help",
     title: "Training help",
     description: "Guidance for training essentials.",
-    imageSrc: "/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif",
+    imageSrc: "/images/dogs/pancho/pancho2.jpeg",
     imageAlt: "Trainer working with a dog",
+    objectPosition: "center 15%",
   },
   {
     path: "/services/custom-solutions",
     title: "Custom solutions",
     description: "Personalized care plans.",
-    imageSrc: "/images/d801bc7b-4e2e-4836-8ed2-f4f819ecc79a.avif",
+    imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Owner cuddling with a relaxed dog",
+    objectPosition: "center 60%",
   },
 ];
 
@@ -84,46 +88,40 @@ const Services = () => {
               >
                 <div className="card-link flex_vertical gap-small height_100percent">
                   <div className="services-card_image">
-                    <Image
-                      src={service.imageSrc}
-                      alt={service.imageAlt}
-                      fill
-                      sizes="(max-width: 991px) 100vw, 400px"
-                      priority={service.title === "Daily strolls"}
-                      className="image_cover"
-                    />
+                    <div style={{ transform: service.transform || "none" }}>
+                      <div className="services-card_image">
+                        <Image
+                          src={service.imageSrc}
+                          alt={service.imageAlt}
+                          fill
+                          sizes="(max-width: 991px) 100vw, 400px"
+                          priority={service.title === "Daily strolls"}
+                          className="services-image"
+                          style={{
+                            objectPosition: service.objectPosition || "center",
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="card_body text-overlay flex_vertical flex_child-expand">
-                    <div className="heading_h4 eyebrow margin-bottom_none" style={{ marginTop: 5 }}>
+                    <div className="heading_h4 eyebrow margin-bottom_none" style={{ marginTop: -20 }}>
                       {service.title}
                     </div>
                   </div>
                 </div>
                 <div className="button-group services-card_actions">
-                  <p className="paragraph_small text-color_secondary" style={{ marginTop: 5 }}>
-                      {service.description}
-                    </p>
+                  <p
+                    className="paragraph_small text-color_secondary"
+                    style={{ marginTop: 5 }}
+                  >
+                    {service.description}
+                  </p>
                   <Link
                     href={service.path}
                     className="button services-card_button w-button"
                   >
                     <span>View {service.title.toLowerCase()}</span>
-                    <span className="button_icon" aria-hidden="true">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="100%"
-                        height="100%"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
-                        <path
-                          d="M2 8H14.5M14.5 8L8.5 2M14.5 8L8.5 14"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinejoin="round"
-                        ></path>
-                      </svg>
-                    </span>
                   </Link>
                 </div>
               </div>

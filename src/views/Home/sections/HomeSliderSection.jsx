@@ -7,8 +7,9 @@ const slides = [
     title: "Daily walks, done right",
     description: "Personalised walks matched to your companion’s pace and routine.",
     href: "/services/daily-strolls",
-    imageSrc: "/images/Bonnie.jpeg",
+    imageSrc: "/images/dogs/lola/lola1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
+    transform: "translateY(-10%)",
   },
   {
     title: "Group adventures",
@@ -37,6 +38,7 @@ const slides = [
     href: "/services/daytime-care",
     imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
+    transform: "translateY(-15%)",
   },
   {
     title: "Home check-ins",
@@ -58,6 +60,7 @@ const slides = [
     href: "/services/custom-solutions",
     imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Owner cuddling with a relaxed dog",
+    transform: "translateY(-10%)",
   },
 ];
 
@@ -201,6 +204,7 @@ const HomeSliderSection = () => {
                           width: "100%",
                           height: "450px",
                           objectFit: "cover",
+                          transform: slide.transform || "none",
                         }}
                         sizes="(min-width: 1024px) 405px, 80vw"
                       />
