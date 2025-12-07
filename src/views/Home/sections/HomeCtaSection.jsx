@@ -3,11 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 const HomeCtaSection = () => (
-  <section data-copilot="true" className="section padding_none">
+  <section className="section padding_none">
     <div className="w-layout-grid grid_1-col">
       <div id="w-node-_05e54f8c-7d0c-01e1-5321-d818b7d69662-5ebb016a" className="position_relative w-node-_851fc987-fbf0-69dc-8fc4-d770671b8b0d-055fd1ce">
           <Image
-            src="/images/490c688c-e948-444d-8655-990a7271d634.avif"
+            src="/images/dogs/kaiser/kaiser2.jpeg"
             alt="Editing software displayed on a studio screen"
             fill
             sizes="100vw"
@@ -105,7 +105,7 @@ const HomeCtaSection = () => (
               </div>
               <div className="image-ratio_auto">
                   <Image
-                    src="/images/6112f29d-dcad-4748-87cd-799ae8f92763.avif"
+                    src="/images/dogs/kaiser/kaiser2.jpeg"
                     alt="Distillery community involvement"
                     width={352}
                     height={289}

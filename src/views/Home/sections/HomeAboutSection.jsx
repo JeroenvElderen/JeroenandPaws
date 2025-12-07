@@ -3,14 +3,14 @@ import Link from "next/link";
 import Image from "next/image";
 
 const HomeAboutSection = () => (
-  <section data-copilot="true" className="section padding_none">
+  <section className="section padding_none">
     <div className="w-layout-grid grid_4-col">
       <div id="w-node-_25aa69ea-f6ff-a983-3b30-a346b1836f6c-7ac2c669" className="image-ratio_3x2 radius_all-0 w-node-bd678469-22c4-f2df-4448-11fb241a1843-055fd1ce">
         <Image
-          src="/images/d801bc7b-4e2e-4836-8ed2-f4f819ecc79a.avif"
           alt="Vet assisting an animal"
           fill
           sizes="(min-width: 1280px) 50vw, 100vw"
+          src="/images/dogs/kaiser/kaiser2.jpeg"
           className="image_cover"
         />
       </div>
