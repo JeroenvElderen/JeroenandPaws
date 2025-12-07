@@ -1,0 +1,9 @@
+## Requested features (baseline)
+- Pet profile & preferences vault
+- Live stay updates hub
+- Training progress tracker
+- Pre-visit checklist & arrival notes
+- Multi-pet bundling (same owner)
+- Personalized packing list per service type
+
+

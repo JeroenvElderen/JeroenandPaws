@@ -13,14 +13,15 @@ const slides = [
     title: "Group adventures",
     description: "Fun, confidence-building outings where companions explore and play together.",
     href: "/services/group-adventures",
-    imageSrc: "/images/1a2eb736-6cd3-4d5b-9798-f040dc1d80b9.avif",
+    imageSrc: "/images/dogs/lakta/lakta2.jpg",
     imageAlt: "Group of dogs playing together outdoors",
+    transform: "translate(0%, -15%)",
   },
   {
     title: "Solo journeys",
     description: "One-to-one walks that provide calm, focused attention just for your companion.",
     href: "/services/solo-journeys",
-    imageSrc: "/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif",
+    imageSrc: "/images/dogs/lakta/lakta1.jpg",
     imageAlt: "Dog sitting attentively on a trail",
   },
   {
@@ -34,29 +35,31 @@ const slides = [
     title: "Daytime care",
     description: "Stimulating, reassuring days perfect for companions who love company.",
     href: "/services/daytime-care",
-    imageSrc: "/images/a58085e9-4555-461c-9f59-6029e44d0a55.avif",
+    imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
+    transform: "translate(0%, -20%)",
   },
   {
     title: "Home check-ins",
     description: "Comforting drop-ins that keep your companion relaxed and well looked after.",
     href: "/services/home-check-ins",
-    imageSrc: "/images/bc30b5db-c4fa-466a-a797-7ef1e270262b.avif",
+    imageSrc: "/images/dogs/Nola/nola2.jpg",
     imageAlt: "Person greeting a dog inside a home",
   },
   {
     title: "Training help",
     description: "Supportive guidance to build good habits and boost your companion’s confidence.",
     href: "/services/training-help",
-    imageSrc: "/images/2b4d97a3-883d-4557-abc5-8cf8f3f95400.avif",
+    imageSrc: "/images/dogs/pancho/pancho2.jpeg",
     imageAlt: "Trainer working with a dog",
   },
   {
     title: "Custom solutions",
     description: "Tailored care shaped around your companion’s personality and lifestyle.",
     href: "/services/custom-solutions",
-    imageSrc: "/images/d801bc7b-4e2e-4836-8ed2-f4f819ecc79a.avif",
+    imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Owner cuddling with a relaxed dog",
+    transform: "translate(0%, -10%)",
   },
 ];
 
@@ -201,6 +204,7 @@ const HomeSliderSection = () => {
                           width: "100%",
                           height: "450px",
                           objectFit: "cover",
+                          transform: slide.transform || "none",
                         }}
                       />
                     </div>

@@ -88,7 +88,9 @@ const CalendarSection = ({
           </div>
           <div className="calendar-grid" aria-label="Calendar">
             {monthMatrix.map((dateObj, index) => {
-              const iso = dateObj.toISOString().slice(0, 10);
+              const iso = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(
+                dateObj.getDate()
+              ).padStart(2, "0")}`;
               const dayData = availabilityMap[iso];
               const isAvailable = isDayAvailableForService(dayData);
               const isSelected = iso === selectedDate;
