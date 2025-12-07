@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
+import FaqAccordion from "../../../../components/faq/FaqAccordion";
 
 const FaqSection = () => {
-  const [activeIndex, setActiveIndex] = useState(null);
 
   const faqs = [
     {
@@ -56,10 +56,6 @@ const FaqSection = () => {
     },
   ];
 
-  const toggleAccordion = (index) => {
-    setActiveIndex(activeIndex === index ? null : index);
-  };
-
   return (
     <section className="section">
       <div className="container is-small">
@@ -72,28 +68,7 @@ const FaqSection = () => {
           </p>
         </div>
 
-        <div className="flex_vertical">
-          {faqs.map((faq, index) => (
-            <div className="accordion is-transparent" key={index}>
-              <button
-                className="accordion_toggle-transparent"
-                onClick={() => toggleAccordion(index)}
-              >
-                <div className="accordion_icon">
-                  {activeIndex === index ? "−" : "+"}
-                </div>
-                <div className="paragraph_large margin-bottom_none">
-                  {faq.question}
-                </div>
-              </button>
-              {activeIndex === index && (
-                <div className="accordion_content">
-                  <p>{faq.answer}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <FaqAccordion faqs={faqs} />
       </div>
     </section>
   );

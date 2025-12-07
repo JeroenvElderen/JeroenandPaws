@@ -15,7 +15,6 @@ const slides = [
     href: "/services/group-adventures",
     imageSrc: "/images/dogs/lakta/lakta2.jpg",
     imageAlt: "Group of dogs playing together outdoors",
-    transform: "translate(0%, -15%)",
   },
   {
     title: "Solo journeys",
@@ -37,7 +36,6 @@ const slides = [
     href: "/services/daytime-care",
     imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
-    transform: "translate(0%, -20%)",
   },
   {
     title: "Home check-ins",
@@ -59,7 +57,6 @@ const slides = [
     href: "/services/custom-solutions",
     imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Owner cuddling with a relaxed dog",
-    transform: "translate(0%, -10%)",
   },
 ];
 
@@ -204,7 +201,6 @@ const HomeSliderSection = () => {
                           width: "100%",
                           height: "450px",
                           objectFit: "cover",
-                          transform: slide.transform || "none",
                         }}
                       />
                     </div>

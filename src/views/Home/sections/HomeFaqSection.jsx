@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React from "react";
+import FaqAccordion from "../../../components/faq/FaqAccordion";
 
 const faqs = [
   {
@@ -24,107 +25,44 @@ const faqs = [
   {
     question: "How do you keep dogs safe during walks and playtime?",
     answer:
-    "Safety is my priority. I use secure equipment, stay attentive to surroundings, and introduce companions to group activities gradually, ensuring they feel confident and protected at all times."
+      "Safety is my priority. I use secure equipment, stay attentive to surroundings, and introduce companions to group activities gradually, ensuring they feel confident and protected at all times.",
   },
   {
     question: "Do you meet dogs before their first booking?",
-    answer: 
-    "Yes. I offer an introductory meet-and-greet so we can get to know each other. It helps me understand your companion’s personality and ensures they feel comfortable from the very beginning."
+    answer:
+      "Yes. I offer an introductory meet-and-greet so we can get to know each other. It helps me understand your companion’s personality and ensures they feel comfortable from the very beginning.",
   },
   {
     question: "What should I bring for day care or boarding?",
     answer:
-    "Their favourite food, any medication, and a familiar item — such as a blanket or toy — help make their stay feel like home."
+      "Their favourite food, any medication, and a familiar item — such as a blanket or toy — help make their stay feel like home.",
   },
   {
     question: "How do you handle nervous or anxious dogs?",
     answer:
-    "With patience, calm communication, and thoughtful pacing. I build trust step by step, helping anxious companions feel safe, seen, and supported."
-  }
+      "With patience, calm communication, and thoughtful pacing. I build trust step by step, helping anxious companions feel safe, seen, and supported.",
+  },
 ];
 
-const HomeFaqSection = () => {
-  const [openIndexes, setOpenIndexes] = useState([]);
-
-  const toggleItem = useCallback((index) => {
-    setOpenIndexes((prev) =>
-      prev.includes(index)
-        ? prev.filter((item) => item !== index)
-        : [...prev, index]
-    );
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (event, index) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        toggleItem(index);
-      }
-    },
-    [toggleItem]
-  );
-
-  return (
-    <section data-copilot="true" className="section">
-      <div className="container is-small">
-        <div
-          id="w-node-_1b9fe946-f76f-93ba-3eaa-8c8d6d52a282-6d52a280"
-          className="header is-align-center w-node-e5c63cf8-d464-4b5c-779f-87db4b792fc8-055fd1ce"
-        >
-          <h2>Welcome to your companion’s second home</h2>
-          <p className="subheading">
-            Explore our personalised care and training services, thoughtfully designed to support your beloved companion.
-          </p>
-        </div>
-        <div
-          id="w-node-_1b9fe946-f76f-93ba-3eaa-8c8d6d52a287-6d52a280"
-          className="flex_vertical w-node-e5c63cf8-d464-4b5c-779f-87db4b792ff1-055fd1ce"
-        >
-          {faqs.map(({ question, answer }, index) => {
-            const isOpen = openIndexes.includes(index);
-            return (
-              <div
-                key={question}
-                data-delay="0"
-                data-hover="false"
-                className={`accordion is-transparent w-dropdown${
-                  isOpen ? " w--open" : ""
-                }`}
-              >
-                <div
-                  className={`accordion_toggle-transparent w-dropdown-toggle${
-                    isOpen ? " w--open" : ""
-                  }`}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={isOpen}
-                  onClick={() => toggleItem(index)}
-                  onKeyDown={(event) => handleKeyDown(event, index)}
-                >
-                  <div className="accordion_icon w-icon-dropdown-toggle"></div>
-                  <div className="paragraph_large margin-bottom_none">
-                    {question}
-                  </div>
-                </div>
-                <nav
-                  className={`accordion_content w-dropdown-list${
-                    isOpen ? " w--open" : ""
-                  }`}
-                  aria-hidden={!isOpen}
-                >
-                  <div className="padding_xsmall padding-horizontal_none">
-                    <div className="rich-text w-richtext">
-                      <p>{answer}</p>
-                    </div>
-                  </div>
-                </nav>
-              </div>
-            );
-          })}
-        </div>
+const HomeFaqSection = () => (
+  <section data-copilot="true" className="section">
+    <div className="container is-small">
+      <div
+        id="w-node-_1b9fe946-f76f-93ba-3eaa-8c8d6d52a282-6d52a280"
+        className="header is-align-center w-node-e5c63cf8-d464-4b5c-779f-87db4b792fc8-055fd1ce"
+      >
+        <h2>Welcome to your companion’s second home</h2>
+        <p className="subheading">
+          Explore our personalised care and training services, thoughtfully
+          designed to support your beloved companion.
+        </p>
       </div>
-    </section>
-  );
-};
+      <FaqAccordion
+        faqs={faqs}
+        className="w-node-e5c63cf8-d464-4b5c-779f-87db4b792ff1-055fd1ce"
+      />
+    </div>
+  </section>
+);
 
 export default HomeFaqSection;
