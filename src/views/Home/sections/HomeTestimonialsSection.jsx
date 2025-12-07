@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 const HomeTestimonialsSection = () => (
   <section data-copilot="true" className="section">
@@ -24,7 +25,15 @@ const HomeTestimonialsSection = () => (
             <div id="w-node-d6288141-3e37-a760-1f1f-3f87c261e1bc-0be05d1c" className="card w-node-f5984468-b07a-271c-06a7-f4645ab0ffc6-055fd1ce">
               <div className="card_body_small">
                 <div className="flex_horizontal is-y-center gap-xsmall margin-bottom_xsmall">
-                  <div className="avatar"><img width="64" height="64" alt="Headshot of a customer interacting with their pet" src="/images/0e44b64c-d3fe-4e4d-897a-5b42d9786cef.avif" loading="lazy" data-aisg-image-id="623c3d43-768f-414b-852a-083e1f87013b" className="image_cover" /></div>
+                  <div className="avatar">
+                  <Image
+                    width={64}
+                    height={64}
+                    alt="Headshot of a customer interacting with their pet"
+                    src="/images/0e44b64c-d3fe-4e4d-897a-5b42d9786cef.avif"
+                    className="image_cover"
+                  />
+                </div>
                   <div>
                     <div className="paragraph_small margin-bottom_none"><strong>Alex Johnson</strong></div>
                     <div className="paragraph_small">Dog lover</div>
@@ -36,7 +45,15 @@ const HomeTestimonialsSection = () => (
             <div className="card">
               <div className="card_body_small">
                 <div className="flex_horizontal is-y-center gap-xsmall margin-bottom_xsmall">
-                  <div className="avatar"><img width="64" height="64" alt="Headshot of a happy pet owner after training" src="/images/55eb9a74-4563-4656-8285-693f3bc4b759.avif" loading="lazy" data-aisg-image-id="40704ce3-ed2d-49cf-a08e-e9d9342031d5" className="image_cover" /></div>
+                  <div className="avatar">
+                  <Image
+                    width={64}
+                    height={64}
+                    alt="Headshot of a happy pet owner after training"
+                    src="/images/55eb9a74-4563-4656-8285-693f3bc4b759.avif"
+                    className="image_cover"
+                  />
+                </div>
                   <div>
                     <div className="paragraph_small margin-bottom_none"><strong>Taylor Smith</strong></div>
                     <div className="paragraph_small">Pet parent</div>
@@ -48,7 +65,15 @@ const HomeTestimonialsSection = () => (
             <div id="w-node-_57b0b48d-fc7d-2a70-7d13-21713b2c2f03-0be05d1c" className="card w-node-f5984468-b07a-271c-06a7-f4645ab0ffe4-055fd1ce">
               <div className="card_body_small">
                 <div className="flex_horizontal is-y-center gap-xsmall margin-bottom_xsmall">
-                  <div className="avatar"><img width="64" height="64" alt="Headshot of a customer with their pet" src="/images/09861758-cd7a-47db-a18d-e8f951b34035.avif" loading="lazy" data-aisg-image-id="297669ea-6a3b-4f6f-bc0e-37985d9dabf9" className="image_cover" /></div>
+                  <div className="avatar">
+                  <Image
+                    width={64}
+                    height={64}
+                    alt="Headshot of a customer with their pet"
+                    src="/images/09861758-cd7a-47db-a18d-e8f951b34035.avif"
+                    className="image_cover"
+                  />
+                </div>
                   <div>
                     <div className="paragraph_small margin-bottom_none"><strong>Jordan Lee</strong></div>
                     <div className="paragraph_small">Animal enthusiast</div>
@@ -60,7 +85,15 @@ const HomeTestimonialsSection = () => (
             <div className="card">
               <div className="card_body_small">
                 <div className="flex_horizontal is-y-center gap-xsmall margin-bottom_xsmall">
-                  <div className="avatar"><img width="64" height="64" alt="Headshot of a customer" src="/images/f52d8d29-fbc0-41f0-b455-b872016a4be2.avif" loading="lazy" data-aisg-image-id="389105fd-73fb-4c79-86a7-05628ca677fd" className="image_cover" /></div>
+                  <div className="avatar">
+                  <Image
+                    width={64}
+                    height={64}
+                    alt="Headshot of a customer"
+                    src="/images/f52d8d29-fbc0-41f0-b455-b872016a4be2.avif"
+                    className="image_cover"
+                  />
+                </div>
                   <div>
                     <div className="paragraph_small margin-bottom_none"><strong>Casey Brown</strong></div>
                     <div className="paragraph_small">Dog owner</div>

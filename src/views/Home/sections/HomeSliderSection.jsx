@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 
 const slides = [
   {
@@ -190,18 +191,18 @@ const HomeSliderSection = () => {
                         marginLeft: slideSideMargin,
                       }}
                     >
-                      <img
-                        width="405"
-                        height="405"
+                      <Image
+                        width={405}
+                        height={405}
                         alt={slide.imageAlt}
                         src={slide.imageSrc}
-                        loading="lazy"
                         className="image_cover"
                         style={{
                           width: "100%",
                           height: "450px",
                           objectFit: "cover",
                         }}
+                        sizes="(min-width: 1024px) 405px, 80vw"
                       />
                     </div>
                     <div
