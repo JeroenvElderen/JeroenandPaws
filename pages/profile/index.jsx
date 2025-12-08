@@ -146,6 +146,8 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingContact, setSavingContact] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [showInlineReset, setShowInlineReset] = useState(false);
   const [newPet, setNewPet] = useState({
     name: '',
     breed: '',
@@ -252,9 +254,20 @@ const ProfilePage = () => {
       }
 
       persistProfileState(payload);
+      setLoginAttempts(0);
+      setShowInlineReset(false);
+      setResetStatus({ state: 'idle', message: '' });
     } catch (err) {
       setError(err.message || 'Could not load profile');
       setProfile(null);
+      setResetEmail(email || resetEmail);
+      setLoginAttempts((previous) => {
+        const next = previous + 1;
+        if (next >= 3) {
+          setShowInlineReset(true);
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -579,6 +592,9 @@ const ProfilePage = () => {
     setContactForm({ fullName: '', phone: '', email: '', address: '' });
     setPassword('');
     setSelectedBooking(null);
+    setLoginAttempts(0);
+    setShowInlineReset(false);
+    setResetStatus({ state: 'idle', message: '' });
   };
 
   return (
@@ -683,7 +699,88 @@ const ProfilePage = () => {
                   >
                     {loading ? 'Loading…' : 'View profile'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowInlineReset(true);
+                      setResetStatus({ state: 'idle', message: '' });
+                      setResetEmail(email || resetEmail);
+                    }}
+                    style={{
+                      padding: '12px 18px',
+                      borderRadius: '12px',
+                      border: `1px solid ${brand.cardBorder}`,
+                      background: 'rgba(255,255,255,0.12)',
+                      color: 'white',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Set a new password
+                  </button>
                 </div>
+                {showInlineReset && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      padding: '12px',
+                      borderRadius: '14px',
+                      background: 'rgba(255,255,255,0.1)',
+                      border: `1px solid ${brand.cardBorder}`,
+                      display: 'grid',
+                      gap: '10px',
+                    }}
+                  >
+                    <p style={{ margin: 0, fontWeight: 800 }}>Reset your password</p>
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)' }}>
+                      After a few unsuccessful login attempts we’ll help you request a reset link so you can set a new
+                      password.
+                    </p>
+                    <div style={{ display: 'grid', gap: '8px', gridTemplateColumns: '2fr 1fr', alignItems: 'center' }}>
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        style={{
+                          padding: '12px',
+                          borderRadius: '12px',
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: 'rgba(255,255,255,0.15)',
+                          color: 'white',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={requestPasswordReset}
+                        disabled={resetStatus.state === 'loading'}
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: resetStatus.state === 'loading' ? brand.primarySoft : brand.primary,
+                          color: 'white',
+                          fontWeight: 800,
+                          cursor: resetStatus.state === 'loading' ? 'not-allowed' : 'pointer',
+                          boxShadow: brand.cardShadow,
+                        }}
+                      >
+                        {resetStatus.state === 'loading' ? 'Sending reset link…' : 'Email me a reset link'}
+                      </button>
+                    </div>
+                    {resetStatus.message && (
+                      <p
+                        style={{
+                          margin: 0,
+                          color: resetStatus.state === 'success' ? '#bbf7d0' : '#fecdd3',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {resetStatus.message}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div

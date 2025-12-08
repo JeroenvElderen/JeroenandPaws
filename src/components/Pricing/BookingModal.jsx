@@ -67,6 +67,12 @@ const BookingModal = ({ service, onClose }) => {
   const [additionalsOpen, setAdditionalsOpen] = useState(false);
   const [addons, setAddons] = useState([]);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [showLoginReset, setShowLoginReset] = useState(false);
+  const [loginResetStatus, setLoginResetStatus] = useState({
+    state: "idle",
+    message: "",
+  });
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
   const addonsSectionRef = useRef(null);
@@ -343,6 +349,9 @@ const BookingModal = ({ service, onClose }) => {
   const handleCustomerModeChange = (mode) => {
     setCustomerMode(mode);
     setAuthError("");
+    setLoginAttempts(0);
+    setShowLoginReset(false);
+    setLoginResetStatus({ state: "idle", message: "" });
     if (mode === "login") {
       setLoginPassword("");
       if (profile?.client) {
@@ -393,11 +402,55 @@ const BookingModal = ({ service, onClose }) => {
       setClientPhone(payload?.client?.phone_number || "");
       setClientAddress(payload?.client?.address || "");
       setLoginPassword("");
+      setLoginAttempts(0);
+      setShowLoginReset(false);
+      setLoginResetStatus({ state: "idle", message: "" });
     } catch (loginError) {
       console.error("Client login failed", loginError);
       setAuthError(loginError.message || "Incorrect email or password.");
+      setLoginAttempts((previous) => {
+        const next = previous + 1;
+        if (next >= 3) {
+          setShowLoginReset(true);
+        }
+        return next;
+      });
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  const sendLoginResetRequest = async () => {
+    const email = loginEmail.trim();
+
+    if (!email) {
+      setLoginResetStatus({ state: "error", message: "Enter your email to get a reset link." });
+      return;
+    }
+
+    setLoginResetStatus({ state: "loading", message: "" });
+    try {
+      const response = await fetch("/api/password-reset-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "Could not send reset instructions.");
+      }
+
+      setLoginResetStatus({
+        state: "success",
+        message: "Check your email for a link to set a new password.",
+      });
+    } catch (resetError) {
+      setLoginResetStatus({
+        state: "error",
+        message: resetError.message || "Unable to send reset instructions right now.",
+      });
     }
   };
 
@@ -1273,8 +1326,77 @@ const BookingModal = ({ service, onClose }) => {
                                   ? "Logging in…"
                                   : "Login to Jeroen & Paws"}
                               </button>
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={() => {
+                                  setShowLoginReset(true);
+                                  setLoginResetStatus({ state: "idle", message: "" });
+                                }}
+                              >
+                                Set a new password
+                              </button>
                             </div>
                           </div>
+                          {showLoginReset && (
+                            <div
+                              style={{
+                                marginTop: "12px",
+                                padding: "12px",
+                                borderRadius: "12px",
+                                border: "1px solid #e5e7eb",
+                                background: "#f9fafb",
+                                display: "grid",
+                                gap: "10px",
+                              }}
+                            >
+                              <p style={{ margin: 0, color: "#111827", fontWeight: 700 }}>
+                                Set a new password
+                              </p>
+                              <p style={{ margin: 0, color: "#4b5563" }}>
+                                After multiple login attempts, request a secure email to create a new password.
+                              </p>
+                              <label className="input-group" style={{ margin: 0 }}>
+                                <span>Email</span>
+                                <input
+                                  type="email"
+                                  value={loginEmail}
+                                  onChange={(e) => setLoginEmail(e.target.value)}
+                                  placeholder="you@example.com"
+                                  autoComplete="email"
+                                />
+                              </label>
+                              <div className="actions-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                                <button
+                                  type="button"
+                                  className="button w-button"
+                                  disabled={loginResetStatus.state === "loading"}
+                                  onClick={sendLoginResetRequest}
+                                >
+                                  {loginResetStatus.state === "loading"
+                                    ? "Sending reset link…"
+                                    : "Email me a reset link"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ghost-button"
+                                  onClick={() => setShowLoginReset(false)}
+                                >
+                                  Keep trying to log in
+                                </button>
+                              </div>
+                              {loginResetStatus.message && (
+                                <p
+                                  className={
+                                    loginResetStatus.state === "success" ? "success-banner subtle" : "error-banner"
+                                  }
+                                  style={{ margin: 0 }}
+                                >
+                                  {loginResetStatus.message}
+                                </p>
+                              )}
+                            </div>
+                          )}
                           {isAuthenticated && (
                             <p className="success-banner subtle">
                               You’re logged in as {clientEmail || loginEmail}.
