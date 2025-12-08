@@ -8,7 +8,7 @@ const AboutOverviewSection = () => {
       <section className="why-section section">
         <div className="why-text">
           <h1 className="heading_h1">Why work with me</h1>
-          <h4 style={{ marginTop: "2rem" }} className="why-heading-h4">Expert trainning backed by real experience</h4>
+          <h4 style={{ marginTop: "2rem" }} className="why-heading-h4">Expert training backed by real experience</h4>
           <p className="subheading-2">
             Choosing me means trusting someone who understands dog behaviour and has the 
             education, experience, and passion to support every dog as an individual. 
