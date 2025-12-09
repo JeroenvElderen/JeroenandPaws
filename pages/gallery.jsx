@@ -1,337 +1,274 @@
-import React, { useMemo, useState } from 'react';
+"use client";
 
-const galleryItems = [
+import "react-photo-album/styles.css";
+import React, { useMemo, useState } from "react";
+import PhotoAlbum from "react-photo-album";
+import InfiniteScroll from "react-infinite-scroll-component";
+import Image from "next/image";
+
+const SOURCE_PHOTOS = [
   {
-    src: '/images/IMG_4278.jpg',
-    title: 'Golden Hour Forest Walk',
-    location: 'Wooded Trails',
-    vibe: 'Adventure',
+    src: "/images/IMG_4278.jpg",
+    width: 1600,
+    height: 1067,
+    title: "Golden Hour Forest Walk",
+    location: "Wooded Trails",
+    vibe: "Adventure",
   },
   {
-    src: '/images/Bonnie.jpeg',
-    title: 'Bonnie enjoying the breeze',
-    location: 'City Terraces',
-    vibe: 'Portrait',
+    src: "/images/Bonnie.jpeg",
+    width: 1400,
+    height: 1750,
+    title: "Bonnie enjoying the breeze",
+    location: "City Terraces",
+    vibe: "Portrait",
   },
   {
-    src: '/images/Jeroen.jpg',
-    title: 'In stride together',
-    location: 'Urban Greens',
-    vibe: 'Lifestyle',
+    src: "/images/Jeroen.jpg",
+    width: 1500,
+    height: 1700,
+    title: "In stride together",
+    location: "Urban Greens",
+    vibe: "Lifestyle",
   },
   {
-    src: '/images/31E259FF-C47C-4D99-AAC3-C9D0C3104F2B_1_201_a.jpeg',
-    title: 'Playtime pause',
-    location: 'Open Fields',
-    vibe: 'Joyful',
+    src: "/images/31E259FF-C47C-4D99-AAC3-C9D0C3104F2B_1_201_a.jpeg",
+    width: 1600,
+    height: 1600,
+    title: "Playtime pause",
+    location: "Open Fields",
+    vibe: "Joyful",
   },
   {
-    src: '/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif',
-    title: 'Ready for the next cue',
-    location: 'Training Grounds',
-    vibe: 'Training',
+    src: "/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif",
+    width: 1600,
+    height: 1067,
+    title: "Ready for the next cue",
+    location: "Training Grounds",
+    vibe: "Training",
   },
   {
-    src: '/images/7d9a4059-048c-4ce2-8876-b35ec4360f6c.avif',
-    title: 'Eyes on the horizon',
-    location: 'Coastal Dunes',
-    vibe: 'Cinematic',
+    src: "/images/7d9a4059-048c-4ce2-8876-b35ec4360f6c.avif",
+    width: 1600,
+    height: 1100,
+    title: "Eyes on the horizon",
+    location: "Coastal Dunes",
+    vibe: "Cinematic",
   },
   {
-    src: '/images/6112f29d-dcad-4748-87cd-799ae8f92763.avif',
-    title: 'Curious explorer',
-    location: 'Garden Corners',
-    vibe: 'Curiosity',
+    src: "/images/6112f29d-dcad-4748-87cd-799ae8f92763.avif",
+    width: 1600,
+    height: 1000,
+    title: "Curious explorer",
+    location: "Garden Corners",
+    vibe: "Curiosity",
   },
   {
-    src: '/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif',
-    title: 'Sun-warmed smiles',
-    location: 'Home Base',
-    vibe: 'Comfort',
+    src: "/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif",
+    width: 1600,
+    height: 1200,
+    title: "Sun-warmed smiles",
+    location: "Home Base",
+    vibe: "Comfort",
+  },
+  {
+    src: "/images/IMG_4278.jpg",
+    width: 1600,
+    height: 1067,
+    title: "Summit lookout",
+    location: "High Ridge",
+    vibe: "Trail",
+  },
+  {
+    src: "/images/7d9a4059-048c-4ce2-8876-b35ec4360f6c.avif",
+    width: 1600,
+    height: 1100,
+    title: "River break",
+    location: "Cedar Crossing",
+    vibe: "Calm",
+  },
+  {
+    src: "/images/Bonnie.jpeg",
+    width: 1400,
+    height: 1750,
+    title: "Resting on the ridge",
+    location: "Windy Pass",
+    vibe: "Portrait",
   },
 ];
 
-const Gallery = () => {
-  const [activeItem, setActiveItem] = useState(null);
+const PAGE_SIZE = 6;
 
-  const bodyCopy = useMemo(
-    () =>
-      `Showcase your adventures with a gallery that feels premium, immersive, and on-brand. Every image opens in a luxe lightbox so you can linger on the details and share stories effortlessly.`,
-    [],
-  );
+export default function Gallery() {
+  const initial = useMemo(() => SOURCE_PHOTOS.slice(0, PAGE_SIZE), []);
+  const [photos, setPhotos] = useState(initial);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchMore = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 450));
+
+    const start = page * PAGE_SIZE;
+    const batch = SOURCE_PHOTOS.slice(start, start + PAGE_SIZE);
+
+    if (!batch.length) {
+      setHasMore(false);
+      return;
+    }
+
+    setPhotos((prev) => [...prev, ...batch]);
+    setPage((p) => p + 1);
+  };
 
   return (
-    <main className="gallery-page">
-      <div className="gallery-hero">
-        <h1 className="gallery-title">Jeroen &amp; Paws LightGallery</h1>
-        <p className="gallery-lead">{bodyCopy}</p>
-        <a
-          className="hero-button"
-          href="https://github.com/sachinchoolur/lightGallery"
-          target="_blank"
-          rel="noreferrer"
+    <main className="gallery">
+      <header className="gallery__hero">
+        <p className="gallery__eyebrow">Infinite Scroll · react-photo-album</p>
+        <h1 className="gallery__title">Jeroen &amp; Paws</h1>
+        <p className="gallery__lead">
+          Scroll through a masonry layout that keeps fetching more adventures as
+          you go.
+        </p>
+      </header>
+
+      <section className="gallery__shell" aria-label="Infinite photo gallery">
+        <InfiniteScroll
+          dataLength={photos.length}
+          next={fetchMore}
+          hasMore={hasMore}
+          loader={
+            <div className="gallery__status">Loading more adventures…</div>
+          }
+          endMessage={
+            <div className="gallery__status">You reached the end ✨</div>
+          }
         >
-          View lightGallery inspiration
-        </a>
-      </div>
+          <PhotoAlbum
+            photos={photos}
+            layout="masonry"
+            targetRowHeight={310}
+            spacing={12}
+            renderPhoto={({
+              photo,
+              imageProps: { alt, sizes, ...imageProps },
+              wrapperStyle,
+            }) => (
+              <figure style={wrapperStyle} className="gallery__card">
+                <Image
+                  alt={alt}
+                  {...imageProps}
+                  sizes="(max-width: 600px) 100vw, 50vw"
+                  style={{ width: "100%", height: "auto", objectFit: "cover" }}
+                />
+                <figcaption className="gallery__meta">
+                  <div>
+                    <p className="gallery__meta-title">{photo.title}</p>
+                    <p className="gallery__meta-location">{photo.location}</p>
+                  </div>
+                  <span className="gallery__meta-tag">{photo.vibe}</span>
+                </figcaption>
+              </figure>
+            )}
+          />
+        </InfiniteScroll>
+      </section>
 
-      <div className="gallery-shell">
-        <div className="gallery-container" aria-label="Photo gallery">
-          {galleryItems.map((item) => (
-            <button
-              key={item.src}
-              type="button"
-              className="gallery-item"
-              onClick={() => setActiveItem(item)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setActiveItem(item);
-                }
-              }}
-            >
-              <img src={item.src} alt={item.title} loading="lazy" />
-              <div className="gallery-item__meta">
-                <p className="gallery-item__title">{item.title}</p>
-                <p className="gallery-item__location">{item.location}</p>
-                <span className="gallery-item__tag">{item.vibe}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {activeItem && (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeItem.title}>
-          <div className="lightbox__backdrop" onClick={() => setActiveItem(null)} />
-          <div className="lightbox__content" role="document">
-            <button className="lightbox__close" type="button" onClick={() => setActiveItem(null)}>
-              ✕
-            </button>
-            <img src={activeItem.src} alt={activeItem.title} className="lightbox__image" />
-            <div className="lightbox__meta">
-              <h3>{activeItem.title}</h3>
-              <p>{activeItem.location}</p>
-              <span className="gallery-item__tag">{activeItem.vibe}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* STYLES */}
       <style jsx>{`
-        .gallery-page {
+        .gallery {
           min-height: 100vh;
-          padding: 40px 16px 64px;
-          background: linear-gradient(180deg, #e8f0ff 0%, #ffffff 52%), #0e3481;
-          color: #0e3481;
+          background: #0d1221;
+          color: #f8fbff;
+          padding: 48px 16px 64px;
           display: grid;
           gap: 32px;
-        }
-
-        .gallery-hero {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          gap: 12px;
-          max-width: 960px;
-          margin: 0 auto;
-        }
-
-        .gallery-title {
-          margin: 0;
-          font-size: clamp(2.2rem, 4vw, 3rem);
-          font-weight: 800;
-          color: #0e3481;
-        }
-
-        .gallery-lead {
-          margin: 0;
-          max-width: 720px;
-          line-height: 1.6;
-          color: #1b3c8e;
-        }
-
-        .hero-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 10px 18px;
-          border-radius: 999px;
-          border: 1px solid #0e3481;
-          color: #0e3481;
-          background: rgba(14, 52, 129, 0.05);
-          font-weight: 700;
-          text-decoration: none;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          box-shadow: 0 20px 50px rgba(14, 52, 129, 0.12);
-        }
-
-        .hero-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 26px 60px rgba(14, 52, 129, 0.16);
-        }
-
-        .gallery-shell {
-          max-width: 1100px;
-          width: 100%;
-          margin: 0 auto;
-          padding: 16px;
-          background: rgba(255, 255, 255, 0.76);
-          border-radius: 28px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-          border: 1px solid rgba(14, 52, 129, 0.08);
-        }
-
-        .gallery-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 14px;
           justify-items: center;
         }
 
-        .gallery-item {
-          position: relative;
-          width: 100%;
-          max-width: 220px;
-          border: 1px solid rgba(14, 52, 129, 0.12);
-          border-radius: 16px;
-          overflow: hidden;
-          background: #f4f6ff;
-          padding: 6px;
+        .gallery__hero {
+          max-width: 880px;
+          text-align: center;
           display: grid;
-          gap: 8px;
-          cursor: pointer;
-          box-shadow: 0 16px 38px rgba(14, 52, 129, 0.12);
-          transition: transform 0.18s ease, box-shadow 0.18s ease;
+          gap: 12px;
         }
 
-        .gallery-item:focus-visible {
-          outline: 2px solid #0e3481;
-          outline-offset: 4px;
-        }
-
-        .gallery-item:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 20px 50px rgba(14, 52, 129, 0.18);
-        }
-
-        .gallery-item img {
-          width: 100%;
-          height: 180px;
-          object-fit: cover;
-          border-radius: 12px;
-        }
-
-        .gallery-item__meta {
-          display: grid;
-          gap: 4px;
-          text-align: left;
-        }
-
-        .gallery-item__title {
-          margin: 0;
-          font-weight: 800;
-          color: #0e3481;
-        }
-
-        .gallery-item__location {
-          margin: 0;
-          color: #3b4b7a;
-          font-size: 0.95rem;
-        }
-
-        .gallery-item__tag {
-          display: inline-flex;
-          align-items: center;
-          width: fit-content;
-          padding: 6px 12px;
+        .gallery__eyebrow {
+          margin: 0 auto;
+          padding: 6px 14px;
           border-radius: 999px;
-          background: rgba(14, 52, 129, 0.1);
-          color: #0e3481;
+          background: rgba(255, 255, 255, 0.08);
+          color: #b6c8ff;
           font-weight: 700;
-          border: 1px solid rgba(14, 52, 129, 0.14);
+          text-transform: uppercase;
         }
 
-        .lightbox {
-          position: fixed;
-          inset: 0;
-          display: grid;
-          place-items: center;
-          z-index: 1000;
-        }
-
-        .lightbox__backdrop {
-          position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.6);
-        }
-
-        .lightbox__content {
-          position: relative;
-          background: #ffffff;
-          border-radius: 20px;
-          padding: 16px;
-          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
-          max-width: min(960px, 90vw);
-          width: 100%;
-        }
-
-        .lightbox__image {
-          width: 100%;
-          max-height: 70vh;
-          object-fit: contain;
-          border-radius: 16px;
-        }
-
-        .lightbox__meta {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-top: 12px;
-          color: #0e3481;
-        }
-
-        .lightbox__meta h3 {
+        .gallery__title {
           margin: 0;
-          font-size: 1.25rem;
+          font-size: clamp(2.5rem, 4vw, 3.4rem);
           font-weight: 800;
         }
 
-        .lightbox__meta p {
+        .gallery__lead {
           margin: 0;
-          color: #3b4b7a;
+          color: #cfd9ff;
+          line-height: 1.6;
         }
 
-        .lightbox__close {
+        .gallery__shell {
+          width: 100%;
+          max-width: 1180px;
+          background: #0b0f1c;
+          padding: 20px;
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gallery__card {
+          position: relative;
+          overflow: hidden;
+          border-radius: 16px;
+        }
+
+        .gallery__meta {
           position: absolute;
-          top: 12px;
-          right: 12px;
-          border: none;
-          background: rgba(14, 52, 129, 0.08);
-          color: #0e3481;
-          font-size: 1.1rem;
-          border-radius: 50%;
-          width: 36px;
-          height: 36px;
-          cursor: pointer;
+          bottom: 0;
+          inset-inline: 0;
+          padding: 14px 16px;
+          display: flex;
+          justify-content: space-between;
+          background: linear-gradient(
+            180deg,
+            rgba(6, 10, 21, 0) 0%,
+            rgba(6, 10, 21, 0.72) 100%
+          );
         }
 
-        @media (max-width: 640px) {
-          .gallery-shell {
-            padding: 12px;
-          }
+        .gallery__meta-title {
+          margin: 0;
+          font-weight: 800;
+        }
 
-          .gallery-item img {
-            height: 150px;
-          }
+        .gallery__meta-location {
+          margin: 4px 0 0;
+          font-size: 0.94rem;
+          opacity: 0.9;
+        }
+
+        .gallery__meta-tag {
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.14);
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          font-weight: 700;
+        }
+
+        .gallery__status {
+          text-align: center;
+          padding: 14px;
+          font-weight: 700;
+          color: #dce6ff;
         }
       `}</style>
     </main>
   );
-};
-
-export default Gallery;
+}
