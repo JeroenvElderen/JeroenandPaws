@@ -247,6 +247,11 @@ const Navbar = () => {
               </Link>
             </li>
             <li className="nav_menu-list-item">
+              <Link href="/gallery" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+                <div>Gallery</div>
+              </Link>
+            </li>
+            <li className="nav_menu-list-item">
               <Link href="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
                 <div>Questions</div>
               </Link>

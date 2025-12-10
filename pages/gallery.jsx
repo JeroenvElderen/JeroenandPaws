@@ -1,282 +1,165 @@
 "use client";
 
-import "react-photo-album/styles.css";
-import React, { useMemo, useState } from "react";
-import PhotoAlbum from "react-photo-album";
-import InfiniteScroll from "react-infinite-scroll-component";
-import Image from "next/image";
+import React, { useEffect, useState, useRef } from "react";
+import Masonry from "react-masonry-css";
+import { supabase } from "../src/supabaseClient";
 
-const SOURCE_PHOTOS = [
-  {
-    src: "/images/IMG_4278.jpg",
-    width: 1600,
-    height: 1067,
-    title: "Golden Hour Forest Walk",
-    location: "Wooded Trails",
-    vibe: "Adventure",
-  },
-  {
-    src: "/images/Bonnie.jpeg",
-    width: 1400,
-    height: 1750,
-    title: "Bonnie enjoying the breeze",
-    location: "City Terraces",
-    vibe: "Portrait",
-  },
-  {
-    src: "/images/Jeroen.jpg",
-    width: 1500,
-    height: 1700,
-    title: "In stride together",
-    location: "Urban Greens",
-    vibe: "Lifestyle",
-  },
-  {
-    src: "/images/31E259FF-C47C-4D99-AAC3-C9D0C3104F2B_1_201_a.jpeg",
-    width: 1600,
-    height: 1600,
-    title: "Playtime pause",
-    location: "Open Fields",
-    vibe: "Joyful",
-  },
-  {
-    src: "/images/dogs/lakta/lakta1.jpg",
-    width: 1600,
-    height: 1067,
-    title: "Ready for the next cue",
-    location: "Training Grounds",
-    vibe: "Training",
-  },
-  {
-    src: "/images/dogs/pancho/pancho1.jpg",
-    width: 1600,
-    height: 1100,
-    title: "Eyes on the horizon",
-    location: "Coastal Dunes",
-    vibe: "Cinematic",
-  },
-  {
-    src: "/images/dogs/ollie/ollie.jpeg",
-    width: 1600,
-    height: 1000,
-    title: "Curious explorer",
-    location: "Garden Corners",
-    vibe: "Curiosity",
-  },
-  {
-    src: "/images/dogs/pancho/pancho2.jpeg",
-    width: 1600,
-    height: 1200,
-    title: "Sun-warmed smiles",
-    location: "Home Base",
-    vibe: "Comfort",
-  },
-  {
-    src: "/images/IMG_4278.jpg",
-    width: 1600,
-    height: 1067,
-    title: "Summit lookout",
-    location: "High Ridge",
-    vibe: "Trail",
-  },
-  {
-    src: "/images/dogs/compass/compass1.JPG",
-    width: 1600,
-    height: 1100,
-    title: "River break",
-    location: "Cedar Crossing",
-    vibe: "Calm",
-  },
-  {
-    src: "/images/Bonnie.jpeg",
-    width: 1400,
-    height: 1750,
-    title: "Resting on the ridge",
-    location: "Windy Pass",
-    vibe: "Portrait",
-  },
-];
+const BUCKET = "pet-gallery";
 
-const PAGE_SIZE = 6;
+// Fetch Supabase images
+async function buildPhoto(file) {
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(file.name);
+  if (!data?.publicUrl) return null;
 
-const FALLBACK_SRC = "/images/IMG_4278.jpg";
+  return {
+    img: data.publicUrl.replace("/object/", "/render/image/"),
+    title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
+  };
+}
 
 export default function Gallery() {
-  const initial = useMemo(() => SOURCE_PHOTOS.slice(0, PAGE_SIZE), []);
-  const [photos, setPhotos] = useState(initial);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [items, setItems] = useState([]);
+  const containerRef = useRef(null);
 
-  const fetchMore = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 450));
+  useEffect(() => {
+    async function load() {
+      const { data, error } = await supabase.storage.from(BUCKET).list("");
+      if (!data || error) return;
 
-    const start = page * PAGE_SIZE;
-    const batch = SOURCE_PHOTOS.slice(start, start + PAGE_SIZE);
+      const files = data.filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f.name));
 
-    if (!batch.length) {
-      setHasMore(false);
-      return;
+      const photos = (await Promise.all(files.map(buildPhoto))).filter(Boolean);
+      setItems(photos);
     }
 
-    setPhotos((prev) => [...prev, ...batch]);
-    setPage((p) => p + 1);
+    load();
+  }, []);
+
+  const breakpointColumns = {
+    default: 3,
+    1100: 3,
+    800: 2,
+    500: 1,
   };
 
+  // Align first row heights
+  useEffect(() => {
+  if (!containerRef.current) return;
+
+  const columns = Object.values(breakpointColumns);
+  const imgs = Array.from(containerRef.current.querySelectorAll("img"));
+  if (imgs.length === 0) return;
+
+  // Detect number of columns rendered at current viewport
+  const width = window.innerWidth;
+  let colCount = columns[0];
+
+  if (width <= 500) colCount = columns[columns.length - 1];
+  else if (width <= 800) colCount = columns[columns.length - 2];
+  else colCount = columns[0];
+
+  // Select only first-row images
+  const firstRow = imgs.slice(0, colCount);
+
+  // Compute tallest container height
+  const maxHeight = Math.max(
+    ...firstRow.map((img) => img.parentElement.clientHeight)
+  );
+
+  // Apply alignment to IMAGE CONTAINERS — not images
+  firstRow.forEach((img) => {
+    const wrapper = img.parentElement;
+    wrapper.style.height = `${maxHeight}px`;
+    wrapper.style.overflow = "hidden"; // ensures no visual gap
+  });
+}, [items]);
+
+
   return (
-    <main className="gallery">
-      <header className="gallery__hero">
-        <p className="gallery__eyebrow">Infinite Scroll · react-photo-album</p>
-        <h1 className="gallery__title">Jeroen &amp; Paws</h1>
-        <p className="gallery__lead">
-          Scroll through a masonry layout that keeps fetching more adventures as
-          you go.
+    <main
+      style={{
+        background: "#0d1221",
+        minHeight: "100vh",
+        padding: "48px 16px 64px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "32px",
+      }}
+    >
+      {/* HEADER */}
+      <header style={{ textAlign: "center", maxWidth: "900px" }}>
+        <h1
+          style={{
+            fontSize: "42px",
+            margin: "0 0 12px",
+            color: "#ffffff",
+            fontWeight: 700,
+            letterSpacing: "1px",
+          }}
+        >
+          Welcome to Jeroen & Paws Gallery
+        </h1>
+
+        <p
+          style={{
+            fontSize: "18px",
+            color: "#b6c8ff",
+            lineHeight: 1.6,
+          }}
+        >
+          A curated collection of adventures, loyal clients, and furry friends.
+          Enjoy browsing through our memories together.
         </p>
       </header>
 
-      <section className="gallery__shell" aria-label="Infinite photo gallery">
-        <InfiniteScroll
-          dataLength={photos.length}
-          next={fetchMore}
-          hasMore={hasMore}
-          loader={
-            <div className="gallery__status">Loading more adventures…</div>
-          }
-          endMessage={
-            <div className="gallery__status">You reached the end ✨</div>
-          }
+      {/* GALLERY */}
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
+          maxWidth: "1280px",
+          borderRadius: "20px",
+          background: "#0b0f1c",
+          padding: "16px",
+        }}
+      >
+        <Masonry
+          breakpointCols={breakpointColumns}
+          className="masonry-grid"
+          columnClassName="masonry-column"
         >
-          <PhotoAlbum
-            photos={photos}
-            layout="masonry"
-            targetRowHeight={310}
-            spacing={12}
-            renderPhoto={({
-              photo,
-              imageProps: { alt, sizes, ...imageProps },
-              wrapperStyle,
-            }) => (
-              <figure style={wrapperStyle} className="gallery__card">
-                <Image
-                  alt={alt}
-                  src={imageProps.src} // keep src coming from react-photo-album
-                  width={photo.width} // REQUIRED
-                  height={photo.height} // REQUIRED
-                  sizes="(max-width: 600px) 100vw, 50vw"
-                  style={{ width: "100%", height: "auto", objectFit: "cover" }}
-                  onError={(event) => {
-                    if (event.currentTarget.src.includes(FALLBACK_SRC)) return;
-                    event.currentTarget.src = FALLBACK_SRC;
-                  }}
-                  unoptimized // optional: avoids Next.js optimization issues
-                />
+          {items.map((item, idx) => (
+            <img
+              key={item.img + idx}
+              src={item.img}
+              alt={item.title}
+              loading="lazy"
+              style={{
+                width: "100%",
+                display: "block",
+                height: "auto",
+                objectFit: "contain", // keep full image, no cropping
+                borderRadius: "14px", // rounded corners
+              }}
+            />
+          ))}
+        </Masonry>
+      </div>
 
-                <figcaption className="gallery__meta">
-                  <div>
-                    <p className="gallery__meta-title">{photo.title}</p>
-                    <p className="gallery__meta-location">{photo.location}</p>
-                  </div>
-                  <span className="gallery__meta-tag">{photo.vibe}</span>
-                </figcaption>
-              </figure>
-            )}
-          />
-        </InfiniteScroll>
-      </section>
-
-      {/* STYLES */}
-      <style jsx>{`
-        .gallery {
-          min-height: 100vh;
-          background: #0d1221;
-          color: #f8fbff;
-          padding: 48px 16px 64px;
-          display: grid;
-          gap: 32px;
-          justify-items: center;
-        }
-
-        .gallery__hero {
-          max-width: 880px;
-          text-align: center;
-          display: grid;
-          gap: 12px;
-        }
-
-        .gallery__eyebrow {
-          margin: 0 auto;
-          padding: 6px 14px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.08);
-          color: #b6c8ff;
-          font-weight: 700;
-          text-transform: uppercase;
-        }
-
-        .gallery__title {
-          margin: 0;
-          font-size: clamp(2.5rem, 4vw, 3.4rem);
-          font-weight: 800;
-        }
-
-        .gallery__lead {
-          margin: 0;
-          color: #cfd9ff;
-          line-height: 1.6;
-        }
-
-        .gallery__shell {
-          width: 100%;
-          max-width: 1180px;
-          background: #0b0f1c;
-          padding: 20px;
-          border-radius: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .gallery__card {
-          position: relative;
-          overflow: hidden;
-          border-radius: 16px;
-        }
-
-        .gallery__meta {
-          position: absolute;
-          bottom: 0;
-          inset-inline: 0;
-          padding: 14px 16px;
+      {/* Masonry CSS */}
+      <style jsx global>{`
+        .masonry-grid {
           display: flex;
-          justify-content: space-between;
-          background: linear-gradient(
-            180deg,
-            rgba(6, 10, 21, 0) 0%,
-            rgba(6, 10, 21, 0.72) 100%
-          );
+          margin-left: -16px;
+          width: auto;
         }
-
-        .gallery__meta-title {
-          margin: 0;
-          font-weight: 800;
+        .masonry-column {
+          padding-left: 16px;
+          background-clip: padding-box;
         }
-
-        .gallery__meta-location {
-          margin: 4px 0 0;
-          font-size: 0.94rem;
-          opacity: 0.9;
-        }
-
-        .gallery__meta-tag {
-          padding: 8px 12px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.14);
-          border: 1px solid rgba(255, 255, 255, 0.24);
-          font-weight: 700;
-        }
-
-        .gallery__status {
-          text-align: center;
-          padding: 14px;
-          font-weight: 700;
-          color: #dce6ff;
+        .masonry-column > img {
+          margin-bottom: 16px;
         }
       `}</style>
     </main>
