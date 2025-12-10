@@ -44,36 +44,70 @@ export default function Gallery() {
 
   // Align first row heights
   useEffect(() => {
-  if (!containerRef.current) return;
+  if (!containerRef.current || items.length === 0) return;
 
-  const columns = Object.values(breakpointColumns);
-  const imgs = Array.from(containerRef.current.querySelectorAll("img"));
-  if (imgs.length === 0) return;
+    const columns = Object.values(breakpointColumns);
+    const imgs = Array.from(containerRef.current.querySelectorAll("img"));
+    if (imgs.length === 0) return;
 
-  // Detect number of columns rendered at current viewport
-  const width = window.innerWidth;
-  let colCount = columns[0];
+    const handlers = new Map();
+    let cancelled = false;
 
-  if (width <= 500) colCount = columns[columns.length - 1];
-  else if (width <= 800) colCount = columns[columns.length - 2];
-  else colCount = columns[0];
+    async function alignAfterLoad() {
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            img.complete && img.naturalHeight > 0
+              ? Promise.resolve()
+              : new Promise((resolve) => {
+                  const onLoad = () => {
+                    img.removeEventListener("load", onLoad);
+                    handlers.delete(img);
+                    resolve();
+                  };
 
-  // Select only first-row images
-  const firstRow = imgs.slice(0, colCount);
+                  handlers.set(img, onLoad);
+                  img.addEventListener("load", onLoad);
+                })
+        )
+      );
 
-  // Compute tallest container height
-  const maxHeight = Math.max(
-    ...firstRow.map((img) => img.parentElement.clientHeight)
-  );
+      if (cancelled) return;
 
-  // Apply alignment to IMAGE CONTAINERS — not images
-  firstRow.forEach((img) => {
-    const wrapper = img.parentElement;
-    wrapper.style.height = `${maxHeight}px`;
-    wrapper.style.overflow = "hidden"; // ensures no visual gap
-  });
-}, [items]);
+      // Detect number of columns rendered at current viewport
+      const width = window.innerWidth;
+      let colCount = columns[0];
 
+      if (width <= 500) colCount = columns[columns.length - 1];
+      else if (width <= 800) colCount = columns[columns.length - 2];
+      else colCount = columns[0];
+
+      // Select only first-row images
+      const firstRow = imgs.slice(0, colCount);
+      if (firstRow.length === 0) return;
+
+      // Compute tallest container height after images finish loading
+      const maxHeight = Math.max(
+        ...firstRow.map((img) => img.parentElement.clientHeight)
+      );
+
+      if (!Number.isFinite(maxHeight) || maxHeight === 0) return;
+
+      // Apply alignment to IMAGE CONTAINERS — not images
+      firstRow.forEach((img) => {
+        const wrapper = img.parentElement;
+        wrapper.style.height = `${maxHeight}px`;
+        wrapper.style.overflow = "hidden"; // ensures no visual gap
+      });
+    }
+
+    alignAfterLoad();
+
+    return () => {
+      cancelled = true;
+      handlers.forEach((handler, img) => img.removeEventListener("load", handler));
+    };
+  }, [items]);
 
   return (
     <main
