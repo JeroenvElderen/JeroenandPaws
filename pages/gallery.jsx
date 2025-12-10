@@ -40,7 +40,7 @@ const SOURCE_PHOTOS = [
     vibe: "Joyful",
   },
   {
-    src: "/images/2269ca18-ac55-435f-bc79-d145bb23389b.avif",
+    src: "/images/dogs/lakta/lakta1.jpg",
     width: 1600,
     height: 1067,
     title: "Ready for the next cue",
@@ -48,7 +48,7 @@ const SOURCE_PHOTOS = [
     vibe: "Training",
   },
   {
-    src: "/images/7d9a4059-048c-4ce2-8876-b35ec4360f6c.avif",
+    src: "/images/dogs/pancho/pancho1.jpg",
     width: 1600,
     height: 1100,
     title: "Eyes on the horizon",
@@ -56,7 +56,7 @@ const SOURCE_PHOTOS = [
     vibe: "Cinematic",
   },
   {
-    src: "/images/6112f29d-dcad-4748-87cd-799ae8f92763.avif",
+    src: "/images/dogs/ollie/ollie.jpeg",
     width: 1600,
     height: 1000,
     title: "Curious explorer",
@@ -64,7 +64,7 @@ const SOURCE_PHOTOS = [
     vibe: "Curiosity",
   },
   {
-    src: "/images/2b4b2268-f18e-44ab-8f19-3bc2105dc1f8.avif",
+    src: "/images/dogs/pancho/pancho2.jpeg",
     width: 1600,
     height: 1200,
     title: "Sun-warmed smiles",
@@ -80,7 +80,7 @@ const SOURCE_PHOTOS = [
     vibe: "Trail",
   },
   {
-    src: "/images/7d9a4059-048c-4ce2-8876-b35ec4360f6c.avif",
+    src: "/images/dogs/compass/compass1.JPG",
     width: 1600,
     height: 1100,
     title: "River break",
@@ -98,6 +98,8 @@ const SOURCE_PHOTOS = [
 ];
 
 const PAGE_SIZE = 6;
+
+const FALLBACK_SRC = "/images/IMG_4278.jpg";
 
 export default function Gallery() {
   const initial = useMemo(() => SOURCE_PHOTOS.slice(0, PAGE_SIZE), []);
@@ -156,10 +158,18 @@ export default function Gallery() {
               <figure style={wrapperStyle} className="gallery__card">
                 <Image
                   alt={alt}
-                  {...imageProps}
+                  src={imageProps.src} // keep src coming from react-photo-album
+                  width={photo.width} // REQUIRED
+                  height={photo.height} // REQUIRED
                   sizes="(max-width: 600px) 100vw, 50vw"
                   style={{ width: "100%", height: "auto", objectFit: "cover" }}
+                  onError={(event) => {
+                    if (event.currentTarget.src.includes(FALLBACK_SRC)) return;
+                    event.currentTarget.src = FALLBACK_SRC;
+                  }}
+                  unoptimized // optional: avoids Next.js optimization issues
                 />
+
                 <figcaption className="gallery__meta">
                   <div>
                     <p className="gallery__meta-title">{photo.title}</p>
