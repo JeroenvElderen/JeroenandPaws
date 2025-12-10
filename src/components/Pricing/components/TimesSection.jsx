@@ -12,6 +12,9 @@ const TimesSection = ({
   timesSectionRef,
   recommendedSlot,
   onUseRecommended,
+  hiddenSlotCount = 0,
+  travelMinutes = 0,
+  travelAnchor = "home",
 }) => {
   return (
     <div className="times-card" ref={timesSectionRef}>
@@ -60,10 +63,18 @@ const TimesSection = ({
           </p>
         )}
 
+        {hiddenSlotCount > 0 && (
+          <p className="muted subtle">
+            {hiddenSlotCount} slot{hiddenSlotCount === 1 ? "" : "s"} hidden because we need about {travelMinutes}
+            minutes of travel time from {" "}
+            {travelAnchor === "previous" ? "your earlier booking" : "home base"}.
+          </p>
+        )}
+
         {selectedDay &&
           isDayAvailableForService(selectedDay) &&
           selectedDay.slots
-            ?.filter((slot) => slot.available)
+            ?.filter((slot) => slot.available && slot.reachable !== false)
             .map((slot) => {
               const isActive = selectedTime === slot.time;
               return (

@@ -17,6 +17,7 @@ const BookingForm = ({
   setClientEmail,
   clientAddress,
   setClientAddress,
+  clientAddressLocked = false,
   canLoadPets,
   fetchExistingPets,
   isLoadingPets,
@@ -57,6 +58,9 @@ const BookingForm = ({
   visibleStage = "summary",
   onContinue,
   customerDetailsRef,
+  travelNote,
+  paymentPreference,
+  onPaymentPreferenceChange,
 }) => {
   const isSummaryMode = visibleStage === "summary";
   const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
@@ -122,6 +126,13 @@ const BookingForm = ({
             )}
           </div>
 
+          {travelNote && (
+            <div className="summary-card">
+              <h4>Travel</h4>
+              <p className="summary-value">{travelNote}</p>
+            </div>
+          )}
+
           <div className="summary-card">
             <h4>Customer</h4>
             <div className="summary-list plain">
@@ -178,6 +189,41 @@ const BookingForm = ({
               </ul>
             </div>
           )}
+
+          <div className="summary-card">
+            <h4>Payment</h4>
+            <div className="summary-list plain">
+              <p className="summary-value">
+                {paymentPreference === "invoice"
+                  ? "Invoice me after confirmation"
+                  : "Pay online now"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <h4>How would you like to pay?</h4>
+          <div className="actions-stack">
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="payment-preference"
+                checked={paymentPreference === "pay_now"}
+                onChange={() => onPaymentPreferenceChange?.("pay_now")}
+              />
+              <span>Pay now (payment link)</span>
+            </label>
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="payment-preference"
+                checked={paymentPreference === "invoice"}
+                onChange={() => onPaymentPreferenceChange?.("invoice")}
+              />
+              <span>Request an invoice</span>
+            </label>
+          </div>
         </div>
 
         <div className="actions-row">
@@ -261,9 +307,18 @@ const BookingForm = ({
               <input
                 type="text"
                 value={clientAddress}
-                onChange={(e) => setClientAddress(e.target.value)}
+                readOnly={clientAddressLocked}
+                onChange={(e) => {
+                  if (clientAddressLocked) return;
+                  setClientAddress(e.target.value);
+                }}
                 placeholder="Street, city, and any entry details"
               />
+              {clientAddressLocked && (
+                <p className="muted subtle">
+                  Address is set from your Eircode to keep travel timing accurate.
+                </p>
+              )}
             </label>
           </>
         )}
@@ -553,11 +608,20 @@ const BookingForm = ({
                 <li>
                   Service: {formatCurrency(pricing.servicePrice)} per dog / visit
                 </li>
+                {pricing.secondDogDiscount > 0 && (
+                  <li>
+                    Second dog: {formatCurrency(pricing.secondDogPrice)} (save {" "}
+                    {formatCurrency(pricing.secondDogDiscount)})
+                  </li>
+                )}
                 {pricing.selectedAddons.map((addon) => (
                   <li key={addon.id || addon.value}>
                     + {addon.label}: {formatCurrency(parsePriceValue(addon.price))}
                   </li>
                 ))}
+                <li>
+                  Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
+                </li>
                 <li>
                   Total per dog / visit: {formatCurrency(pricing.servicePrice)}
                 </li>

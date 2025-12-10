@@ -23,6 +23,29 @@ import TimesSection from "./components/TimesSection";
 import BookingForm from "./components/BookingForm";
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
+const HOME_EIRCODE = "A98H940";
+const HOME_COORDS = { lat: 53.204, lng: -6.111 }; // Bray (home)
+const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
+const ROUTING_COORDS = {
+  // Approximate centroids for common routing keys so we can estimate travel when
+  // an online lookup fails. These are fallbacks and should be avoided when the
+  // full Eircode can be resolved through OpenStreetMap.
+  A98: HOME_COORDS,
+  A96: { lat: 53.293, lng: -6.129 }, // Dun Laoghaire
+  A94: { lat: 53.306, lng: -6.211 }, // Blackrock
+  D01: { lat: 53.352, lng: -6.262 }, // Dublin 1
+  D02: { lat: 53.338, lng: -6.247 },
+  D04: { lat: 53.321, lng: -6.228 },
+  D06: { lat: 53.312, lng: -6.260 },
+  D08: { lat: 53.337, lng: -6.278 },
+  D09: { lat: 53.379, lng: -6.238 },
+  D15: { lat: 53.385, lng: -6.398 },
+  D18: { lat: 53.262, lng: -6.149 },
+  K36: { lat: 53.449, lng: -6.226 }, // Swords
+  K78: { lat: 53.347, lng: -6.446 }, // Lucan
+  W23: { lat: 53.351, lng: -6.538 },
+  W91: { lat: 53.179, lng: -6.667 },
+};
 
 const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
@@ -47,6 +70,7 @@ const BookingModal = ({ service, onClose }) => {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientAddress, setClientAddress] = useState("");
+  const [clientEircode, setClientEircode] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
@@ -73,11 +97,19 @@ const BookingModal = ({ service, onClose }) => {
     state: "idle",
     message: "",
   });
+  const [travelAnchor, setTravelAnchor] = useState("home");
+  const [homeCoordinates, setHomeCoordinates] = useState(HOME_COORDS);
+  const [previousBookingTime, setPreviousBookingTime] = useState("");
+  const [clientCoordinates, setClientCoordinates] = useState(null);
+  const [travelMinutes, setTravelMinutes] = useState(0);
+  const [travelNote, setTravelNote] = useState("");
+  const [paymentPreference, setPaymentPreference] = useState("pay_now");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
   const addonsSectionRef = useRef(null);
   const bookingModalRef = useRef(null);
   const calendarSectionRef = useRef(null);
+  const travelSectionRef = useRef(null);
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
   const [currentStep, setCurrentStep] = useState("calendar");
@@ -88,6 +120,106 @@ const BookingModal = ({ service, onClose }) => {
     const normalized = String(value).replace(/,/g, ".");
     const numeric = Number(normalized.replace(/[^0-9.]/g, ""));
     return Number.isFinite(numeric) ? numeric : 0;
+  }, []);
+
+  const normalizeEircode = useCallback((value) => {
+    return (value || "").replace(/\s+/g, "").toUpperCase();
+  }, []);
+
+  const isFullEircode = useCallback(
+    (value) => /^[A-Z0-9]{3}[A-Z0-9]{4}$/.test(normalizeEircode(value)),
+    [normalizeEircode]
+  );
+
+  const getRoutingKey = useCallback(
+    (eircodeValue) => normalizeEircode(eircodeValue).slice(0, 3),
+    [normalizeEircode]
+  );
+
+  const geocodeEircode = useCallback(async (eircodeValue, signal) => {
+    const query = normalizeEircode(eircodeValue);
+    if (!query || !isFullEircode(query)) return null;
+
+    const url = `${NOMINATIM_ENDPOINT}?format=jsonv2&limit=1&countrycodes=ie&q=${encodeURIComponent(
+      query
+    )}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "JeroenandPaws-booking/1.0 (+https://jeroenandpaws.com)",
+      },
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Nominatim error ${response.status}`);
+    }
+
+    const results = await response.json();
+    if (!Array.isArray(results) || results.length === 0) return null;
+
+    const best = results[0];
+    const lat = Number(best.lat);
+    const lng = Number(best.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    return { lat, lng };
+  }, [isFullEircode, normalizeEircode]);
+
+  const haversineKm = (coordA, coordB) => {
+    const toRadians = (deg) => (deg * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRadians(coordB.lat - coordA.lat);
+    const dLon = toRadians(coordB.lng - coordA.lng);
+    const lat1 = toRadians(coordA.lat);
+    const lat2 = toRadians(coordB.lat);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const estimateTravelMinutes = useCallback(
+    (from, to) => {
+      const anchor =
+        to || {
+          eircode: HOME_EIRCODE,
+          coords: homeCoordinates,
+        };
+
+      if (from?.coords && anchor?.coords) {
+        const distanceKm = haversineKm(from.coords, anchor.coords);
+        const minutes = Math.round((distanceKm / 50) * 60 + 10); // assume 50km/h + buffer
+        return Math.min(Math.max(minutes, 12), 120);
+      }
+
+      const routingKey = getRoutingKey(from?.eircode);
+      const anchorKey = getRoutingKey(anchor?.eircode);
+
+      if (!routingKey || !anchorKey) return 0;
+
+      const fromCoord = ROUTING_COORDS[routingKey];
+      const anchorCoord = ROUTING_COORDS[anchorKey];
+
+      if (fromCoord && anchorCoord) {
+        const distanceKm = haversineKm(fromCoord, anchorCoord);
+        const minutes = Math.round((distanceKm / 50) * 60 + 10);
+        return Math.min(Math.max(minutes, 12), 120);
+      }
+
+      if (routingKey === anchorKey) return 15;
+      return 45;
+    },
+    [getRoutingKey, homeCoordinates]
+  );
+
+  const parseTimeToMinutes = useCallback((time) => {
+    if (!time) return 0;
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + (minutes || 0);
   }, []);
 
   const formatCurrency = useCallback((value) => {
@@ -108,6 +240,27 @@ const BookingModal = ({ service, onClose }) => {
     }),
     []
   );
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadHomeCoordinates = async () => {
+      try {
+        const coords = await geocodeEircode(HOME_EIRCODE, controller.signal);
+        if (coords) {
+          setHomeCoordinates(coords);
+        }
+      } catch (homeLookupError) {
+        console.warn("Home Eircode lookup failed, using fallback coords", {
+          error: homeLookupError,
+        });
+      }
+    };
+
+    loadHomeCoordinates();
+
+    return () => controller.abort();
+  }, [geocodeEircode]);
 
   const hasAtLeastOneDog = useMemo(() => {
     if (selectedPetIds.length > 0) return true;
@@ -131,6 +284,7 @@ const BookingModal = ({ service, onClose }) => {
 
   const stepOrder = [
     "calendar",
+    "travel",
     "time",
     "customer",
     "pet",
@@ -139,6 +293,7 @@ const BookingModal = ({ service, onClose }) => {
   ];
   const stepLabels = {
     calendar: "Calendar",
+    travel: "Eircode",
     time: "Choose time",
     customer: "Customer",
     pet: "Pets",
@@ -148,13 +303,31 @@ const BookingModal = ({ service, onClose }) => {
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
-  const isDayAvailableForService = useCallback((day) => {
-    if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
-      return false;
-    }
+  const isSlotReachable = useCallback(
+    (slot) => {
+      if (!slot || !slot.available) return false;
+      const startMinutes = parseTimeToMinutes(slot.time);
 
-    return day.slots.some((slot) => slot.available);
-  }, []);
+      const baseMinutes =
+        travelAnchor === "previous" && previousBookingTime
+          ? parseTimeToMinutes(previousBookingTime)
+          : 8 * 60;
+
+      return startMinutes >= baseMinutes + travelMinutes;
+    },
+    [parseTimeToMinutes, previousBookingTime, travelAnchor, travelMinutes]
+  );
+
+  const isDayAvailableForService = useCallback(
+    (day) => {
+      if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
+        return false;
+      }
+
+      return day.slots.some((slot) => isSlotReachable(slot));
+    },
+    [isSlotReachable]
+  );
 
   const addAnotherDog = () => {
     setShowDogDetails(true);
@@ -293,9 +466,9 @@ const BookingModal = ({ service, onClose }) => {
       }
 
       const data = await prefetchAvailability(service, apiBaseUrl);
-      const normalized = normalizeAvailability(cached);
-        setAvailability(normalized);
-        setInitialVisibleMonth(normalized);
+      const normalized = normalizeAvailability(data);
+      setAvailability(normalized);
+      setInitialVisibleMonth(normalized);
     } catch (error) {
       console.error("Unable to load live availability", error);
       const fallback = normalizeAvailability(
@@ -321,6 +494,128 @@ const BookingModal = ({ service, onClose }) => {
   }, [loadAvailability]);
 
   useEffect(() => {
+    let isCancelled = false;
+    const controller = new AbortController();
+
+    const normalized = normalizeEircode(clientEircode);
+    if (!normalized) {
+      setClientCoordinates(null);
+      setTravelMinutes(0);
+      setTravelNote("Enter your full Eircode to calculate travel time.");
+      return () => controller.abort();
+    }
+
+    const hasFullClientEircode = isFullEircode(normalized);
+
+    const anchorEircode =
+      travelAnchor === "home"
+        ? HOME_EIRCODE
+        : normalizeEircode(clientAddress) || HOME_EIRCODE;
+
+    if (!hasFullClientEircode) {
+      const minutes = estimateTravelMinutes(
+        { eircode: normalized, coords: null },
+        { eircode: anchorEircode, coords: null }
+      );
+
+      setClientCoordinates(null);
+      setTravelMinutes(minutes);
+      setTravelNote(
+        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
+      );
+      return () => controller.abort();
+    }
+
+    const loadCoordinatesAndEstimate = async () => {
+      try {
+        setTravelNote("Looking up your Eircode with OpenStreetMap (Nominatim)...");
+
+        const [fromCoords, anchorCoords] = await Promise.all([
+          geocodeEircode(normalized, controller.signal),
+          travelAnchor === "home"
+            ? Promise.resolve(homeCoordinates)
+            : geocodeEircode(anchorEircode, controller.signal),
+        ]);
+
+        if (isCancelled) return;
+
+        const resolvedAnchorCoords =
+          anchorCoords || (travelAnchor === "home" ? homeCoordinates : null);
+
+        setClientCoordinates(fromCoords);
+        setClientAddress(normalized);
+
+        const minutes = estimateTravelMinutes(
+          { eircode: normalized, coords: fromCoords },
+          { eircode: anchorEircode, coords: resolvedAnchorCoords }
+        );
+        setTravelMinutes(minutes);
+
+        if (travelAnchor === "previous" && !previousBookingTime) {
+          setTravelNote(
+            "Share the end time of your earlier booking so we can hide impossible slots."
+          );
+          return;
+        }
+
+        const anchorLabel =
+          travelAnchor === "previous" && previousBookingTime
+            ? `after your earlier booking at ${previousBookingTime}`
+            : `from home base (${HOME_EIRCODE})`;
+
+        const geocodeDescriptor = fromCoords
+          ? "using your exact Eircode location"
+          : "using your routing key as a fallback";
+        const anchorDescriptor =
+          travelAnchor === "home"
+            ? resolvedAnchorCoords
+              ? "and our exact A98H940 address"
+              : "and our base routing key"
+            : resolvedAnchorCoords
+            ? "and your previous booking location"
+            : "and your previous booking routing key";
+
+        setTravelNote(
+          `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
+        );
+      } catch (lookupError) {
+        if (isCancelled) return;
+
+        setClientCoordinates(null);
+        const minutes = estimateTravelMinutes(
+          { eircode: normalized, coords: null },
+          {
+            eircode: anchorEircode,
+            coords: travelAnchor === "home" ? homeCoordinates : null,
+          }
+        );
+
+        setTravelMinutes(minutes);
+        setTravelNote(
+          "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
+        );
+      }
+    };
+
+    loadCoordinatesAndEstimate();
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, [
+    clientAddress,
+    clientEircode,
+    estimateTravelMinutes,
+    geocodeEircode,
+    homeCoordinates,
+    isFullEircode,
+    normalizeEircode,
+    previousBookingTime,
+    travelAnchor,
+  ]);
+
+  useEffect(() => {
     setExistingPets([]);
     setSelectedPetIds([]);
     setHasAttemptedPetLoad(false);
@@ -332,13 +627,18 @@ const BookingModal = ({ service, onClose }) => {
     if (!client) return;
 
     const phoneNumber = client.phone_number || client.phone || "";
+    const normalizedAddress = normalizeEircode(client.address || "");
 
     setClientName(client.full_name || "");
     setClientPhone(phoneNumber || "");
     setClientEmail(client.email || "");
-    setClientAddress(client.address || "");
+    setClientAddress(normalizedAddress || client.address || "");
     setLoginEmail(client.email || "");
-  }, [profile]);
+    
+    if (normalizedAddress) {
+      setClientEircode(normalizedAddress);
+    }
+  }, [normalizeEircode, profile]);
 
   useEffect(() => {
     if (!profile) return;
@@ -365,7 +665,7 @@ const BookingModal = ({ service, onClose }) => {
       setClientName("");
       setClientPhone("");
       setClientEmail("");
-      setClientAddress("");
+      setClientAddress(normalizeEircode(clientEircode) || "");
     }
   };
 
@@ -400,7 +700,16 @@ const BookingModal = ({ service, onClose }) => {
       setClientEmail(payload?.client?.email || email);
       setClientName(payload?.client?.full_name || "");
       setClientPhone(payload?.client?.phone_number || "");
-      setClientAddress(payload?.client?.address || "");
+      const preferredAddress =
+        normalizeEircode(clientEircode) ||
+        normalizeEircode(payload?.client?.address || "") ||
+        payload?.client?.address ||
+        "";
+
+      setClientAddress(preferredAddress);
+      if (preferredAddress) {
+        setClientEircode(normalizeEircode(preferredAddress));
+      }
       setLoginPassword("");
       setLoginAttempts(0);
       setShowLoginReset(false);
@@ -640,10 +949,12 @@ const BookingModal = ({ service, onClose }) => {
       const day = availabilityMap[iso];
       if (!day || !Array.isArray(day.slots)) return "";
 
-      const firstAvailable = day.slots.find((slot) => slot.available);
+      const firstAvailable = day.slots.find((slot) =>
+        isSlotReachable(slot)
+      );
       return firstAvailable?.time || "";
     },
-    [availabilityMap]
+    [availabilityMap, isSlotReachable]
   );
 
   const handleDaySelection = (iso) => {
@@ -668,8 +979,8 @@ const BookingModal = ({ service, onClose }) => {
     setSelectedSlots({ [iso]: nextTime });
     setSelectedDate(iso);
     setSelectedTime(nextTime);
-    setCurrentStep("time");
-    requestAnimationFrame(() => scrollToSection(timesSectionRef));
+    setCurrentStep("travel");
+    requestAnimationFrame(() => scrollToSection(travelSectionRef));
   };
 
   const scrollToSection = (ref) => {
@@ -687,7 +998,11 @@ const BookingModal = ({ service, onClose }) => {
     }));
   };
 
-  const canProceedToCustomer = Boolean(selectedDate && selectedTime);
+  const canProceedToCustomer = Boolean(
+    selectedDate &&
+    selectedTime &&
+    normalizeEircode(clientEircode)
+  );
 
   const removeDateFromSchedule = (date) => {
     setSelectedSlots((prev) => {
@@ -707,6 +1022,27 @@ const BookingModal = ({ service, onClose }) => {
   };
 
   const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
+  const selectedDayWithTravel = useMemo(() => {
+    if (!selectedDay) return { day: null, hiddenCount: 0 };
+
+    const slotsWithReachability = (selectedDay.slots || []).map((slot) => ({
+      ...slot,
+      reachable: isSlotReachable(slot),
+    }));
+
+    const hiddenCount = slotsWithReachability.filter(
+      (slot) => slot.available && !slot.reachable
+    ).length;
+
+    const reachableSlots = slotsWithReachability.filter(
+      (slot) => slot.available && slot.reachable
+    );
+
+    return {
+      day: { ...selectedDay, slots: reachableSlots },
+      hiddenCount,
+    };
+  }, [isSlotReachable, selectedDay]);
   const monthLabel = visibleMonth.toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
@@ -726,10 +1062,18 @@ const BookingModal = ({ service, onClose }) => {
         return;
       }
 
-      // 1️⃣ Prepare amount
+      if (paymentPreference === "invoice") {
+        const bookingId = await handleBook(null, "invoice");
+        if (bookingId) {
+          setSuccess(
+            "Invoice requested — we will email payment details once the booking is confirmed."
+          );
+        }
+        return;
+      }
+
       const amountInEuro = Number(pricing.totalPrice.toFixed(2));
 
-      // 2️⃣ Create payment order FIRST
       const paymentRes = await fetch("/api/create-payment-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -746,11 +1090,9 @@ const BookingModal = ({ service, onClose }) => {
 
       const paymentOrderId = paymentData.orderId;
 
-      // 3️⃣ Now create booking WITH payment_order_id
-      const bookingId = await handleBook(paymentOrderId);
+      const bookingId = await handleBook(paymentOrderId, "pay_now");
       if (!bookingId) throw new Error("No booking ID returned!");
 
-      // 4️⃣ Redirect user to Revolut checkout
       if (paymentData.url) {
         window.location.href = paymentData.url;
       } else {
@@ -762,7 +1104,7 @@ const BookingModal = ({ service, onClose }) => {
     }
   };
 
-  const handleBook = async (paymentOrderId) => {
+  const handleBook = async (paymentOrderId, preference = paymentPreference) => {
     const sortedSchedule = Object.entries(selectedSlots || {})
       .map(([date, time]) => ({ date, time }))
       .filter((entry) => entry.date)
@@ -826,6 +1168,7 @@ const BookingModal = ({ service, onClose }) => {
         clientPhone: clientPhone.trim(),
         clientAddress: clientAddress.trim(),
         clientEmail: clientEmail.trim(),
+        clientEircode: normalizeEircode(clientEircode),
         additionals,
         notes: notes.trim(),
         timeZone: availability.timeZone || BUSINESS_TIME_ZONE,
@@ -837,6 +1180,11 @@ const BookingModal = ({ service, onClose }) => {
         bookingMode,
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
+        payment_preference: preference,
+        travel_minutes: travelMinutes,
+        travel_anchor: travelAnchor,
+        previous_booking_time: previousBookingTime,
+        client_coordinates: clientCoordinates,
       };
 
       const requestUrl = `${apiBaseUrl}/api/book`;
@@ -892,7 +1240,9 @@ const BookingModal = ({ service, onClose }) => {
 
         if (nextAvailable) {
           setSelectedDate(nextAvailable.date);
-          const firstSlot = nextAvailable.slots.find((slot) => slot.available);
+          const firstSlot = nextAvailable.slots.find((slot) =>
+            isSlotReachable(slot)
+          );
           setSelectedTime(firstSlot?.time || "");
         } else {
           setSelectedDate("");
@@ -902,11 +1252,13 @@ const BookingModal = ({ service, onClose }) => {
         return;
       }
 
-      const hasSelectedSlot = day.slots.some(
-        (slot) => slot.time === selectedTime && slot.available
+      const hasSelectedSlot = (day.slots || []).some(
+        (slot) => slot.time === selectedTime && isSlotReachable(slot)
       );
       if (!hasSelectedSlot) {
-        const firstOpen = day.slots.find((slot) => slot.available);
+        const firstOpen = (day.slots || []).find((slot) =>
+          isSlotReachable(slot)
+        );
         if (firstOpen) {
           setSelectedTime(firstOpen.time);
         }
@@ -916,6 +1268,7 @@ const BookingModal = ({ service, onClose }) => {
     availabilityMap,
     calendarDays,
     isDayAvailableForService,
+    isSlotReachable,
     selectedDate,
     selectedTime,
   ]);
@@ -971,10 +1324,17 @@ const BookingModal = ({ service, onClose }) => {
 
     const visitCount = visitsWithTime || 0;
     const perDogPerVisit = servicePrice;
-    const baseTotal =
-      activeDogsCount && visitCount
-        ? perDogPerVisit * activeDogsCount * visitCount
-        : 0;
+    const secondDogPrice = 10;
+    const secondDogDiscount =
+      activeDogsCount >= 2 ? Math.max(perDogPerVisit - secondDogPrice, 0) : 0;
+
+    let perVisitTotal = 0;
+    if (activeDogsCount >= 1) perVisitTotal += perDogPerVisit;
+    if (activeDogsCount >= 2) perVisitTotal += secondDogPrice;
+    if (activeDogsCount > 2)
+      perVisitTotal += perDogPerVisit * (activeDogsCount - 2);
+
+    const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
     const totalPrice = baseTotal + addonTotal;
 
     const descriptionParts = [service.title];
@@ -1005,6 +1365,9 @@ const BookingModal = ({ service, onClose }) => {
       totalPrice,
       description: descriptionParts.join(" · "),
       selectedAddons: selectedAddonObjects,
+      secondDogDiscount,
+      secondDogPrice,
+      perVisitTotal,
     };
   }, [
     dogCount,
@@ -1051,10 +1414,12 @@ const BookingModal = ({ service, onClose }) => {
       .filter((day) => isDayAvailableForService(day))
       .sort((a, b) => a.date.localeCompare(b.date));
     if (!availableDays.length) return null;
-    const slot = availableDays[0].slots.find((item) => item.available);
+    const slot = availableDays[0].slots.find((item) =>
+      isSlotReachable(item)
+    );
     if (!slot) return null;
     return { date: availableDays[0].date, time: slot.time };
-  }, [calendarDays, isDayAvailableForService]);
+  }, [calendarDays, isDayAvailableForService, isSlotReachable]);
 
   const progressPercent =
     ((stepOrder.indexOf(currentStep) + 1) / stepOrder.length) * 100;
@@ -1064,8 +1429,8 @@ const BookingModal = ({ service, onClose }) => {
     setSelectedSlots({ [recommendedSlot.date]: recommendedSlot.time });
     setSelectedDate(recommendedSlot.date);
     setSelectedTime(recommendedSlot.time);
-    setCurrentStep("time");
-    scrollToSection(timesSectionRef);
+    setCurrentStep("travel");
+    scrollToSection(travelSectionRef);
   };
 
   const supportService = useMemo(
@@ -1083,6 +1448,7 @@ const BookingModal = ({ service, onClose }) => {
   const summaryChips = [
     selectedDateLabel || "Pick a date",
     selectedTime ? formatTime(selectedTime) : "Pick a time",
+    normalizeEircode(clientEircode) || null,
     pricing.dogCount
       ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""}`
       : null,
@@ -1091,6 +1457,7 @@ const BookingModal = ({ service, onClose }) => {
   const goToStepAndScroll = (step) => {
     setCurrentStep(step);
     if (step === "calendar") scrollToSection(calendarSectionRef);
+    if (step === "travel") scrollToSection(travelSectionRef);
     if (step === "time") scrollToSection(timesSectionRef);
     if (step === "addons") scrollToSection(addonsSectionRef);
     if (step === "summary") scrollToSection(summarySectionRef);
@@ -1227,20 +1594,94 @@ const BookingModal = ({ service, onClose }) => {
                   </div>
                 )}
 
+                {currentStep === "travel" && (
+                  <div className="step-card" ref={travelSectionRef}>
+                    <div className="step-toolbar">
+                      <div className="actions-stack">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => goToStepAndScroll("calendar")}
+                        >
+                          Back to calendar
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => goToStepAndScroll("time")}
+                          disabled={!normalizeEircode(clientEircode)}
+                        >
+                          Continue to times
+                        </button>
+                      </div>
+                    </div>
+                    <div className="form-grid">
+                      <label className="input-group">
+                        <span>Your Eircode</span>
+                        <input
+                          type="text"
+                          value={clientEircode}
+                          onChange={(event) => setClientEircode(event.target.value)}
+                          placeholder="e.g. A98H940"
+                        />
+                      </label>
+                      <label className="input-group">
+                        <span>Travel anchor</span>
+                        <div className="actions-stack">
+                          <label className="chip-option">
+                            <input
+                              type="radio"
+                              name="travel-anchor"
+                              checked={travelAnchor === "home"}
+                              onChange={() => setTravelAnchor("home")}
+                            />
+                            <span>From home base ({HOME_EIRCODE})</span>
+                          </label>
+                          <label className="chip-option">
+                            <input
+                              type="radio"
+                              name="travel-anchor"
+                              checked={travelAnchor === "previous"}
+                              onChange={() => setTravelAnchor("previous")}
+                            />
+                            <span>After an earlier booking</span>
+                          </label>
+                        </div>
+                      </label>
+                      {travelAnchor === "previous" && (
+                        <label className="input-group">
+                          <span>Previous booking ends at</span>
+                          <input
+                            type="time"
+                            value={previousBookingTime}
+                            onChange={(event) =>
+                              setPreviousBookingTime(event.target.value)
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <p className="muted subtle">{travelNote}</p>
+                  </div>
+                )}
+
                 {currentStep === "time" && (
                   <div className="step-card" ref={timesSectionRef}>
                     <TimesSection
-                      selectedDay={selectedDay}
+                      selectedDay={selectedDayWithTravel.day}
                       isDayAvailableForService={isDayAvailableForService}
                       selectedTime={selectedTime}
                       handleTimeSelection={handleTimeSelection}
                       formatTime={formatTime}
                       onContinue={() => goToStepAndScroll("customer")}
-                      onBack={() => goToStepAndScroll("calendar")}
+                      onBack={() => goToStepAndScroll("travel")}
                       canContinue={canProceedToCustomer}
                       timesSectionRef={timesSectionRef}
                       recommendedSlot={recommendedSlot}
                       onUseRecommended={handleUseRecommended}
+                      hiddenSlotCount={selectedDayWithTravel.hiddenCount}
+                      travelMinutes={travelMinutes}
+                      travelAnchor={travelAnchor}
                     />
                   </div>
                 )}
@@ -1428,6 +1869,9 @@ const BookingModal = ({ service, onClose }) => {
                         setClientEmail={setClientEmail}
                         clientAddress={clientAddress}
                         setClientAddress={setClientAddress}
+                        clientAddressLocked={Boolean(
+                          normalizeEircode(clientEircode)
+                        )}
                         canLoadPets={canLoadPets}
                         fetchExistingPets={fetchExistingPets}
                         isLoadingPets={isLoadingPets}
@@ -1465,6 +1909,9 @@ const BookingModal = ({ service, onClose }) => {
                         addOnDropdownRef={addOnDropdownRef}
                         filteredBreeds={filteredBreeds}
                         customerDetailsRef={customerDetailsRef}
+                        travelNote={travelNote}
+                        paymentPreference={paymentPreference}
+                        onPaymentPreferenceChange={setPaymentPreference}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />
@@ -1508,6 +1955,9 @@ const BookingModal = ({ service, onClose }) => {
                       setClientEmail={setClientEmail}
                       clientAddress={clientAddress}
                       setClientAddress={setClientAddress}
+                      clientAddressLocked={Boolean(
+                        normalizeEircode(clientEircode)
+                      )}
                       canLoadPets={canLoadPets}
                       fetchExistingPets={fetchExistingPets}
                       isLoadingPets={isLoadingPets}
@@ -1545,6 +1995,9 @@ const BookingModal = ({ service, onClose }) => {
                       addOnDropdownRef={addOnDropdownRef}
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
+                      travelNote={travelNote}
+                      paymentPreference={paymentPreference}
+                      onPaymentPreferenceChange={setPaymentPreference}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("addons")}
                     />
@@ -1587,6 +2040,9 @@ const BookingModal = ({ service, onClose }) => {
                       setClientEmail={setClientEmail}
                       clientAddress={clientAddress}
                       setClientAddress={setClientAddress}
+                      clientAddressLocked={Boolean(
+                        normalizeEircode(clientEircode)
+                      )}
                       canLoadPets={canLoadPets}
                       fetchExistingPets={fetchExistingPets}
                       isLoadingPets={isLoadingPets}
@@ -1624,6 +2080,9 @@ const BookingModal = ({ service, onClose }) => {
                       addOnDropdownRef={addOnDropdownRef}
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
+                      travelNote={travelNote}
+                      paymentPreference={paymentPreference}
+                      onPaymentPreferenceChange={setPaymentPreference}
                       visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -1657,6 +2116,9 @@ const BookingModal = ({ service, onClose }) => {
                       setClientEmail={setClientEmail}
                       clientAddress={clientAddress}
                       setClientAddress={setClientAddress}
+                      clientAddressLocked={Boolean(
+                        normalizeEircode(clientEircode)
+                      )}
                       canLoadPets={canLoadPets}
                       fetchExistingPets={fetchExistingPets}
                       isLoadingPets={isLoadingPets}
@@ -1694,6 +2156,9 @@ const BookingModal = ({ service, onClose }) => {
                       addOnDropdownRef={addOnDropdownRef}
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
+                      travelNote={travelNote}
+                      paymentPreference={paymentPreference}
+                      onPaymentPreferenceChange={setPaymentPreference}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -1721,12 +2186,21 @@ const BookingModal = ({ service, onClose }) => {
                       Service: {formatCurrency(pricing.servicePrice)} per dog /
                       visit
                     </li>
+                    {pricing.dogCount >= 2 && (
+                      <li>
+                        Second dog rate: {formatCurrency(pricing.secondDogPrice)}
+                        / visit (flat €10 add-on)
+                      </li>
+                    )}
                     {pricing.selectedAddons.map((addon) => (
                       <li key={addon.id || addon.value}>
                         + {addon.label}:{" "}
                         {formatCurrency(parsePriceValue(addon.price))}
                       </li>
                     ))}
+                    <li>
+                      Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
+                    </li>
                     <li>
                       Total per dog / visit:{" "}
                       {formatCurrency(pricing.servicePrice)}
