@@ -2,35 +2,37 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../src/context/AuthContext";
 
 const brand = {
-  primary: "#7c45f3",
-  primarySoft: "#7c45f31a",
-  neutral: "#0c081f",
-  ink: "#f4f2ff",
-  muted: "#c9c5d8",
+  primary: "#2563eb",
+  primarySoft: "#2563eb1a",
+  neutral: "#0f172a",
+  ink: "#0b1224",
+  muted: "#4b5563",
   background:
-    "radial-gradient(circle at 12% 18%, rgba(124, 69, 243, 0.08), transparent 28%), \n radial-gradient(circle at 88% 6%, rgba(255, 214, 150, 0.08), transparent 30%), \n #0c081f",
-  cardBorder: "rgba(255,255,255,0.08)",
-  cardShadow: "0 24px 80px rgba(0, 0, 0, 0.55)",
-  subtleText: "#c9c5d8",
-  surface: "linear-gradient(150deg, #1f1535, #120d23)",
-  surfaceHighlight: "linear-gradient(150deg, #251a3f, #150f28)",
+    "linear-gradient(180deg, #f5f7fb 0%, #edf1f8 40%, #f8fafc 100%)",
+  cardBorder: "rgba(15, 23, 42, 0.08)",
+  cardShadow: "0 18px 50px rgba(15, 23, 42, 0.08)",
+  subtleText: "#6b7280",
+  surface: "#ffffff",
+  surfaceHighlight: "linear-gradient(135deg, #ffffff 0%, #f5f7fb 100%)",
 };
 
 const pillStyles = {
   display: "inline-flex",
   alignItems: "center",
-  gap: "8px",
-  padding: "8px 12px",
+  gap: "10px",
+  padding: "10px 14px",
   borderRadius: "999px",
-  background: "rgba(255, 255, 255, 0.9)",
+  background: "rgba(37, 99, 235, 0.08)",
   color: brand.primary,
-  fontWeight: 700,
-  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+  fontWeight: 800,
+  boxShadow: "0 10px 30px rgba(37, 99, 235, 0.15)",
   letterSpacing: "0.01em",
 };
 
-const SectionCard = ({ title, description, children }) => (
+const SectionCard = ({ title, description, children, id, actions }) => (
   <section
+    id={id}
+    className="profile-card"
     style={{
       background: brand.surface,
       borderRadius: "20px",
@@ -48,25 +50,27 @@ const SectionCard = ({ title, description, children }) => (
         justifyContent: "space-between",
         alignItems: "flex-start",
         gap: "16px",
+        marginBottom: description || actions ? "10px" : 0,
       }}
     >
       <div>
-        <h2 style={{ margin: 0, color: brand.ink, fontSize: "1.4rem" }}>
+        <h2 style={{ margin: 0, color: brand.ink, fontSize: "1.2rem" }}>
           {title}
         </h2>
         {description && (
-          <p style={{ margin: "6px 0 16px", color: brand.subtleText }}>
+          <p style={{ margin: "6px 0 0", color: brand.subtleText }}>
             {description}
           </p>
         )}
       </div>
+      {actions && <div style={{ display: "flex", gap: "8px" }}>{actions}</div>}
     </div>
     {children}
   </section>
 );
 
 const emptyStateStyle = {
-  background: "rgba(124, 69, 243, 0.08)",
+  background: "rgba(37, 99, 235, 0.08)",
   border: `1px dashed ${brand.cardBorder}`,
   borderRadius: "16px",
   padding: "16px",
@@ -214,6 +218,15 @@ const ProfilePage = () => {
   const hasBookings = useMemo(
     () => activeBookings.length > 0,
     [activeBookings]
+  );
+
+  const profileStats = useMemo(
+    () => ({
+      pets: profile?.pets?.length || 0,
+      bookings: profile?.bookings?.length || 0,
+      upcoming: activeBookings.length,
+    }),
+    [activeBookings.length, profile?.bookings?.length, profile?.pets?.length]
   );
 
   const refreshContactForm = useCallback((payload) => {
@@ -663,33 +676,10 @@ const ProfilePage = () => {
   };
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: brand.background,
-        padding: "32px 16px 48px",
-      }}
-    >
-      <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
-        <header
-          style={{
-            background: `linear-gradient(120deg, ${brand.primary} 0%, #5d3ce6 45%, ${brand.neutral} 100%)`,
-            color: "white",
-            borderRadius: "28px",
-            padding: "32px",
-            boxShadow: "0 24px 60px rgba(15, 23, 42, 0.3)",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.15), transparent 30%),\n               radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.12), transparent 35%)",
-            }}
-          />
+    <main className="profile-page">
+      <div className="profile-shell" style={{ maxWidth: "1140px" }}>
+        <header className="profile-hero">
+          <div className="profile-hero__overlay" />
           <div
             style={{
               position: "relative",
@@ -718,7 +708,7 @@ const ProfilePage = () => {
               <p
                 style={{
                   margin: 0,
-                  color: "rgba(255,255,255,0.88)",
+                  color: brand.muted,
                   fontSize: "1rem",
                   lineHeight: 1.6,
                 }}
@@ -741,7 +731,7 @@ const ProfilePage = () => {
                 <p
                   style={{
                     margin: "0 0 8px",
-                    color: "rgba(255,255,255,0.9)",
+                    color: brand.neutral,
                     fontWeight: 700,
                   }}
                 >
@@ -750,7 +740,7 @@ const ProfilePage = () => {
                 <p
                   style={{
                     margin: "0 0 12px",
-                    color: "rgba(255,255,255,0.75)",
+                    color: brand.muted,
                   }}
                 >
                   Use the email you provided when booking with us.
@@ -765,9 +755,9 @@ const ProfilePage = () => {
                       flex: "1 1 200px",
                       padding: "12px 14px",
                       borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      background: "rgba(255,255,255,0.15)",
-                      color: "white",
+                      border: `1px solid ${brand.cardBorder}`,
+                      background: "#f8fafc",
+                      color: brand.neutral,
                     }}
                   />
                   <input
@@ -779,9 +769,9 @@ const ProfilePage = () => {
                       flex: "1 1 180px",
                       padding: "12px 14px",
                       borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      background: "rgba(255,255,255,0.15)",
-                      color: "white",
+                      border: `1px solid ${brand.cardBorder}`,
+                      background: "#f8fafc",
+                      color: brand.neutral,
                     }}
                   />
                   <button
@@ -812,8 +802,8 @@ const ProfilePage = () => {
                       padding: "12px 18px",
                       borderRadius: "12px",
                       border: `1px solid ${brand.cardBorder}`,
-                      background: "rgba(255,255,255,0.12)",
-                      color: "white",
+                      background: "#eef2ff",
+                      color: brand.neutral,
                       fontWeight: 800,
                       cursor: "pointer",
                     }}
@@ -827,7 +817,7 @@ const ProfilePage = () => {
                       marginTop: "12px",
                       padding: "12px",
                       borderRadius: "14px",
-                      background: "rgba(255,255,255,0.1)",
+                      background: "#eef2ff",
                       border: `1px solid ${brand.cardBorder}`,
                       display: "grid",
                       gap: "10px",
@@ -836,7 +826,7 @@ const ProfilePage = () => {
                     <p style={{ margin: 0, fontWeight: 800 }}>
                       Reset your password
                     </p>
-                    <p style={{ margin: 0, color: "rgba(255,255,255,0.85)" }}>
+                    <p style={{ margin: 0, color: brand.muted }}>
                       After a few unsuccessful login attempts we’ll help you
                       request a reset link so you can set a new password.
                     </p>
@@ -857,8 +847,8 @@ const ProfilePage = () => {
                           padding: "12px",
                           borderRadius: "12px",
                           border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.15)",
-                          color: "white",
+                          background: "#f8fafc",
+                          color: brand.neutral,
                         }}
                       />
                       <button
@@ -873,7 +863,7 @@ const ProfilePage = () => {
                             resetStatus.state === "loading"
                               ? brand.primarySoft
                               : brand.primary,
-                          color: "white",
+                          color: brand.neutral,
                           fontWeight: 800,
                           cursor:
                             resetStatus.state === "loading"
@@ -913,7 +903,7 @@ const ProfilePage = () => {
                   padding: "16px",
                   border: `1px solid ${brand.cardBorder}`,
                   boxShadow: brand.cardShadow,
-                  color: "white",
+                  color: brand.neutral,
                   display: "grid",
                   gap: "10px",
                 }}
@@ -923,7 +913,7 @@ const ProfilePage = () => {
                 >
                   <div>
                     <p style={{ margin: 0, fontWeight: 700 }}>Signed in</p>
-                    <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
+                    <p style={{ margin: 0, color: brand.muted }}>
                       {contactForm.fullName || "Client"} · {contactForm.email}
                     </p>
                   </div>
@@ -935,9 +925,9 @@ const ProfilePage = () => {
                     style={{
                       padding: "10px 14px",
                       borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      background: "rgba(255,255,255,0.16)",
-                      color: "white",
+                      border: `1px solid ${brand.cardBorder}`,
+                      background: brand.primarySoft,
+                      color: brand.neutral,
                       fontWeight: 700,
                       cursor: "pointer",
                     }}
@@ -952,7 +942,7 @@ const ProfilePage = () => {
                       borderRadius: "12px",
                       border: "none",
                       background: brand.primary,
-                      color: "white",
+                      color: brand.neutral,
                       fontWeight: 700,
                       cursor: "pointer",
                     }}
@@ -965,28 +955,62 @@ const ProfilePage = () => {
           </div>
         </header>
 
-        <div style={{ marginTop: "28px", display: "grid", gap: "20px" }}>
-          {error && (
-            <div
-              style={{
-                background: "#fef2f2",
-                border: "1px solid #fecdd3",
-                color: "#b91c1c",
-                padding: "12px 16px",
-                borderRadius: "12px",
-                fontWeight: 600,
-              }}
-            >
-              {error}
+        <div className="profile-grid" style={{ marginTop: "28px" }}>
+          <aside className="profile-sidebar">
+            <div className="profile-nav">
+              <h3>Quick links</h3>
+              <ul>
+                {profile ? (
+                  <>
+                    <li>
+                      <a href="#details">Profile details</a>
+                    </li>
+                    <li>
+                      <a href="#pets">Pets</a>
+                    </li>
+                    <li>
+                      <a href="#bookings">Bookings</a>
+                    </li>
+                    <li>
+                      <a href="#support">Help & updates</a>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <a href="#access">Access your profile</a>
+                    </li>
+                  </>
+                )}
+              </ul>
             </div>
-          )}
 
-          {profile ? (
-            <>
-              <SectionCard
-                title="Your details"
-                description="Update your contact information, password, and login email."
-              >
+            <div className="profile-stat-card">
+              <div className="profile-stat-row">
+                <span className="profile-stat-label">Upcoming visits</span>
+                <span className="profile-stat-value">{profileStats.upcoming}</span>
+              </div>
+              <div className="profile-stat-row">
+                <span className="profile-stat-label">Active pets</span>
+                <span className="profile-stat-value">{profileStats.pets}</span>
+              </div>
+              <div className="profile-stat-row">
+                <span className="profile-stat-label">Saved bookings</span>
+                <span className="profile-stat-value">{profileStats.bookings}</span>
+              </div>
+            </div>
+          </aside>
+
+          <div className="profile-main" style={{ display: "grid", gap: "20px" }}>
+            {error && <div className="profile-error">{error}</div>}
+
+            {profile ? (
+              <>
+                <SectionCard
+                  id="details"
+                  title="Your details"
+                  description="Update your contact information, password, and login email."
+                >
                 <div
                   style={{
                     display: "grid",
@@ -1017,7 +1041,7 @@ const ProfilePage = () => {
                         padding: "12px",
                         borderRadius: "12px",
                         border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
+                        background: "#f3f4f6",
                         color: brand.ink,
                       }}
                     />
@@ -1045,7 +1069,7 @@ const ProfilePage = () => {
                         padding: "12px",
                         borderRadius: "12px",
                         border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
+                        background: "#f3f4f6",
                         color: brand.ink,
                       }}
                     />
@@ -1073,7 +1097,7 @@ const ProfilePage = () => {
                         padding: "12px",
                         borderRadius: "12px",
                         border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
+                        background: "#f3f4f6",
                         color: brand.ink,
                         minHeight: "72px",
                       }}
@@ -1102,7 +1126,7 @@ const ProfilePage = () => {
                         padding: "12px",
                         borderRadius: "12px",
                         border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
+                        background: "#f3f4f6",
                         color: brand.ink,
                       }}
                     />
@@ -1161,7 +1185,7 @@ const ProfilePage = () => {
                             gap: "10px",
                             borderRadius: "14px",
                             padding: "12px",
-                            background: "rgba(255,255,255,0.03)",
+                            background: "#f5f7fb",
                             border: `1px solid ${brand.cardBorder}`,
                           }}
                         >
@@ -1176,7 +1200,7 @@ const ProfilePage = () => {
                               padding: "12px",
                               borderRadius: "12px",
                               border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.04)",
+                              background: "#f3f4f6",
                               color: brand.ink,
                             }}
                           />
@@ -1189,7 +1213,7 @@ const ProfilePage = () => {
                               padding: "12px",
                               borderRadius: "12px",
                               border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.04)",
+                              background: "#f3f4f6",
                               color: brand.ink,
                             }}
                           />
@@ -1202,7 +1226,7 @@ const ProfilePage = () => {
                               padding: "12px",
                               borderRadius: "12px",
                               border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.04)",
+                              background: "#f3f4f6",
                               color: brand.ink,
                             }}
                           />
@@ -1245,7 +1269,7 @@ const ProfilePage = () => {
                                 background: savingPassword
                                   ? brand.primarySoft
                                   : brand.primary,
-                                color: "white",
+                                color: brand.neutral,
                                 fontWeight: 800,
                                 cursor: savingPassword
                                   ? "not-allowed"
@@ -1279,7 +1303,7 @@ const ProfilePage = () => {
                       background: savingContact
                         ? brand.primarySoft
                         : brand.primary,
-                      color: "white",
+                      color: brand.neutral,
                       fontWeight: 800,
                       cursor: savingContact ? "not-allowed" : "pointer",
                       boxShadow: brand.cardShadow,
@@ -1291,6 +1315,7 @@ const ProfilePage = () => {
               </SectionCard>
 
               <SectionCard
+                id="pets"
                 title="Your pets"
                 description="Open any card to edit names, breeds, or notes."
               >
@@ -1448,7 +1473,7 @@ const ProfilePage = () => {
                                     padding: "10px",
                                     borderRadius: "10px",
                                     border: `1px solid ${brand.cardBorder}`,
-                                    background: "rgba(255,255,255,0.04)",
+                                    background: "#f3f4f6",
                                     color: brand.ink,
                                   }}
                                 />
@@ -1467,7 +1492,7 @@ const ProfilePage = () => {
                                     padding: "10px",
                                     borderRadius: "10px",
                                     border: `1px solid ${brand.cardBorder}`,
-                                    background: "rgba(255,255,255,0.04)",
+                                    background: "#f3f4f6",
                                     color: brand.ink,
                                   }}
                                 />
@@ -1507,7 +1532,7 @@ const ProfilePage = () => {
                                         padding: "10px",
                                         borderRadius: "10px",
                                         border: `1px solid ${brand.cardBorder}`,
-                                        background: "rgba(255,255,255,0.04)",
+                                        background: "#f3f4f6",
                                         color: brand.ink,
                                       }}
                                     />
@@ -1546,7 +1571,7 @@ const ProfilePage = () => {
                                           padding: "8px 12px",
                                           borderRadius: "10px",
                                           border: `1px solid ${brand.cardBorder}`,
-                                          background: "rgba(255,255,255,0.06)",
+                                          background: "#edf2ff",
                                           color: brand.ink,
                                           fontWeight: 700,
                                           cursor: "pointer",
@@ -1572,7 +1597,7 @@ const ProfilePage = () => {
                                     borderRadius: "10px",
                                     border: `1px solid ${brand.cardBorder}`,
                                     minHeight: "80px",
-                                    background: "rgba(255,255,255,0.04)",
+                                    background: "#f3f4f6",
                                     color: brand.ink,
                                   }}
                                 />
@@ -1591,7 +1616,7 @@ const ProfilePage = () => {
                                     padding: "10px 14px",
                                     borderRadius: "10px",
                                     border: `1px solid ${brand.cardBorder}`,
-                                    background: "rgba(255,255,255,0.06)",
+                                    background: "#edf2ff",
                                     color: brand.ink,
                                     fontWeight: 700,
                                     cursor: "pointer",
@@ -1675,7 +1700,7 @@ const ProfilePage = () => {
                           padding: "12px",
                           borderRadius: "12px",
                           border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
+                          background: "#f3f4f6",
                           color: brand.ink,
                         }}
                       />
@@ -1702,7 +1727,7 @@ const ProfilePage = () => {
                           padding: "12px",
                           borderRadius: "12px",
                           border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
+                          background: "#f3f4f6",
                           color: brand.ink,
                         }}
                       />
@@ -1732,7 +1757,7 @@ const ProfilePage = () => {
                               padding: "8px 12px",
                               borderRadius: "10px",
                               border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.06)",
+                              background: "#edf2ff",
                               color: brand.ink,
                               fontWeight: 700,
                               cursor: "pointer",
@@ -1766,7 +1791,7 @@ const ProfilePage = () => {
                           padding: "12px",
                           borderRadius: "12px",
                           border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
+                          background: "#f3f4f6",
                           color: brand.ink,
                         }}
                       />
@@ -1794,7 +1819,7 @@ const ProfilePage = () => {
                           padding: "12px",
                           borderRadius: "12px",
                           border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
+                          background: "#f3f4f6",
                           color: brand.ink,
                           minHeight: "90px",
                         }}
@@ -1816,7 +1841,7 @@ const ProfilePage = () => {
                         borderRadius: "12px",
                         border: "none",
                         background: brand.primary,
-                        color: "white",
+                        color: brand.neutral,
                         fontWeight: 800,
                         cursor: "pointer",
                         boxShadow: brand.cardShadow,
@@ -1829,6 +1854,7 @@ const ProfilePage = () => {
               </SectionCard>
 
               <SectionCard
+                id="bookings"
                 title="Bookings"
                 description="Tap a booking to view details or cancel recurring visits. Cancelling removes the event from your calendar, and cancelled bookings are hidden."
               >
@@ -1924,9 +1950,72 @@ const ProfilePage = () => {
                   </div>
                 )}
               </SectionCard>
+
+              <SectionCard
+                id="support"
+                title="Need help?"
+                description="Message us anytime and we’ll make sure your profile and bookings stay up to date."
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "12px",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, color: brand.subtleText }}>
+                      Prefer a human touch? Email our client care team and we’ll
+                      update your pets, bookings, or contact details for you.
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      flexWrap: "wrap",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <a
+                      href="mailto:jeroenandpaws@gmail.com"
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        border: `1px solid ${brand.cardBorder}`,
+                        background: brand.surfaceHighlight,
+                        color: brand.neutral,
+                        fontWeight: 800,
+                        textDecoration: "none",
+                        boxShadow: brand.cardShadow,
+                      }}
+                    >
+                      Email client care
+                    </a>
+                    <button
+                      type="button"
+                      onClick={loadProfile}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        border: "none",
+                        background: brand.primary,
+                        color: brand.ink,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        boxShadow: brand.cardShadow,
+                      }}
+                    >
+                      Refresh profile
+                    </button>
+                  </div>
+                </div>
+              </SectionCard>
             </>
           ) : (
             <SectionCard
+              id="access"
               title="Welcome back"
               description="Enter your email above to unlock your personalized client hub."
             >
