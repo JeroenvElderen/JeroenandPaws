@@ -37,7 +37,9 @@ const escapeHtml = (value = "") =>
     .replace(/'/g, "&#39;");
 
 const extractEircode = (value = "") => {
-  const match = String(value).toUpperCase().match(/([A-Z0-9]{3}[A-Z0-9]{4})/);
+  const match = String(value)
+    .toUpperCase()
+    .match(/([A-Z0-9]{3}[\s-]?[A-Z0-9]{4})/);
   return match ? match[1] : "";
 };
 
