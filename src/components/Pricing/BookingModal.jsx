@@ -97,9 +97,7 @@ const BookingModal = ({ service, onClose }) => {
     state: "idle",
     message: "",
   });
-  const [travelAnchor, setTravelAnchor] = useState("home");
   const [homeCoordinates, setHomeCoordinates] = useState(HOME_COORDS);
-  const [previousBookingTime, setPreviousBookingTime] = useState("");
   const [clientCoordinates, setClientCoordinates] = useState(null);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [travelNote, setTravelNote] = useState("");
@@ -308,14 +306,11 @@ const BookingModal = ({ service, onClose }) => {
       if (!slot || !slot.available) return false;
       const startMinutes = parseTimeToMinutes(slot.time);
 
-      const baseMinutes =
-        travelAnchor === "previous" && previousBookingTime
-          ? parseTimeToMinutes(previousBookingTime)
-          : 8 * 60;
+      const baseMinutes = 8 * 60;
 
       return startMinutes >= baseMinutes + travelMinutes;
     },
-    [parseTimeToMinutes, previousBookingTime, travelAnchor, travelMinutes]
+    [parseTimeToMinutes, travelMinutes]
   );
 
   const isDayAvailableForService = useCallback(
@@ -507,10 +502,7 @@ const BookingModal = ({ service, onClose }) => {
 
     const hasFullClientEircode = isFullEircode(normalized);
 
-    const anchorEircode =
-      travelAnchor === "home"
-        ? HOME_EIRCODE
-        : normalizeEircode(clientAddress) || HOME_EIRCODE;
+    const anchorEircode = HOME_EIRCODE;
 
     if (!hasFullClientEircode) {
       const minutes = estimateTravelMinutes(
@@ -532,15 +524,12 @@ const BookingModal = ({ service, onClose }) => {
 
         const [fromCoords, anchorCoords] = await Promise.all([
           geocodeEircode(normalized, controller.signal),
-          travelAnchor === "home"
-            ? Promise.resolve(homeCoordinates)
-            : geocodeEircode(anchorEircode, controller.signal),
+          Promise.resolve(homeCoordinates),
         ]);
 
         if (isCancelled) return;
 
-        const resolvedAnchorCoords =
-          anchorCoords || (travelAnchor === "home" ? homeCoordinates : null);
+        const resolvedAnchorCoords = anchorCoords || homeCoordinates;
 
         setClientCoordinates(fromCoords);
         setClientAddress(normalized);
@@ -551,29 +540,14 @@ const BookingModal = ({ service, onClose }) => {
         );
         setTravelMinutes(minutes);
 
-        if (travelAnchor === "previous" && !previousBookingTime) {
-          setTravelNote(
-            "Share the end time of your earlier booking so we can hide impossible slots."
-          );
-          return;
-        }
-
-        const anchorLabel =
-          travelAnchor === "previous" && previousBookingTime
-            ? `after your earlier booking at ${previousBookingTime}`
-            : `from home base (${HOME_EIRCODE})`;
+        const anchorLabel = `from home base (${HOME_EIRCODE})`;
 
         const geocodeDescriptor = fromCoords
           ? "using your exact Eircode location"
           : "using your routing key as a fallback";
-        const anchorDescriptor =
-          travelAnchor === "home"
-            ? resolvedAnchorCoords
-              ? "and our exact A98H940 address"
-              : "and our base routing key"
-            : resolvedAnchorCoords
-            ? "and your previous booking location"
-            : "and your previous booking routing key";
+        const anchorDescriptor = resolvedAnchorCoords
+          ? "and our exact A98H940 address"
+          : "and our base routing key";
 
         setTravelNote(
           `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
@@ -586,7 +560,7 @@ const BookingModal = ({ service, onClose }) => {
           { eircode: normalized, coords: null },
           {
             eircode: anchorEircode,
-            coords: travelAnchor === "home" ? homeCoordinates : null,
+            coords: homeCoordinates,
           }
         );
 
@@ -611,8 +585,6 @@ const BookingModal = ({ service, onClose }) => {
     homeCoordinates,
     isFullEircode,
     normalizeEircode,
-    previousBookingTime,
-    travelAnchor,
   ]);
 
   useEffect(() => {
@@ -1182,8 +1154,6 @@ const BookingModal = ({ service, onClose }) => {
         payment_order_id: paymentOrderId, // <-- CRITICAL
         payment_preference: preference,
         travel_minutes: travelMinutes,
-        travel_anchor: travelAnchor,
-        previous_booking_time: previousBookingTime,
         client_coordinates: clientCoordinates,
       };
 
@@ -1621,49 +1591,18 @@ const BookingModal = ({ service, onClose }) => {
                         <input
                           type="text"
                           value={clientEircode}
-                          onChange={(event) => setClientEircode(event.target.value)}
-                          placeholder="e.g. A98H940"
-                        />
-                      </label>
-                      <label className="input-group">
-                        <span>Travel anchor</span>
-                        <div className="actions-stack">
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "home"}
-                              onChange={() => setTravelAnchor("home")}
-                            />
-                            <span>From home base ({HOME_EIRCODE})</span>
-                          </label>
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "previous"}
-                              onChange={() => setTravelAnchor("previous")}
-                            />
-                            <span>After an earlier booking</span>
-                          </label>
-                        </div>
-                      </label>
-                      {travelAnchor === "previous" && (
-                        <label className="input-group">
-                          <span>Previous booking ends at</span>
-                          <input
-                            type="time"
-                            value={previousBookingTime}
-                            onChange={(event) =>
-                              setPreviousBookingTime(event.target.value)
-                            }
-                          />
-                        </label>
-                      )}
-                    </div>
-                    <p className="muted subtle">{travelNote}</p>
-                  </div>
-                )}
+                      onChange={(event) => setClientEircode(event.target.value)}
+                      placeholder="e.g. A98H940"
+                    />
+                  </label>
+                  <p className="muted subtle">
+                    We’ll map your Eircode against our calendar to plan travel from home
+                    or the previous booking automatically.
+                  </p>
+                </div>
+                <p className="muted subtle">{travelNote}</p>
+              </div>
+            )}
 
                 {currentStep === "time" && (
                   <div className="step-card" ref={timesSectionRef}>
@@ -1681,7 +1620,6 @@ const BookingModal = ({ service, onClose }) => {
                       onUseRecommended={handleUseRecommended}
                       hiddenSlotCount={selectedDayWithTravel.hiddenCount}
                       travelMinutes={travelMinutes}
-                      travelAnchor={travelAnchor}
                     />
                   </div>
                 )}

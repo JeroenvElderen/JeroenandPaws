@@ -1,6 +1,6 @@
 const { DateTime } = require("luxon");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { sendMail } = require("./_lib/graph");
+const { createEvent, listCalendarEvents, sendMail } = require("./_lib/graph");
 const {
   createBookingWithProfiles,
   findAdjacentBookings,
@@ -35,6 +35,149 @@ const escapeHtml = (value = "") =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+const extractEircode = (value = "") => {
+  const match = String(value).toUpperCase().match(/([A-Z0-9]{3}[A-Z0-9]{4})/);
+  return match ? match[1] : "";
+};
+
+const deriveEventAddress = (event = {}) => {
+  const location = event?.location || {};
+  const display =
+    location.displayName ||
+    location?.address?.text ||
+    location?.address?.street ||
+    "";
+
+  const resolvedEircode = extractEircode(display);
+  return (resolvedEircode || display || "").trim();
+};
+
+const normalizeStop = (stop = {}) => {
+  const startAt = stop.start_at || stop.start || stop.startAt;
+  const endAt = stop.end_at || stop.end || stop.endAt;
+  if (!startAt || !endAt) return null;
+
+  const clientAddress =
+    stop.client_address || stop.address || deriveEventAddress(stop) || "";
+
+  return {
+    start_at: startAt,
+    end_at: endAt,
+    client_address: clientAddress,
+  };
+};
+
+const findAdjacentCalendarStops = async ({
+  accessToken,
+  calendarId,
+  start,
+  end,
+}) => {
+  if (!accessToken || !calendarId) return { previous: null, next: null };
+
+  try {
+    const windowStart = start.minus({ days: 1 }).toUTC().toISO();
+    const windowEnd = end.plus({ days: 1 }).toUTC().toISO();
+
+    const events = await listCalendarEvents({
+      accessToken,
+      calendarId,
+      startDateTime: windowStart,
+      endDateTime: windowEnd,
+    });
+
+    const bookingStart = start.toUTC();
+    const bookingEnd = end.toUTC();
+
+    const candidates = events
+      .map((event) => {
+        const eventStart = DateTime.fromISO(event?.start?.dateTime, {
+          zone: event?.start?.timeZone || "UTC",
+        }).toUTC();
+        const eventEnd = DateTime.fromISO(event?.end?.dateTime, {
+          zone: event?.end?.timeZone || "UTC",
+        }).toUTC();
+
+        if (!eventStart.isValid || !eventEnd.isValid) return null;
+
+        return {
+          start_at: eventStart.toISO(),
+          end_at: eventEnd.toISO(),
+          client_address: deriveEventAddress(event),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => DateTime.fromISO(a.start_at) - DateTime.fromISO(b.start_at));
+
+    let previous = null;
+    let next = null;
+
+    for (const candidate of candidates) {
+      const candidateEnd = DateTime.fromISO(candidate.end_at);
+      const candidateStart = DateTime.fromISO(candidate.start_at);
+
+      if (candidateEnd <= bookingStart) {
+        if (!previous || candidateEnd > DateTime.fromISO(previous.end_at)) {
+          previous = candidate;
+        }
+        continue;
+      }
+
+      if (candidateStart >= bookingEnd) {
+        if (!next || candidateStart < DateTime.fromISO(next.start_at)) {
+          next = candidate;
+        }
+        break;
+      }
+    }
+
+    return { previous, next };
+  } catch (error) {
+    console.error("Calendar adjacency lookup failed", error);
+    return { previous: null, next: null };
+  }
+};
+
+const chooseAdjacentStops = ({
+  bookingStart,
+  bookingEnd,
+  supabaseAdjacent,
+  calendarAdjacent,
+}) => {
+  const startUtc = bookingStart.toUTC();
+  const endUtc = bookingEnd.toUTC();
+
+  const previousCandidates = [
+    normalizeStop(supabaseAdjacent?.previous),
+    normalizeStop(calendarAdjacent?.previous),
+  ].filter(Boolean);
+
+  const nextCandidates = [
+    normalizeStop(supabaseAdjacent?.next),
+    normalizeStop(calendarAdjacent?.next),
+  ].filter(Boolean);
+
+  let previous = null;
+  for (const candidate of previousCandidates) {
+    const candidateEnd = DateTime.fromISO(candidate.end_at, { zone: "UTC" });
+    if (!candidateEnd.isValid || candidateEnd > startUtc) continue;
+    if (!previous || candidateEnd > DateTime.fromISO(previous.end_at, { zone: "UTC" })) {
+      previous = candidate;
+    }
+  }
+
+  let next = null;
+  for (const candidate of nextCandidates) {
+    const candidateStart = DateTime.fromISO(candidate.start_at, { zone: "UTC" });
+    if (!candidateStart.isValid || candidateStart < endUtc) continue;
+    if (!next || candidateStart < DateTime.fromISO(next.start_at, { zone: "UTC" })) {
+      next = candidate;
+    }
+  }
+
+  return { previous, next };
+};
 
 const renderPetList = (pets = [], { includePhotos = false } = {}) =>
   (pets || []).map((pet, i) => {
@@ -236,6 +379,7 @@ module.exports = async (req, res) => {
       clientName,
       clientPhone,
       clientAddress,
+      clientEircode,
       clientEmail,
       notes,
       timeZone = "UTC",
@@ -249,6 +393,8 @@ module.exports = async (req, res) => {
       additionals = [],
       amount,
     } = body;
+
+    const normalizedClientEircode = (clientEircode || "").trim();
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
       res.statusCode = 400;
@@ -304,6 +450,11 @@ module.exports = async (req, res) => {
       .join("\n\n");
 
     const bookingResults = [];
+    const calendarEvents = [];
+    const baseAddress =
+      process.env.TRAVEL_HOME_ADDRESS ||
+      process.env.HOME_BASE_ADDRESS ||
+      DEFAULT_HOME_ADDRESS;
 
     for (const entry of preparedSchedule) {
       const { start, end } = resolveBookingTimes({
@@ -318,16 +469,27 @@ module.exports = async (req, res) => {
         end: end.toUTC().toISO(),
       });
 
+      const calendarAdjacent = await findAdjacentCalendarStops({
+        accessToken,
+        calendarId,
+        start,
+        end,
+      });
+
+      const adjacency = chooseAdjacentStops({
+        bookingStart: start,
+        bookingEnd: end,
+        supabaseAdjacent: adjacent,
+        calendarAdjacent,
+      });
+
       const travel = await validateTravelWindow({
         start,
         end,
-        clientAddress,
-        previousBooking: adjacent.previous,
-        nextBooking: adjacent.next,
-        baseAddress:
-          process.env.TRAVEL_HOME_ADDRESS ||
-          process.env.HOME_BASE_ADDRESS ||
-          DEFAULT_HOME_ADDRESS,
+        clientAddress: normalizedClientEircode || clientAddress,
+        previousBooking: adjacency.previous,
+        nextBooking: adjacency.next,
+        baseAddress,
       });
 
       if (!travel.ok) {
@@ -344,7 +506,7 @@ module.exports = async (req, res) => {
         serviceTitle,
         clientName,
         clientPhone,
-        clientAddress,
+        clientAddress: normalizedClientEircode || clientAddress,
         clientEmail,
         notes: aggregatedNotes,
         timeZone,
@@ -356,6 +518,42 @@ module.exports = async (req, res) => {
       console.log("BOOKING RESULT RAW:", bookingResult);
 
       const timing = buildFriendlyTiming({ start, end, timeZone });
+
+      if (accessToken && calendarId) {
+        try {
+          const event = await createEvent({
+            accessToken,
+            calendarId,
+            subject: `${serviceTitle || "Booking"} — ${clientName}`,
+            body: buildNotificationBody({
+              service: { title: serviceTitle },
+              client: { full_name: clientName, email: clientEmail },
+              timing,
+              notes: aggregatedNotes,
+              pets: petsFromBody,
+              schedule: preparedSchedule,
+              recurrence: recurrenceLabel,
+              additionals: additionalsList,
+            }),
+            bodyContentType: "HTML",
+            start: start.toISO(),
+            end: end.toISO(),
+            timeZone,
+            attendeeEmail: clientEmail,
+            locationDisplayName:
+              normalizedClientEircode || clientAddress || undefined,
+          });
+
+          calendarEvents.push({
+            id: event?.id || null,
+            start: event?.start?.dateTime || null,
+            end: event?.end?.dateTime || null,
+          });
+        } catch (eventError) {
+          console.error("Calendar event creation failed", eventError);
+        }
+      }
+
       bookingResults.push({
         booking: bookingResult.booking,
         client: bookingResult.client,
@@ -399,7 +597,9 @@ module.exports = async (req, res) => {
         bookingMode:
           bookingMode || (preparedSchedule.length > 1 ? "multi-day" : "single"),
         emailStatus: { skipped: true },
-        calendarStatus: { skipped: true },
+        calendarStatus: calendarEvents.length
+          ? { created: calendarEvents.length, events: calendarEvents }
+          : { skipped: true },
       })
     );
   } catch (err) {

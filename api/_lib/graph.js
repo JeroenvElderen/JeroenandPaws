@@ -142,6 +142,43 @@ const getSchedule = async ({
   return { timeZone, dates };
 };
 
+const listCalendarEvents = async ({
+  accessToken,
+  calendarId,
+  startDateTime,
+  endDateTime,
+}) => {
+  const principalPath = buildPrincipalPath(calendarId);
+
+  const url = new URL(
+    `${GRAPH_BASE}${principalPath}/calendarView?startDateTime=${encodeURIComponent(
+      startDateTime
+    )}&endDateTime=${encodeURIComponent(endDateTime)}`
+  );
+
+  url.searchParams.set("$select", "id,start,end,location,subject");
+  url.searchParams.set("$orderby", "start/dateTime");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("GRAPH CALENDAR VIEW ERROR:", {
+      status: response.status,
+      body: text,
+    });
+    throw new Error(`Graph calendar view error: ${response.status} ${text}`);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data?.value) ? data.value : [];
+};
+
 const createEvent = async ({
   accessToken,
   calendarId,
@@ -346,4 +383,11 @@ const sendMail = async ({
   }
 };
 
-module.exports = { createEvent, deleteEvent, getEvent, getSchedule, sendMail };
+module.exports = {
+  createEvent,
+  deleteEvent,
+  getEvent,
+  getSchedule,
+  listCalendarEvents,
+  sendMail,
+};
