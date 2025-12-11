@@ -220,6 +220,24 @@ const BookingModal = ({ service, onClose }) => {
     return hours * 60 + (minutes || 0);
   }, []);
 
+  const getDateFromIsoString = useCallback((isoString) => {
+    if (!isoString) return "";
+
+    const parsed = new Date(isoString);
+    if (Number.isNaN(parsed)) return "";
+
+    return parsed.toISOString().slice(0, 10);
+  }, []);
+
+  const getMinutesFromDate = useCallback((date) => {
+    if (!date) return null;
+
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+
+    return hours * 60 + minutes;
+  }, []);
+
   const formatCurrency = useCallback((value) => {
     const numeric = Number.isFinite(value) ? value : 0;
     return `€${numeric.toFixed(2)}`;
@@ -300,29 +318,6 @@ const BookingModal = ({ service, onClose }) => {
   };
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
-
-  const isSlotReachable = useCallback(
-    (slot) => {
-      if (!slot || !slot.available) return false;
-      const startMinutes = parseTimeToMinutes(slot.time);
-
-      const baseMinutes = 8 * 60;
-
-      return startMinutes >= baseMinutes + travelMinutes;
-    },
-    [parseTimeToMinutes, travelMinutes]
-  );
-
-  const isDayAvailableForService = useCallback(
-    (day) => {
-      if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
-        return false;
-      }
-
-      return day.slots.some((slot) => isSlotReachable(slot));
-    },
-    [isSlotReachable]
-  );
 
   const addAnotherDog = () => {
     setShowDogDetails(true);
@@ -904,6 +899,112 @@ const BookingModal = ({ service, onClose }) => {
       .filter(Boolean)
       .sort((a, b) => a.end - b.end);
   }, [availability, normalizeEircode]);
+
+  const stopsByDate = useMemo(() => {
+    const grouped = calendarStops.reduce((acc, stop) => {
+      const dateKey = getDateFromIsoString(stop.start?.toISOString?.());
+      if (!dateKey) return acc;
+
+      const existing = acc[dateKey] || [];
+      existing.push(stop);
+      acc[dateKey] = existing;
+      return acc;
+    }, {});
+
+    Object.keys(grouped).forEach((dateKey) => {
+      grouped[dateKey].sort((a, b) => a.start - b.start);
+    });
+
+    return grouped;
+  }, [calendarStops, getDateFromIsoString]);
+
+  const isSlotReachable = useCallback(
+    (slot, dayDate) => {
+      if (!slot || !slot.available) return false;
+
+      const slotDate =
+        dayDate ||
+        slot.date ||
+        getDateFromIsoString(slot.iso || "") ||
+        selectedDate;
+
+      if (!slotDate) return false;
+
+      const startMinutes = slot.time
+        ? parseTimeToMinutes(slot.time)
+        : getMinutesFromDate(slot.iso ? new Date(slot.iso) : null);
+
+      if (!Number.isFinite(startMinutes)) return false;
+
+      const durationMinutes = Number.isFinite(service.durationMinutes)
+        ? service.durationMinutes
+        : 60;
+      const slotEndMinutes = slot.endTime
+        ? parseTimeToMinutes(slot.endTime)
+        : startMinutes + durationMinutes;
+
+      const baseMinutes = 8 * 60;
+      const requiredBuffer = Math.max(travelMinutes, 0);
+
+      if (startMinutes < baseMinutes + requiredBuffer) return false;
+
+      const dayStops = stopsByDate[slotDate] || [];
+
+      const previousStop = [...dayStops]
+        .filter((stop) => {
+          const stopEndMinutes = getMinutesFromDate(stop.end);
+          return Number.isFinite(stopEndMinutes) && stopEndMinutes <= startMinutes;
+        })
+        .pop();
+
+      const nextStop = dayStops.find((stop) => {
+        const stopStartMinutes = getMinutesFromDate(stop.start);
+        return Number.isFinite(stopStartMinutes) && stopStartMinutes >= slotEndMinutes;
+      });
+
+      if (previousStop) {
+        const stopEndMinutes = getMinutesFromDate(previousStop.end);
+        if (
+          Number.isFinite(stopEndMinutes) &&
+          startMinutes - stopEndMinutes < requiredBuffer
+        ) {
+          return false;
+        }
+      }
+
+      if (nextStop) {
+        const stopStartMinutes = getMinutesFromDate(nextStop.start);
+        if (
+          Number.isFinite(stopStartMinutes) &&
+          stopStartMinutes - slotEndMinutes < requiredBuffer
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+    [
+      getDateFromIsoString,
+      getMinutesFromDate,
+      parseTimeToMinutes,
+      selectedDate,
+      service.durationMinutes,
+      stopsByDate,
+      travelMinutes,
+    ]
+  );
+
+  const isDayAvailableForService = useCallback(
+    (day) => {
+      if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
+        return false;
+      }
+
+      return day.slots.some((slot) => isSlotReachable(slot, day.date));
+    },
+    [isSlotReachable]
+  );
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
     [visibleMonth]
@@ -1001,7 +1102,7 @@ const BookingModal = ({ service, onClose }) => {
       if (!day || !Array.isArray(day.slots)) return "";
 
       const firstAvailable = day.slots.find((slot) =>
-        isSlotReachable(slot)
+        isSlotReachable(slot, iso)
       );
       return firstAvailable?.time || "";
     },
@@ -1078,7 +1179,7 @@ const BookingModal = ({ service, onClose }) => {
 
     const slotsWithReachability = (selectedDay.slots || []).map((slot) => ({
       ...slot,
-      reachable: isSlotReachable(slot),
+      reachable: isSlotReachable(slot, selectedDate),
     }));
 
     const hiddenCount = slotsWithReachability.filter(
@@ -1290,7 +1391,7 @@ const BookingModal = ({ service, onClose }) => {
         if (nextAvailable) {
           setSelectedDate(nextAvailable.date);
           const firstSlot = nextAvailable.slots.find((slot) =>
-            isSlotReachable(slot)
+            isSlotReachable(slot, nextAvailable.date)
           );
           setSelectedTime(firstSlot?.time || "");
         } else {
@@ -1302,11 +1403,11 @@ const BookingModal = ({ service, onClose }) => {
       }
 
       const hasSelectedSlot = (day.slots || []).some(
-        (slot) => slot.time === selectedTime && isSlotReachable(slot)
+        (slot) => slot.time === selectedTime && isSlotReachable(slot, day.date)
       );
       if (!hasSelectedSlot) {
         const firstOpen = (day.slots || []).find((slot) =>
-          isSlotReachable(slot)
+          isSlotReachable(slot, day.date)
         );
         if (firstOpen) {
           setSelectedTime(firstOpen.time);
@@ -1464,7 +1565,7 @@ const BookingModal = ({ service, onClose }) => {
       .sort((a, b) => a.date.localeCompare(b.date));
     if (!availableDays.length) return null;
     const slot = availableDays[0].slots.find((item) =>
-      isSlotReachable(item)
+      isSlotReachable(item, availableDays[0].date)
     );
     if (!slot) return null;
     return { date: availableDays[0].date, time: slot.time };
