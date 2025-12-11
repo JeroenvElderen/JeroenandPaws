@@ -503,14 +503,14 @@ const BookingModal = ({ service, onClose }) => {
     const hasFullClientEircode = isFullEircode(normalized);
     const anchorEircode =
       normalizeEircode(
-        previousCalendarStop?.eircode ||
-          previousCalendarStop?.client_address ||
+        nearestCalendarStop?.eircode ||
+          nearestCalendarStop?.client_address ||
           HOME_EIRCODE
       ) || HOME_EIRCODE;
-    const anchorLabel = previousCalendarStop
-      ? previousCalendarStop.eircode
-        ? `from your previous booking (${previousCalendarStop.eircode})`
-        : "from your previous booking"
+    const anchorLabel = nearestCalendarStop
+      ? nearestCalendarStop.eircode
+        ? `from your nearest booking (${nearestCalendarStop.eircode})`
+        : "from your nearest booking"
       : `from home base (${HOME_EIRCODE})`;
 
     if (!hasFullClientEircode) {
@@ -595,7 +595,7 @@ const BookingModal = ({ service, onClose }) => {
     homeCoordinates,
     isFullEircode,
     normalizeEircode,
-    previousCalendarStop,
+    nearestCalendarStop,
   ]);
 
   useEffect(() => {
@@ -931,16 +931,43 @@ const BookingModal = ({ service, onClose }) => {
     return Number.isNaN(candidate) ? null : candidate;
   }, [selectedDate, selectedTime]);
 
-  const previousCalendarStop = useMemo(() => {
+  const stopsForSelectedDay = useMemo(() => {
+    if (!selectedDate) return calendarStops;
+
+    return calendarStops.filter((stop) => {
+      const startDate = stop.start?.toISOString?.().slice(0, 10);
+      const endDate = stop.end?.toISOString?.().slice(0, 10);
+
+      return startDate === selectedDate || endDate === selectedDate;
+    });
+  }, [calendarStops, selectedDate]);
+
+  const nearestCalendarStop = useMemo(() => {
     if (!selectedStartDateTime || calendarStops.length === 0) return null;
 
-    return calendarStops.reduce((closest, stop) => {
-      if (stop.end > selectedStartDateTime) return closest;
-      if (!closest || stop.end > closest.end) return stop;
+    const candidateStops = stopsForSelectedDay.length
+      ? stopsForSelectedDay
+      : calendarStops;
+
+    const closestWithDiff = candidateStops.reduce((closest, stop) => {
+      const anchorTime =
+        stop.end <= selectedStartDateTime
+          ? stop.end
+          : stop.start >= selectedStartDateTime
+            ? stop.start
+            : selectedStartDateTime;
+
+      const diff = Math.abs(anchorTime - selectedStartDateTime);
+
+      if (!closest || diff < closest.diff) {
+        return { stop, diff };
+      }
+
       return closest;
     }, null);
-  }, [calendarStops, selectedStartDateTime]);
-  
+  return closestWithDiff?.stop || null;
+  }, [calendarStops, selectedStartDateTime, stopsForSelectedDay]);
+
   useEffect(() => {
     if (!selectedDate) return;
 
