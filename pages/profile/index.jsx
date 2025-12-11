@@ -98,10 +98,10 @@ const SectionToggle = ({ label, active, onClick }) => (
     onClick={onClick}
     aria-pressed={active}
     aria-label={`${active ? "Hide" : "Show"} ${label} section`}
-    className={`rounded-full border px-3 py-1 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+    className={`rounded-full border px-3 py-1 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
       active
-        ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
-        : "border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600"
+        ? "border-brand-purple bg-brand-purple/10 text-brand-purple shadow-sm"
+        : "border-slate-300 text-slate-600 hover:border-brand-purple hover:text-brand-purple"
     }`}
   >
     {active ? "Hide" : "Show"} {label}
@@ -151,7 +151,7 @@ const AboutSection = ({
         <button
           type="button"
           onClick={onEditProfile}
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-50"
+          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-brand-purple transition hover:border-brand-purple hover:bg-brand-purple/10"
         >
           Edit profile
         </button>
@@ -189,7 +189,7 @@ const AboutSection = ({
         <button
           type="button"
           onClick={onChangePassword}
-          className="mt-2 rounded-full border border-slate-200 px-4 py-1 text-xs font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50"
+          className="mt-2 rounded-full border border-slate-200 px-4 py-1 text-xs font-semibold text-slate-700 transition hover:border-brand-purple hover:bg-brand-purple/10"
         >
           Change password
         </button>
@@ -209,7 +209,7 @@ const PetsSection = ({ pets, onAddPet, onEditPet }) => {
         <button
           type="button"
           onClick={onAddPet}
-          className="rounded-full border border-slate-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
+          className="rounded-full border border-slate-200 bg-brand-purple/10 px-3 py-1 text-xs font-semibold text-brand-purple transition hover:border-brand-purple hover:bg-brand-purple/15"
         >
           Add pet
         </button>
@@ -226,7 +226,7 @@ const PetsSection = ({ pets, onAddPet, onEditPet }) => {
             return (
               <div
                 key={pet.id}
-                className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/50 p-4 shadow-sm"
+                className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-brand-purple/10 p-4 shadow-sm"
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ const PetsSection = ({ pets, onAddPet, onEditPet }) => {
                         className="h-12 w-12 rounded-xl border border-slate-200 object-cover"
                       />
                     ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-blue-50 text-sm font-bold text-blue-700">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-brand-purple/10 text-sm font-bold text-brand-purple">
                         {petInitial}
                       </div>
                     )}
@@ -253,7 +253,7 @@ const PetsSection = ({ pets, onAddPet, onEditPet }) => {
                   <button
                     type="button"
                     onClick={() => onEditPet(pet)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-brand-purple hover:bg-brand-purple/10"
                   >
                     Edit
                   </button>
@@ -275,7 +275,7 @@ const PetsSection = ({ pets, onAddPet, onEditPet }) => {
           <button
             type="button"
             onClick={onAddPet}
-            className="mt-1 rounded-full border border-blue-200 bg-white px-4 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-50"
+            className="mt-1 rounded-full border border-brand-purple/30 bg-white px-4 py-1 text-xs font-semibold text-brand-purple transition hover:border-brand-purple hover:bg-brand-purple/10"
           >
             Add a pet
           </button>
@@ -300,11 +300,11 @@ const BookingsSection = ({ bookings, onOpenBooking }) => {
               key={booking.id}
               type="button"
               onClick={() => onOpenBooking(booking)}
-              className="flex w-full flex-col gap-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow"
+              className="flex w-full flex-col gap-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-purple hover:shadow"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-bold text-blue-700">
+                  <p className="text-sm font-bold text-brand-purple">
                     {booking.service_title ||
                       booking?.services_catalog?.title ||
                       "Service"}
@@ -383,7 +383,7 @@ const ActivitySection = ({
               key={item.id}
               className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
             >
-              <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500 text-lg font-black text-white">
+              <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple to-brand-purpleDark text-lg font-black text-white">
                 {item.type === "badge" ? "★" : "i"}
               </div>
               <div className="flex-1 text-sm text-slate-700">
@@ -395,10 +395,10 @@ const ActivitySection = ({
               <button
                 type="button"
                 onClick={() => onTogglePin(item.id)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                   isPinned
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-slate-200 text-blue-700 hover:border-blue-400 hover:bg-blue-50"
+                    ? "border-brand-purple bg-brand-purple/10 text-brand-purple"
+                    : "border-slate-200 text-brand-purple hover:border-brand-purple hover:bg-brand-purple/10"
                 }`}
               >
                 {isPinned ? "Pinned" : "Pin"}
@@ -430,7 +430,7 @@ const ShortcutsSection = ({
     <div className="flex flex-wrap gap-3">
       <button
         type="button"
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow sm:w-auto"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-purple hover:shadow sm:w-auto"
       >
         Message trainer
         <p className="text-xs font-normal text-slate-600">
@@ -440,7 +440,7 @@ const ShortcutsSection = ({
       <button
         type="button"
         onClick={onAddPet}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow sm:w-auto"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-purple hover:shadow sm:w-auto"
       >
         Add a pet
         <p className="text-xs font-normal text-slate-600">
@@ -450,7 +450,7 @@ const ShortcutsSection = ({
       <button
         type="button"
         onClick={onOpenResetModal}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow sm:w-auto"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-purple hover:shadow sm:w-auto"
       >
         Reset password
         <p className="text-xs font-normal text-slate-600">
@@ -1139,11 +1139,11 @@ const ModernProfile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-16">
       {/* Hero */}
-      <header className="relative h-52 w-full overflow-hidden rounded-b-3xl bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 shadow-lg">
+      <header className="relative h-52 w-full overflow-hidden rounded-b-3xl bg-gradient-to-r from-brand-purple via-brand-purpleDark to-purple-400 shadow-lg">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.22),transparent_25%)]" />
         <div className="absolute inset-0 flex items-end px-6 pb-6 sm:px-10">
           <div className="flex items-end gap-4">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-white/80 text-3xl font-black text-blue-700 shadow-xl">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-white/80 text-3xl font-black text-brand-purple shadow-xl">
               {heroInitial}
             </div>
             <div className="text-white">
@@ -1188,7 +1188,7 @@ const ModernProfile = () => {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                     />
                   </div>
                   <div className="space-y-1 text-sm">
@@ -1202,7 +1202,7 @@ const ModernProfile = () => {
                       onChange={(e) =>
                         setPassword(e.target.value)
                       }
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                     />
                   </div>
                   <div className="flex flex-wrap gap-3 pt-1">
@@ -1210,10 +1210,10 @@ const ModernProfile = () => {
                       type="button"
                       onClick={loadProfile}
                       disabled={loading || !email || !password}
-                      className={`rounded-xl px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition ${
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition ${
                         loading || !email || !password
-                          ? "cursor-not-allowed bg-emerald-100"
-                          : "bg-emerald-400 hover:bg-emerald-500"
+                          ? "cursor-not-allowed bg-brand-purple/20 text-slate-500"
+                          : "bg-brand-purple hover:bg-brand-purpleDark"
                       }`}
                     >
                       {loading ? "Loading…" : "View profile"}
@@ -1228,7 +1228,7 @@ const ModernProfile = () => {
                         });
                         setResetEmail(email || resetEmail);
                       }}
-                      className="rounded-xl border border-slate-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-400 hover:bg-blue-50"
+                      className="rounded-xl border border-slate-200 bg-brand-purple/10 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-purple hover:bg-brand-purple/10"
                     >
                       Set a new password
                     </button>
@@ -1240,7 +1240,7 @@ const ModernProfile = () => {
                     </p>
                   )}
                 </div>
-                <div className="space-y-2 rounded-2xl border border-slate-200 bg-blue-50/70 p-4 text-sm text-slate-700">
+                <div className="space-y-2 rounded-2xl border border-slate-200 bg-brand-purple/12 p-4 text-sm text-slate-700">
                   <p className="font-semibold text-slate-900">
                     What you can do here
                   </p>
@@ -1304,14 +1304,14 @@ const ModernProfile = () => {
                   <button
                     type="button"
                     onClick={loadProfile}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50"
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-brand-purple hover:bg-brand-purple/10"
                   >
                     Refresh
                   </button>
                   <button
                     type="button"
                     onClick={signOut}
-                    className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                    className="rounded-full bg-brand-purple px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-purpleDark"
                   >
                     Sign out
                   </button>
@@ -1415,7 +1415,7 @@ const ModernProfile = () => {
                       fullName: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1">
@@ -1429,7 +1429,7 @@ const ModernProfile = () => {
                       phone: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1">
@@ -1443,7 +1443,7 @@ const ModernProfile = () => {
                       email: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1 sm:col-span-2">
@@ -1459,7 +1459,7 @@ const ModernProfile = () => {
                     }))
                   }
                   placeholder="Where should we meet you?"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                   rows={3}
                 />
               </div>
@@ -1476,10 +1476,10 @@ const ModernProfile = () => {
                 type="button"
                 onClick={saveContact}
                 disabled={savingContact}
-                className={`rounded-full px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm ${
+                className={`rounded-full px-4 py-1 text-xs font-semibold shadow-sm ${
                   savingContact
-                    ? "cursor-not-allowed bg-blue-100"
-                    : "bg-blue-500 hover:bg-blue-600"
+                    ? "cursor-not-allowed bg-brand-purple/15 text-slate-500"
+                    : "bg-brand-purple text-white hover:bg-brand-purpleDark"
                 }`}
               >
                 {savingContact ? "Saving…" : "Save details"}
@@ -1516,7 +1516,7 @@ const ModernProfile = () => {
                   onChange={(e) =>
                     setCurrentPasswordInput(e.target.value)
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1">
@@ -1529,7 +1529,7 @@ const ModernProfile = () => {
                   onChange={(e) =>
                     setNewPassword(e.target.value)
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1">
@@ -1542,7 +1542,7 @@ const ModernProfile = () => {
                   onChange={(e) =>
                     setConfirmPassword(e.target.value)
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
             </div>
@@ -1563,10 +1563,10 @@ const ModernProfile = () => {
                 type="button"
                 onClick={savePassword}
                 disabled={savingPassword}
-                className={`rounded-full px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm ${
+                className={`rounded-full px-4 py-1 text-xs font-semibold shadow-sm ${
                   savingPassword
-                    ? "cursor-not-allowed bg-blue-100"
-                    : "bg-blue-500 hover:bg-blue-600"
+                    ? "cursor-not-allowed bg-brand-purple/15 text-slate-500"
+                    : "bg-brand-purple text-white hover:bg-brand-purpleDark"
                 }`}
               >
                 {savingPassword ? "Saving…" : "Update password"}
@@ -1605,7 +1605,7 @@ const ModernProfile = () => {
                     }))
                   }
                   placeholder="Luna"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1">
@@ -1620,7 +1620,7 @@ const ModernProfile = () => {
                     }))
                   }
                   placeholder="Golden Retriever"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
               <div className="space-y-1">
@@ -1633,7 +1633,7 @@ const ModernProfile = () => {
                   onChange={(e) =>
                     handlePetPhotoChange(e.target.files?.[0])
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none file:mr-2 file:rounded-lg file:border-none file:bg-blue-100 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-blue-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none file:mr-2 file:rounded-lg file:border-none file:bg-brand-purple/15 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-brand-purple focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
                 {(petForm.photoDataUrl ||
                   petForm.photo_data_url) && (
@@ -1649,7 +1649,7 @@ const ModernProfile = () => {
                     <button
                       type="button"
                       onClick={clearPetPhoto}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-brand-purple hover:bg-brand-purple/10"
                     >
                       Remove photo
                     </button>
@@ -1668,7 +1668,7 @@ const ModernProfile = () => {
                   }
                   placeholder="Feeding instructions, personality notes, medication..."
                   rows={3}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
                 />
               </div>
             </div>
@@ -1683,7 +1683,7 @@ const ModernProfile = () => {
               <button
                 type="button"
                 onClick={savePet}
-                className="rounded-full bg-blue-500 px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm hover:bg-blue-600"
+                className="rounded-full bg-brand-purple px-4 py-1 text-xs font-semibold text-white shadow-sm hover:bg-brand-purpleDark"
               >
                 {petModalMode === "new" ? "Save pet" : "Update pet"}
               </button>
@@ -1708,7 +1708,7 @@ const ModernProfile = () => {
                 ✕
               </button>
             </div>
-            <p className="text-sm font-bold text-blue-700">
+            <p className="text-sm font-bold text-brand-purple">
               {selectedBooking.service_title ||
                 selectedBooking?.services_catalog?.title ||
                 "Service"}
@@ -1785,7 +1785,7 @@ const ModernProfile = () => {
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/30"
               />
             </div>
             <div className="mt-4 flex items-center justify-end gap-3">
@@ -1806,10 +1806,10 @@ const ModernProfile = () => {
                 type="button"
                 onClick={requestPasswordReset}
                 disabled={resetStatus.state === "loading"}
-                className={`rounded-full px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm ${
+                className={`rounded-full px-4 py-1 text-xs font-semibold shadow-sm ${
                   resetStatus.state === "loading"
-                    ? "cursor-not-allowed bg-blue-100"
-                    : "bg-blue-500 hover:bg-blue-600"
+                    ? "cursor-not-allowed bg-brand-purple/15 text-slate-500"
+                    : "bg-brand-purple text-white hover:bg-brand-purpleDark"
                 }`}
               >
                 {resetStatus.state === "loading"
