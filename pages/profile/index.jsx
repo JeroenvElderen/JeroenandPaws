@@ -1,82 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useAuth } from "../../src/context/AuthContext";
 
-const brand = {
-  primary: "#2563eb",
-  primarySoft: "#2563eb1a",
-  neutral: "#0f172a",
-  ink: "#0b1224",
-  muted: "#4b5563",
-  background:
-    "linear-gradient(180deg, #f5f7fb 0%, #edf1f8 40%, #f8fafc 100%)",
-  cardBorder: "rgba(15, 23, 42, 0.08)",
-  cardShadow: "0 18px 50px rgba(15, 23, 42, 0.08)",
-  subtleText: "#6b7280",
-  surface: "#ffffff",
-  surfaceHighlight: "linear-gradient(135deg, #ffffff 0%, #f5f7fb 100%)",
-};
-
-const pillStyles = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "10px",
-  padding: "10px 14px",
-  borderRadius: "999px",
-  background: "rgba(37, 99, 235, 0.08)",
-  color: brand.primary,
-  fontWeight: 800,
-  boxShadow: "0 10px 30px rgba(37, 99, 235, 0.15)",
-  letterSpacing: "0.01em",
-};
-
-const SectionCard = ({ title, description, children, id, actions }) => (
-  <section
-    id={id}
-    className="profile-card"
-    style={{
-      background: brand.surface,
-      borderRadius: "20px",
-      padding: "24px",
-      boxShadow: brand.cardShadow,
-      border: `1px solid ${brand.cardBorder}`,
-      color: brand.ink,
-      position: "relative",
-      overflow: "hidden",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        gap: "16px",
-        marginBottom: description || actions ? "10px" : 0,
-      }}
-    >
-      <div>
-        <h2 style={{ margin: 0, color: brand.ink, fontSize: "1.2rem" }}>
-          {title}
-        </h2>
-        {description && (
-          <p style={{ margin: "6px 0 0", color: brand.subtleText }}>
-            {description}
-          </p>
-        )}
-      </div>
-      {actions && <div style={{ display: "flex", gap: "8px" }}>{actions}</div>}
-    </div>
-    {children}
-  </section>
-);
-
-const emptyStateStyle = {
-  background: "rgba(37, 99, 235, 0.08)",
-  border: `1px dashed ${brand.cardBorder}`,
-  borderRadius: "16px",
-  padding: "16px",
-  color: brand.subtleText,
-  textAlign: "center",
-};
+// ---- MOCK PROFILE SUPPORT (unchanged semantics) ----
 
 const mockProfile = {
   client: {
@@ -84,6 +14,7 @@ const mockProfile = {
     full_name: "Jeroen & Paws Guest",
     email: "demo@jeroenandpaws.com",
     phone_number: "+1 (555) 123-4567",
+    address: "123 Park Lane, Toronto",
   },
   pets: [
     {
@@ -91,12 +22,14 @@ const mockProfile = {
       name: "Luna",
       breed: "Golden Retriever",
       notes: "Loves long walks and peanut butter treats.",
+      photo_data_url: null,
     },
     {
       id: "pet-2",
       name: "Milo",
       breed: "Corgi",
       notes: "Keep an eye on the zoomies after lunch.",
+      photo_data_url: null,
     },
   ],
   bookings: [
@@ -117,11 +50,14 @@ const mockProfile = {
       notes: "Please offer a frozen Kong at nap time.",
     },
   ],
+  activity: [],
 };
 
 const useMockProfile =
   typeof process !== "undefined" &&
   process.env.NEXT_PUBLIC_MOCK_PROFILE === "true";
+
+// ---- UTILITIES ----
 
 const formatDateRange = (booking) => {
   if (!booking?.start_at || !booking?.end_at) return "Scheduled time pending";
@@ -146,54 +82,425 @@ const bookingStatusLabel = (status = "") => {
   return status;
 };
 
-const ProfilePage = () => {
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+// ---- SMALL PRESENTATIONAL BUILDING BLOCKS ----
+
+const SectionToggle = ({ label, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    aria-label={`${active ? "Hide" : "Show"} ${label} section`}
+    className={`rounded-full border px-3 py-1 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+      active
+        ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
+        : "border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600"
+    }`}
+  >
+    {active ? "Hide" : "Show"} {label}
+  </button>
+);
+
+const InfoChip = ({ label }) => (
+  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+    {label}
+  </span>
+);
+
+const SectionCard = ({ title, description, action, children }) => (
+  <section
+    aria-label={title}
+    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+  >
+    <div className="mb-4 flex items-start justify-between gap-4">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        {description && (
+          <p className="text-sm text-slate-600">{description}</p>
+        )}
+      </div>
+      {action}
+    </div>
+    <div className="space-y-4">{children}</div>
+  </section>
+);
+
+// ---- SECTION COMPONENTS ----
+
+const AboutSection = ({
+  client,
+  heroLocation,
+  heroBio,
+  stats,
+  onEditProfile,
+  onChangePassword,
+}) => (
+  <SectionCard
+    title="About"
+    description="A quick overview of your details and profile highlights."
+    action={
+      <div className="flex flex-col items-end gap-2">
+        <InfoChip label={client?.memberSince || "Client profile"} />
+        <button
+          type="button"
+          onClick={onEditProfile}
+          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-50"
+        >
+          Edit profile
+        </button>
+      </div>
+    }
+  >
+    <div className="flex flex-col gap-3 text-sm text-slate-700">
+      <p>
+        <span className="font-semibold text-slate-900">Name:</span>{" "}
+        {client?.full_name || "Add your name"}
+      </p>
+      <p>
+        <span className="font-semibold text-slate-900">Email:</span>{" "}
+        {client?.email || "Add your email"}
+      </p>
+      <p>
+        <span className="font-semibold text-slate-900">Phone:</span>{" "}
+        {client?.phone_number || "Add phone number"}
+      </p>
+      <p>
+        <span className="font-semibold text-slate-900">Service address:</span>{" "}
+        {client?.address || "Add address"}
+      </p>
+      <p>
+        <span className="font-semibold text-slate-900">Location:</span>{" "}
+        {heroLocation}
+      </p>
+      <p className="leading-relaxed">{heroBio}</p>
+      <div className="flex flex-wrap gap-2">
+        <InfoChip label={`${stats.upcoming} upcoming visits`} />
+        <InfoChip label={`${stats.pets} pets`} />
+        <InfoChip label={`${stats.bookings} saved bookings`} />
+      </div>
+      <div>
+        <button
+          type="button"
+          onClick={onChangePassword}
+          className="mt-2 rounded-full border border-slate-200 px-4 py-1 text-xs font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50"
+        >
+          Change password
+        </button>
+      </div>
+    </div>
+  </SectionCard>
+);
+
+const PetsSection = ({ pets, onAddPet, onEditPet }) => {
+  const hasPets = pets && pets.length > 0;
+
+  return (
+    <SectionCard
+      title="Pets"
+      description="See and manage the pets connected to your profile."
+      action={
+        <button
+          type="button"
+          onClick={onAddPet}
+          className="rounded-full border border-slate-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
+        >
+          Add pet
+        </button>
+      }
+    >
+      {hasPets ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {pets.map((pet) => {
+            const petInitial =
+              (pet.name || "?").charAt(0).toUpperCase();
+            const petPhoto =
+              pet.photoDataUrl || pet.photo_data_url || null;
+
+            return (
+              <div
+                key={pet.id}
+                className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/50 p-4 shadow-sm"
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    {petPhoto ? (
+                      <img
+                        src={petPhoto}
+                        alt={`${pet.name} profile`}
+                        className="h-12 w-12 rounded-xl border border-slate-200 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-blue-50 text-sm font-bold text-blue-700">
+                        {petInitial}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-base font-bold text-slate-900">
+                        {pet.name}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-600">
+                        {pet.breed || "Add breed"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onEditPet(pet)}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50"
+                  >
+                    Edit
+                  </button>
+                </div>
+                <p className="text-sm text-slate-600">
+                  {pet.notes || "Add notes about this pet."}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">No pets yet</p>
+          <p>
+            Add your first pet so we can personalize your bookings and
+            updates.
+          </p>
+          <button
+            type="button"
+            onClick={onAddPet}
+            className="mt-1 rounded-full border border-blue-200 bg-white px-4 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-50"
+          >
+            Add a pet
+          </button>
+        </div>
+      )}
+    </SectionCard>
+  );
+};
+
+const BookingsSection = ({ bookings, onOpenBooking }) => {
+  const hasBookings = bookings && bookings.length > 0;
+
+  return (
+    <SectionCard
+      title="Bookings"
+      description="Upcoming visits and training sessions."
+    >
+      {hasBookings ? (
+        <div className="space-y-3">
+          {bookings.map((booking) => (
+            <button
+              key={booking.id}
+              type="button"
+              onClick={() => onOpenBooking(booking)}
+              className="flex w-full flex-col gap-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-blue-700">
+                    {booking.service_title ||
+                      booking?.services_catalog?.title ||
+                      "Service"}
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    {formatDateRange(booking)}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                    booking.status &&
+                    ["scheduled", "confirmed"].includes(
+                      booking.status.toLowerCase()
+                    )
+                      ? "bg-green-100 text-green-800"
+                      : booking.status &&
+                        ["cancelled", "canceled"].includes(
+                          booking.status.toLowerCase()
+                        )
+                      ? "bg-rose-100 text-rose-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {bookingStatusLabel(booking.status)}
+                </span>
+              </div>
+              {booking.notes && (
+                <p className="text-xs text-slate-600">{booking.notes}</p>
+              )}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">
+            No bookings yet
+          </p>
+          <p>
+            Your upcoming visits will appear here with times, services,
+            and trainer notes.
+          </p>
+        </div>
+      )}
+    </SectionCard>
+  );
+};
+
+const ActivitySection = ({
+  activity,
+  pinnedIds,
+  onTogglePin,
+}) => {
+  const hasActivity = activity && activity.length > 0;
+
+  const orderedActivity = useMemo(() => {
+    if (!activity) return [];
+    if (!pinnedIds.length) return activity;
+
+    const pinnedSet = new Set(pinnedIds);
+    const pinned = activity.filter((a) => pinnedSet.has(a.id));
+    const unpinned = activity.filter((a) => !pinnedSet.has(a.id));
+
+    return [...pinned, ...unpinned];
+  }, [activity, pinnedIds]);
+
+  return (
+    <SectionCard
+      title="Latest updates"
+      description="Recent notes, badges, and milestones."
+    >
+      {hasActivity ? (
+        orderedActivity.map((item) => {
+          const isPinned = pinnedIds.includes(item.id);
+          return (
+            <div
+              key={item.id}
+              className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+            >
+              <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500 text-lg font-black text-white">
+                {item.type === "badge" ? "★" : "i"}
+              </div>
+              <div className="flex-1 text-sm text-slate-700">
+                <p className="font-bold text-slate-900">
+                  {item.label}
+                </p>
+                <p>{item.detail}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onTogglePin(item.id)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+                  isPinned
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-slate-200 text-blue-700 hover:border-blue-400 hover:bg-blue-50"
+                }`}
+              >
+                {isPinned ? "Pinned" : "Pin"}
+              </button>
+            </div>
+          );
+        })
+      ) : (
+        <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">No updates yet</p>
+          <p>
+            Trainer notes and badges will appear here after your
+            visits.
+          </p>
+        </div>
+      )}
+    </SectionCard>
+  );
+};
+
+const ShortcutsSection = ({
+  onAddPet,
+  onOpenResetModal,
+}) => (
+  <SectionCard
+    title="Shortcuts"
+    description="Jump to the actions you use the most."
+  >
+    <div className="flex flex-wrap gap-3">
+      <button
+        type="button"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow sm:w-auto"
+      >
+        Message trainer
+        <p className="text-xs font-normal text-slate-600">
+          Email client care for help
+        </p>
+      </button>
+      <button
+        type="button"
+        onClick={onAddPet}
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow sm:w-auto"
+      >
+        Add a pet
+        <p className="text-xs font-normal text-slate-600">
+          Share their details
+        </p>
+      </button>
+      <button
+        type="button"
+        onClick={onOpenResetModal}
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow sm:w-auto"
+      >
+        Reset password
+        <p className="text-xs font-normal text-slate-600">
+          Get a reset link by email
+        </p>
+      </button>
+    </div>
+  </SectionCard>
+);
+
+// ---- LOCAL STORAGE KEY FOR TOGGLES ----
+
+const SECTIONS_STORAGE_KEY = "modernProfile.sections";
+
+// ---- MAIN COMPONENT ----
+
+const ModernProfile = () => {
   const {
     profile: authProfile,
     setProfile: setAuthProfile,
     logout: clearAuth,
   } = useAuth();
+
   const initialProfile = useMockProfile ? mockProfile : authProfile;
-  const apiBaseUrl = useMemo(() => {
-    const configuredBase = (
-      process.env.NEXT_PUBLIC_BACKEND_BASE_URL || ""
-    ).replace(/\/$/, "");
 
-    if (configuredBase) return configuredBase;
-
-    if (typeof window !== "undefined") {
-      return window.location.origin.replace(/\/$/, "");
-    }
-
-    return "";
-  }, []);
-
-  const [email, setEmail] = useState(initialProfile?.client?.email || "");
-  const [password, setPassword] = useState("");
+  // Core profile state
   const [profile, setProfile] = useState(initialProfile);
+  const [email, setEmail] = useState(
+    initialProfile?.client?.email || ""
+  );
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Contact + account
   const [contactForm, setContactForm] = useState({
     fullName: initialProfile?.client?.full_name || "",
     phone: initialProfile?.client?.phone_number || "",
     email: initialProfile?.client?.email || "",
     address: initialProfile?.client?.address || "",
   });
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+
+  // Password change
   const [currentPasswordInput, setCurrentPasswordInput] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [savingContact, setSavingContact] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [showInlineReset, setShowInlineReset] = useState(false);
-  const [newPet, setNewPet] = useState({
-    name: "",
-    breed: "",
-    notes: "",
-    photoDataUrl: null,
-    photoName: "",
-  });
-  const [editingPets, setEditingPets] = useState({});
+
+  // Password reset
   const [resetEmail, setResetEmail] = useState(
     initialProfile?.client?.email || ""
   );
@@ -201,33 +508,96 @@ const ProfilePage = () => {
     state: "idle",
     message: "",
   });
+
+  // Login attempts (used to decide when to suggest reset)
+  const [loginAttempts, setLoginAttempts] = useState(0);
+
+  // Pet modal
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
+  const [petModalMode, setPetModalMode] = useState("new"); // "new" | "edit"
+  const [petForm, setPetForm] = useState({
+    id: null,
+    name: "",
+    breed: "",
+    notes: "",
+    photoDataUrl: null,
+    photo_data_url: null,
+    photoName: "",
+  });
+
+  // Booking modal
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingAction, setBookingAction] = useState({
     cancelling: false,
     error: "",
   });
 
-  const activeBookings = useMemo(() => {
-    const clean = (status = "") => status?.toLowerCase();
-    return (profile?.bookings || []).filter(
-      (booking) => !["cancelled", "canceled"].includes(clean(booking.status))
-    );
-  }, [profile]);
+  // Contact & password modals
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
-  const hasPets = useMemo(() => profile?.pets?.length > 0, [profile]);
-  const hasBookings = useMemo(
-    () => activeBookings.length > 0,
-    [activeBookings]
-  );
+  // Section toggles
+  const [sections, setSections] = useState(() => {
+    if (typeof window === "undefined") {
+      return {
+        about: true,
+        pets: true,
+        bookings: true,
+        activity: true,
+      };
+    }
+    try {
+      const raw = window.localStorage.getItem(SECTIONS_STORAGE_KEY);
+      if (!raw) {
+        return {
+          about: true,
+          pets: true,
+          bookings: true,
+          activity: true,
+        };
+      }
+      const parsed = JSON.parse(raw);
+      return {
+        about: parsed.about ?? true,
+        pets: parsed.pets ?? true,
+        bookings: parsed.bookings ?? true,
+        activity: parsed.activity ?? true,
+      };
+    } catch {
+      return {
+        about: true,
+        pets: true,
+        bookings: true,
+        activity: true,
+      };
+    }
+  });
 
-  const profileStats = useMemo(
-    () => ({
-      pets: profile?.pets?.length || 0,
-      bookings: profile?.bookings?.length || 0,
-      upcoming: activeBookings.length,
-    }),
-    [activeBookings.length, profile?.bookings?.length, profile?.pets?.length]
-  );
+  const [pinnedActivityIds, setPinnedActivityIds] = useState([]);
+
+  // ---- Section toggles persistence ----
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          SECTIONS_STORAGE_KEY,
+          JSON.stringify(sections)
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }, [sections]);
+
+  const toggleSection = (key) =>
+    setSections((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+
+  // ---- Helper: keep contact form / auth context in sync ----
 
   const refreshContactForm = useCallback((payload) => {
     setContactForm({
@@ -268,6 +638,8 @@ const ProfilePage = () => {
     });
   };
 
+  // ---- Initialize from auth/mocks ----
+
   useEffect(() => {
     if (useMockProfile) {
       setProfile(mockProfile);
@@ -286,14 +658,47 @@ const ProfilePage = () => {
     }
 
     setProfile(null);
-    setContactForm({ fullName: "", phone: "", email: "", address: "" });
+    setContactForm({
+      fullName: "",
+      phone: "",
+      email: "",
+      address: "",
+    });
     setEmail("");
     setResetEmail("");
-  }, [authProfile, refreshContactForm, useMockProfile]);
+  }, [authProfile, refreshContactForm]);
+
+  // ---- Derived values ----
+
+  const activeBookings = useMemo(() => {
+    const clean = (status = "") => status?.toLowerCase();
+    return (profile?.bookings || []).filter(
+      (booking) =>
+        !["cancelled", "canceled"].includes(clean(booking.status))
+    );
+  }, [profile]);
+
+  const hasPets = useMemo(
+    () => (profile?.pets || []).length > 0,
+    [profile]
+  );
+
+  const profileStats = useMemo(
+    () => ({
+      pets: profile?.pets?.length || 0,
+      bookings: profile?.bookings?.length || 0,
+      upcoming: activeBookings.length,
+    }),
+    [activeBookings.length, profile?.bookings?.length, profile?.pets?.length]
+  );
+
+  // ---- Load profile (login + refresh) ----
 
   const loadProfile = async () => {
     if (!email || !password) {
-      setError("Please enter both email and password to view your profile.");
+      setError(
+        "Please enter both email and password to view your profile."
+      );
       return;
     }
     setLoading(true);
@@ -313,23 +718,18 @@ const ProfilePage = () => {
 
       persistProfileState(payload);
       setLoginAttempts(0);
-      setShowInlineReset(false);
       setResetStatus({ state: "idle", message: "" });
     } catch (err) {
       setError(err.message || "Could not load profile");
       setProfile(null);
       setResetEmail(email || resetEmail);
-      setLoginAttempts((previous) => {
-        const next = previous + 1;
-        if (next >= 3) {
-          setShowInlineReset(true);
-        }
-        return next;
-      });
+      setLoginAttempts((previous) => previous + 1);
     } finally {
       setLoading(false);
     }
   };
+
+  // ---- Fetch bookings from backend ----
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -357,15 +757,19 @@ const ProfilePage = () => {
     };
 
     fetchBookings();
-  }, [profile?.client?.email, useMockProfile]);
+  }, [profile?.client?.email]);
+
+  // ---- Fetch pets from backend ----
 
   useEffect(() => {
-    const refreshPetPhotos = async () => {
+    const refreshPets = async () => {
       if (useMockProfile || !profile?.client?.email) return;
 
       try {
         const response = await fetch(
-          `/api/pets?ownerEmail=${encodeURIComponent(profile.client.email)}`
+          `/api/pets?ownerEmail=${encodeURIComponent(
+            profile.client.email
+          )}`
         );
         const payload = await response.json().catch(() => null);
 
@@ -378,12 +782,14 @@ const ProfilePage = () => {
           pets: payload.pets || [],
         }));
       } catch (err) {
-        console.error("Failed to refresh pet photos", err);
+        console.error("Failed to refresh pets", err);
       }
     };
 
-    refreshPetPhotos();
-  }, [profile?.client?.email, useMockProfile]);
+    refreshPets();
+  }, [profile?.client?.email]);
+
+  // ---- Save contact details ----
 
   const saveContact = async () => {
     if (!contactForm.email) {
@@ -417,12 +823,15 @@ const ProfilePage = () => {
         ...currentProfile,
         client: payload.client,
       }));
+      setIsContactModalOpen(false);
     } catch (err) {
       setError(err.message || "Unable to save details");
     } finally {
       setSavingContact(false);
     }
   };
+
+  // ---- Save password ----
 
   const savePassword = async () => {
     if (!contactForm.email) {
@@ -465,7 +874,7 @@ const ProfilePage = () => {
       setCurrentPasswordInput("");
       setNewPassword("");
       setConfirmPassword("");
-      setShowPasswordForm(false);
+      setIsPasswordModalOpen(false);
     } catch (err) {
       setError(err.message || "Unable to update password");
     } finally {
@@ -473,118 +882,121 @@ const ProfilePage = () => {
     }
   };
 
-  const fileToDataUrl = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // ---- Pet modal helpers ----
+
+  const openNewPetModal = () => {
+    setPetModalMode("new");
+    setPetForm({
+      id: null,
+      name: "",
+      breed: "",
+      notes: "",
+      photoDataUrl: null,
+      photo_data_url: null,
+      photoName: "",
     });
+    setIsPetModalOpen(true);
+  };
 
-  const handleNewPetPhotoChange = async (file) => {
+  const openEditPetModal = (pet) => {
+    setPetModalMode("edit");
+    setPetForm({
+      id: pet.id,
+      name: pet.name || "",
+      breed: pet.breed || "",
+      notes: pet.notes || "",
+      photoDataUrl: pet.photoDataUrl || null,
+      photo_data_url: pet.photo_data_url || null,
+      photoName: pet.photoName || "",
+    });
+    setIsPetModalOpen(true);
+  };
+
+  const handlePetPhotoChange = async (file) => {
     if (!file) return;
-
     const dataUrl = await fileToDataUrl(file);
-    setNewPet((prev) => ({
+    setPetForm((prev) => ({
       ...prev,
       photoDataUrl: dataUrl,
+      photo_data_url: dataUrl,
       photoName: file.name,
     }));
   };
 
-  const handleExistingPetPhotoChange = async (petId, file) => {
-    if (!file) return;
-
-    const dataUrl = await fileToDataUrl(file);
-    updatePetField(petId, "photoDataUrl", dataUrl);
-    updatePetField(petId, "photoName", file.name);
+  const clearPetPhoto = () => {
+    setPetForm((prev) => ({
+      ...prev,
+      photoDataUrl: null,
+      photo_data_url: null,
+      photoName: "",
+    }));
   };
 
-  const clearExistingPetPhoto = (petId) => {
-    updatePetField(petId, "photoDataUrl", null);
-    updatePetField(petId, "photo_data_url", null);
-    updatePetField(petId, "photoName", "");
-  };
+  const savePet = async () => {
+    if (!contactForm.email && !email) {
+      setError("Email is required to manage pets.");
+      return;
+    }
 
-  const clearNewPetPhoto = () =>
-    setNewPet((prev) => ({ ...prev, photoDataUrl: null, photoName: "" }));
-
-  const createPet = async () => {
     try {
-      const response = await fetch("/api/pets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ownerEmail: contactForm.email || email,
-          ...newPet,
-        }),
-      });
+      if (petModalMode === "new") {
+        const response = await fetch("/api/pets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ownerEmail: contactForm.email || email,
+            name: petForm.name,
+            breed: petForm.breed,
+            notes: petForm.notes,
+            photoDataUrl: petForm.photoDataUrl,
+            photoName: petForm.photoName,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Could not save pet");
+        if (!response.ok) {
+          throw new Error("Could not save pet");
+        }
+
+        setPetForm({
+          id: null,
+          name: "",
+          breed: "",
+          notes: "",
+          photoDataUrl: null,
+          photo_data_url: null,
+          photoName: "",
+        });
+        setIsPetModalOpen(false);
+        await loadProfile();
+      } else {
+        const response = await fetch("/api/pets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ownerEmail: contactForm.email || email,
+            ...petForm,
+          }),
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(payload?.message || "Could not update pet");
+        }
+
+        persistProfileState((currentProfile) => {
+          const nextPets = (currentProfile?.pets || []).map((pet) =>
+            pet.id === petForm.id ? payload.pet : pet
+          );
+          return { ...currentProfile, pets: nextPets };
+        });
+        setIsPetModalOpen(false);
       }
-
-      setNewPet({
-        name: "",
-        breed: "",
-        notes: "",
-        photoDataUrl: null,
-        photoName: "",
-      });
-      await loadProfile();
     } catch (err) {
       setError(err.message || "Unable to save pet");
     }
   };
 
-  const startEditingPet = (pet) => {
-    setEditingPets((prev) => ({ ...prev, [pet.id]: { ...pet } }));
-  };
-
-  const stopEditingPet = (petId) => {
-    setEditingPets((prev) => {
-      const next = { ...prev };
-      delete next[petId];
-      return next;
-    });
-  };
-
-  const updatePetField = (petId, field, value) => {
-    setEditingPets((prev) => ({
-      ...prev,
-      [petId]: { ...prev[petId], [field]: value },
-    }));
-  };
-
-  const savePetEdit = async (petId) => {
-    const petPayload = editingPets[petId];
-    if (!petPayload) return;
-    try {
-      const response = await fetch("/api/pets", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ownerEmail: contactForm.email || email,
-          ...petPayload,
-        }),
-      });
-
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(payload?.message || "Could not update pet");
-      }
-
-      persistProfileState((currentProfile) => {
-        const nextPets = (currentProfile?.pets || []).map((pet) =>
-          pet.id === petId ? payload.pet : pet
-        );
-        return { ...currentProfile, pets: nextPets };
-      });
-      stopEditingPet(petId);
-    } catch (err) {
-      setError(err.message || "Unable to update pet");
-    }
-  };
+  // ---- Booking helpers ----
 
   const openBooking = (booking) => {
     setSelectedBooking(booking);
@@ -613,8 +1025,11 @@ const ProfilePage = () => {
       }
 
       persistProfileState((currentProfile) => {
-        const nextBookings = (currentProfile?.bookings || []).map((booking) =>
-          booking.id === selectedBooking.id ? payload.booking : booking
+        const nextBookings = (currentProfile?.bookings || []).map(
+          (booking) =>
+            booking.id === selectedBooking.id
+              ? payload.booking
+              : booking
         );
         return { ...currentProfile, bookings: nextBookings };
       });
@@ -625,9 +1040,14 @@ const ProfilePage = () => {
         error: err.message || "Unable to cancel booking",
       });
     } finally {
-      setBookingAction((prev) => ({ ...prev, cancelling: false }));
+      setBookingAction((prev) => ({
+        ...prev,
+        cancelling: false,
+      }));
     }
   };
+
+  // ---- Password reset ----
 
   const requestPasswordReset = async () => {
     if (!resetEmail) {
@@ -649,1478 +1069,671 @@ const ProfilePage = () => {
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(payload?.message || "Could not submit your request.");
+        throw new Error(
+          payload?.message || "Could not submit your request."
+        );
       }
 
       setResetStatus({
         state: "success",
-        message: "Check your inbox for the next steps to reset your password.",
+        message:
+          "Check your inbox for the next steps to reset your password.",
       });
     } catch (err) {
       setResetStatus({
         state: "error",
-        message: err.message || "Unable to process your request right now.",
+        message:
+          err.message || "Unable to process your request right now.",
       });
     }
   };
 
+  // ---- Sign out ----
+
   const signOut = () => {
     setProfile(null);
     clearAuth?.();
-    setContactForm({ fullName: "", phone: "", email: "", address: "" });
+    setContactForm({
+      fullName: "",
+      phone: "",
+      email: "",
+      address: "",
+    });
     setPassword("");
     setSelectedBooking(null);
     setLoginAttempts(0);
-    setShowInlineReset(false);
     setResetStatus({ state: "idle", message: "" });
   };
 
+  // ---- Activity pinning ----
+
+  const handleTogglePin = (activityId) => {
+    setPinnedActivityIds((prev) =>
+      prev.includes(activityId)
+        ? prev.filter((id) => id !== activityId)
+        : [...prev, activityId]
+    );
+  };
+
+  // ---- Hero data ----
+
+  const heroName =
+    profile?.client?.full_name ||
+    (profile ? "Client" : "Profile & Booking Center");
+  const heroLocation =
+    profile?.client?.address ||
+    profile?.client?.location ||
+    "Your favourite neighbourhood";
+  const heroBio = profile
+    ? "Manage your contact details, pets, and bookings in one place."
+    : "Use the email and password you provided when booking with us.";
+
+  const heroInitial =
+    profile?.client?.full_name?.[0]?.toUpperCase() ||
+    "J";
+
+  const showResetHint = !profile && loginAttempts >= 3;
+
+  // ---- Render ----
+
   return (
-    <main className="profile-page">
-      <div className="profile-shell" style={{ maxWidth: "1140px" }}>
-        <header className="profile-hero">
-          <div className="profile-hero__overlay" />
-          <div
-            style={{
-              position: "relative",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "24px",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ flex: "1 1 320px" }}>
-              <div style={pillStyles}>
-                <span role="img" aria-label="sparkles">
-                  ✨
-                </span>
-                Your client hub
-              </div>
-              <h1
-                style={{
-                  margin: "12px 0 8px",
-                  fontSize: "2.4rem",
-                  lineHeight: 1.2,
-                }}
-              >
-                Profile & Booking Center
-              </h1>
-              <p
-                style={{
-                  margin: 0,
-                  color: brand.muted,
-                  fontSize: "1rem",
-                  lineHeight: 1.6,
-                }}
-              >
-                Manage your contact details, pets, and bookings with the same
-                styling as our Webflow hub.
-              </p>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-16">
+      {/* Hero */}
+      <header className="relative h-52 w-full overflow-hidden rounded-b-3xl bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 shadow-lg">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.22),transparent_25%)]" />
+        <div className="absolute inset-0 flex items-end px-6 pb-6 sm:px-10">
+          <div className="flex items-end gap-4">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-white/80 text-3xl font-black text-blue-700 shadow-xl">
+              {heroInitial}
             </div>
-            {!profile ? (
-              <div
-                style={{
-                  flex: "1 1 280px",
-                  background: brand.surfaceHighlight,
-                  borderRadius: "18px",
-                  padding: "16px",
-                  border: `1px solid ${brand.cardBorder}`,
-                  boxShadow: brand.cardShadow,
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    color: brand.neutral,
-                    fontWeight: 700,
-                  }}
-                >
-                  Access your profile
-                </p>
-                <p
-                  style={{
-                    margin: "0 0 12px",
-                    color: brand.muted,
-                  }}
-                >
-                  Use the email you provided when booking with us.
-                </p>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{
-                      flex: "1 1 200px",
-                      padding: "12px 14px",
-                      borderRadius: "12px",
-                      border: `1px solid ${brand.cardBorder}`,
-                      background: "#f8fafc",
-                      color: brand.neutral,
-                    }}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{
-                      flex: "1 1 180px",
-                      padding: "12px 14px",
-                      borderRadius: "12px",
-                      border: `1px solid ${brand.cardBorder}`,
-                      background: "#f8fafc",
-                      color: brand.neutral,
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={loadProfile}
-                    disabled={loading || !email || !password}
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: "#22c55e",
-                      color: "#0f172a",
-                      fontWeight: 800,
-                      cursor: loading || !email ? "not-allowed" : "pointer",
-                      boxShadow: "0 12px 30px rgba(34, 197, 94, 0.35)",
-                    }}
-                  >
-                    {loading ? "Loading…" : "View profile"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowInlineReset(true);
-                      setResetStatus({ state: "idle", message: "" });
-                      setResetEmail(email || resetEmail);
-                    }}
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: "12px",
-                      border: `1px solid ${brand.cardBorder}`,
-                      background: "#eef2ff",
-                      color: brand.neutral,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Set a new password
-                  </button>
-                </div>
-                {showInlineReset && (
-                  <div
-                    style={{
-                      marginTop: "12px",
-                      padding: "12px",
-                      borderRadius: "14px",
-                      background: "#eef2ff",
-                      border: `1px solid ${brand.cardBorder}`,
-                      display: "grid",
-                      gap: "10px",
-                    }}
-                  >
-                    <p style={{ margin: 0, fontWeight: 800 }}>
-                      Reset your password
-                    </p>
-                    <p style={{ margin: 0, color: brand.muted }}>
-                      After a few unsuccessful login attempts we’ll help you
-                      request a reset link so you can set a new password.
-                    </p>
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: "8px",
-                        gridTemplateColumns: "2fr 1fr",
-                        alignItems: "center",
-                      }}
+            <div className="text-white">
+              <p className="text-sm uppercase tracking-[0.2em] opacity-70">
+                {profile ? "Client hub" : "Sign in to your hub"}
+              </p>
+              <h1 className="text-3xl font-black drop-shadow-lg sm:text-4xl">
+                {heroName}
+              </h1>
+              <p className="text-sm font-semibold opacity-90">
+                {heroLocation}
+              </p>
+              <p className="max-w-2xl text-sm opacity-90">{heroBio}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto mt-6 max-w-6xl px-4 sm:px-6 lg:px-8">
+        {/* Error banner */}
+        {error && (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+            {error}
+          </div>
+        )}
+
+        {/* If no profile: show login view */}
+        {!profile ? (
+          <div className="mt-4 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <SectionCard
+              title="Access your profile"
+              description="Use the email you provided when booking with us."
+            >
+              <div className="grid gap-4 sm:grid-cols-[1.4fr_1.1fr]">
+                <div className="space-y-3">
+                  <div className="space-y-1 text-sm">
+                    <label className="block text-slate-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <label className="block text-slate-700">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) =>
+                        setPassword(e.target.value)
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={loadProfile}
+                      disabled={loading || !email || !password}
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition ${
+                        loading || !email || !password
+                          ? "cursor-not-allowed bg-emerald-100"
+                          : "bg-emerald-400 hover:bg-emerald-500"
+                      }`}
                     >
-                      <input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "#f8fafc",
-                          color: brand.neutral,
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={requestPasswordReset}
-                        disabled={resetStatus.state === "loading"}
-                        style={{
-                          padding: "12px 16px",
-                          borderRadius: "12px",
-                          border: "none",
-                          background:
-                            resetStatus.state === "loading"
-                              ? brand.primarySoft
-                              : brand.primary,
-                          color: brand.neutral,
-                          fontWeight: 800,
-                          cursor:
-                            resetStatus.state === "loading"
-                              ? "not-allowed"
-                              : "pointer",
-                          boxShadow: brand.cardShadow,
-                        }}
-                      >
-                        {resetStatus.state === "loading"
-                          ? "Sending reset link…"
-                          : "Email me a reset link"}
-                      </button>
-                    </div>
-                    {resetStatus.message && (
-                      <p
-                        style={{
-                          margin: 0,
-                          color:
-                            resetStatus.state === "success"
-                              ? "#bbf7d0"
-                              : "#fecdd3",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {resetStatus.message}
-                      </p>
-                    )}
+                      {loading ? "Loading…" : "View profile"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsResetModalOpen(true);
+                        setResetStatus({
+                          state: "idle",
+                          message: "",
+                        });
+                        setResetEmail(email || resetEmail);
+                      }}
+                      className="rounded-xl border border-slate-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-400 hover:bg-blue-50"
+                    >
+                      Set a new password
+                    </button>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div
-                style={{
-                  flex: "1 1 280px",
-                  background: brand.surfaceHighlight,
-                  borderRadius: "18px",
-                  padding: "16px",
-                  border: `1px solid ${brand.cardBorder}`,
-                  boxShadow: brand.cardShadow,
-                  color: brand.neutral,
-                  display: "grid",
-                  gap: "10px",
-                }}
-              >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
-                >
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700 }}>Signed in</p>
-                    <p style={{ margin: 0, color: brand.muted }}>
-                      {contactForm.fullName || "Client"} · {contactForm.email}
+                  {showResetHint && (
+                    <p className="text-xs text-slate-500">
+                      Having trouble signing in? Try requesting a reset
+                      link so you can set a new password.
                     </p>
-                  </div>
+                  )}
                 </div>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <div className="space-y-2 rounded-2xl border border-slate-200 bg-blue-50/70 p-4 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-900">
+                    What you can do here
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs">
+                    <li>Update your contact details and address.</li>
+                    <li>Manage your pets and their profiles.</li>
+                    <li>See and cancel upcoming bookings.</li>
+                    <li>Request a password reset if needed.</li>
+                  </ul>
+                </div>
+              </div>
+            </SectionCard>
+            <ShortcutsSection
+              onAddPet={() => {}}
+              onOpenResetModal={() => {
+                setIsResetModalOpen(true);
+                setResetStatus({ state: "idle", message: "" });
+                setResetEmail(email || resetEmail);
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Signed-in info + toggles */}
+            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-sm font-semibold text-slate-700">
+                  Toggle sections
+                </p>
+                <SectionToggle
+                  label="About"
+                  active={sections.about}
+                  onClick={() => toggleSection("about")}
+                />
+                <SectionToggle
+                  label="Pets"
+                  active={sections.pets}
+                  onClick={() => toggleSection("pets")}
+                />
+                <SectionToggle
+                  label="Bookings"
+                  active={sections.bookings}
+                  onClick={() => toggleSection("bookings")}
+                />
+                <SectionToggle
+                  label="Updates"
+                  active={sections.activity}
+                  onClick={() => toggleSection("activity")}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm">
+                <div className="flex-1">
+                  <p className="font-semibold">
+                    Signed in as {contactForm.fullName || "Client"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {contactForm.email}
+                  </p>
+                </div>
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={loadProfile}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "12px",
-                      border: `1px solid ${brand.cardBorder}`,
-                      background: brand.primarySoft,
-                      color: brand.neutral,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50"
                   >
-                    Refresh data
+                    Refresh
                   </button>
                   <button
                     type="button"
                     onClick={signOut}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: brand.primary,
-                      color: brand.neutral,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
+                    className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
                   >
                     Sign out
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Layout grid */}
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              {/* Left column */}
+              <div className="space-y-6">
+                {sections.about && (
+                  <AboutSection
+                    client={profile?.client}
+                    heroLocation={heroLocation}
+                    heroBio={heroBio}
+                    stats={profileStats}
+                    onEditProfile={() =>
+                      setIsContactModalOpen(true)
+                    }
+                    onChangePassword={() =>
+                      setIsPasswordModalOpen(true)
+                    }
+                  />
+                )}
+
+                {sections.pets && (
+                  <PetsSection
+                    pets={profile?.pets || []}
+                    onAddPet={openNewPetModal}
+                    onEditPet={openEditPetModal}
+                  />
+                )}
+
+                {sections.bookings && (
+                  <BookingsSection
+                    bookings={activeBookings}
+                    onOpenBooking={openBooking}
+                  />
+                )}
+              </div>
+
+              {/* Right column */}
+              <div className="space-y-6">
+                {sections.activity && (
+                  <ActivitySection
+                    activity={profile?.activity || []}
+                    pinnedIds={pinnedActivityIds}
+                    onTogglePin={handleTogglePin}
+                  />
+                )}
+
+                <ShortcutsSection
+                  onAddPet={openNewPetModal}
+                  onOpenResetModal={() => {
+                    setIsResetModalOpen(true);
+                    setResetStatus({
+                      state: "idle",
+                      message: "",
+                    });
+                    setResetEmail(
+                      contactForm.email || resetEmail
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* ---- MODALS ---- */}
+
+      {/* Contact modal */}
+      {isContactModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                Edit profile details
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsContactModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid gap-3 text-sm sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-slate-700">
+                  Full name
+                </label>
+                <input
+                  type="text"
+                  value={contactForm.fullName}
+                  onChange={(e) =>
+                    setContactForm((prev) => ({
+                      ...prev,
+                      fullName: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-700">Phone</label>
+                <input
+                  type="tel"
+                  value={contactForm.phone}
+                  onChange={(e) =>
+                    setContactForm((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-700">Email</label>
+                <input
+                  type="email"
+                  value={contactForm.email}
+                  onChange={(e) =>
+                    setContactForm((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-slate-700">
+                  Service address
+                </label>
+                <textarea
+                  value={contactForm.address}
+                  onChange={(e) =>
+                    setContactForm((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
+                  }
+                  placeholder="Where should we meet you?"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsContactModalOpen(false)}
+                className="rounded-full border border-slate-200 px-4 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveContact}
+                disabled={savingContact}
+                className={`rounded-full px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm ${
+                  savingContact
+                    ? "cursor-not-allowed bg-blue-100"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
+              >
+                {savingContact ? "Saving…" : "Save details"}
+              </button>
+            </div>
           </div>
-        </header>
-
-        <div className="profile-grid" style={{ marginTop: "28px" }}>
-          <aside className="profile-sidebar">
-            <div className="profile-nav">
-              <h3>Quick links</h3>
-              <ul>
-                {profile ? (
-                  <>
-                    <li>
-                      <a href="#details">Profile details</a>
-                    </li>
-                    <li>
-                      <a href="#pets">Pets</a>
-                    </li>
-                    <li>
-                      <a href="#bookings">Bookings</a>
-                    </li>
-                    <li>
-                      <a href="#support">Help & updates</a>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li>
-                      <a href="#access">Access your profile</a>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </div>
-
-            <div className="profile-stat-card">
-              <div className="profile-stat-row">
-                <span className="profile-stat-label">Upcoming visits</span>
-                <span className="profile-stat-value">{profileStats.upcoming}</span>
-              </div>
-              <div className="profile-stat-row">
-                <span className="profile-stat-label">Active pets</span>
-                <span className="profile-stat-value">{profileStats.pets}</span>
-              </div>
-              <div className="profile-stat-row">
-                <span className="profile-stat-label">Saved bookings</span>
-                <span className="profile-stat-value">{profileStats.bookings}</span>
-              </div>
-            </div>
-          </aside>
-
-          <div className="profile-main" style={{ display: "grid", gap: "20px" }}>
-            {error && <div className="profile-error">{error}</div>}
-
-            {profile ? (
-              <>
-                <SectionCard
-                  id="details"
-                  title="Your details"
-                  description="Update your contact information, password, and login email."
-                >
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "12px",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Full name
-                    </label>
-                    <input
-                      type="text"
-                      value={contactForm.fullName}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          fullName: e.target.value,
-                        })
-                      }
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "#f3f4f6",
-                        color: brand.ink,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={contactForm.phone}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          phone: e.target.value,
-                        })
-                      }
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "#f3f4f6",
-                        color: brand.ink,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Service address
-                    </label>
-                    <textarea
-                      value={contactForm.address}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          address: e.target.value,
-                        })
-                      }
-                      placeholder="Where should we meet you?"
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "#f3f4f6",
-                        color: brand.ink,
-                        minHeight: "72px",
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={contactForm.email}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          email: e.target.value,
-                        })
-                      }
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "#f3f4f6",
-                        color: brand.ink,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Change password
-                    </label>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = !showPasswordForm;
-                          setShowPasswordForm(next);
-                          if (!next) {
-                            setCurrentPasswordInput("");
-                            setNewPassword("");
-                            setConfirmPassword("");
-                          } else {
-                            setError("");
-                          }
-                        }}
-                        style={{
-                          alignSelf: "flex-start",
-                          padding: "10px 14px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: brand.surfaceHighlight,
-                          color: brand.ink,
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          boxShadow: brand.cardShadow,
-                        }}
-                      >
-                        {showPasswordForm
-                          ? "Close password form"
-                          : "Change password"}
-                      </button>
-
-                      {showPasswordForm && (
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: "10px",
-                            borderRadius: "14px",
-                            padding: "12px",
-                            background: "#f5f7fb",
-                            border: `1px solid ${brand.cardBorder}`,
-                          }}
-                        >
-                          <input
-                            type="password"
-                            placeholder="Current password"
-                            value={currentPasswordInput}
-                            onChange={(e) =>
-                              setCurrentPasswordInput(e.target.value)
-                            }
-                            style={{
-                              padding: "12px",
-                              borderRadius: "12px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "#f3f4f6",
-                              color: brand.ink,
-                            }}
-                          />
-                          <input
-                            type="password"
-                            placeholder="New password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            style={{
-                              padding: "12px",
-                              borderRadius: "12px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "#f3f4f6",
-                              color: brand.ink,
-                            }}
-                          />
-                          <input
-                            type="password"
-                            placeholder="Confirm new password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            style={{
-                              padding: "12px",
-                              borderRadius: "12px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "#f3f4f6",
-                              color: brand.ink,
-                            }}
-                          />
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              justifyContent: "flex-end",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowPasswordForm(false);
-                                setCurrentPasswordInput("");
-                                setNewPassword("");
-                                setConfirmPassword("");
-                              }}
-                              style={{
-                                padding: "10px 14px",
-                                borderRadius: "12px",
-                                border: `1px solid ${brand.cardBorder}`,
-                                background: "transparent",
-                                color: brand.subtleText,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={savePassword}
-                              disabled={savingPassword}
-                              style={{
-                                padding: "12px 16px",
-                                borderRadius: "12px",
-                                border: "none",
-                                background: savingPassword
-                                  ? brand.primarySoft
-                                  : brand.primary,
-                                color: brand.neutral,
-                                fontWeight: 800,
-                                cursor: savingPassword
-                                  ? "not-allowed"
-                                  : "pointer",
-                                boxShadow: brand.cardShadow,
-                              }}
-                            >
-                              {savingPassword ? "Saving…" : "Update password"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={saveContact}
-                    disabled={savingContact}
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: savingContact
-                        ? brand.primarySoft
-                        : brand.primary,
-                      color: brand.neutral,
-                      fontWeight: 800,
-                      cursor: savingContact ? "not-allowed" : "pointer",
-                      boxShadow: brand.cardShadow,
-                    }}
-                  >
-                    {savingContact ? "Saving…" : "Save details"}
-                  </button>
-                </div>
-              </SectionCard>
-
-              <SectionCard
-                id="pets"
-                title="Your pets"
-                description="Open any card to edit names, breeds, or notes."
-              >
-                {hasPets ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gap: "12px",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(260px, 1fr))",
-                    }}
-                  >
-                    {profile.pets.map((pet) => {
-                      const isEditing = Boolean(editingPets[pet.id]);
-                      const editing = editingPets[pet.id] || {};
-                      const petPhoto =
-                        editing.photoDataUrl ||
-                        editing.photo_data_url ||
-                        pet.photo_data_url;
-                      const petInitial = (pet.name || "?")
-                        .charAt(0)
-                        .toUpperCase();
-                      return (
-                        <div
-                          key={pet.id}
-                          style={{
-                            border: `1px solid ${brand.cardBorder}`,
-                            borderRadius: "16px",
-                            padding: "16px",
-                            background: brand.surfaceHighlight,
-                            boxShadow: brand.cardShadow,
-                            display: "grid",
-                            gap: "10px",
-                            color: brand.ink,
-                          }}
-                        >
-                          {!isEditing ? (
-                            <>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  gap: "12px",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "12px",
-                                  }}
-                                >
-                                  {petPhoto ? (
-                                    <img
-                                      src={petPhoto}
-                                      alt={`${pet.name} profile`}
-                                      style={{
-                                        width: "64px",
-                                        height: "64px",
-                                        borderRadius: "14px",
-                                        objectFit: "cover",
-                                        border: `1px solid ${brand.cardBorder}`,
-                                      }}
-                                    />
-                                  ) : (
-                                    <div
-                                      style={{
-                                        width: "64px",
-                                        height: "64px",
-                                        borderRadius: "14px",
-                                        background: brand.primarySoft,
-                                        color: brand.primary,
-                                        display: "grid",
-                                        placeItems: "center",
-                                        fontWeight: 800,
-                                        border: `1px solid ${brand.cardBorder}`,
-                                      }}
-                                    >
-                                      {petInitial}
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div
-                                      style={{
-                                        fontWeight: 800,
-                                        fontSize: "1.1rem",
-                                        color: brand.ink,
-                                      }}
-                                    >
-                                      {pet.name}
-                                    </div>
-                                    {pet.breed && (
-                                      <span
-                                        style={{
-                                          display: "inline-block",
-                                          marginTop: "6px",
-                                          background: brand.primary,
-                                          color: brand.ink,
-                                          padding: "6px 10px",
-                                          borderRadius: "999px",
-                                          fontSize: "0.85rem",
-                                          fontWeight: 700,
-                                          border: `1px solid ${brand.cardBorder}`,
-                                        }}
-                                      >
-                                        {pet.breed}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              {pet.notes ? (
-                                <p
-                                  style={{ margin: 0, color: brand.subtleText }}
-                                >
-                                  {pet.notes}
-                                </p>
-                              ) : (
-                                <p style={{ margin: 0, color: "#9ca3af" }}>
-                                  No notes added yet.
-                                </p>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => startEditingPet(pet)}
-                                style={{
-                                  justifySelf: "flex-start",
-                                  padding: "10px 14px",
-                                  borderRadius: "12px",
-                                  border: `1px solid ${brand.cardBorder}`,
-                                  background: brand.primary,
-                                  color: brand.ink,
-                                  fontWeight: 700,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Edit pet
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <div style={{ display: "grid", gap: "8px" }}>
-                                <input
-                                  type="text"
-                                  value={editing.name || ""}
-                                  onChange={(e) =>
-                                    updatePetField(
-                                      pet.id,
-                                      "name",
-                                      e.target.value
-                                    )
-                                  }
-                                  style={{
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    background: "#f3f4f6",
-                                    color: brand.ink,
-                                  }}
-                                />
-                                <input
-                                  type="text"
-                                  value={editing.breed || ""}
-                                  onChange={(e) =>
-                                    updatePetField(
-                                      pet.id,
-                                      "breed",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Breed"
-                                  style={{
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    background: "#f3f4f6",
-                                    color: brand.ink,
-                                  }}
-                                />
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    gap: "12px",
-                                    alignItems: "center",
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      gap: "6px",
-                                    }}
-                                  >
-                                    <label
-                                      style={{
-                                        color: brand.subtleText,
-                                        fontWeight: 700,
-                                      }}
-                                    >
-                                      Profile photo
-                                    </label>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) =>
-                                        handleExistingPetPhotoChange(
-                                          pet.id,
-                                          e.target.files?.[0]
-                                        )
-                                      }
-                                      style={{
-                                        padding: "10px",
-                                        borderRadius: "10px",
-                                        border: `1px solid ${brand.cardBorder}`,
-                                        background: "#f3f4f6",
-                                        color: brand.ink,
-                                      }}
-                                    />
-                                  </div>
-                                  {(editing.photoDataUrl ||
-                                    editing.photo_data_url) && (
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "10px",
-                                      }}
-                                    >
-                                      <img
-                                        src={
-                                          editing.photoDataUrl ||
-                                          editing.photo_data_url
-                                        }
-                                        alt={`${
-                                          editing.name || pet.name
-                                        } preview`}
-                                        style={{
-                                          width: "72px",
-                                          height: "72px",
-                                          borderRadius: "14px",
-                                          objectFit: "cover",
-                                          border: `1px solid ${brand.cardBorder}`,
-                                        }}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          clearExistingPetPhoto(pet.id)
-                                        }
-                                        style={{
-                                          padding: "8px 12px",
-                                          borderRadius: "10px",
-                                          border: `1px solid ${brand.cardBorder}`,
-                                          background: "#edf2ff",
-                                          color: brand.ink,
-                                          fontWeight: 700,
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        Remove photo
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                                <textarea
-                                  value={editing.notes || ""}
-                                  onChange={(e) =>
-                                    updatePetField(
-                                      pet.id,
-                                      "notes",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Notes"
-                                  style={{
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    minHeight: "80px",
-                                    background: "#f3f4f6",
-                                    color: brand.ink,
-                                  }}
-                                />
-                              </div>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "8px",
-                                  justifyContent: "flex-end",
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => stopEditingPet(pet.id)}
-                                  style={{
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    background: "#edf2ff",
-                                    color: brand.ink,
-                                    fontWeight: 700,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => savePetEdit(pet.id)}
-                                  style={{
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    border: "none",
-                                    background: brand.primary,
-                                    color: "#fff",
-                                    fontWeight: 800,
-                                    cursor: "pointer",
-                                    boxShadow: brand.cardShadow,
-                                  }}
-                                >
-                                  Save pet
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={emptyStateStyle}>
-                    <p style={{ margin: 0 }}>
-                      <strong>Ready to add a pet?</strong> Your companions will
-                      show here with their favorite details.
-                    </p>
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    marginTop: "18px",
-                    padding: "16px",
-                    borderRadius: "16px",
-                    background: brand.surface,
-                    border: `1px solid ${brand.cardBorder}`,
-                    color: brand.ink,
-                  }}
-                >
-                  <h3 style={{ margin: "0 0 10px", color: brand.ink }}>
-                    Add a new pet
-                  </h3>
-                  <div
-                    style={{
-                      display: "grid",
-                      gap: "10px",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(220px, 1fr))",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
-                      >
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Luna"
-                        value={newPet.name}
-                        onChange={(e) =>
-                          setNewPet({ ...newPet, name: e.target.value })
-                        }
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "#f3f4f6",
-                          color: brand.ink,
-                        }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
-                      >
-                        Profile photo
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleNewPetPhotoChange(e.target.files?.[0])
-                        }
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "#f3f4f6",
-                          color: brand.ink,
-                        }}
-                      />
-                      {newPet.photoDataUrl && (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                          }}
-                        >
-                          <img
-                            src={newPet.photoDataUrl}
-                            alt={`${newPet.name || "New pet"} preview`}
-                            style={{
-                              width: "72px",
-                              height: "72px",
-                              borderRadius: "14px",
-                              objectFit: "cover",
-                              border: `1px solid ${brand.cardBorder}`,
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={clearNewPetPhoto}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "10px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "#edf2ff",
-                              color: brand.ink,
-                              fontWeight: 700,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Remove photo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
-                      >
-                        Breed
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Golden Retriever"
-                        value={newPet.breed}
-                        onChange={(e) =>
-                          setNewPet({ ...newPet, breed: e.target.value })
-                        }
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "#f3f4f6",
-                          color: brand.ink,
-                        }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        gridColumn: "1 / -1",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
-                      >
-                        Notes
-                      </label>
-                      <textarea
-                        placeholder="Feeding instructions, personality notes, medication..."
-                        value={newPet.notes}
-                        onChange={(e) =>
-                          setNewPet({ ...newPet, notes: e.target.value })
-                        }
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "#f3f4f6",
-                          color: brand.ink,
-                          minHeight: "90px",
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      display: "flex",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={createPet}
-                      style={{
-                        padding: "12px 16px",
-                        borderRadius: "12px",
-                        border: "none",
-                        background: brand.primary,
-                        color: brand.neutral,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        boxShadow: brand.cardShadow,
-                      }}
-                    >
-                      Save pet
-                    </button>
-                  </div>
-                </div>
-              </SectionCard>
-
-              <SectionCard
-                id="bookings"
-                title="Bookings"
-                description="Tap a booking to view details or cancel recurring visits. Cancelling removes the event from your calendar, and cancelled bookings are hidden."
-              >
-                {hasBookings ? (
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      padding: 0,
-                      margin: 0,
-                      display: "grid",
-                      gap: "12px",
-                    }}
-                  >
-                    {activeBookings.map((booking) => (
-                      <li
-                        key={booking.id}
-                        onClick={() => openBooking(booking)}
-                        style={{
-                          background: brand.surfaceHighlight,
-                          border: `1px solid ${brand.cardBorder}`,
-                          borderRadius: "16px",
-                          padding: "14px",
-                          boxShadow: brand.cardShadow,
-                          cursor: "pointer",
-                          transition:
-                            "transform 150ms ease, box-shadow 150ms ease",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: "12px",
-                          }}
-                        >
-                          <div>
-                            <p
-                              style={{
-                                margin: "0 0 4px",
-                                fontWeight: 800,
-                                color: brand.primary,
-                              }}
-                            >
-                              {booking.service_title ||
-                                booking?.services_catalog?.title ||
-                                "Service"}
-                            </p>
-                            <p
-                              style={{
-                                margin: 0,
-                                color: brand.subtleText,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {formatDateRange(booking)}
-                            </p>
-                          </div>
-                          <span
-                            style={{
-                              background: brand.primary,
-                              color: brand.ink,
-                              padding: "6px 12px",
-                              borderRadius: "999px",
-                              fontWeight: 700,
-                              fontSize: "0.9rem",
-                              border: `1px solid ${brand.cardBorder}`,
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            {bookingStatusLabel(booking.status)}
-                          </span>
-                        </div>
-                        {booking.notes && (
-                          <p
-                            style={{
-                              margin: "8px 0 0",
-                              color: brand.subtleText,
-                            }}
-                          >
-                            {booking.notes}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div style={emptyStateStyle}>
-                    <p style={{ margin: 0 }}>
-                      <strong>No bookings yet.</strong> Bookings will appear
-                      here with times, services, and notes.
-                    </p>
-                  </div>
-                )}
-              </SectionCard>
-
-              <SectionCard
-                id="support"
-                title="Need help?"
-                description="Message us anytime and we’ll make sure your profile and bookings stay up to date."
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "12px",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <p style={{ margin: 0, color: brand.subtleText }}>
-                      Prefer a human touch? Email our client care team and we’ll
-                      update your pets, bookings, or contact details for you.
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      flexWrap: "wrap",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <a
-                      href="mailto:jeroenandpaws@gmail.com"
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: brand.surfaceHighlight,
-                        color: brand.neutral,
-                        fontWeight: 800,
-                        textDecoration: "none",
-                        boxShadow: brand.cardShadow,
-                      }}
-                    >
-                      Email client care
-                    </a>
-                    <button
-                      type="button"
-                      onClick={loadProfile}
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: "12px",
-                        border: "none",
-                        background: brand.primary,
-                        color: brand.ink,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        boxShadow: brand.cardShadow,
-                      }}
-                    >
-                      Refresh profile
-                    </button>
-                  </div>
-                </div>
-              </SectionCard>
-            </>
-          ) : (
-            <SectionCard
-              id="access"
-              title="Welcome back"
-              description="Enter your email above to unlock your personalized client hub."
-            >
-              <div
-                style={{ ...emptyStateStyle, background: brand.primarySoft }}
-              >
-                <p style={{ margin: 0 }}>
-                  <strong>Tip:</strong> Use the same email you used during
-                  booking to instantly load your profile.
-                </p>
-              </div>
-            </SectionCard>
-          )}
         </div>
-      </div>
+      )}
 
+      {/* Password modal */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                Change password
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsPasswordModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="space-y-1">
+                <label className="text-slate-700">
+                  Current password
+                </label>
+                <input
+                  type="password"
+                  value={currentPasswordInput}
+                  onChange={(e) =>
+                    setCurrentPasswordInput(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-700">
+                  New password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) =>
+                    setNewPassword(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-700">
+                  Confirm new password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPasswordModalOpen(false);
+                  setCurrentPasswordInput("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+                className="rounded-full border border-slate-200 px-4 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={savePassword}
+                disabled={savingPassword}
+                className={`rounded-full px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm ${
+                  savingPassword
+                    ? "cursor-not-allowed bg-blue-100"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
+              >
+                {savingPassword ? "Saving…" : "Update password"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pet modal */}
+      {isPetModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                {petModalMode === "new" ? "Add a pet" : "Edit pet"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsPetModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid gap-3 text-sm sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-slate-700">Name</label>
+                <input
+                  type="text"
+                  value={petForm.name}
+                  onChange={(e) =>
+                    setPetForm((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  placeholder="Luna"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-700">Breed</label>
+                <input
+                  type="text"
+                  value={petForm.breed}
+                  onChange={(e) =>
+                    setPetForm((prev) => ({
+                      ...prev,
+                      breed: e.target.value,
+                    }))
+                  }
+                  placeholder="Golden Retriever"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-700">
+                  Profile photo
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    handlePetPhotoChange(e.target.files?.[0])
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none file:mr-2 file:rounded-lg file:border-none file:bg-blue-100 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-blue-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                {(petForm.photoDataUrl ||
+                  petForm.photo_data_url) && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <img
+                      src={
+                        petForm.photoDataUrl ||
+                        petForm.photo_data_url
+                      }
+                      alt={`${petForm.name || "Pet"} preview`}
+                      className="h-16 w-16 rounded-xl border border-slate-200 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearPetPhoto}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                    >
+                      Remove photo
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-slate-700">Notes</label>
+                <textarea
+                  value={petForm.notes}
+                  onChange={(e) =>
+                    setPetForm((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
+                  placeholder="Feeding instructions, personality notes, medication..."
+                  rows={3}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPetModalOpen(false)}
+                className="rounded-full border border-slate-200 px-4 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={savePet}
+                className="rounded-full bg-blue-500 px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm hover:bg-blue-600"
+              >
+                {petModalMode === "new" ? "Save pet" : "Update pet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking modal */}
       {selectedBooking && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "grid",
-            placeItems: "center",
-            padding: "16px",
-            zIndex: 20,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "18px",
-              padding: "20px",
-              width: "min(520px, 96vw)",
-              boxShadow: brand.cardShadow,
-              border: `1px solid ${brand.cardBorder}`,
-              display: "grid",
-              gap: "10px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <h3 style={{ margin: 0, color: brand.neutral }}>
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
                 Booking details
               </h3>
               <button
                 type="button"
                 onClick={() => setSelectedBooking(null)}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "1.2rem",
-                  cursor: "pointer",
-                  color: brand.subtleText,
-                }}
+                className="text-slate-400 hover:text-slate-600"
               >
                 ✕
               </button>
             </div>
-            <p style={{ margin: 0, color: brand.primary, fontWeight: 800 }}>
+            <p className="text-sm font-bold text-blue-700">
               {selectedBooking.service_title ||
                 selectedBooking?.services_catalog?.title ||
                 "Service"}
             </p>
-            <p style={{ margin: 0, color: brand.neutral, fontWeight: 600 }}>
+            <p className="text-sm text-slate-800">
               {formatDateRange(selectedBooking)}
             </p>
-            <p
-              style={{
-                margin: 0,
-                color: brand.subtleText,
-                textTransform: "capitalize",
-              }}
-            >
-              Status: {bookingStatusLabel(selectedBooking.status)}
+            <p className="mt-1 text-xs text-slate-600">
+              Status:{" "}
+              <span className="font-semibold">
+                {bookingStatusLabel(selectedBooking.status)}
+              </span>
             </p>
             {selectedBooking.notes && (
-              <p style={{ margin: "8px 0 0", color: brand.subtleText }}>
+              <p className="mt-2 text-sm text-slate-700">
                 {selectedBooking.notes}
               </p>
             )}
-            <p style={{ margin: "4px 0 0", color: brand.subtleText }}>
-              Cancelling will end any recurrence request and remove this visit
-              from your calendar.
+            <p className="mt-2 text-xs text-slate-500">
+              Cancelling will end any recurrence request and remove this
+              visit from your calendar.
             </p>
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                justifyContent: "flex-end",
-              }}
-            >
+            <div className="mt-4 flex items-center justify-end gap-3">
               {bookingAction.error && (
-                <span
-                  style={{
-                    color: "#b91c1c",
-                    fontWeight: 700,
-                    marginRight: "auto",
-                  }}
-                >
+                <span className="mr-auto text-xs font-semibold text-rose-700">
                   {bookingAction.error}
                 </span>
               )}
@@ -2128,26 +1741,87 @@ const ProfilePage = () => {
                 type="button"
                 onClick={cancelBooking}
                 disabled={bookingAction.cancelling}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: "10px",
-                  border: "none",
-                  background: bookingAction.cancelling
-                    ? brand.primarySoft
-                    : "#ef4444",
-                  color: "#fff",
-                  fontWeight: 800,
-                  cursor: bookingAction.cancelling ? "not-allowed" : "pointer",
-                }}
+                className={`rounded-full px-4 py-1 text-xs font-semibold text-white shadow-sm ${
+                  bookingAction.cancelling
+                    ? "cursor-not-allowed bg-rose-200"
+                    : "bg-rose-500 hover:bg-rose-600"
+                }`}
               >
-                {bookingAction.cancelling ? "Cancelling…" : "Cancel booking"}
+                {bookingAction.cancelling
+                  ? "Cancelling…"
+                  : "Cancel booking"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </main>
+
+      {/* Reset modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                Reset your password
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm text-slate-700">
+              We will send a link to set a new password to the email
+              associated with your profile.
+            </p>
+            <div className="mt-3 space-y-2 text-sm">
+              <label className="text-slate-700">
+                Email address
+              </label>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-end gap-3">
+              {resetStatus.message && (
+                <span
+                  className={`mr-auto text-xs font-semibold ${
+                    resetStatus.state === "success"
+                      ? "text-emerald-700"
+                      : resetStatus.state === "error"
+                      ? "text-rose-700"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {resetStatus.message}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={requestPasswordReset}
+                disabled={resetStatus.state === "loading"}
+                className={`rounded-full px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm ${
+                  resetStatus.state === "loading"
+                    ? "cursor-not-allowed bg-blue-100"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
+              >
+                {resetStatus.state === "loading"
+                  ? "Sending…"
+                  : "Email me a reset link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default ProfilePage;
+export default ModernProfile;
