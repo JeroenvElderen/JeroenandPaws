@@ -556,7 +556,7 @@ const BookingModal = ({ service, onClose }) => {
           : `and the ${anchorEircode} routing key`;
 
         setTravelNote(
-          `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
+          `We estimate about ${minutes} minutes of travel`
         );
       } catch (lookupError) {
         if (isCancelled) return;
@@ -1775,10 +1775,6 @@ const BookingModal = ({ service, onClose }) => {
                       placeholder="e.g. A98H940"
                     />
                   </label>
-                  <p className="muted subtle">
-                    We’ll map your Eircode against our calendar to plan travel from home
-                    or the previous booking automatically.
-                  </p>
                 </div>
                 <p className="muted subtle">{travelNote}</p>
               </div>
