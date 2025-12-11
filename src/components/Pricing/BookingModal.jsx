@@ -501,8 +501,17 @@ const BookingModal = ({ service, onClose }) => {
     }
 
     const hasFullClientEircode = isFullEircode(normalized);
-
-    const anchorEircode = HOME_EIRCODE;
+    const anchorEircode =
+      normalizeEircode(
+        previousCalendarStop?.eircode ||
+          previousCalendarStop?.client_address ||
+          HOME_EIRCODE
+      ) || HOME_EIRCODE;
+    const anchorLabel = previousCalendarStop
+      ? previousCalendarStop.eircode
+        ? `from your previous booking (${previousCalendarStop.eircode})`
+        : "from your previous booking"
+      : `from home base (${HOME_EIRCODE})`;
 
     if (!hasFullClientEircode) {
       const minutes = estimateTravelMinutes(
@@ -513,7 +522,7 @@ const BookingModal = ({ service, onClose }) => {
       setClientCoordinates(null);
       setTravelMinutes(minutes);
       setTravelNote(
-        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
+        `Please enter your full 7-character Eircode so we can geocode your exact location. We're using routing keys ${anchorLabel} as a fallback for now.`
       );
       return () => controller.abort();
     }
@@ -524,12 +533,16 @@ const BookingModal = ({ service, onClose }) => {
 
         const [fromCoords, anchorCoords] = await Promise.all([
           geocodeEircode(normalized, controller.signal),
-          Promise.resolve(homeCoordinates),
+          anchorEircode === HOME_EIRCODE
+            ? Promise.resolve(homeCoordinates)
+            : geocodeEircode(anchorEircode, controller.signal),
         ]);
 
         if (isCancelled) return;
 
-        const resolvedAnchorCoords = anchorCoords || homeCoordinates;
+        const resolvedAnchorCoords =
+          anchorCoords ||
+          (anchorEircode === HOME_EIRCODE ? homeCoordinates : null);
 
         setClientCoordinates(fromCoords);
         setClientAddress(normalized);
@@ -540,14 +553,12 @@ const BookingModal = ({ service, onClose }) => {
         );
         setTravelMinutes(minutes);
 
-        const anchorLabel = `from home base (${HOME_EIRCODE})`;
-
         const geocodeDescriptor = fromCoords
           ? "using your exact Eircode location"
           : "using your routing key as a fallback";
         const anchorDescriptor = resolvedAnchorCoords
-          ? "and our exact A98H940 address"
-          : "and our base routing key";
+          ? `and our exact ${anchorEircode} address`
+          : `and the ${anchorEircode} routing key`;
 
         setTravelNote(
           `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
@@ -578,13 +589,13 @@ const BookingModal = ({ service, onClose }) => {
       controller.abort();
     };
   }, [
-    clientAddress,
     clientEircode,
     estimateTravelMinutes,
     geocodeEircode,
     homeCoordinates,
     isFullEircode,
     normalizeEircode,
+    previousCalendarStop,
   ]);
 
   useEffect(() => {
@@ -869,6 +880,30 @@ const BookingModal = ({ service, onClose }) => {
       return acc;
     }, {});
   }, [calendarDays]);
+  const calendarStops = useMemo(() => {
+    const stops = availability?.stops;
+    if (!Array.isArray(stops)) return [];
+
+    return stops
+      .map((stop) => {
+        const startIso = stop.start_at || stop.startAt || stop.start;
+        const endIso = stop.end_at || stop.endAt || stop.end;
+        if (!startIso || !endIso) return null;
+
+        const start = new Date(startIso);
+        const end = new Date(endIso);
+        if (Number.isNaN(start) || Number.isNaN(end)) return null;
+
+        return {
+          ...stop,
+          start,
+          end,
+          eircode: normalizeEircode(stop.client_address || stop.address || ""),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.end - b.end);
+  }, [availability, normalizeEircode]);
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
     [visibleMonth]
@@ -889,6 +924,23 @@ const BookingModal = ({ service, onClose }) => {
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [selectedSlots]);
 
+  const selectedStartDateTime = useMemo(() => {
+    if (!selectedDate) return null;
+    const time = selectedTime || "00:00";
+    const candidate = new Date(`${selectedDate}T${time}:00Z`);
+    return Number.isNaN(candidate) ? null : candidate;
+  }, [selectedDate, selectedTime]);
+
+  const previousCalendarStop = useMemo(() => {
+    if (!selectedStartDateTime || calendarStops.length === 0) return null;
+
+    return calendarStops.reduce((closest, stop) => {
+      if (stop.end > selectedStartDateTime) return closest;
+      if (!closest || stop.end > closest.end) return stop;
+      return closest;
+    }, null);
+  }, [calendarStops, selectedStartDateTime]);
+  
   useEffect(() => {
     if (!selectedDate) return;
 

@@ -1,5 +1,22 @@
 const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { getSchedule } = require("./_lib/graph");
+const { getSchedule, listCalendarEvents } = require("./_lib/graph");
+
+const extractEircode = (value = "") => {
+  const match = String(value).toUpperCase().match(/([A-Z0-9]{3}[A-Z0-9]{4})/);
+  return match ? match[1] : "";
+};
+
+const deriveEventAddress = (event = {}) => {
+  const location = event?.location || {};
+  const display =
+    location.displayName ||
+    location?.address?.text ||
+    location?.address?.street ||
+    "";
+
+  const resolvedEircode = extractEircode(display);
+  return (resolvedEircode || display || "").trim();
+};
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
@@ -25,6 +42,10 @@ module.exports = async (req, res) => {
       10
     );
 
+    const windowStart = new Date();
+    const windowEnd = new Date(windowStart);
+    windowEnd.setDate(windowEnd.getDate() + windowDays);
+
     const availability = await getSchedule({
       accessToken,
       calendarId,
@@ -34,8 +55,37 @@ module.exports = async (req, res) => {
         : serviceDurationMinutes,
     });
 
+    let calendarStops = [];
+    try {
+      const events = await listCalendarEvents({
+        accessToken,
+        calendarId,
+        startDateTime: windowStart.toISOString(),
+        endDateTime: windowEnd.toISOString(),
+      });
+
+      calendarStops = (events || [])
+        .map((event) => {
+          const startAt = event?.start?.dateTime;
+          const endAt = event?.end?.dateTime;
+          if (!startAt || !endAt) return null;
+
+          return {
+            start_at: startAt,
+            end_at: endAt,
+            client_address: deriveEventAddress(event),
+          };
+        })
+        .filter(Boolean);
+    } catch (calendarError) {
+      console.error("Calendar event fetch failed", calendarError);
+    }
+
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(availability));
+    res.end(JSON.stringify({
+      ...availability,
+      stops: calendarStops,
+    }));
   } catch (error) {
     console.error("Availability error", error);
     res.statusCode = 500;
