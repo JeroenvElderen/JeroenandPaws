@@ -31,12 +31,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid JSON" });
     }
 
-    const eventType = event?.event_type;
+    const rawEventType = event?.event_type || "";
+    const eventType = rawEventType.toUpperCase();
     const paymentOrderId = event?.data?.id;
-    const paymentStatus = event?.data?.state;
+    const paymentStatus = (event?.data?.state || "").toUpperCase();
 
     console.log("🧾 Event received:", {
-      eventType,
+      eventType: rawEventType,
       paymentOrderId,
       paymentStatus,
     });
@@ -46,7 +47,54 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing payment order ID" });
     }
 
-    // We only act when payment is completed
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL, // correct URL var
+      process.env.SUPABASE_SERVICE_ROLE_KEY // correct service role var
+    );
+
+    const cancelledStates = new Set([
+      "CANCELLED",
+      "CANCELED",
+      "FAILED",
+      "DECLINED",
+      "VOIDED",
+      "EXPIRED",
+      "REVERSED",
+      "REVOKED",
+    ]);
+
+    const cancelledEvents = new Set([
+      "ORDER_CANCELLED",
+      "ORDER_CANCELED",
+      "ORDER_FAILED",
+      "ORDER_EXPIRED",
+    ]);
+
+    // Delete unpaid bookings if Revolut reports a cancellation/failed state
+    if (cancelledStates.has(paymentStatus) || cancelledEvents.has(eventType)) {
+      console.log("🗑 Payment not completed. Removing unpaid bookings.");
+
+      const { data: deletedRows, error: deleteError } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("payment_order_id", paymentOrderId)
+        .neq("payment_status", "paid")
+        .select("id");
+
+      if (deleteError) {
+        console.error("❌ Failed to delete unpaid booking:", deleteError);
+        throw new Error("Failed to delete unpaid booking");
+      }
+
+      console.log(
+        "🧹 Deleted unpaid bookings:",
+        deletedRows?.map((row) => row.id) || []
+      );
+
+      return res.status(200).json({ ok: true });
+    }
+
+    // Only mark as paid when the order is completed
     if (eventType !== "ORDER_COMPLETED") {
       console.log("⏭ Ignoring non-completed event:", eventType);
       return res.status(200).json({ ok: true });
@@ -58,11 +106,6 @@ export default async function handler(req, res) {
     }
 
     console.log("💰 Payment completed! Updating booking…");
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL, // correct URL var
-      process.env.SUPABASE_SERVICE_ROLE_KEY // correct service role var
-    );
 
     const { data, error } = await supabase
       .from("bookings")

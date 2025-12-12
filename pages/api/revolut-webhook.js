@@ -51,12 +51,53 @@ export default async function handler(req, res) {
     return res.status(400).end("Bad JSON");
   }
 
-  if ((event.event_type || event.type) !== "ORDER_COMPLETED") {
-    return res.status(200).end("Ignored");
-  }
-
+  const rawEventType = event.event_type || event.type || "";
+  const eventType = rawEventType.toUpperCase();
   const paymentOrderId = event.data?.id;
   if (!paymentOrderId) return res.status(400).end("Missing payment id");
+
+  const paymentStatus = (event?.data?.state || "").toUpperCase();
+  const cancelledStates = new Set([
+    "CANCELLED",
+    "CANCELED",
+    "FAILED",
+    "DECLINED",
+    "VOIDED",
+    "EXPIRED",
+    "REVERSED",
+    "REVOKED",
+  ]);
+  const cancelledEvents = new Set([
+    "ORDER_CANCELLED",
+    "ORDER_CANCELED",
+    "ORDER_FAILED",
+    "ORDER_EXPIRED",
+  ]);
+
+  if (cancelledStates.has(paymentStatus) || cancelledEvents.has(eventType)) {
+    const { data: deletedBookings, error: deleteError } = await supabase
+      .from("bookings")
+      .delete()
+      .eq("payment_order_id", paymentOrderId)
+      .neq("payment_status", "paid")
+      .select("id");
+
+    if (deleteError) {
+      console.error("❌ Failed to delete unpaid booking:", deleteError);
+      return res.status(500).end("Failed to delete unpaid booking");
+    }
+
+    console.log(
+      "🧹 Deleted unpaid bookings:",
+      deletedBookings?.map((row) => row.id) || []
+    );
+
+    return res.status(200).end("Deleted unpaid booking(s)");
+  }
+
+  if (eventType !== "ORDER_COMPLETED") {
+    return res.status(200).end("Ignored");
+  }
 
   // 🎯 Lookup booking
   const { data: booking, error } = await supabase
