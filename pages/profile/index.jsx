@@ -1266,31 +1266,6 @@ const ModernProfile = () => {
           <>
             {/* Signed-in info + toggles */}
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-sm font-semibold text-slate-700">
-                  Toggle sections
-                </p>
-                <SectionToggle
-                  label="About"
-                  active={sections.about}
-                  onClick={() => toggleSection("about")}
-                />
-                <SectionToggle
-                  label="Pets"
-                  active={sections.pets}
-                  onClick={() => toggleSection("pets")}
-                />
-                <SectionToggle
-                  label="Bookings"
-                  active={sections.bookings}
-                  onClick={() => toggleSection("bookings")}
-                />
-                <SectionToggle
-                  label="Updates"
-                  active={sections.activity}
-                  onClick={() => toggleSection("activity")}
-                />
-              </div>
               <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm">
                 <div className="flex-1">
                   <p className="font-semibold">
@@ -1808,8 +1783,8 @@ const ModernProfile = () => {
                 disabled={resetStatus.state === "loading"}
                 className={`rounded-full px-4 py-1 text-xs font-semibold shadow-sm ${
                   resetStatus.state === "loading"
-                    ? "cursor-not-allowed bg-brand-purple/15 text-slate-500"
-                    : "bg-brand-purple text-white hover:bg-brand-purpleDark"
+                    ? "cursor-not-allowed bg-blue-100"
+                    : "bg-blue-500 hover:bg-blue-600"
                 }`}
               >
                 {resetStatus.state === "loading"
