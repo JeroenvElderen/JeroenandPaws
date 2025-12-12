@@ -5,6 +5,7 @@ import React, {
   useState,
 } from "react";
 import { useAuth } from "../../src/context/AuthContext";
+import { getPreferredChatUrl } from "../../src/utils/chatLinks";
 
 // ---- MOCK PROFILE SUPPORT (unchanged semantics) ----
 
@@ -422,21 +423,24 @@ const ActivitySection = ({
 const ShortcutsSection = ({
   onAddPet,
   onOpenResetModal,
+  chatUrl,
 }) => (
   <SectionCard
     title="Shortcuts"
     description="Jump to the actions you use the most."
   >
     <div className="flex flex-wrap gap-3">
-      <button
-        type="button"
+      <a
+        href={chatUrl}
+        target="_blank"
+        rel="noreferrer"
         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-purple hover:shadow sm:w-auto"
       >
         Message trainer
         <p className="text-xs font-normal text-slate-600">
-          Email client care for help
+          Open WhatsApp to contact me
         </p>
-      </button>
+      </a>
       <button
         type="button"
         onClick={onAddPet}
@@ -473,6 +477,8 @@ const ModernProfile = () => {
     setProfile: setAuthProfile,
     logout: clearAuth,
   } = useAuth();
+
+  const whatsappChatUrl = useMemo(() => getPreferredChatUrl(), []);
 
   const initialProfile = useMockProfile ? mockProfile : authProfile;
 
@@ -1260,6 +1266,7 @@ const ModernProfile = () => {
                 setResetStatus({ state: "idle", message: "" });
                 setResetEmail(email || resetEmail);
               }}
+              chatUrl={whatsappChatUrl}
             />
           </div>
         ) : (
@@ -1351,6 +1358,7 @@ const ModernProfile = () => {
                       contactForm.email || resetEmail
                     );
                   }}
+                  chatUrl={whatsappChatUrl}
                 />
               </div>
             </div>
