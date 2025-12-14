@@ -14,7 +14,6 @@ const TimesSection = ({
   onUseRecommended,
   hiddenSlotCount = 0,
   travelMinutes = 0,
-  travelAnchor = "home",
 }) => {
   return (
     <div className="times-card" ref={timesSectionRef}>
@@ -66,8 +65,7 @@ const TimesSection = ({
         {hiddenSlotCount > 0 && (
           <p className="muted subtle">
             {hiddenSlotCount} slot{hiddenSlotCount === 1 ? "" : "s"} hidden because we need about {travelMinutes}
-            minutes of travel time from {" "}
-            {travelAnchor === "previous" ? "your earlier booking" : "home base"}.
+            minutes of travel time between other bookings that day.
           </p>
         )}
 

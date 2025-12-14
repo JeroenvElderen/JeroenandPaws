@@ -248,6 +248,7 @@ module.exports = async (req, res) => {
       bookingMode,
       additionals = [],
       amount,
+      payment_preference: paymentPreference = "pay_now",
     } = body;
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
@@ -381,6 +382,39 @@ module.exports = async (req, res) => {
           message: "Booking created but no booking ID returned",
         })
       );
+    }
+
+    if (paymentPreference === "invoice" && accessToken) {
+      const scheduleList = bookingResults
+        .map((entry, index) => {
+          return `<li><strong>Visit ${index + 1}:</strong> ${escapeHtml(
+            entry.timing.start
+          )} — ${escapeHtml(entry.timing.end)}</li>`;
+        })
+        .join("");
+
+      try {
+        await sendMail({
+          accessToken,
+          fromCalendarId: calendarId,
+          to: "jeroen@jeroenandpaws.com",
+          subject: `Invoice requested: ${escapeHtml(serviceTitle || "Booking")}`,
+          body: `
+            <div>
+              <p><strong>Client:</strong> ${escapeHtml(clientName)} (${escapeHtml(
+            clientEmail
+          )})</p>
+              <p><strong>Service:</strong> ${escapeHtml(serviceTitle)}</p>
+              <p><strong>Address/Eircode:</strong> ${escapeHtml(clientAddress)}</p>
+              <p><strong>Schedule:</strong></p>
+              <ul>${scheduleList}</ul>
+              <p><strong>Notes:</strong> ${escapeHtml(notes || "(none)")}</p>
+            </div>
+          `,
+        });
+      } catch (mailError) {
+        console.error("Invoice request email failed", mailError);
+      }
     }
 
     // ---------------------------------------

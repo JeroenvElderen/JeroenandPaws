@@ -10,6 +10,20 @@ const mapBusyIntervals = (items) =>
     end: new Date(item.end.dateTime),
   }));
 
+const mapScheduleItems = (items) =>
+  items
+    .map((item) => ({
+      start: item?.start?.dateTime || null,
+      end: item?.end?.dateTime || null,
+      subject: item?.subject || "",
+      location:
+        item?.location?.displayName ||
+        item?.location?.locationEmailAddress ||
+        item?.location?.address?.street ||
+        "",
+    }))
+    .filter((item) => item.start && item.end);
+
 const overlaps = (start, end, busy) => {
   return busy.some((interval) => start < interval.end && end > interval.start);
 };
@@ -104,6 +118,7 @@ const getSchedule = async ({
   const totalDays = Math.max(windowDays, 1);
   const startTime = new Date();
   const busy = [];
+  const scheduleItems = [];
   const timeZone = BUSINESS_TIME_ZONE;
 
   for (let offset = 0; offset < totalDays; offset += MAX_GRAPH_WINDOW_DAYS) {
@@ -124,6 +139,7 @@ const getSchedule = async ({
     const schedule = data.value?.[0];
 
     busy.push(...mapBusyIntervals(schedule?.scheduleItems || []));
+    scheduleItems.push(...mapScheduleItems(schedule?.scheduleItems || []));
   }
 
   const slotsByDate = buildSlots(
@@ -139,7 +155,15 @@ const getSchedule = async ({
     slots: slotsByDate[date],
   }));
 
-  return { timeZone, dates };
+  const events = scheduleItems.reduce((acc, item) => {
+    const dateKey = item.start.slice(0, 10);
+    if (!dateKey) return acc;
+    acc[dateKey] = acc[dateKey] || [];
+    acc[dateKey].push(item);
+    return acc;
+  }, {});
+
+  return { timeZone, dates, events };
 };
 
 const createEvent = async ({

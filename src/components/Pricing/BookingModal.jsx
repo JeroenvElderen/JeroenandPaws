@@ -97,9 +97,6 @@ const BookingModal = ({ service, onClose }) => {
     state: "idle",
     message: "",
   });
-  const [travelAnchor, setTravelAnchor] = useState("home");
-  const [homeCoordinates, setHomeCoordinates] = useState(HOME_COORDS);
-  const [previousBookingTime, setPreviousBookingTime] = useState("");
   const [clientCoordinates, setClientCoordinates] = useState(null);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [travelNote, setTravelNote] = useState("");
@@ -135,6 +132,11 @@ const BookingModal = ({ service, onClose }) => {
     (eircodeValue) => normalizeEircode(eircodeValue).slice(0, 3),
     [normalizeEircode]
   );
+
+  const extractEircode = useCallback((value = "") => {
+    const match = value.toUpperCase().match(/([A-Z0-9]{3}\s?[A-Z0-9]{4})/);
+    return match ? normalizeEircode(match[1]) : "";
+  }, [normalizeEircode]);
 
   const geocodeEircode = useCallback(async (eircodeValue, signal) => {
     const query = normalizeEircode(eircodeValue);
@@ -187,7 +189,7 @@ const BookingModal = ({ service, onClose }) => {
       const anchor =
         to || {
           eircode: HOME_EIRCODE,
-          coords: homeCoordinates,
+          coords: HOME_COORDS,
         };
 
       if (from?.coords && anchor?.coords) {
@@ -213,13 +215,19 @@ const BookingModal = ({ service, onClose }) => {
       if (routingKey === anchorKey) return 15;
       return 45;
     },
-    [getRoutingKey, homeCoordinates]
+    [getRoutingKey]
   );
 
   const parseTimeToMinutes = useCallback((time) => {
     if (!time) return 0;
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + (minutes || 0);
+  }, []);
+
+  const minutesFromIso = useCallback((isoString) => {
+    if (!isoString) return null;
+    const date = new Date(isoString);
+    return date.getUTCHours() * 60 + date.getUTCMinutes();
   }, []);
 
   const formatCurrency = useCallback((value) => {
@@ -232,35 +240,22 @@ const BookingModal = ({ service, onClose }) => {
   const serviceLabel = (service?.label || service?.title || "").toLowerCase();
   const isBoardingService = serviceLabel.includes("boarding");
   const allowWeeklyRecurring = allowRecurring && !isBoardingService;
+  const serviceDuration = useMemo(
+    () =>
+      Number.isFinite(service?.durationMinutes) && service.durationMinutes > 0
+        ? service.durationMinutes
+        : 60,
+    [service?.durationMinutes]
+  );
   const normalizeAvailability = useCallback(
     (data = {}) => ({
       ...data,
       dates: data?.dates || [],
       timeZone: BUSINESS_TIME_ZONE,
+      events: data?.events || {},
     }),
     []
   );
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadHomeCoordinates = async () => {
-      try {
-        const coords = await geocodeEircode(HOME_EIRCODE, controller.signal);
-        if (coords) {
-          setHomeCoordinates(coords);
-        }
-      } catch (homeLookupError) {
-        console.warn("Home Eircode lookup failed, using fallback coords", {
-          error: homeLookupError,
-        });
-      }
-    };
-
-    loadHomeCoordinates();
-
-    return () => controller.abort();
-  }, [geocodeEircode]);
 
   const hasAtLeastOneDog = useMemo(() => {
     if (selectedPetIds.length > 0) return true;
@@ -307,15 +302,30 @@ const BookingModal = ({ service, onClose }) => {
     (slot) => {
       if (!slot || !slot.available) return false;
       const startMinutes = parseTimeToMinutes(slot.time);
+      const endMinutes = startMinutes + serviceDuration;
+      const bufferMinutes = Math.max(travelMinutes, 0);
 
-      const baseMinutes =
-        travelAnchor === "previous" && previousBookingTime
-          ? parseTimeToMinutes(previousBookingTime)
-          : 8 * 60;
+      const hasConflict = dayEvents.some((event) => {
+        const eventStart = minutesFromIso(event.start);
+        const eventEnd = minutesFromIso(event.end);
 
-      return startMinutes >= baseMinutes + travelMinutes;
+        if (eventStart === null || eventEnd === null) return false;
+
+        return (
+          startMinutes < eventEnd + bufferMinutes &&
+          endMinutes > eventStart - bufferMinutes
+        );
+      });
+
+      return !hasConflict;
     },
-    [parseTimeToMinutes, previousBookingTime, travelAnchor, travelMinutes]
+    [
+      dayEvents,
+      minutesFromIso,
+      parseTimeToMinutes,
+      serviceDuration,
+      travelMinutes,
+    ]
   );
 
   const isDayAvailableForService = useCallback(
@@ -497,6 +507,12 @@ const BookingModal = ({ service, onClose }) => {
     let isCancelled = false;
     const controller = new AbortController();
 
+    if (!selectedDate) {
+      setTravelMinutes(0);
+      setTravelNote("Pick a date to see travel constraints.");
+      return () => controller.abort();
+    }
+
     const normalized = normalizeEircode(clientEircode);
     if (!normalized) {
       setClientCoordinates(null);
@@ -505,94 +521,82 @@ const BookingModal = ({ service, onClose }) => {
       return () => controller.abort();
     }
 
+    if (!dayEvents.length) {
+      setClientCoordinates(null);
+      setTravelMinutes(0);
+      setClientAddress(normalized);
+      setTravelNote(
+        "No other bookings on this date — showing all available slots."
+      );
+      return () => controller.abort();
+    }
+
     const hasFullClientEircode = isFullEircode(normalized);
 
-    const anchorEircode =
-      travelAnchor === "home"
-        ? HOME_EIRCODE
-        : normalizeEircode(clientAddress) || HOME_EIRCODE;
-
     if (!hasFullClientEircode) {
-      const minutes = estimateTravelMinutes(
-        { eircode: normalized, coords: null },
-        { eircode: anchorEircode, coords: null }
-      );
-
       setClientCoordinates(null);
-      setTravelMinutes(minutes);
+      setTravelMinutes(0);
+      setClientAddress(normalized);
       setTravelNote(
-        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
+        "Please enter your full 7-character Eircode so we can match travel time with your other bookings."
       );
       return () => controller.abort();
     }
 
     const loadCoordinatesAndEstimate = async () => {
       try {
-        setTravelNote("Looking up your Eircode with OpenStreetMap (Nominatim)...");
+        setTravelNote(
+          "Calculating travel time against your other bookings for this day…"
+        );
 
-        const [fromCoords, anchorCoords] = await Promise.all([
-          geocodeEircode(normalized, controller.signal),
-          travelAnchor === "home"
-            ? Promise.resolve(homeCoordinates)
-            : geocodeEircode(anchorEircode, controller.signal),
-        ]);
+        const fromCoords = await geocodeEircode(
+          normalized,
+          controller.signal
+        );
+
+        const eventEstimates = await Promise.all(
+          dayEvents.map(async (event) => {
+            const anchorEircode = extractEircode(
+              event.location || event.subject || ""
+            );
+
+            if (!anchorEircode) return null;
+
+            const anchorCoords = isFullEircode(anchorEircode)
+              ? await geocodeEircode(anchorEircode, controller.signal)
+              : null;
+
+            return estimateTravelMinutes(
+              { eircode: normalized, coords: fromCoords },
+              { eircode: anchorEircode, coords: anchorCoords }
+            );
+          })
+        );
 
         if (isCancelled) return;
 
-        const resolvedAnchorCoords =
-          anchorCoords || (travelAnchor === "home" ? homeCoordinates : null);
+        const filteredEstimates = eventEstimates.filter((value) =>
+          Number.isFinite(value)
+        );
+
+        const minutes =
+          filteredEstimates.length > 0 ? Math.max(...filteredEstimates) : 20;
 
         setClientCoordinates(fromCoords);
         setClientAddress(normalized);
-
-        const minutes = estimateTravelMinutes(
-          { eircode: normalized, coords: fromCoords },
-          { eircode: anchorEircode, coords: resolvedAnchorCoords }
-        );
         setTravelMinutes(minutes);
-
-        if (travelAnchor === "previous" && !previousBookingTime) {
-          setTravelNote(
-            "Share the end time of your earlier booking so we can hide impossible slots."
-          );
-          return;
-        }
-
-        const anchorLabel =
-          travelAnchor === "previous" && previousBookingTime
-            ? `after your earlier booking at ${previousBookingTime}`
-            : `from home base (${HOME_EIRCODE})`;
-
-        const geocodeDescriptor = fromCoords
-          ? "using your exact Eircode location"
-          : "using your routing key as a fallback";
-        const anchorDescriptor =
-          travelAnchor === "home"
-            ? resolvedAnchorCoords
-              ? "and our exact A98H940 address"
-              : "and our base routing key"
-            : resolvedAnchorCoords
-            ? "and your previous booking location"
-            : "and your previous booking routing key";
-
         setTravelNote(
-          `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
+          `We found ${dayEvents.length} other booking${
+            dayEvents.length === 1 ? "" : "s"
+          } on this date and will block start times that need about ${minutes} minutes of travel.`
         );
       } catch (lookupError) {
         if (isCancelled) return;
 
         setClientCoordinates(null);
-        const minutes = estimateTravelMinutes(
-          { eircode: normalized, coords: null },
-          {
-            eircode: anchorEircode,
-            coords: travelAnchor === "home" ? homeCoordinates : null,
-          }
-        );
-
-        setTravelMinutes(minutes);
+        setTravelMinutes(0);
         setTravelNote(
-          "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
+          "We couldn't confirm travel timing for your Eircode. Please double-check it or message us."
         );
       }
     };
@@ -604,15 +608,14 @@ const BookingModal = ({ service, onClose }) => {
       controller.abort();
     };
   }, [
-    clientAddress,
     clientEircode,
+    dayEvents,
     estimateTravelMinutes,
+    extractEircode,
     geocodeEircode,
-    homeCoordinates,
     isFullEircode,
     normalizeEircode,
-    previousBookingTime,
-    travelAnchor,
+    selectedDate,
   ]);
 
   useEffect(() => {
@@ -897,6 +900,11 @@ const BookingModal = ({ service, onClose }) => {
       return acc;
     }, {});
   }, [calendarDays]);
+  const eventsByDate = useMemo(() => availability.events || {}, [availability]);
+  const dayEvents = useMemo(
+    () => eventsByDate[selectedDate] || [],
+    [eventsByDate, selectedDate]
+  );
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
     [visibleMonth]
@@ -1181,9 +1189,6 @@ const BookingModal = ({ service, onClose }) => {
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
         payment_preference: preference,
-        travel_minutes: travelMinutes,
-        travel_anchor: travelAnchor,
-        previous_booking_time: previousBookingTime,
         client_coordinates: clientCoordinates,
       };
 
@@ -1609,7 +1614,7 @@ const BookingModal = ({ service, onClose }) => {
                           type="button"
                           className="ghost-button"
                           onClick={() => goToStepAndScroll("time")}
-                          disabled={!normalizeEircode(clientEircode)}
+                          disabled={!isFullEircode(normalizeEircode(clientEircode))}
                         >
                           Continue to times
                         </button>
@@ -1625,41 +1630,16 @@ const BookingModal = ({ service, onClose }) => {
                           placeholder="e.g. A98H940"
                         />
                       </label>
-                      <label className="input-group">
-                        <span>Travel anchor</span>
-                        <div className="actions-stack">
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "home"}
-                              onChange={() => setTravelAnchor("home")}
-                            />
-                            <span>From home base ({HOME_EIRCODE})</span>
-                          </label>
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "previous"}
-                              onChange={() => setTravelAnchor("previous")}
-                            />
-                            <span>After an earlier booking</span>
-                          </label>
-                        </div>
-                      </label>
-                      {travelAnchor === "previous" && (
-                        <label className="input-group">
-                          <span>Previous booking ends at</span>
-                          <input
-                            type="time"
-                            value={previousBookingTime}
-                            onChange={(event) =>
-                              setPreviousBookingTime(event.target.value)
-                            }
-                          />
-                        </label>
-                      )}
+                      <div className="input-group">
+                        <span>Same-day bookings</span>
+                        <p className="muted subtle">
+                          {dayEvents.length
+                            ? `${dayEvents.length} booking${
+                                dayEvents.length === 1 ? "" : "s"
+                              } already scheduled for this date.`
+                            : "We'll use your Eircode to make sure we can travel between bookings."}
+                        </p>
+                      </div>
                     </div>
                     <p className="muted subtle">{travelNote}</p>
                   </div>
@@ -1681,7 +1661,6 @@ const BookingModal = ({ service, onClose }) => {
                       onUseRecommended={handleUseRecommended}
                       hiddenSlotCount={selectedDayWithTravel.hiddenCount}
                       travelMinutes={travelMinutes}
-                      travelAnchor={travelAnchor}
                     />
                   </div>
                 )}
