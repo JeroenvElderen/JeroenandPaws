@@ -59,6 +59,36 @@ const buildSlots = (
 const buildPrincipalPath = (calendarId) =>
   calendarId ? `/users/${encodeURIComponent(calendarId)}` : "/me";
 
+const listCalendarEvents = async ({ accessToken, calendarId, start, end }) => {
+  const principalPath = buildPrincipalPath(calendarId);
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  const response = await fetch(
+    `${GRAPH_BASE}${principalPath}/calendarView?startDateTime=${encodeURIComponent(
+      startDate.toISOString()
+    )}&endDateTime=${encodeURIComponent(endDate.toISOString())}` +
+      "&$select=id,subject,start,end,location,bodyPreview,showAs,isCancelled",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Prefer: `outlook.timezone=\"${BUSINESS_TIME_ZONE}\"`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(
+      `Graph calendar events error: ${response.status} ${error}`
+    );
+  }
+
+  const data = await response.json();
+  return data.value || [];
+};
+
 const postScheduleRequest = async ({
   accessToken,
   calendarId,
@@ -346,4 +376,11 @@ const sendMail = async ({
   }
 };
 
-module.exports = { createEvent, deleteEvent, getEvent, getSchedule, sendMail };
+module.exports = {
+  createEvent,
+  deleteEvent,
+  getEvent,
+  getSchedule,
+  listCalendarEvents,
+  sendMail,
+};

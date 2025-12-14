@@ -66,8 +66,7 @@ const TimesSection = ({
         {hiddenSlotCount > 0 && (
           <p className="muted subtle">
             {hiddenSlotCount} slot{hiddenSlotCount === 1 ? "" : "s"} hidden because we need about {travelMinutes}
-            minutes of travel time from {" "}
-            {travelAnchor === "previous" ? "your earlier booking" : "home base"}.
+            minutes of travel time around existing calendar bookings.
           </p>
         )}
 

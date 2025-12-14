@@ -248,6 +248,7 @@ module.exports = async (req, res) => {
       bookingMode,
       additionals = [],
       amount,
+      payment_preference,
     } = body;
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
@@ -386,6 +387,37 @@ module.exports = async (req, res) => {
     // ---------------------------------------
     // CORRECT, MINIMAL RESPONSE TO FRONTEND
     // ---------------------------------------
+    if (
+      payment_preference === "invoice" &&
+      accessToken &&
+      calendarId
+    ) {
+      try {
+        await sendMail({
+          accessToken,
+          fromCalendarId: calendarId,
+          to: "jeroen@jeroenandpaws.com",
+          subject: `Invoice requested: ${serviceTitle || "Service"}`,
+          body: `
+            <p>Invoice requested for ${escapeHtml(clientName)} (${escapeHtml(
+            clientEmail
+          )}).</p>
+            <p>Service: ${escapeHtml(serviceTitle)}</p>
+            <p>Address / Eircode: ${escapeHtml(clientAddress)}</p>
+            ${renderScheduleBlock(
+              bookingResults.map((entry, index) => ({
+                label: `Visit ${index + 1}`,
+                start: entry.timing.start,
+                end: entry.timing.end,
+              }))
+            )}
+          `,
+        });
+      } catch (invoiceMailError) {
+        console.error("Failed to send invoice request email", invoiceMailError);
+      }
+    }
+
     res.setHeader("Content-Type", "application/json");
     return res.end(
       JSON.stringify({

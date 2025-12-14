@@ -97,12 +97,13 @@ const BookingModal = ({ service, onClose }) => {
     state: "idle",
     message: "",
   });
-  const [travelAnchor, setTravelAnchor] = useState("home");
+  const travelAnchor = "calendar";
   const [homeCoordinates, setHomeCoordinates] = useState(HOME_COORDS);
-  const [previousBookingTime, setPreviousBookingTime] = useState("");
   const [clientCoordinates, setClientCoordinates] = useState(null);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [travelNote, setTravelNote] = useState("");
+  const [dayBookings, setDayBookings] = useState([]);
+  const [dayTravelWindows, setDayTravelWindows] = useState([]);
   const [paymentPreference, setPaymentPreference] = useState("pay_now");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
@@ -113,6 +114,7 @@ const BookingModal = ({ service, onClose }) => {
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
   const [currentStep, setCurrentStep] = useState("calendar");
+  const geocodeCacheRef = useRef(new Map());
   const parsePriceValue = useCallback((value) => {
     if (value === null || value === undefined) return 0;
     if (typeof value === "number") return value;
@@ -216,10 +218,48 @@ const BookingModal = ({ service, onClose }) => {
     [getRoutingKey, homeCoordinates]
   );
 
+  const resolveCoords = useCallback(
+    async (eircodeValue, signal) => {
+      const normalized = normalizeEircode(eircodeValue);
+      if (!normalized || !isFullEircode(normalized)) return null;
+
+      if (geocodeCacheRef.current.has(normalized)) {
+        return geocodeCacheRef.current.get(normalized);
+      }
+
+      try {
+        const coords = await geocodeEircode(normalized, signal);
+        if (coords) {
+          geocodeCacheRef.current.set(normalized, coords);
+        }
+        return coords || null;
+      } catch (lookupError) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Geocoding failed", lookupError);
+        }
+        return null;
+      }
+    },
+    [geocodeEircode, isFullEircode, normalizeEircode]
+  );
+
   const parseTimeToMinutes = useCallback((time) => {
     if (!time) return 0;
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + (minutes || 0);
+  }, []);
+
+  const extractMinutesFromIso = useCallback((isoString) => {
+    if (!isoString) return null;
+    const dt = new Date(isoString);
+    return dt.getUTCHours() * 60 + dt.getUTCMinutes();
+  }, []);
+
+  const formatBookingTimeRange = useCallback((booking) => {
+    if (!booking?.start_at || !booking?.end_at) return "Scheduled";
+    const format = (value) =>
+      new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return `${format(booking.start_at)} – ${format(booking.end_at)}`;
   }, []);
 
   const formatCurrency = useCallback((value) => {
@@ -307,15 +347,20 @@ const BookingModal = ({ service, onClose }) => {
     (slot) => {
       if (!slot || !slot.available) return false;
       const startMinutes = parseTimeToMinutes(slot.time);
+      const durationMinutes = Number.isFinite(service?.durationMinutes)
+        ? service.durationMinutes
+        : 60;
+      const endMinutes = startMinutes + durationMinutes;
 
-      const baseMinutes =
-        travelAnchor === "previous" && previousBookingTime
-          ? parseTimeToMinutes(previousBookingTime)
-          : 8 * 60;
-
-      return startMinutes >= baseMinutes + travelMinutes;
+      return dayTravelWindows.every((window) => {
+        if (!window) return true;
+        return !(
+          startMinutes < window.endMinutes + window.travelMinutes &&
+          endMinutes > window.startMinutes - window.travelMinutes
+        );
+      });
     },
-    [parseTimeToMinutes, previousBookingTime, travelAnchor, travelMinutes]
+    [dayTravelWindows, parseTimeToMinutes, service?.durationMinutes]
   );
 
   const isDayAvailableForService = useCallback(
@@ -494,125 +539,133 @@ const BookingModal = ({ service, onClose }) => {
   }, [loadAvailability]);
 
   useEffect(() => {
-    let isCancelled = false;
-    const controller = new AbortController();
+    if (!selectedDate) {
+      setDayBookings([]);
+      return;
+    }
 
+    let isCancelled = false;
+    setDayBookings([]);
+
+    const loadDayBookings = async () => {
+      try {
+        const response = await fetch(`/api/day-bookings?date=${selectedDate}`);
+        const data = await response.json();
+        if (!isCancelled) {
+          setDayBookings(Array.isArray(data?.bookings) ? data.bookings : []);
+        }
+      } catch (dayError) {
+        console.error("Failed to fetch day bookings", dayError);
+        if (!isCancelled) {
+          setDayBookings([]);
+        }
+      }
+    };
+
+    loadDayBookings();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedDate]);
+
+  useEffect(() => {
     const normalized = normalizeEircode(clientEircode);
+    const controller = new AbortController();
+    let isCancelled = false;
+
     if (!normalized) {
       setClientCoordinates(null);
+      setDayTravelWindows([]);
       setTravelMinutes(0);
       setTravelNote("Enter your full Eircode to calculate travel time.");
       return () => controller.abort();
     }
 
-    const hasFullClientEircode = isFullEircode(normalized);
+    setClientAddress((prev) => (prev === normalized ? prev : normalized));
 
-    const anchorEircode =
-      travelAnchor === "home"
-        ? HOME_EIRCODE
-        : normalizeEircode(clientAddress) || HOME_EIRCODE;
+    const computeTravel = async () => {
+      setTravelNote("Calculating travel time to existing bookings...");
 
-    if (!hasFullClientEircode) {
-      const minutes = estimateTravelMinutes(
-        { eircode: normalized, coords: null },
-        { eircode: anchorEircode, coords: null }
-      );
+      const clientCoords = await resolveCoords(normalized, controller.signal);
 
-      setClientCoordinates(null);
-      setTravelMinutes(minutes);
-      setTravelNote(
-        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
-      );
-      return () => controller.abort();
-    }
+      const travelWindows = await Promise.all(
+        (dayBookings || []).map(async (booking) => {
+          const bookingEircode = normalizeEircode(booking.client_address);
+          const startMinutes = extractMinutesFromIso(booking.start_at);
+          const endMinutes = extractMinutesFromIso(booking.end_at);
 
-    const loadCoordinatesAndEstimate = async () => {
-      try {
-        setTravelNote("Looking up your Eircode with OpenStreetMap (Nominatim)...");
-
-        const [fromCoords, anchorCoords] = await Promise.all([
-          geocodeEircode(normalized, controller.signal),
-          travelAnchor === "home"
-            ? Promise.resolve(homeCoordinates)
-            : geocodeEircode(anchorEircode, controller.signal),
-        ]);
-
-        if (isCancelled) return;
-
-        const resolvedAnchorCoords =
-          anchorCoords || (travelAnchor === "home" ? homeCoordinates : null);
-
-        setClientCoordinates(fromCoords);
-        setClientAddress(normalized);
-
-        const minutes = estimateTravelMinutes(
-          { eircode: normalized, coords: fromCoords },
-          { eircode: anchorEircode, coords: resolvedAnchorCoords }
-        );
-        setTravelMinutes(minutes);
-
-        if (travelAnchor === "previous" && !previousBookingTime) {
-          setTravelNote(
-            "Share the end time of your earlier booking so we can hide impossible slots."
-          );
-          return;
-        }
-
-        const anchorLabel =
-          travelAnchor === "previous" && previousBookingTime
-            ? `after your earlier booking at ${previousBookingTime}`
-            : `from home base (${HOME_EIRCODE})`;
-
-        const geocodeDescriptor = fromCoords
-          ? "using your exact Eircode location"
-          : "using your routing key as a fallback";
-        const anchorDescriptor =
-          travelAnchor === "home"
-            ? resolvedAnchorCoords
-              ? "and our exact A98H940 address"
-              : "and our base routing key"
-            : resolvedAnchorCoords
-            ? "and your previous booking location"
-            : "and your previous booking routing key";
-
-        setTravelNote(
-          `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
-        );
-      } catch (lookupError) {
-        if (isCancelled) return;
-
-        setClientCoordinates(null);
-        const minutes = estimateTravelMinutes(
-          { eircode: normalized, coords: null },
-          {
-            eircode: anchorEircode,
-            coords: travelAnchor === "home" ? homeCoordinates : null,
+          if (!bookingEircode || startMinutes == null || endMinutes == null) {
+            return null;
           }
-        );
 
-        setTravelMinutes(minutes);
+          const bookingCoords = await resolveCoords(
+            bookingEircode,
+            controller.signal
+          );
+
+          const minutes = estimateTravelMinutes(
+            { eircode: normalized, coords: clientCoords },
+            { eircode: bookingEircode, coords: bookingCoords }
+          );
+
+          return {
+            id: booking.id,
+            startMinutes,
+            endMinutes,
+            travelMinutes: minutes,
+          };
+        })
+      );
+
+      if (isCancelled) return;
+
+      const windows = travelWindows.filter(Boolean);
+      setClientCoordinates(clientCoords || null);
+      setDayTravelWindows(windows);
+
+      const maxTravel = windows.reduce(
+        (max, window) => Math.max(max, window.travelMinutes || 0),
+        0
+      );
+      setTravelMinutes(maxTravel);
+
+      if (!dayBookings.length) {
         setTravelNote(
-          "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
+          "No other bookings on this day — we will hold your selected slot once you continue."
         );
+        return;
       }
+
+      const missingLocationCount = dayBookings.length - windows.length;
+      setTravelNote(
+        `Blocking times around ${dayBookings.length} calendar booking${
+          dayBookings.length === 1 ? "" : "s"
+        } using your Eircode ${normalized}${
+          maxTravel ? ` (up to ${maxTravel} minutes of travel)` : ""
+        }${
+          missingLocationCount
+            ? ` (${missingLocationCount} event${
+                missingLocationCount === 1 ? "" : "s"
+              } missing a usable Eircode)`
+            : ""
+        }.`
+      );
     };
 
-    loadCoordinatesAndEstimate();
+    computeTravel();
 
     return () => {
       isCancelled = true;
       controller.abort();
     };
   }, [
-    clientAddress,
     clientEircode,
+    dayBookings,
     estimateTravelMinutes,
-    geocodeEircode,
-    homeCoordinates,
-    isFullEircode,
+    extractMinutesFromIso,
     normalizeEircode,
-    previousBookingTime,
-    travelAnchor,
+    resolveCoords,
   ]);
 
   useEffect(() => {
@@ -1183,7 +1236,6 @@ const BookingModal = ({ service, onClose }) => {
         payment_preference: preference,
         travel_minutes: travelMinutes,
         travel_anchor: travelAnchor,
-        previous_booking_time: previousBookingTime,
         client_coordinates: clientCoordinates,
       };
 
@@ -1625,41 +1677,36 @@ const BookingModal = ({ service, onClose }) => {
                           placeholder="e.g. A98H940"
                         />
                       </label>
-                      <label className="input-group">
-                        <span>Travel anchor</span>
-                        <div className="actions-stack">
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "home"}
-                              onChange={() => setTravelAnchor("home")}
-                            />
-                            <span>From home base ({HOME_EIRCODE})</span>
-                          </label>
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "previous"}
-                              onChange={() => setTravelAnchor("previous")}
-                            />
-                            <span>After an earlier booking</span>
-                          </label>
-                        </div>
-                      </label>
-                      {travelAnchor === "previous" && (
-                        <label className="input-group">
-                          <span>Previous booking ends at</span>
-                          <input
-                            type="time"
-                            value={previousBookingTime}
-                            onChange={(event) =>
-                              setPreviousBookingTime(event.target.value)
-                            }
-                          />
-                        </label>
-                      )}
+                      <div className="input-group full-width">
+                        <span>Existing bookings on this day</span>
+                        {dayBookings.length ? (
+                          <ul className="summary-list">
+                            {dayBookings.map((booking) => {
+                              const normalizedAddress = normalizeEircode(
+                                booking.client_address
+                              );
+                              const hasEircode = /^[A-Z0-9]{3}[A-Z0-9]{4}$/.test(
+                                normalizedAddress
+                              );
+
+                              return (
+                                <li key={booking.id} className="summary-item stacked">
+                                  <p className="summary-label">{formatBookingTimeRange(booking)}</p>
+                                  <p className="muted subtle">
+                                    {hasEircode
+                                      ? `Using Eircode ${normalizedAddress} for travel buffer.`
+                                      : booking.client_address
+                                      ? `Location: ${booking.client_address}`
+                                      : "Location unavailable for travel buffer."}
+                                  </p>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p className="muted subtle">No other events in the calendar for this date.</p>
+                        )}
+                      </div>
                     </div>
                     <p className="muted subtle">{travelNote}</p>
                   </div>
