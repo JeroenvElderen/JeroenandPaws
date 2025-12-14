@@ -998,29 +998,6 @@ const BookingModal = ({ service, onClose }) => {
     }));
   };
 
-  const canProceedToCustomer = Boolean(
-    selectedDate &&
-    selectedTime &&
-    normalizeEircode(clientEircode)
-  );
-
-  const removeDateFromSchedule = (date) => {
-    setSelectedSlots((prev) => {
-      const next = { ...prev };
-      delete next[date];
-
-      const remainingDates = Object.keys(next);
-      const nextDate = remainingDates.includes(selectedDate)
-        ? selectedDate
-        : remainingDates[0] || "";
-
-      setSelectedDate(nextDate);
-      setSelectedTime(nextDate ? next[nextDate] || "" : "");
-
-      return next;
-    });
-  };
-
   const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
   const selectedDayWithTravel = useMemo(() => {
     if (!selectedDay) return { day: null, hiddenCount: 0 };
@@ -1043,6 +1020,50 @@ const BookingModal = ({ service, onClose }) => {
       hiddenCount,
     };
   }, [isSlotReachable, selectedDay]);
+
+  const isSelectedTimeReachable = useMemo(() => {
+    if (!selectedTime || !selectedDayWithTravel.day) return false;
+
+    return (selectedDayWithTravel.day.slots || []).some(
+      (slot) => slot.time === selectedTime
+    );
+  }, [selectedDayWithTravel.day, selectedTime]);
+
+  useEffect(() => {
+    if (!selectedTime) return;
+    if (isSelectedTimeReachable) return;
+
+    setSelectedTime("");
+    setSelectedSlots((previous) => ({
+      ...previous,
+      [selectedDate]: "",
+    }));
+  }, [isSelectedTimeReachable, selectedDate, selectedTime]);
+
+  const canProceedToCustomer = Boolean(
+    selectedDate &&
+    selectedTime &&
+    normalizeEircode(clientEircode) &&
+    isSelectedTimeReachable
+  );
+
+  const removeDateFromSchedule = (date) => {
+    setSelectedSlots((prev) => {
+      const next = { ...prev };
+      delete next[date];
+
+      const remainingDates = Object.keys(next);
+      const nextDate = remainingDates.includes(selectedDate)
+        ? selectedDate
+        : remainingDates[0] || "";
+
+      setSelectedDate(nextDate);
+      setSelectedTime(nextDate ? next[nextDate] || "" : "");
+
+      return next;
+    });
+  };
+  
   const monthLabel = visibleMonth.toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
@@ -1624,29 +1645,6 @@ const BookingModal = ({ service, onClose }) => {
                           onChange={(event) => setClientEircode(event.target.value)}
                           placeholder="e.g. A98H940"
                         />
-                      </label>
-                      <label className="input-group">
-                        <span>Travel anchor</span>
-                        <div className="actions-stack">
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "home"}
-                              onChange={() => setTravelAnchor("home")}
-                            />
-                            <span>From home base ({HOME_EIRCODE})</span>
-                          </label>
-                          <label className="chip-option">
-                            <input
-                              type="radio"
-                              name="travel-anchor"
-                              checked={travelAnchor === "previous"}
-                              onChange={() => setTravelAnchor("previous")}
-                            />
-                            <span>After an earlier booking</span>
-                          </label>
-                        </div>
                       </label>
                       {travelAnchor === "previous" && (
                         <label className="input-group">
