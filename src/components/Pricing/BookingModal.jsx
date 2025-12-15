@@ -314,8 +314,6 @@ const BookingModal = ({ service, onClose }) => {
     (slot, slotDate) => {
       if (!slot || !slot.available) return false;
 
-      if (travelValidationState === "pending") return true;
-
       const startMinutes = parseTimeToMinutes(slot.time);
 
       const baseMinutes =
@@ -325,10 +323,10 @@ const BookingModal = ({ service, onClose }) => {
 
       if (startMinutes < baseMinutes + travelMinutes) return false;
 
-      if (!slotDate || !busyByDate[slotDate] || !travelMinutes) return true;
-
       const serviceStart = startMinutes;
       const serviceEnd = startMinutes + serviceDuration;
+
+      if (!slotDate || !busyByDate[slotDate]) return true;
 
       const conflictsWithBufferedEvent = busyByDate[slotDate].some(
         ({ startMinutes: eventStart, endMinutes: eventEnd }) => {
@@ -347,7 +345,6 @@ const BookingModal = ({ service, onClose }) => {
       serviceDuration,
       travelAnchor,
       travelMinutes,
-      travelValidationState,
     ]
   );
 
@@ -452,17 +449,19 @@ const BookingModal = ({ service, onClose }) => {
     }
   }, []);
 
-  const setInitialVisibleMonth = useCallback(
-    (data) => {
-      const firstOpenDate = data.dates.find((day) =>
-        isDayAvailableForService(day)
-      );
-      if (firstOpenDate) {
-        setVisibleMonth(new Date(firstOpenDate.date));
+  const setInitialVisibleMonth = useCallback((data) => {
+    const firstOpenDate = data.dates.find((day) => {
+      if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
+        return false;
       }
-    },
-    [isDayAvailableForService]
-  );
+    
+      return day.slots.some((slot) => slot.available);
+    });
+
+    if (firstOpenDate) {
+      setVisibleMonth(new Date(firstOpenDate.date));
+    }
+  }, []);
 
   const handleMonthChange = useCallback((offset) => {
     setVisibleMonth((prev) => {
@@ -1475,29 +1474,8 @@ const BookingModal = ({ service, onClose }) => {
     }
   }, []);
 
-  const recommendedSlot = useMemo(() => {
-    const availableDays = calendarDays
-      .filter((day) => isDayAvailableForService(day))
-      .sort((a, b) => a.date.localeCompare(b.date));
-    if (!availableDays.length) return null;
-    const slot = availableDays[0].slots.find((item) =>
-      isSlotReachable(item, availableDays[0].date)
-    );
-    if (!slot) return null;
-    return { date: availableDays[0].date, time: slot.time };
-  }, [calendarDays, isDayAvailableForService, isSlotReachable]);
-
   const progressPercent =
     ((stepOrder.indexOf(currentStep) + 1) / stepOrder.length) * 100;
-
-  const handleUseRecommended = () => {
-    if (!recommendedSlot) return;
-    setSelectedSlots({ [recommendedSlot.date]: recommendedSlot.time });
-    setSelectedDate(recommendedSlot.date);
-    setSelectedTime(recommendedSlot.time);
-    setCurrentStep("travel");
-    scrollToSection(travelSectionRef);
-  };
 
   const supportService = useMemo(
     () => ({
@@ -1723,8 +1701,6 @@ const BookingModal = ({ service, onClose }) => {
                       onBack={() => goToStepAndScroll("travel")}
                       canContinue={canProceedToCustomer}
                       timesSectionRef={timesSectionRef}
-                      recommendedSlot={recommendedSlot}
-                      onUseRecommended={handleUseRecommended}
                       hiddenSlotCount={selectedDayWithTravel.hiddenCount}
                       travelMinutes={travelMinutes}
                       travelAnchor={travelAnchor}
