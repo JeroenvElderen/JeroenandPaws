@@ -238,6 +238,31 @@ const BookingModal = ({ service, onClose }) => {
     () => (Number.isFinite(service.durationMinutes) ? service.durationMinutes : 60),
     [service.durationMinutes]
   );
+  const calendarDays = useMemo(() => availability.dates || [], [availability]);
+  const availabilityMap = useMemo(() => {
+    return calendarDays.reduce((acc, day) => {
+      acc[day.date] = day;
+      return acc;
+    }, {});
+  }, [calendarDays]);
+  const busyByDate = useMemo(() => {
+    return (availability.busy || []).reduce((acc, interval) => {
+      const start = interval?.start ? new Date(interval.start) : null;
+      const end = interval?.end ? new Date(interval.end) : null;
+
+      if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return acc;
+      }
+
+      const dateKey = start.toISOString().slice(0, 10);
+      const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
+      const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
+
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push({ startMinutes, endMinutes });
+      return acc;
+    }, {});
+  }, [availability.busy]);
   const normalizeAvailability = useCallback(
     (data = {}) => ({
       ...data,
@@ -926,31 +951,6 @@ const BookingModal = ({ service, onClose }) => {
     return normalizedDogs.filter(Boolean);
   };
 
-  const calendarDays = useMemo(() => availability.dates || [], [availability]);
-  const availabilityMap = useMemo(() => {
-    return calendarDays.reduce((acc, day) => {
-      acc[day.date] = day;
-      return acc;
-    }, {});
-  }, [calendarDays]);
-  const busyByDate = useMemo(() => {
-    return (availability.busy || []).reduce((acc, interval) => {
-      const start = interval?.start ? new Date(interval.start) : null;
-      const end = interval?.end ? new Date(interval.end) : null;
-
-      if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-        return acc;
-      }
-
-      const dateKey = start.toISOString().slice(0, 10);
-      const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
-      const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
-
-      acc[dateKey] = acc[dateKey] || [];
-      acc[dateKey].push({ startMinutes, endMinutes });
-      return acc;
-    }, {});
-  }, [availability.busy]);
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
     [visibleMonth]
@@ -970,6 +970,100 @@ const BookingModal = ({ service, onClose }) => {
       .map(([date, time]) => ({ date, time }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [selectedSlots]);
+
+  const selectedAdditionalLabels = useMemo(() => {
+    if (!additionals.length) return addons.slice(0, 3).map((a) => a.label);
+
+    return additionals
+      .map((value) => addons.find((a) => a.value === value)?.label || value)
+      .slice(0, 3);
+  }, [additionals, addons]);
+
+  const selectedAddonObjects = useMemo(() => {
+    return additionals
+      .map((value) => addons.find((addon) => addon.value === value))
+      .filter(Boolean);
+  }, [additionals, addons]);
+
+  const pricing = useMemo(() => {
+    const servicePrice = parsePriceValue(service.price ?? service.cost ?? "0");
+    const addonTotal = selectedAddonObjects.reduce(
+      (sum, addon) => sum + parsePriceValue(addon.price),
+      0
+    );
+
+    const activeDogsCount = dogs
+      .slice(0, dogCount)
+      .map((dog) => {
+        const name = (dog?.name || "").trim();
+        const breed = (dog?.breed || "").trim();
+        const notes = (dog?.notes || "").trim();
+        const profileId = dog?.profileId;
+        return name || breed || notes || profileId ? dog : null;
+      })
+      .filter(Boolean).length;
+
+    const visitsWithTime = scheduleEntries.filter(
+      (entry) => entry.date && entry.time
+    ).length;
+
+    const visitCount = visitsWithTime || 0;
+    const perDogPerVisit = servicePrice;
+    const secondDogPrice = 10;
+    const secondDogDiscount =
+      activeDogsCount >= 2 ? Math.max(perDogPerVisit - secondDogPrice, 0) : 0;
+
+    let perVisitTotal = 0;
+    if (activeDogsCount >= 1) perVisitTotal += perDogPerVisit;
+    if (activeDogsCount >= 2) perVisitTotal += secondDogPrice;
+    if (activeDogsCount > 2)
+      perVisitTotal += perDogPerVisit * (activeDogsCount - 2);
+
+    const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
+    const totalPrice = baseTotal + addonTotal;
+
+    const descriptionParts = [service.title];
+
+    if (activeDogsCount) {
+      descriptionParts.push(
+        `${activeDogsCount} dog${activeDogsCount > 1 ? "s" : ""}`
+      );
+    }
+
+    if (visitCount) {
+      descriptionParts.push(`${visitCount} visit${visitCount > 1 ? "s" : ""}`);
+    }
+
+    if (selectedAddonObjects.length) {
+      const addonNames = selectedAddonObjects
+        .map((addon) => addon.label || addon.value)
+        .join(", ");
+      descriptionParts.push(`Add-ons: ${addonNames}`);
+    }
+
+    return {
+      servicePrice,
+      addonTotal,
+      perDogPerVisit,
+      dogCount: activeDogsCount,
+      visitCount,
+      totalPrice,
+      description: descriptionParts.join(" · "),
+      selectedAddons: selectedAddonObjects,
+      secondDogDiscount,
+      secondDogPrice,
+      perVisitTotal,
+    };
+  }, [
+    dogCount,
+    dogs,
+    parsePriceValue,
+    scheduleEntries,
+    selectedAddonObjects,
+    service.cost,
+    service.price,
+    service.title,
+  ]);
 
   useEffect(() => {
     if (!selectedDate) return;
@@ -1350,100 +1444,6 @@ const BookingModal = ({ service, onClose }) => {
         : [...prev, value]
     );
   };
-
-  const selectedAdditionalLabels = useMemo(() => {
-    if (!additionals.length) return addons.slice(0, 3).map((a) => a.label);
-
-    return additionals
-      .map((value) => addons.find((a) => a.value === value)?.label || value)
-      .slice(0, 3);
-  }, [additionals, addons]);
-
-  const selectedAddonObjects = useMemo(() => {
-    return additionals
-      .map((value) => addons.find((addon) => addon.value === value))
-      .filter(Boolean);
-  }, [additionals, addons]);
-
-  const pricing = useMemo(() => {
-    const servicePrice = parsePriceValue(service.price ?? service.cost ?? "0");
-    const addonTotal = selectedAddonObjects.reduce(
-      (sum, addon) => sum + parsePriceValue(addon.price),
-      0
-    );
-
-    const activeDogsCount = dogs
-      .slice(0, dogCount)
-      .map((dog) => {
-        const name = (dog?.name || "").trim();
-        const breed = (dog?.breed || "").trim();
-        const notes = (dog?.notes || "").trim();
-        const profileId = dog?.profileId;
-        return name || breed || notes || profileId ? dog : null;
-      })
-      .filter(Boolean).length;
-
-    const visitsWithTime = scheduleEntries.filter(
-      (entry) => entry.date && entry.time
-    ).length;
-
-    const visitCount = visitsWithTime || 0;
-    const perDogPerVisit = servicePrice;
-    const secondDogPrice = 10;
-    const secondDogDiscount =
-      activeDogsCount >= 2 ? Math.max(perDogPerVisit - secondDogPrice, 0) : 0;
-
-    let perVisitTotal = 0;
-    if (activeDogsCount >= 1) perVisitTotal += perDogPerVisit;
-    if (activeDogsCount >= 2) perVisitTotal += secondDogPrice;
-    if (activeDogsCount > 2)
-      perVisitTotal += perDogPerVisit * (activeDogsCount - 2);
-
-    const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
-    const totalPrice = baseTotal + addonTotal;
-
-    const descriptionParts = [service.title];
-
-    if (activeDogsCount) {
-      descriptionParts.push(
-        `${activeDogsCount} dog${activeDogsCount > 1 ? "s" : ""}`
-      );
-    }
-
-    if (visitCount) {
-      descriptionParts.push(`${visitCount} visit${visitCount > 1 ? "s" : ""}`);
-    }
-
-    if (selectedAddonObjects.length) {
-      const addonNames = selectedAddonObjects
-        .map((addon) => addon.label || addon.value)
-        .join(", ");
-      descriptionParts.push(`Add-ons: ${addonNames}`);
-    }
-
-    return {
-      servicePrice,
-      addonTotal,
-      perDogPerVisit,
-      dogCount: activeDogsCount,
-      visitCount,
-      totalPrice,
-      description: descriptionParts.join(" · "),
-      selectedAddons: selectedAddonObjects,
-      secondDogDiscount,
-      secondDogPrice,
-      perVisitTotal,
-    };
-  }, [
-    dogCount,
-    dogs,
-    parsePriceValue,
-    scheduleEntries,
-    selectedAddonObjects,
-    service.cost,
-    service.price,
-    service.title,
-  ]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
