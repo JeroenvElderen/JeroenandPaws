@@ -7,8 +7,8 @@ import { supabase } from "../src/supabaseClient";
 const BUCKET = "pet-gallery";
 
 // Fetch Supabase images
-async function buildPhoto(file) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(file.name);
+async function buildPhoto(client, file) {
+  const { data } = client.storage.from(BUCKET).getPublicUrl(file.name);
   if (!data?.publicUrl) return null;
 
   return {
@@ -19,16 +19,26 @@ async function buildPhoto(file) {
 
 export default function Gallery() {
   const [items, setItems] = useState([]);
+  const [loadError, setLoadError] = useState("");
   const containerRef = useRef(null);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoadError(
+        "Gallery is unavailable because Supabase credentials are missing."
+      );
+      return;
+    }
+
     async function load() {
       const { data, error } = await supabase.storage.from(BUCKET).list("");
       if (!data || error) return;
 
       const files = data.filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f.name));
 
-      const photos = (await Promise.all(files.map(buildPhoto))).filter(Boolean);
+      const photos = (
+        await Promise.all(files.map((file) => buildPhoto(supabase, file)))
+      ).filter(Boolean);
       setItems(photos);
     }
 
@@ -158,27 +168,43 @@ export default function Gallery() {
           padding: "16px",
         }}
       >
-        <Masonry
-          breakpointCols={breakpointColumns}
-          className="masonry-grid"
-          columnClassName="masonry-column"
-        >
-          {items.map((item, idx) => (
-            <img
-              key={item.img + idx}
-              src={item.img}
-              alt={item.title}
-              loading="lazy"
-              style={{
-                width: "100%",
-                display: "block",
-                height: "auto",
-                objectFit: "contain", // keep full image, no cropping
-                borderRadius: "14px", // rounded corners
-              }}
-            />
-          ))}
-        </Masonry>
+        {loadError ? (
+          <div
+            style={{
+              color: "#fca5a5",
+              background: "rgba(239, 68, 68, 0.08)",
+              border: "1px solid rgba(248, 113, 113, 0.35)",
+              padding: "16px",
+              borderRadius: "12px",
+              textAlign: "center",
+              fontWeight: 600,
+            }}
+          >
+            {loadError}
+          </div>
+        ) : (
+          <Masonry
+            breakpointCols={breakpointColumns}
+            className="masonry-grid"
+            columnClassName="masonry-column"
+          >
+            {items.map((item, idx) => (
+              <img
+                key={item.img + idx}
+                src={item.img}
+                alt={item.title}
+                loading="lazy"
+                style={{
+                  width: "100%",
+                  display: "block",
+                  height: "auto",
+                  objectFit: "contain", // keep full image, no cropping
+                  borderRadius: "14px", // rounded corners
+                }}
+              />
+            ))}
+          </Masonry>
+        )}
       </div>
 
       {/* Masonry CSS */}

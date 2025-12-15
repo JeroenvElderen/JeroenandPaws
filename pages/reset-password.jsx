@@ -97,6 +97,12 @@ const ResetPasswordPage = () => {
     const handleRecovery = async () => {
       if (!router.isReady) return;
 
+      if (!supabase) {
+        setSessionError('Authentication service is not configured. Please try again later.');
+        setSessionChecked(true);
+        return;
+      }
+
       // Supabase sends either a `code` query param or hash tokens depending on the project setting.
       const urlHash = typeof window !== 'undefined' ? window.location.hash : '';
       const hashParams = new URLSearchParams(urlHash.replace(/^#/, ''));
@@ -165,6 +171,11 @@ const ResetPasswordPage = () => {
       return;
     }
 
+    if (!supabase) {
+      setError('Authentication service is not configured. Please try again later.');
+      return;
+    }
+    
     setStatus('loading');
 
     const { error: updateError } = await supabase.auth.updateUser({ password });

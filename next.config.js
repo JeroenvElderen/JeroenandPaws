@@ -1,14 +1,28 @@
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseHostname = supabaseUrl
+  ? supabaseUrl.replace(/^https?:\/\//, "")
+  : null;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL.replace("https://", ""),
-        pathname: "/storage/v1/object/public/pet-gallery/**",
-      },
-    ],
+    remotePatterns: supabaseHostname
+      ? [
+          {
+            protocol: "https",
+            hostname: supabaseHostname,
+            pathname: "/storage/v1/object/public/pet-gallery/**",
+          },
+        ]
+      : [],
   },
 };
+
+if (!supabaseHostname) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "NEXT_PUBLIC_SUPABASE_URL is not configured; Supabase storage images will be disabled."
+  );
+}
 
 module.exports = nextConfig;
