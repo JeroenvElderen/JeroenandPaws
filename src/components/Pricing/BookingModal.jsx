@@ -1103,24 +1103,6 @@ const BookingModal = ({ service, onClose }) => {
     selectedTime,
   ]);
 
-  useEffect(() => {
-    if (!selectedTime) return;
-    if (isTravelValidationPending) return;
-    if (selectedDayWithTravel.hasSelectedSlot) return;
-
-    setSelectedTime("");
-    setSelectedSlots((previous) => ({
-      ...previous,
-      [selectedDate]: "",
-    }));
-  }, [
-    isSelectedTimeReachable,
-    selectedDayWithTravel.hasSelectedSlot,
-    isTravelValidationPending,
-    selectedDate,
-    selectedTime,
-  ]);
-
   const canProceedToCustomer = Boolean(
     selectedDate &&
     selectedTime &&
@@ -1331,45 +1313,27 @@ const BookingModal = ({ service, onClose }) => {
   };
 
   useEffect(() => {
-    if (selectedDate) {
-      setVisibleMonth(new Date(selectedDate));
-      const day = availabilityMap[selectedDate];
+    if (!selectedDate) return;
 
-      if (!isDayAvailableForService(day)) {
-        const nextAvailable = calendarDays.find((entry) =>
-          isDayAvailableForService(entry)
-        );
+    setVisibleMonth(new Date(selectedDate));
+    const day = availabilityMap[selectedDate];
+    if (!day) return;
 
-        if (nextAvailable) {
-          setSelectedDate(nextAvailable.date);
-          const firstSlot = nextAvailable.slots.find((slot) =>
-            isSlotReachable(slot, nextAvailable.date)
-          );
-          setSelectedTime(firstSlot?.time || "");
-        } else {
-          setSelectedDate("");
-          setSelectedTime("");
-        }
+    const reachableSlots = (day.slots || []).filter((slot) =>
+      isSlotReachable(slot, day.date)
+    );
 
-        return;
-      }
+    if (!reachableSlots.length) return;
 
-      const hasSelectedSlot = (day.slots || []).some(
-        (slot) => slot.time === selectedTime && isSlotReachable(slot, day.date)
-      );
-      if (!hasSelectedSlot) {
-        const firstOpen = (day.slots || []).find((slot) =>
-          isSlotReachable(slot, day.date)
-        );
-        if (firstOpen) {
-          setSelectedTime(firstOpen.time);
-        }
-      }
+    const hasSelectedSlot = reachableSlots.some(
+      (slot) => slot.time === selectedTime
+    );
+
+    if (!hasSelectedSlot) {
+      setSelectedTime(reachableSlots[0].time);
     }
   }, [
     availabilityMap,
-    calendarDays,
-    isDayAvailableForService,
     isSlotReachable,
     selectedDate,
     selectedTime,
