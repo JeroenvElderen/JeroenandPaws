@@ -134,12 +134,17 @@ const getSchedule = async ({
     serviceDurationMinutes
   );
 
+  const busyWindows = busy.map((interval) => ({
+    start: interval.start.toISOString(),
+    end: interval.end.toISOString(),
+  }));
+
   const dates = Object.keys(slotsByDate).map((date) => ({
     date,
     slots: slotsByDate[date],
   }));
 
-  return { timeZone, dates };
+  return { timeZone, dates, busy: busyWindows };
 };
 
 const createEvent = async ({

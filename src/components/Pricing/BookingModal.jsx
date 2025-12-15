@@ -103,6 +103,8 @@ const BookingModal = ({ service, onClose }) => {
   const [clientCoordinates, setClientCoordinates] = useState(null);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [travelNote, setTravelNote] = useState("");
+  const [travelValidationState, setTravelValidationState] = useState("pending");
+  const isTravelValidationPending = travelValidationState === "pending";
   const [paymentPreference, setPaymentPreference] = useState("pay_now");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
@@ -232,11 +234,16 @@ const BookingModal = ({ service, onClose }) => {
   const serviceLabel = (service?.label || service?.title || "").toLowerCase();
   const isBoardingService = serviceLabel.includes("boarding");
   const allowWeeklyRecurring = allowRecurring && !isBoardingService;
+  const serviceDuration = useMemo(
+    () => (Number.isFinite(service.durationMinutes) ? service.durationMinutes : 60),
+    [service.durationMinutes]
+  );
   const normalizeAvailability = useCallback(
     (data = {}) => ({
       ...data,
       dates: data?.dates || [],
       timeZone: BUSINESS_TIME_ZONE,
+      busy: data?.busy || [],
     }),
     []
   );
@@ -304,8 +311,11 @@ const BookingModal = ({ service, onClose }) => {
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
   const isSlotReachable = useCallback(
-    (slot) => {
+    (slot, slotDate) => {
       if (!slot || !slot.available) return false;
+
+      if (travelValidationState === "pending") return true;
+
       const startMinutes = parseTimeToMinutes(slot.time);
 
       const baseMinutes =
@@ -313,9 +323,32 @@ const BookingModal = ({ service, onClose }) => {
           ? parseTimeToMinutes(previousBookingTime)
           : 8 * 60;
 
-      return startMinutes >= baseMinutes + travelMinutes;
+      if (startMinutes < baseMinutes + travelMinutes) return false;
+
+      if (!slotDate || !busyByDate[slotDate] || !travelMinutes) return true;
+
+      const serviceStart = startMinutes;
+      const serviceEnd = startMinutes + serviceDuration;
+
+      const conflictsWithBufferedEvent = busyByDate[slotDate].some(
+        ({ startMinutes: eventStart, endMinutes: eventEnd }) => {
+          const bufferedStart = eventStart - travelMinutes;
+          const bufferedEnd = eventEnd + travelMinutes;
+          return serviceEnd > bufferedStart && serviceStart < bufferedEnd;
+        }
+      );
+
+      return !conflictsWithBufferedEvent;
     },
-    [parseTimeToMinutes, previousBookingTime, travelAnchor, travelMinutes]
+    [
+      busyByDate,
+      parseTimeToMinutes,
+      previousBookingTime,
+      serviceDuration,
+      travelAnchor,
+      travelMinutes,
+      travelValidationState,
+    ]
   );
 
   const isDayAvailableForService = useCallback(
@@ -324,7 +357,7 @@ const BookingModal = ({ service, onClose }) => {
         return false;
       }
 
-      return day.slots.some((slot) => isSlotReachable(slot));
+      return day.slots.some((slot) => isSlotReachable(slot, day.date));
     },
     [isSlotReachable]
   );
@@ -502,6 +535,7 @@ const BookingModal = ({ service, onClose }) => {
       setClientCoordinates(null);
       setTravelMinutes(0);
       setTravelNote("Enter your full Eircode to calculate travel time.");
+      setTravelValidationState("pending");
       return () => controller.abort();
     }
 
@@ -523,6 +557,7 @@ const BookingModal = ({ service, onClose }) => {
       setTravelNote(
         "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
       );
+      setTravelValidationState("approximate");
       return () => controller.abort();
     }
 
@@ -550,6 +585,7 @@ const BookingModal = ({ service, onClose }) => {
           { eircode: anchorEircode, coords: resolvedAnchorCoords }
         );
         setTravelMinutes(minutes);
+        setTravelValidationState("ready");
 
         if (travelAnchor === "previous" && !previousBookingTime) {
           setTravelNote(
@@ -591,6 +627,7 @@ const BookingModal = ({ service, onClose }) => {
         );
 
         setTravelMinutes(minutes);
+        setTravelValidationState("approximate");
         setTravelNote(
           "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
         );
@@ -897,6 +934,24 @@ const BookingModal = ({ service, onClose }) => {
       return acc;
     }, {});
   }, [calendarDays]);
+  const busyByDate = useMemo(() => {
+    return (availability.busy || []).reduce((acc, interval) => {
+      const start = interval?.start ? new Date(interval.start) : null;
+      const end = interval?.end ? new Date(interval.end) : null;
+
+      if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return acc;
+      }
+
+      const dateKey = start.toISOString().slice(0, 10);
+      const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
+      const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
+
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push({ startMinutes, endMinutes });
+      return acc;
+    }, {});
+  }, [availability.busy]);
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
     [visibleMonth]
@@ -950,7 +1005,7 @@ const BookingModal = ({ service, onClose }) => {
       if (!day || !Array.isArray(day.slots)) return "";
 
       const firstAvailable = day.slots.find((slot) =>
-        isSlotReachable(slot)
+        isSlotReachable(slot, day.date)
       );
       return firstAvailable?.time || "";
     },
@@ -1000,11 +1055,12 @@ const BookingModal = ({ service, onClose }) => {
 
   const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
   const selectedDayWithTravel = useMemo(() => {
-    if (!selectedDay) return { day: null, hiddenCount: 0 };
+    if (!selectedDay)
+      return { day: null, hiddenCount: 0, hasSelectedSlot: false, selectedSlotReachable: false };
 
     const slotsWithReachability = (selectedDay.slots || []).map((slot) => ({
       ...slot,
-      reachable: isSlotReachable(slot),
+      reachable: isSlotReachable(slot, selectedDay.date),
     }));
 
     const hiddenCount = slotsWithReachability.filter(
@@ -1015,30 +1071,55 @@ const BookingModal = ({ service, onClose }) => {
       (slot) => slot.available && slot.reachable
     );
 
+    const selectedSlot = slotsWithReachability.find(
+      (slot) => slot.time === selectedTime
+    );
+
+    const slotsWithSelection = [...reachableSlots];
+
+    if (selectedSlot && !selectedSlot.reachable) {
+      slotsWithSelection.unshift({ ...selectedSlot, forceVisible: true });
+    }
+    
     return {
-      day: { ...selectedDay, slots: reachableSlots },
+      day: { ...selectedDay, slots: slotsWithSelection },
       hiddenCount,
+      hasSelectedSlot: Boolean(selectedSlot),
+      selectedSlotReachable: selectedSlot?.reachable !== false,
     };
-  }, [isSlotReachable, selectedDay]);
+  }, [isSlotReachable, selectedDay, selectedTime]);
 
   const isSelectedTimeReachable = useMemo(() => {
     if (!selectedTime || !selectedDayWithTravel.day) return false;
 
-    return (selectedDayWithTravel.day.slots || []).some(
-      (slot) => slot.time === selectedTime
+    return Boolean(
+      selectedDayWithTravel.hasSelectedSlot &&
+        selectedDayWithTravel.selectedSlotReachable
     );
-  }, [selectedDayWithTravel.day, selectedTime]);
+  }, [
+    selectedDayWithTravel.hasSelectedSlot,
+    selectedDayWithTravel.selectedSlotReachable,
+    selectedDayWithTravel.day,
+    selectedTime,
+  ]);
 
   useEffect(() => {
     if (!selectedTime) return;
-    if (isSelectedTimeReachable) return;
+    if (isTravelValidationPending) return;
+    if (selectedDayWithTravel.hasSelectedSlot) return;
 
     setSelectedTime("");
     setSelectedSlots((previous) => ({
       ...previous,
       [selectedDate]: "",
     }));
-  }, [isSelectedTimeReachable, selectedDate, selectedTime]);
+  }, [
+    isSelectedTimeReachable,
+    selectedDayWithTravel.hasSelectedSlot,
+    isTravelValidationPending,
+    selectedDate,
+    selectedTime,
+  ]);
 
   const canProceedToCustomer = Boolean(
     selectedDate &&
@@ -1063,7 +1144,7 @@ const BookingModal = ({ service, onClose }) => {
       return next;
     });
   };
-  
+
   const monthLabel = visibleMonth.toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
@@ -1262,7 +1343,7 @@ const BookingModal = ({ service, onClose }) => {
         if (nextAvailable) {
           setSelectedDate(nextAvailable.date);
           const firstSlot = nextAvailable.slots.find((slot) =>
-            isSlotReachable(slot)
+            isSlotReachable(slot, nextAvailable.date)
           );
           setSelectedTime(firstSlot?.time || "");
         } else {
@@ -1274,11 +1355,11 @@ const BookingModal = ({ service, onClose }) => {
       }
 
       const hasSelectedSlot = (day.slots || []).some(
-        (slot) => slot.time === selectedTime && isSlotReachable(slot)
+        (slot) => slot.time === selectedTime && isSlotReachable(slot, day.date)
       );
       if (!hasSelectedSlot) {
         const firstOpen = (day.slots || []).find((slot) =>
-          isSlotReachable(slot)
+          isSlotReachable(slot, day.date)
         );
         if (firstOpen) {
           setSelectedTime(firstOpen.time);
@@ -1436,7 +1517,7 @@ const BookingModal = ({ service, onClose }) => {
       .sort((a, b) => a.date.localeCompare(b.date));
     if (!availableDays.length) return null;
     const slot = availableDays[0].slots.find((item) =>
-      isSlotReachable(item)
+      isSlotReachable(item, availableDays[0].date)
     );
     if (!slot) return null;
     return { date: availableDays[0].date, time: slot.time };
@@ -1670,6 +1751,9 @@ const BookingModal = ({ service, onClose }) => {
                       isDayAvailableForService={isDayAvailableForService}
                       selectedTime={selectedTime}
                       handleTimeSelection={handleTimeSelection}
+                      selectedSlotReachable={
+                        selectedDayWithTravel.selectedSlotReachable
+                      }
                       formatTime={formatTime}
                       onContinue={() => goToStepAndScroll("customer")}
                       onBack={() => goToStepAndScroll("travel")}
@@ -1680,6 +1764,8 @@ const BookingModal = ({ service, onClose }) => {
                       hiddenSlotCount={selectedDayWithTravel.hiddenCount}
                       travelMinutes={travelMinutes}
                       travelAnchor={travelAnchor}
+                      isTravelValidationPending={isTravelValidationPending}
+                      travelNote={travelNote}
                     />
                   </div>
                 )}

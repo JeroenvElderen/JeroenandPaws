@@ -4,6 +4,7 @@ const TimesSection = ({
   selectedDay,
   isDayAvailableForService,
   selectedTime,
+  selectedSlotReachable = true,
   handleTimeSelection,
   formatTime,
   onContinue,
@@ -15,6 +16,8 @@ const TimesSection = ({
   hiddenSlotCount = 0,
   travelMinutes = 0,
   travelAnchor = "home",
+  isTravelValidationPending = false,
+  travelNote,
 }) => {
   return (
     <div className="times-card" ref={timesSectionRef}>
@@ -71,10 +74,29 @@ const TimesSection = ({
           </p>
         )}
 
+        {isTravelValidationPending && (
+          <p className="muted subtle">
+            Enter your Eircode to confirm travel time. Your chosen slot will stay selected while we validate it.
+            {travelNote ? ` ${travelNote}` : ""}
+          </p>
+        )}
+
+        {selectedDay &&
+          selectedTime &&
+          !isTravelValidationPending &&
+          !selectedSlotReachable && (
+            <p className="muted subtle">
+              Your selected time is outside the travel buffer for another booking. Please pick another slot.
+            </p>
+          )}
+
         {selectedDay &&
           isDayAvailableForService(selectedDay) &&
           selectedDay.slots
-            ?.filter((slot) => slot.available && slot.reachable !== false)
+            ?.filter(
+              (slot) =>
+                slot.available && (slot.reachable !== false || slot.forceVisible)
+            )
             .map((slot) => {
               const isActive = selectedTime === slot.time;
               return (
