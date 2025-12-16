@@ -82,7 +82,7 @@ const postScheduleRequest = async ({
           timeZone: BUSINESS_TIME_ZONE,
         },
         endTime: { dateTime: endTime.toISOString(), timeZone: BUSINESS_TIME_ZONE },
-        availabilityViewInterval: 30,
+        availabilityViewInterval: 15,
       }),
     }
   );
