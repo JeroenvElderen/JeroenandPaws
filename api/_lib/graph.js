@@ -129,7 +129,7 @@ const getSchedule = async ({
   const slotsByDate = buildSlots(
     startTime,
     totalDays,
-    30,
+    15,
     busy,
     serviceDurationMinutes
   );
