@@ -204,7 +204,7 @@ const HomeSliderSection = () => {
                         className="image_cover"
                         style={{
                           width: "100%",
-                          height: "450px",
+                          height: "100%",
                           objectFit: "cover",
                           transform: `translateY(${slide.translateY || "0"})`,
                         }}
