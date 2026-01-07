@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -117,6 +123,82 @@ export default function HomeSliderSection() {
     return () => clearInterval(id);
   }, [isHovering, next]);
 
+  // --- Swipe / drag support (touch + mouse) ---
+  const swipeRef = useRef({
+    startX: 0,
+    startY: 0,
+    active: false,
+    pointerId: null,
+    locked: null, // "h" | "v" | null
+    fired: false,
+  });
+
+  const SWIPE_THRESHOLD = 40; // px before triggering prev/next
+  const AXIS_LOCK_THRESHOLD = 10; // px before we decide intent
+
+  const onPointerDown = useCallback((e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    swipeRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      active: true,
+      pointerId: e.pointerId,
+      locked: null,
+      fired: false,
+    };
+
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback(
+    (e) => {
+      const s = swipeRef.current;
+      if (!s.active || s.pointerId !== e.pointerId) return;
+
+      const dx = e.clientX - s.startX;
+      const dy = e.clientY - s.startY;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      // Lock axis once movement is meaningful
+      if (!s.locked && (adx > AXIS_LOCK_THRESHOLD || ady > AXIS_LOCK_THRESHOLD)) {
+        s.locked = adx > ady ? "h" : "v";
+      }
+
+      // If it’s horizontal intent, prevent the browser from treating it as scroll/gesture
+      if (s.locked === "h") {
+        e.preventDefault?.();
+
+        if (!s.fired && adx >= SWIPE_THRESHOLD) {
+          s.fired = true;
+
+          // Swipe left -> next, swipe right -> prev
+          if (dx < 0) next();
+          else prev();
+        }
+      }
+    },
+    [next, prev]
+  );
+
+  const endSwipe = useCallback((e) => {
+    const s = swipeRef.current;
+    if (s.pointerId !== e.pointerId) return;
+
+    swipeRef.current = {
+      startX: 0,
+      startY: 0,
+      active: false,
+      pointerId: null,
+      locked: null,
+      fired: false,
+    };
+
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+  }, []);
+  // --- end swipe support ---
+
   // Active ±2
   const visible = useMemo(() => {
     const items = [];
@@ -147,6 +229,10 @@ export default function HomeSliderSection() {
           aria-label="Services"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endSwipe}
+          onPointerCancel={endSwipe}
         >
           <div className="stage">
             {visible.map(({ i, d, slide }) => {
@@ -154,7 +240,6 @@ export default function HomeSliderSection() {
               const side = Math.sign(d);
               const isActive = d === 0;
 
-              // Mobile-first spread (px from CSS var)
               const x = side * (abs === 1 ? 1 : 2);
               const z = abs === 0 ? 0 : abs === 1 ? -140 : -260;
               const scale = abs === 0 ? 1 : abs === 1 ? 0.9 : 0.8;
@@ -185,13 +270,10 @@ export default function HomeSliderSection() {
                     type="button"
                     className="cardHit"
                     onClick={() => setActive(i)}
-                    aria-label={
-                      isActive ? "Current slide" : `Show ${slide.title}`
-                    }
+                    aria-label={isActive ? "Current slide" : `Show ${slide.title}`}
                     tabIndex={isActive ? 0 : -1}
                   >
                     <div className="card">
-                      {/* Full background image - FORCE correct proportions */}
                       <Image
                         src={slide.imageSrc}
                         alt={slide.imageAlt}
@@ -256,8 +338,11 @@ export default function HomeSliderSection() {
 
         <style jsx>{`
           .cf {
-            margin-top: 2.25rem;
+            margin-top: -2.5rem;
             --cf-spread: 130px;
+            touch-action: pan-y; /* allow vertical scroll, enable horizontal swipe intent */
+            user-select: none;
+            -webkit-user-select: none;
           }
 
           .stage {
@@ -302,7 +387,6 @@ export default function HomeSliderSection() {
             box-shadow: 0 26px 70px rgba(0, 0, 0, 0.45);
           }
 
-          /* Make sure styles apply even if next/image doesn't carry styled-jsx scoping */
           :global(.bg) {
             object-fit: cover;
             object-position: center;
@@ -348,7 +432,7 @@ export default function HomeSliderSection() {
           }
 
           .controls {
-            margin-top: 1.1rem;
+            margin-top: -1rem;
             display: flex;
             align-items: center;
             justify-content: center;
