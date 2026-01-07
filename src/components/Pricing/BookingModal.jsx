@@ -1121,6 +1121,24 @@ const BookingModal = ({ service, onClose }) => {
     setSelectedTime(primary.time || "");
   }, [isMultiDay, scheduleEntries]);
 
+  useEffect(() => {
+    if (!allowMultiDay || !allowWeeklyRecurring) {
+      setIsMultiDay(false);
+    }
+  }, [allowMultiDay, allowWeeklyRecurring]);
+
+  useEffect(() => {
+    if (isMultiDay && recurrence !== "weekly") {
+      setRecurrence("weekly");
+    }
+  }, [isMultiDay, recurrence]);
+
+  useEffect(() => {
+    if (!allowWeeklyRecurring && recurrence !== "none") {
+      setRecurrence("none");
+    }
+  }, [allowWeeklyRecurring, recurrence]);
+
   const getDefaultSlotForDate = useCallback(
     (iso) => {
       const day = availabilityMap[iso];
@@ -1648,6 +1666,27 @@ const BookingModal = ({ service, onClose }) => {
 
                 {currentStep === "calendar" && (
                   <div className="step-card" ref={calendarSectionRef}>
+                    {allowMultiDay && allowWeeklyRecurring && (
+                      <div className="selection-summary">
+                        <div>
+                          <h4>Visit schedule</h4>
+                          <p className="muted subtle">
+                            Pick a single date or toggle multi-day to repeat your selected days weekly.
+                          </p>
+                        </div>
+                        <label className="pill-toggle">
+                          <input
+                            type="checkbox"
+                            checked={isMultiDay}
+                            onChange={() => setIsMultiDay((prev) => !prev)}
+                          />
+                          <div>
+                            <strong>Multi-day weekly</strong>
+                            <small>Select multiple days in the calendar</small>
+                          </div>
+                        </label>
+                      </div>
+                    )}
                     <CalendarSection
                       availabilityNotice={availabilityNotice}
                       loading={loading}
@@ -1988,8 +2027,9 @@ const BookingModal = ({ service, onClose }) => {
                         travelNote={travelNote}
                         paymentPreference={paymentPreference}
                         onPaymentPreferenceChange={setPaymentPreference}
-                        allowRecurring={allowRecurring}
+                        allowRecurring={allowWeeklyRecurring}
                         recurrence={recurrence}
+                        isMultiDay={isMultiDay}
                         onRecurrenceChange={setRecurrence}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
@@ -2077,8 +2117,9 @@ const BookingModal = ({ service, onClose }) => {
                       travelNote={travelNote}
                       paymentPreference={paymentPreference}
                       onPaymentPreferenceChange={setPaymentPreference}
-                      allowRecurring={allowRecurring}
+                      allowRecurring={allowWeeklyRecurring}
                       recurrence={recurrence}
+                      isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("addons")}
@@ -2165,8 +2206,9 @@ const BookingModal = ({ service, onClose }) => {
                       travelNote={travelNote}
                       paymentPreference={paymentPreference}
                       onPaymentPreferenceChange={setPaymentPreference}
-                      allowRecurring={allowRecurring}
+                      allowRecurring={allowWeeklyRecurring}
                       recurrence={recurrence}
+                      isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
                       visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
@@ -2244,8 +2286,9 @@ const BookingModal = ({ service, onClose }) => {
                       travelNote={travelNote}
                       paymentPreference={paymentPreference}
                       onPaymentPreferenceChange={setPaymentPreference}
-                      allowRecurring={allowRecurring}
+                      allowRecurring={allowWeeklyRecurring}
                       recurrence={recurrence}
+                      isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}

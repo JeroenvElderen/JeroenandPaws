@@ -35,6 +35,7 @@ const DaytimeCare = () => {
             : "Custom Schedule",
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
+          allowMultiDay: service.allow_multi_day ?? true,
           ctaText: service.price ? "Check availability" : "Plan tailored care",
           ...(service.price === null && {
             ctaOptions: {

@@ -33,7 +33,8 @@ const Dailystrolls = () => {
           ? `${service.duration_minutes}-Min Visit`
           : "Custom Plan",
         durationMinutes: service.duration_minutes || null,
-        allowRecurring: s.allow_recurring ?? true,
+        allowRecurring: service.allow_recurring ?? true,
+        allowMultiDay: service.allow_multi_day ?? true,
         ctaText:
           service.price === null ? "Build a custom visit" : "Check availability",
         ...(service.price === null && {

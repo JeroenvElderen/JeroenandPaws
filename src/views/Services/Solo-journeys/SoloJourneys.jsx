@@ -35,6 +35,7 @@ const SoloJourneys = () => {
             : "Custom Journey",
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
+          allowMultiDay: service.allow_multi_day ?? true,
           ctaText: service.price ? "Check availability" : "Plan a solo journey",
           ...(service.price === null && {
             ctaOptions: {

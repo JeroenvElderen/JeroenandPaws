@@ -63,6 +63,7 @@ const BookingForm = ({
   onPaymentPreferenceChange,
   allowRecurring,
   recurrence,
+  isMultiDay,
   onRecurrenceChange,
 }) => {
   const isSummaryMode = visibleStage === "summary";
@@ -82,6 +83,15 @@ const BookingForm = ({
       : recurrence === "yearly"
       ? "Yearly"
       : "One-time booking";
+  const recurrenceOptions = isMultiDay
+    ? [{ value: "weekly", label: "Weekly (multi-day schedule)" }]
+    : [
+        { value: "none", label: "One-time booking" },
+        { value: "weekly", label: "Weekly" },
+        { value: "monthly", label: "Monthly" },
+        { value: "six-months", label: "Every 6 months" },
+        { value: "yearly", label: "Yearly" },
+      ];
 
   const handleAdvance = (nextStage) => {
     if (onContinue) {
@@ -559,55 +569,25 @@ const BookingForm = ({
       </label>
 
       {allowRecurring && (
-        <div className="input-group full-width">
+        <div className="input-group full-width recurrence-group">
           <span>Recurring visits</span>
-          <div className="actions-stack">
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="recurrence"
-                checked={recurrence === "none"}
-                onChange={() => onRecurrenceChange?.("none")}
-              />
-              <span>One-time booking</span>
-            </label>
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="recurrence"
-                checked={recurrence === "weekly"}
-                onChange={() => onRecurrenceChange?.("weekly")}
-              />
-              <span>Weekly</span>
-            </label>
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="recurrence"
-                checked={recurrence === "monthly"}
-                onChange={() => onRecurrenceChange?.("monthly")}
-              />
-              <span>Monthly</span>
-            </label>
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="recurrence"
-                checked={recurrence === "six-months"}
-                onChange={() => onRecurrenceChange?.("six-months")}
-              />
-              <span>Every 6 months</span>
-            </label>
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="recurrence"
-                checked={recurrence === "yearly"}
-                onChange={() => onRecurrenceChange?.("yearly")}
-              />
-              <span>Yearly</span>
-            </label>
-          </div>
+          <select
+            className="input-like-select recurrence-select"
+            value={recurrenceOptions.some((option) => option.value === recurrence) ? recurrence : recurrenceOptions[0]?.value}
+            onChange={(event) => onRecurrenceChange?.(event.target.value)}
+            disabled={isMultiDay}
+          >
+            {recurrenceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {isMultiDay && (
+            <p className="muted subtle">
+              Multi-day bookings repeat weekly to keep each selected day in your routine.
+            </p>
+          )}
         </div>
       )}
       

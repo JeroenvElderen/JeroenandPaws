@@ -435,6 +435,9 @@ const PricingStyles = () => (
           padding: 10px;
           border-radius: 12px;
         }
+        .pill-toggle input {
+          accent-color: #7c5df2;
+        }
         .pill-toggle small {
           display: block;
         }

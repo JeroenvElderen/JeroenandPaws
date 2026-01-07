@@ -20,9 +20,9 @@ const PricingSection = () => {
           duration: service.duration_minutes === 1440 ? "Overnight Stay" : "Custom Duration",
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
-          allowMultiDay: false,
+          allowMultiDay: service.allow_multi_day ?? false,
           ctaText: service.price ? "Check availability" : "Plan a tailored stay",
-          ...(s.price === null && {
+          ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
               formUrl: `/contact?service=${service.slug}`,

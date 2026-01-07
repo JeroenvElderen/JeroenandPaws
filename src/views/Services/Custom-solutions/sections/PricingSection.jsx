@@ -23,7 +23,7 @@ const PricingSection = () => {
         duration: service.duration_minutes ? "Multi-Session" : "Custom Plan",
         durationMinutes: service.duration_minutes || null,
         allowRecurring: service.allow_recurring ?? true,
-        allowRecurring: s.allow_recurring ?? true,
+        allowMultiDay: service.allow_multi_day ?? true,
         ctaText: "Check availability",
 
         // Custom-care services always use ctaOptions

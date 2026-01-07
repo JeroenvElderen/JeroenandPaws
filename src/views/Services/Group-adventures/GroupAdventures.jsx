@@ -35,6 +35,7 @@ const GroupAdventures = () => {
             : "Custom Adventure",
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
+          allowMultiDay: service.allow_multi_day ?? true,
           ctaText: service.price ? "Check availability" : "Plan Custom Adventure",
           ...(service.price === null && {
             ctaOptions: {
