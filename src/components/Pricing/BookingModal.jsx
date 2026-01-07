@@ -71,6 +71,8 @@ const BookingModal = ({ service, onClose }) => {
   const [clientPhone, setClientPhone] = useState("");
   const [clientAddress, setClientAddress] = useState("");
   const [clientEircode, setClientEircode] = useState("");
+  const [pendingProfileEircode, setPendingProfileEircode] = useState("");
+  const [eircodeChoiceOpen, setEircodeChoiceOpen] = useState(false);
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [isBooking, setIsBooking] = useState(false);
@@ -689,17 +691,44 @@ const BookingModal = ({ service, onClose }) => {
 
     const phoneNumber = client.phone_number || client.phone || "";
     const normalizedAddress = normalizeEircode(client.address || "");
+    const existingEircode = normalizeEircode(clientEircode);
+    const shouldPromptEircodeChoice =
+      Boolean(existingEircode) &&
+      Boolean(normalizedAddress) &&
+      existingEircode !== normalizedAddress;
 
     setClientName(client.full_name || "");
     setClientPhone(phoneNumber || "");
     setClientEmail(client.email || "");
-    setClientAddress(normalizedAddress || client.address || "");
     setLoginEmail(client.email || "");
     
+    if (shouldPromptEircodeChoice) {
+      setPendingProfileEircode(normalizedAddress);
+      setEircodeChoiceOpen(true);
+      return;
+    }
+
+    setPendingProfileEircode("");
+    setEircodeChoiceOpen(false);
+    setClientAddress(normalizedAddress || client.address || "");
+
     if (normalizedAddress) {
       setClientEircode(normalizedAddress);
     }
-  }, [normalizeEircode, profile]);
+  }, [clientEircode, normalizeEircode, profile]);
+
+  const handleUseSavedEircode = useCallback(() => {
+    if (!pendingProfileEircode) return;
+    setClientEircode(pendingProfileEircode);
+    setClientAddress(pendingProfileEircode);
+    setPendingProfileEircode("");
+    setEircodeChoiceOpen(false);
+  }, [pendingProfileEircode]);
+
+  const handleKeepEnteredEircode = useCallback(() => {
+    setPendingProfileEircode("");
+    setEircodeChoiceOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -1866,6 +1895,29 @@ const BookingModal = ({ service, onClose }) => {
                             <p className="success-banner subtle">
                               You’re logged in as {clientEmail || loginEmail}.
                             </p>
+                          )}
+                          {eircodeChoiceOpen && (
+                            <div className="success-banner subtle">
+                              <p>
+                                We found a saved Eircode. Which do you want to use?
+                              </p>
+                              <div className="actions-row">
+                                <button
+                                  type="button"
+                                  className="button w-button"
+                                  onClick={handleUseSavedEircode}
+                                >
+                                  Use saved
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ghost-button"
+                                  onClick={handleKeepEnteredEircode}
+                                >
+                                  Keep entered
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </form>
                       ) : customerMode === "new" ? (
