@@ -22,23 +22,24 @@ const GroupAdventures = () => {
       const data = await res.json();
 
       setServices(
-        (data.services || []).map((s) => ({
-          id: s.slug,
-          title: s.title,
-          description: s.description || "",
-          price: s.price || "Custom",
-          label: s.duration_minutes
-            ? `${s.duration_minutes / 60}-Hour Adventure`
+        (data.services || []).map((service) => ({
+          id: service.slug,
+          title: service.title,
+          description: service.description || "",
+          price: service.price || "Custom",
+          label: service.duration_minutes
+            ? `${service.duration_minutes / 60}-Hour Adventure`
             : "Custom Adventure",
-          duration: s.duration_minutes
-            ? `${s.duration_minutes / 60}-Hour Adventure`
+          duration: service.duration_minutes
+            ? `${service.duration_minutes / 60}-Hour Adventure`
             : "Custom Adventure",
-          durationMinutes: s.duration_minutes || null,
-          ctaText: s.price ? "Check availability" : "Plan Custom Adventure",
-          ...(s.price === null && {
+          durationMinutes: service.duration_minutes || null,
+          allowRecurring: service.allow_recurring ?? true,
+          ctaText: service.price ? "Check availability" : "Plan Custom Adventure",
+          ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
-              formUrl: `/contact?service=${s.slug}`,
+              formUrl: `/contact?service=${service.slug}`,
               heading: "How would you like to plan your custom adventure?",
               description: "Tell us timing, walk frequency or needs.",
             },

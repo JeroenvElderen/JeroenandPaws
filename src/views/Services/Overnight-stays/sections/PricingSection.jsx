@@ -11,21 +11,21 @@ const PricingSection = () => {
       const data = await res.json();
 
       setServices(
-        (data.services || []).map((s) => ({
-          id: s.slug,
-          title: s.title,
-          description: s.description || "",
-          price: s.price || "Tailored",
-          label: s.duration_minutes === 1440 ? "Boarding — 24 hrs" : "Custom duration",
-          duration: s.duration_minutes === 1440 ? "Overnight Stay" : "Custom Duration",
-          durationMinutes: s.duration_minutes || null,
-          allowRecurring: false,
+        (data.services || []).map((service) => ({
+          id: service.slug,
+          title: service.title,
+          description: service.description || "",
+          price: service.price || "Tailored",
+          label: service.duration_minutes === 1440 ? "Boarding — 24 hrs" : "Custom duration",
+          duration: service.duration_minutes === 1440 ? "Overnight Stay" : "Custom Duration",
+          durationMinutes: service.duration_minutes || null,
+          allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: false,
-          ctaText: s.price ? "Check availability" : "Plan a tailored stay",
+          ctaText: service.price ? "Check availability" : "Plan a tailored stay",
           ...(s.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
-              formUrl: `/contact?service=${s.slug}`,
+              formUrl: `/contact?service=${service.slug}`,
               heading: "How should we plan your custom stay?",
               description: "Discuss dates via WhatsApp or request form.",
             },

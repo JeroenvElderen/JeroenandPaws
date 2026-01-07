@@ -1988,6 +1988,9 @@ const BookingModal = ({ service, onClose }) => {
                         travelNote={travelNote}
                         paymentPreference={paymentPreference}
                         onPaymentPreferenceChange={setPaymentPreference}
+                        allowRecurring={allowRecurring}
+                        recurrence={recurrence}
+                        onRecurrenceChange={setRecurrence}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />
@@ -2074,6 +2077,9 @@ const BookingModal = ({ service, onClose }) => {
                       travelNote={travelNote}
                       paymentPreference={paymentPreference}
                       onPaymentPreferenceChange={setPaymentPreference}
+                      allowRecurring={allowRecurring}
+                      recurrence={recurrence}
+                      onRecurrenceChange={setRecurrence}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("addons")}
                     />
@@ -2159,6 +2165,9 @@ const BookingModal = ({ service, onClose }) => {
                       travelNote={travelNote}
                       paymentPreference={paymentPreference}
                       onPaymentPreferenceChange={setPaymentPreference}
+                      allowRecurring={allowRecurring}
+                      recurrence={recurrence}
+                      onRecurrenceChange={setRecurrence}
                       visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2235,6 +2244,9 @@ const BookingModal = ({ service, onClose }) => {
                       travelNote={travelNote}
                       paymentPreference={paymentPreference}
                       onPaymentPreferenceChange={setPaymentPreference}
+                      allowRecurring={allowRecurring}
+                      recurrence={recurrence}
+                      onRecurrenceChange={setRecurrence}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />

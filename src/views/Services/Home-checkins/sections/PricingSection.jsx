@@ -11,23 +11,24 @@ const PricingSection = () => {
       const data = await res.json();
 
       setServices(
-        (data.services || []).map((s) => ({
-          id: s.slug,
-          title: s.title,
-          description: s.description || "",
-          price: s.price || "Tailored",
-          label: s.duration_minutes
-            ? `${s.duration_minutes}-Min Visit`
+        (data.services || []).map((service) => ({
+          id: service.slug,
+          title: service.title,
+          description: service.description || "",
+          price: service.price || "Tailored",
+          label: service.duration_minutes
+            ? `${service.duration_minutes}-Min Visit`
             : "Flexible Timing",
-          duration: s.duration_minutes
-            ? `${s.duration_minutes}-Min Visit`
+          duration: service.duration_minutes
+            ? `${service.duration_minutes}-Min Visit`
             : "Custom Plan",
-          durationMinutes: s.duration_minutes || null,
-          ctaText: s.price ? "Check availability" : "Plan a custom check-in",
-          ...(s.price === null && {
+          durationMinutes: service.duration_minutes || null,
+          allowRecurring: service.allow_recurring ?? true,
+          ctaText: service.price ? "Check availability" : "Plan a custom check-in",
+          ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
-              formUrl: `/contact?service=${s.slug}`,
+              formUrl: `/contact?service=${service.slug}`,
               heading: "How would you like to plan your custom check-in?",
               description: "Share timings or special instructions.",
             },

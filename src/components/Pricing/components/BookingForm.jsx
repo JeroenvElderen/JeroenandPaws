@@ -61,6 +61,9 @@ const BookingForm = ({
   travelNote,
   paymentPreference,
   onPaymentPreferenceChange,
+  allowRecurring,
+  recurrence,
+  onRecurrenceChange,
 }) => {
   const isSummaryMode = visibleStage === "summary";
   const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
@@ -69,6 +72,16 @@ const BookingForm = ({
   const canAdvanceToPets = Boolean(
     clientName.trim() && clientEmail.trim() && clientPhone.trim()
   );
+  const recurrenceLabel =
+    recurrence === "weekly"
+      ? "Weekly"
+      : recurrence === "monthly"
+      ? "Monthly"
+      : recurrence === "six-months"
+      ? "Every 6 months"
+      : recurrence === "yearly"
+      ? "Yearly"
+      : "One-time booking";
 
   const handleAdvance = (nextStage) => {
     if (onContinue) {
@@ -176,6 +189,13 @@ const BookingForm = ({
             <h4>Notes</h4>
             <p className="summary-value">{notes || "No notes added."}</p>
           </div>
+
+          {allowRecurring && (
+            <div className="summary-card">
+              <h4>Recurring</h4>
+              <p className="summary-value">{recurrenceLabel}</p>
+            </div>
+          )}
 
           {selectedAdditionalLabels?.length > 0 && (
             <div className="summary-card">
@@ -538,6 +558,59 @@ const BookingForm = ({
         />
       </label>
 
+      {allowRecurring && (
+        <div className="input-group full-width">
+          <span>Recurring visits</span>
+          <div className="actions-stack">
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="recurrence"
+                checked={recurrence === "none"}
+                onChange={() => onRecurrenceChange?.("none")}
+              />
+              <span>One-time booking</span>
+            </label>
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="recurrence"
+                checked={recurrence === "weekly"}
+                onChange={() => onRecurrenceChange?.("weekly")}
+              />
+              <span>Weekly</span>
+            </label>
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="recurrence"
+                checked={recurrence === "monthly"}
+                onChange={() => onRecurrenceChange?.("monthly")}
+              />
+              <span>Monthly</span>
+            </label>
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="recurrence"
+                checked={recurrence === "six-months"}
+                onChange={() => onRecurrenceChange?.("six-months")}
+              />
+              <span>Every 6 months</span>
+            </label>
+            <label className="chip-option">
+              <input
+                type="radio"
+                name="recurrence"
+                checked={recurrence === "yearly"}
+                onChange={() => onRecurrenceChange?.("yearly")}
+              />
+              <span>Yearly</span>
+            </label>
+          </div>
+        </div>
+      )}
+      
       {visibleStage === "addons" && (
         <>
           <div className="pricing-row" ref={addOnDropdownRef}>

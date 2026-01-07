@@ -20,19 +20,21 @@ const CustomSolutions = () => {
       const res = await fetch(`/api/services?category=Custom Care`);
       const data = await res.json();
 
-      const mapped = (data.services || []).map((s) => ({
-        id: s.slug,
-        title: s.title,
-        description: s.description || "",
-        price: s.price || "Custom Quote",
-        label: s.duration_minutes ? "Multi-Session" : "Tailored Care",
-        duration: s.duration_minutes ? "Multi-Session" : "Custom Plan",
-        durationMinutes: s.duration_minutes || null,
+      const mapped = (data.services || []).map((service) => ({
+        id: service.slug,
+        title: service.title,
+        description: service.description || "",
+        price: service.price || "Custom Quote",
+        label: service.duration_minutes ? "Multi-Session" : "Tailored Care",
+        duration: service.duration_minutes ? "Multi-Session" : "Custom Plan",
+        durationMinutes: service.duration_minutes || null,
+        allowRecurring: service.allow_recurring ?? true,
+        allowRecurring: s.allow_recurring ?? true,
         ctaText: "Check availability",
         ctaOptions: {
           chatUrl: getPreferredChatUrl(),
-          formUrl: `/contact?service=${s.slug}`,
-          heading: `Tell me more about "${s.title}"`,
+          formUrl: `/contact?service=${service.slug}`,
+          heading: `Tell me more about "${service.title}"`,
           description:
             "Start a chat for quick questions, or send a detailed request through the form.",
         },

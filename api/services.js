@@ -64,6 +64,7 @@ module.exports = async (req, res) => {
       price: service.price || null,
       duration_minutes:
         service.duration_minutes || service.durationMinutes || 60,
+      allow_recurring: service.allow_recurring ?? service.allowRecurring ?? true,
       sort_order: service.sort_order ?? 0,
       is_active: service.is_active ?? true,
       category: service.category || 'General', // 👈 NEW CATEGORY SUPPORT
