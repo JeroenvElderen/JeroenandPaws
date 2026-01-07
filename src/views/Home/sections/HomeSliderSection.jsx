@@ -1,260 +1,430 @@
-import Link from "next/link";
-import React, { useEffect, useState } from "react";
+"use client";
+
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const slides = [
   {
     title: "Daily walks, done right",
-    description: "Personalised walks matched to your companion’s pace and routine.",
+    description:
+      "Personalised walks matched to your companion’s pace and routine.",
     href: "/services/daily-strolls",
     imageSrc: "/images/dogs/lola/lola1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
-    translateY: "-10%",
-  }, 
+    objectPosition: "50% 40%",
+  },
   {
     title: "Group adventures",
-    description: "Fun, confidence-building outings where companions explore and play together.",
+    description:
+      "Fun, confidence-building outings where companions explore and play together.",
     href: "/services/group-adventures",
     imageSrc: "/images/dogs/lakta/lakta2.jpg",
     imageAlt: "Group of dogs playing together outdoors",
-    translateY: "-10%",
   },
   {
     title: "Solo journeys",
-    description: "One-to-one walks that provide calm, focused attention just for your companion.",
+    description:
+      "One-to-one walks that provide calm, focused attention just for your companion.",
     href: "/services/solo-journeys",
     imageSrc: "/images/dogs/lakta/lakta1.jpg",
     imageAlt: "Dog sitting attentively on a trail",
+    objectPosition: "50% 40%",
   },
   {
     title: "Overnight stays",
-    description: "A homely stay where your companion rests comfortably and feels safe.",
+    description:
+      "A homely stay where your companion rests comfortably and feels safe.",
     href: "/services/overnight-stays",
     imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
     imageAlt: "Dog resting comfortably indoors",
+    objectPosition: "50% 25%",
   },
   {
     title: "Daytime care",
-    description: "Stimulating, reassuring days perfect for companions who love company.",
+    description:
+      "Stimulating, reassuring days perfect for companions who love company.",
     href: "/services/daytime-care",
     imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
-    translateY: "-15%",
+    objectPosition: "50% 90%",
   },
   {
     title: "Home check-ins",
-    description: "Comforting drop-ins that keep your companion relaxed and well looked after.",
+    description:
+      "Comforting drop-ins that keep your companion relaxed and well looked after.",
     href: "/services/home-check-ins",
     imageSrc: "/images/dogs/Nola/nola2.jpg",
     imageAlt: "Person greeting a dog inside a home",
-    translateY: "-15%",
+    objectPosition: "50% 40%",
   },
   {
     title: "Training help",
-    description: "Supportive guidance to build good habits and boost your companion’s confidence.",
+    description:
+      "Supportive guidance to build good habits and boost your companion’s confidence.",
     href: "/services/training-help",
     imageSrc: "/images/dogs/pancho/pancho2.jpeg",
     imageAlt: "Trainer working with a dog",
+    objectPosition: "50% 25%",
   },
   {
     title: "Custom solutions",
-    description: "Tailored care shaped around your companion’s personality and lifestyle.",
+    description:
+      "Tailored care shaped around your companion’s personality and lifestyle.",
     href: "/services/custom-solutions",
     imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Owner cuddling with a relaxed dog",
-    translateY: "-10%",
   },
 ];
 
-const transitionDurationMs = 500;
+function circularDelta(i, active, length) {
+  let d = i - active;
+  if (d > length / 2) d -= length;
+  if (d < -length / 2) d += length;
+  return d;
+}
 
-const HomeSliderSection = () => {
-  const loopOffset = slides.length;
-  const [currentIndex, setCurrentIndex] = useState(loopOffset);
-  const [isTransitioning, setIsTransitioning] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const slideSideMargin = isMobile ? 0 : 20;
+function prefersReducedMotion() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
+export default function HomeSliderSection() {
+  const [active, setActive] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+
+  const prev = useCallback(
+    () => setActive((a) => (a - 1 + slides.length) % slides.length),
+    []
+  );
+
+  const next = useCallback(() => setActive((a) => (a + 1) % slides.length), []);
+
+  // Keyboard navigation
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, 4000);
+    const handler = (e) => {
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [next, prev]);
 
-    return () => clearInterval(interval);
-  }, []);
-
+  // Autoplay (paused on hover, disabled for reduced motion)
   useEffect(() => {
-    let resetTimeout;
+    if (prefersReducedMotion() || isHovering) return;
+    const id = setInterval(() => next(), 4500);
+    return () => clearInterval(id);
+  }, [isHovering, next]);
 
-    if (currentIndex >= loopOffset * 2 || currentIndex < loopOffset) {
-      resetTimeout = setTimeout(() => {
-        setIsTransitioning(false);
-        setCurrentIndex((prev) => {
-          if (prev >= loopOffset * 2) return prev - loopOffset;
-          if (prev < loopOffset) return prev + loopOffset;
-          return prev;
-        });
-      }, transitionDurationMs);
+  // Active ±2
+  const visible = useMemo(() => {
+    const items = [];
+    for (let i = 0; i < slides.length; i++) {
+      const d = circularDelta(i, active, slides.length);
+      if (Math.abs(d) <= 2) items.push({ i, d, slide: slides[i] });
     }
-
-    return () => {
-      if (resetTimeout) clearTimeout(resetTimeout);
-    };
-  }, [currentIndex, loopOffset]);
-
-  useEffect(() => {
-    if (!isTransitioning) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsTransitioning(true);
-        });
-      });
-    }
-  }, [isTransitioning]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(typeof window !== "undefined" && window.innerWidth <= 767);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  const goToSlide = (delta) => {
-    setCurrentIndex((prev) => prev + delta);
-  };
-
-  const renderedSlides = [...slides, ...slides, ...slides];
+    items.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    return items;
+  }, [active]);
 
   return (
-    <section data-copilot="true" className="section overflow_hidden" style={{ marginTop: -150}}>
+    <section
+      data-copilot="true"
+      className="section overflow_hidden"
+      style={{ marginTop: -150 }}
+    >
       <div className="container">
         <div className="header is-align-center">
           <div className="eyebrow">Welcome to your companion’s second home</div>
           <h2 className="heading_h2">Personalised care for every companion</h2>
         </div>
-        <div className="slider overflow_visible w-slider">
-          <div
-            className="slider_mask width_35percent width_100percent_tablet overflow_visible w-slider-mask"
-            style={{
-              display: "flex",
-              transform: `translateX(-${currentIndex * 100}%)`,
-              transition: isTransitioning
-                ? `transform ${transitionDurationMs}ms ease`
-                : "none",
-              ...(isMobile
-                ? {
-                    width: "100%",
-                    maxWidth: "960px",
-                    margin: "0 auto",
-                    overflow: "hidden",
-                    padding: "0 1rem",
-                  }
-                : {}),
-            }}
-          >
-            {renderedSlides.map((slide, index) => (
-              <div
-                key={`${slide.title}-${index}`}
-                className="ix_card-deck-space height_100percent w-slide"
-                style={{
-                  flex: "0 0 100%",
-                  maxWidth: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  ...(isMobile ? { padding: 0 } : {}),
-                }}
-              >
-                <div
-                  className="card overflow_hidden backdrop-filter_blur"
-                  style={{ height: "100%", width: isMobile ? "100%" : "auto" }}
+
+        <div
+          className="cf"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Services"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          <div className="stage">
+            {visible.map(({ i, d, slide }) => {
+              const abs = Math.abs(d);
+              const side = Math.sign(d);
+              const isActive = d === 0;
+
+              // Mobile-first spread (px from CSS var)
+              const x = side * (abs === 1 ? 1 : 2);
+              const z = abs === 0 ? 0 : abs === 1 ? -140 : -260;
+              const scale = abs === 0 ? 1 : abs === 1 ? 0.9 : 0.8;
+              const rotateY = abs === 0 ? 0 : side * (abs === 1 ? 10 : 16);
+              const opacity = abs === 0 ? 1 : abs === 1 ? 0.55 : 0.28;
+              const blur = abs === 0 ? 0 : abs === 1 ? 1.25 : 2.5;
+
+              const zIndex = 100 - abs * 10 + (isActive ? 20 : 0);
+
+              return (
+                <article
+                  key={slide.href}
+                  className={`cardWrap ${isActive ? "isActive" : ""}`}
+                  style={{
+                    zIndex,
+                    opacity,
+                    filter: `blur(${blur}px)`,
+                    transform: `
+                      translate3d(calc(${x} * var(--cf-spread)), ${
+                      abs ? "10px" : "0px"
+                    }, ${z}px)
+                      rotateY(${rotateY}deg)
+                      scale(${scale})
+                    `,
+                  }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      height: "100%",
-                      alignItems: isMobile ? "center" : "stretch",
-                    }}
+                  <button
+                    type="button"
+                    className="cardHit"
+                    onClick={() => setActive(i)}
+                    aria-label={
+                      isActive ? "Current slide" : `Show ${slide.title}`
+                    }
+                    tabIndex={isActive ? 0 : -1}
                   >
-                    <div
-                      className="card_body padding-bottom_none"
-                      style={{ flexGrow: 1 }}
-                    >
-                      <p className="heading_h4">{slide.title}</p>
-                      <p>{slide.description}</p>
-                    </div>
-                    <div
-                      className="image-ratio_1x1 margin-top_xsmall"
-                      style={{
-                        marginRight: slideSideMargin,
-                        marginLeft: slideSideMargin,
-                      }}
-                    >
+                    <div className="card">
+                      {/* Full background image - FORCE correct proportions */}
                       <Image
-                        width={405}
-                        height={405}
-                        alt={slide.imageAlt}
                         src={slide.imageSrc}
-                        className="image_cover"
+                        alt={slide.imageAlt}
+                        fill
+                        priority={isActive}
+                        className="bg"
+                        sizes="(max-width: 767px) 92vw, (min-width: 768px) 720px"
                         style={{
-                          width: "100%",
-                          height: "100%",
                           objectFit: "cover",
-                          transform: `translateY(${slide.translateY || "0"})`,
+                          objectPosition: slide.objectPosition || "50% 50%",
+                          transform: isActive ? "scale(1.02)" : "scale(1.01)",
                         }}
-                        sizes="(min-width: 1024px) 405px, 80vw"
-                        
                       />
+
+                      <div className="scrim" aria-hidden="true" />
+
+                      <div className="content">
+                        <h3 className="title">{slide.title}</h3>
+                        <p className="desc">{slide.description}</p>
+
+                        <div className="cta">
+                          <Link
+                            href={slide.href}
+                            className="button w-button"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View service
+                          </Link>
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      className="margin-top_small"
-                      style={{
-                        marginBottom: 20,
-                        marginLeft: slideSideMargin,
-                        marginRight: slideSideMargin,
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: isMobile ? "center" : "flex-start",
-                      }}
-                    >
-                      <Link href={slide.href} className="button w-button">
-                        View service
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                  </button>
+                </article>
+              );
+            })}
           </div>
-          <button
-            type="button"
-            className="slider_arrow is-previous is-bottom-center w-slider-arrow-left"
-            aria-label="Previous slide"
-            onClick={() => goToSlide(-1)}
-          >
-            <div className="w-icon-slider-left" />
-          </button>
-          <button
-            type="button"
-            className="slider_arrow is-next is-bottom-center w-slider-arrow-right"
-            aria-label="Next slide"
-            onClick={() => goToSlide(1)}
-          >
-            <div className="w-icon-slider-right" />
-          </button>
-          <div className="display_none w-slider-nav w-slider-nav-invert w-round">
-            Navigate
+
+          <div className="controls">
+            <button
+              type="button"
+              className="arrow"
+              onClick={prev}
+              aria-label="Previous slide"
+            >
+              ‹
+            </button>
+
+            <div className="count" aria-live="polite">
+              {active + 1} / {slides.length}
+            </div>
+
+            <button
+              type="button"
+              className="arrow"
+              onClick={next}
+              aria-label="Next slide"
+            >
+              ›
+            </button>
           </div>
         </div>
+
+        <style jsx>{`
+          .cf {
+            margin-top: 2.25rem;
+            --cf-spread: 130px;
+          }
+
+          .stage {
+            position: relative;
+            height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            overflow: visible;
+          }
+
+          .cardWrap {
+            position: absolute;
+            width: min(92vw, 560px);
+            aspect-ratio: 16 / 10;
+            transform-style: preserve-3d;
+            transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 380ms ease, filter 380ms ease;
+            pointer-events: none;
+          }
+
+          .cardWrap.isActive {
+            pointer-events: auto;
+          }
+
+          .cardHit {
+            all: unset;
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+          }
+
+          .card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 26px 70px rgba(0, 0, 0, 0.45);
+          }
+
+          /* Make sure styles apply even if next/image doesn't carry styled-jsx scoping */
+          :global(.bg) {
+            object-fit: cover;
+            object-position: center;
+          }
+
+          .scrim {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+              to top,
+              rgba(0, 0, 0, 0.7) 0%,
+              rgba(0, 0, 0, 0.4) 36%,
+              rgba(0, 0, 0, 0.12) 68%
+            );
+          }
+
+          .content {
+            position: absolute;
+            inset: 0;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            color: #fff;
+          }
+
+          .title {
+            font-size: 1.35rem;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            margin: 0;
+          }
+
+          .desc {
+            margin: 0.6rem 0 0;
+            opacity: 0.95;
+            max-width: 40ch;
+            font-size: 0.95rem;
+          }
+
+          .cta {
+            margin-top: 1rem;
+          }
+
+          .controls {
+            margin-top: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+          }
+
+          .arrow {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+            transition: transform 160ms ease, background 160ms ease;
+          }
+
+          .arrow:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.14);
+          }
+
+          .count {
+            min-width: 90px;
+            text-align: center;
+            opacity: 0.85;
+            font-weight: 600;
+          }
+
+          @media (min-width: 768px) {
+            .cf {
+              --cf-spread: 220px;
+            }
+
+            .stage {
+              height: 520px;
+              perspective: 1200px;
+            }
+
+            .cardWrap {
+              width: min(84vw, 720px);
+              aspect-ratio: 16 / 9;
+            }
+
+            .content {
+              padding: 1.75rem;
+            }
+
+            .title {
+              font-size: 1.9rem;
+            }
+
+            .desc {
+              font-size: 1rem;
+            }
+          }
+
+          @media (min-width: 1024px) {
+            .cf {
+              --cf-spread: 300px;
+            }
+
+            .stage {
+              height: 560px;
+              perspective: 1400px;
+            }
+
+            .content {
+              padding: 2rem;
+            }
+          }
+        `}</style>
       </div>
     </section>
   );
-};
-
-export default HomeSliderSection;
+}
