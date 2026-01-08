@@ -1,3 +1,5 @@
+const { DateTime } = require("luxon");
+
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 const MAX_GRAPH_WINDOW_DAYS = 62;
@@ -5,10 +7,17 @@ const MAX_GRAPH_WINDOW_DAYS = 62;
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
 
 const mapBusyIntervals = (items) =>
-  items.map((item) => ({
-    start: new Date(item.start.dateTime),
-    end: new Date(item.end.dateTime),
-  }));
+  items.map((item) => {
+    const startZone = item.start?.timeZone || BUSINESS_TIME_ZONE;
+    const endZone = item.end?.timeZone || BUSINESS_TIME_ZONE;
+    const start = DateTime.fromISO(item.start.dateTime, { zone: startZone })
+      .toUTC()
+      .toJSDate();
+    const end = DateTime.fromISO(item.end.dateTime, { zone: endZone })
+      .toUTC()
+      .toJSDate();
+    return { start, end };
+  });
 
 const overlaps = (start, end, busy) => {
   return busy.some((interval) => start < interval.end && end > interval.start);
@@ -29,25 +38,36 @@ const buildSlots = (
     : intervalMinutes;
 
   for (let i = 0; i < days; i += 1) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i);
+    const dayDate = DateTime.fromJSDate(startDate, {
+      zone: BUSINESS_TIME_ZONE,
+    })
+      .startOf("day")
+      .plus({ days: i });
 
-    const currentDate = date.toISOString().slice(0, 10);
+    const currentDate = dayDate.toISODate();
     slotsByDate[currentDate] = [];
 
     for (let hour = workingDayStart; hour <= workingDayEnd; hour += 1) {
       for (let minute = 0; minute < 60; minute += intervalMinutes) {
-        const slotStart = new Date(date);
-        slotStart.setUTCHours(hour, minute, 0, 0);
-        const slotEnd = new Date(slotStart);
-        slotEnd.setMinutes(slotEnd.getMinutes() + durationMinutes);
-        const workingEndBoundary = new Date(date);
-        workingEndBoundary.setUTCHours(workingDayEnd, 0, 0, 0);
+        const slotStart = dayDate.set({
+          hour,
+          minute,
+          second: 0,
+          millisecond: 0,
+        });
+        const slotEnd = slotStart.plus({ minutes: durationMinutes });
+        const workingEndBoundary = dayDate.set({
+          hour: workingDayEnd,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+        });
         const withinWorkingDay = slotEnd <= workingEndBoundary;
-        const time = slotStart.toISOString().slice(11, 16);
+        const time = slotStart.toFormat("HH:mm");
 
         const available =
-          withinWorkingDay && !overlaps(slotStart, slotEnd, busy);
+          withinWorkingDay &&
+          !overlaps(slotStart.toUTC().toJSDate(), slotEnd.toUTC().toJSDate(), busy);
         slotsByDate[currentDate].push({ time, available });
       }
     }
@@ -58,6 +78,9 @@ const buildSlots = (
 
 const buildPrincipalPath = (calendarId) =>
   calendarId ? `/users/${encodeURIComponent(calendarId)}` : "/me";
+
+const formatGraphDateTime = (dateTime) =>
+  dateTime.toFormat("yyyy-MM-dd'T'HH:mm:ss");
 
 const postScheduleRequest = async ({
   accessToken,
@@ -78,10 +101,13 @@ const postScheduleRequest = async ({
       body: JSON.stringify({
         schedules: [calendarId || "me"],
         startTime: {
-          dateTime: startTime.toISOString(),
+          dateTime: formatGraphDateTime(startTime),
           timeZone: BUSINESS_TIME_ZONE,
         },
-        endTime: { dateTime: endTime.toISOString(), timeZone: BUSINESS_TIME_ZONE },
+        endTime: {
+          dateTime: formatGraphDateTime(endTime),
+          timeZone: BUSINESS_TIME_ZONE,
+        },
         availabilityViewInterval: 15,
       }),
     }
@@ -102,17 +128,15 @@ const getSchedule = async ({
   serviceDurationMinutes,
 }) => {
   const totalDays = Math.max(windowDays, 1);
-  const startTime = new Date();
+  const startTime = DateTime.now().setZone(BUSINESS_TIME_ZONE);
   const busy = [];
   const timeZone = BUSINESS_TIME_ZONE;
 
   for (let offset = 0; offset < totalDays; offset += MAX_GRAPH_WINDOW_DAYS) {
-    const chunkStart = new Date(startTime);
-    chunkStart.setDate(chunkStart.getDate() + offset);
+    const chunkStart = startTime.plus({ days: offset });
 
     const chunkDays = Math.min(MAX_GRAPH_WINDOW_DAYS, totalDays - offset);
-    const chunkEnd = new Date(chunkStart);
-    chunkEnd.setDate(chunkEnd.getDate() + chunkDays);
+    const chunkEnd = chunkStart.plus({ days: chunkDays });
 
     const data = await postScheduleRequest({
       accessToken,
@@ -127,7 +151,7 @@ const getSchedule = async ({
   }
 
   const slotsByDate = buildSlots(
-    startTime,
+    startTime.toJSDate(),
     totalDays,
     15,
     busy,

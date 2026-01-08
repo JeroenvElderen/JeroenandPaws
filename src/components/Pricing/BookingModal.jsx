@@ -1674,7 +1674,7 @@ const BookingModal = ({ service, onClose }) => {
                             Pick a single date or toggle multi-day to repeat your selected days weekly.
                           </p>
                         </div>
-                        <label className="pill-toggle">
+                        <label className={`pill-toggle ${isMultiDay ? "is-active" : ""}`}>
                           <input
                             type="checkbox"
                             checked={isMultiDay}

@@ -434,12 +434,31 @@ const PricingStyles = () => (
           border: 1px solid rgba(255, 255, 255, 0.14);
           padding: 10px;
           border-radius: 12px;
+          cursor: pointer;
+          transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+            transform 0.2s ease;
         }
         .pill-toggle input {
-          accent-color: #7c5df2;
+          position: absolute;
+          opacity: 0;
+          pointer-events: none;
+          height: 0;
+          width: 0;
         }
         .pill-toggle small {
           display: block;
+        }
+        .pill-toggle:hover {
+          background: rgba(124, 93, 242, 0.18);
+        }
+        .pill-toggle.is-active {
+          background: #7c5df2;
+          border-color: #7c5df2;
+          box-shadow: 0 12px 24px rgba(124, 93, 242, 0.35);
+        }
+        .pill-toggle.is-active strong,
+        .pill-toggle.is-active small {
+          color: #fff;
         }
         .selection-summary h4 {
           margin: 6px 0 2px;
