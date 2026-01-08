@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
+import { DateTime } from "luxon";
 import { cancellationPolicy, weekdayLabels, DOG_BREEDS } from "./constants";
 import {
   buildMonthMatrix,
@@ -249,19 +250,31 @@ const BookingModal = ({ service, onClose }) => {
   }, [calendarDays]);
   const busyByDate = useMemo(() => {
     return (availability.busy || []).reduce((acc, interval) => {
-      const start = interval?.start ? new Date(interval.start) : null;
-      const end = interval?.end ? new Date(interval.end) : null;
+      if (!interval?.start || !interval?.end) return acc;
 
-      if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      const start = DateTime.fromISO(interval.start).setZone(BUSINESS_TIME_ZONE);
+      const end = DateTime.fromISO(interval.end).setZone(BUSINESS_TIME_ZONE);
+
+      if (!start.isValid || !end.isValid) return acc;
+
+      const startDateKey = start.toISODate();
+      const endDateKey = end.toISODate();
+      const startMinutes = start.hour * 60 + start.minute;
+      const endMinutes = end.hour * 60 + end.minute;
+
+      const pushInterval = (dateKey, range) => {
+        acc[dateKey] = acc[dateKey] || [];
+        acc[dateKey].push(range);
+      };
+
+      if (startDateKey === endDateKey) {
+        pushInterval(startDateKey, { startMinutes, endMinutes });
         return acc;
       }
 
-      const dateKey = start.toISOString().slice(0, 10);
-      const startMinutes = start.getUTCHours() * 60 + start.getUTCMinutes();
-      const endMinutes = end.getUTCHours() * 60 + end.getUTCMinutes();
+      pushInterval(startDateKey, { startMinutes, endMinutes: 24 * 60 });
+      pushInterval(endDateKey, { startMinutes: 0, endMinutes });
 
-      acc[dateKey] = acc[dateKey] || [];
-      acc[dateKey].push({ startMinutes, endMinutes });
       return acc;
     }, {});
   }, [availability.busy]);

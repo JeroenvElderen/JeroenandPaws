@@ -4,7 +4,7 @@ import FeatureSection from './sections/FeatureSection';
 import PricingSection from './sections/PricingSection';
 import TestimonialsSection from './sections/TestimonialsSection';
 import AboutSection from "./sections/AboutSection";
-import useServiceBooking from "../../../components/Pricing/useServiceBooking";
+import useServiceBooking from "../../../components/Pricing/useServiceBooking.js";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
 
 const SoloJourneys = () => {
