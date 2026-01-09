@@ -641,7 +641,7 @@ const BookingModal = ({ service, onClose }) => {
             : "and your previous booking routing key";
 
         setTravelNote(
-          `We estimate about ${minutes} minutes of travel ${anchorLabel} ${geocodeDescriptor} ${anchorDescriptor}, then hide times that don't fit.`
+          `We estimate about ${minutes} minutes of travel`
         );
       } catch (lookupError) {
         if (isCancelled) return;
@@ -1626,7 +1626,7 @@ const BookingModal = ({ service, onClose }) => {
                       <span className="step-icon">
                         {isComplete ? "✓" : stepIndex + 1}
                       </span>
-                      <span className="step-label">{stepLabels[step]}</span>
+                      {/*<span className="step-label">{stepLabels[step]}</span>*/}
                     </button>
                   );
                 })}
@@ -1671,40 +1671,46 @@ const BookingModal = ({ service, onClose }) => {
 
                 {currentStep === "calendar" && (
                   <div className="step-card" ref={calendarSectionRef}>
-                    {allowMultiDay && allowWeeklyRecurring && (
-                      <div className="selection-summary">
-                        <div>
-                          <h4>Visit schedule</h4>
-                          <p className="muted subtle">
-                            Pick a single date or toggle multi-day to repeat your selected days weekly.
-                          </p>
-                        </div>
-                        <label className={`pill-toggle ${isMultiDay ? "is-active" : ""}`}>
-                          <input
-                            type="checkbox"
-                            checked={isMultiDay}
-                            onChange={() => setIsMultiDay((prev) => !prev)}
-                          />
-                          <div>
-                            <strong>Multi-day weekly</strong>
-                            <small>Select multiple days in the calendar</small>
-                          </div>
-                        </label>
+                    <div className="selection-summary">
+                      <div>
+                        <h4>Visit schedule</h4>
+                        <p className="muted subtle">
+                          {allowMultiDay && allowWeeklyRecurring
+                            ? "Pick a date or toggle multi-day to select multiple days, don't forget to put your Eircode!"
+                            : "Pick a date to see which time slots are available."}
+                        </p>
                       </div>
-                    )}
-                    <div className="form-grid">
-                      <label className="input-group">
-                        <span>Your Eircode</span>
-                        <input
-                          type="text"
-                          value={clientEircode}
-                          onChange={(event) =>
-                            setClientEircode(event.target.value)
-                          }
-                          placeholder="e.g. A98H940"
-                        />
-                      </label>
-                      {travelAnchor === "previous" && (
+                      <div className="selection-summary-actions">
+                        <label className="input-group">
+                          <span>Your Eircode</span>
+                          <input
+                            type="text"
+                            value={clientEircode}
+                            onChange={(event) =>
+                              setClientEircode(event.target.value)
+                            }
+                            placeholder="e.g. A98H940"
+                          />
+                        </label>
+                        {allowMultiDay && allowWeeklyRecurring && (
+                          <label
+                            className={`pill-toggle ${isMultiDay ? "is-active" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isMultiDay}
+                              onChange={() => setIsMultiDay((prev) => !prev)}
+                            />
+                            <div>
+                              <strong>Multi-day weekly</strong>
+                              <small>Select multiple days in the calendar</small>
+                            </div>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                    {travelAnchor === "previous" && (
+                      <div className="form-grid">
                         <label className="input-group">
                           <span>Previous booking ends at</span>
                           <input
@@ -1715,9 +1721,8 @@ const BookingModal = ({ service, onClose }) => {
                             }
                           />
                         </label>
-                      )}
-                    </div>
-                    <p className="muted subtle">{travelNote}</p>
+                      </div>
+                    )}
                     <CalendarSection
                       availabilityNotice={availabilityNotice}
                       loading={loading}

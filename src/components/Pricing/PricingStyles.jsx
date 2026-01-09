@@ -428,6 +428,16 @@ const PricingStyles = () => (
           flex-wrap: wrap;
           align-items: flex-start;
         }
+        .selection-summary-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          align-items: center;
+          justify-content: flex-end;
+        }
+        .selection-summary-actions .input-group {
+          min-width: 180px;
+        }
         .pill-button-group {
           display: flex;
           flex-wrap: wrap;
