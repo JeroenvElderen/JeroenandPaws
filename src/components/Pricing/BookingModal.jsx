@@ -114,7 +114,6 @@ const BookingModal = ({ service, onClose }) => {
   const addonsSectionRef = useRef(null);
   const bookingModalRef = useRef(null);
   const calendarSectionRef = useRef(null);
-  const travelSectionRef = useRef(null);
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
   const [currentStep, setCurrentStep] = useState("calendar");
@@ -329,18 +328,9 @@ const BookingModal = ({ service, onClose }) => {
   const trimmedEmail = clientEmail.trim();
   const canLoadPets = Boolean(trimmedName && trimmedEmail);
 
-  const stepOrder = [
-    "calendar",
-    "travel",
-    "time",
-    "customer",
-    "pet",
-    "addons",
-    "summary",
-  ];
+  const stepOrder = ["calendar", "time", "customer", "pet", "addons", "summary"];
   const stepLabels = {
     calendar: "Calendar",
-    travel: "Eircode",
     time: "Choose time",
     customer: "Customer",
     pet: "Pets",
@@ -1187,8 +1177,8 @@ const BookingModal = ({ service, onClose }) => {
     setSelectedSlots({ [iso]: nextTime });
     setSelectedDate(iso);
     setSelectedTime(nextTime);
-    setCurrentStep("travel");
-    requestAnimationFrame(() => scrollToSection(travelSectionRef));
+    setCurrentStep("time");
+    requestAnimationFrame(() => scrollToSection(timesSectionRef));
   };
 
   const scrollToSection = (ref) => {
@@ -1564,7 +1554,6 @@ const BookingModal = ({ service, onClose }) => {
   const goToStepAndScroll = (step) => {
     setCurrentStep(step);
     if (step === "calendar") scrollToSection(calendarSectionRef);
-    if (step === "travel") scrollToSection(travelSectionRef);
     if (step === "time") scrollToSection(timesSectionRef);
     if (step === "addons") scrollToSection(addonsSectionRef);
     if (step === "summary") scrollToSection(summarySectionRef);
@@ -1703,6 +1692,32 @@ const BookingModal = ({ service, onClose }) => {
                         </label>
                       </div>
                     )}
+                    <div className="form-grid">
+                      <label className="input-group">
+                        <span>Your Eircode</span>
+                        <input
+                          type="text"
+                          value={clientEircode}
+                          onChange={(event) =>
+                            setClientEircode(event.target.value)
+                          }
+                          placeholder="e.g. A98H940"
+                        />
+                      </label>
+                      {travelAnchor === "previous" && (
+                        <label className="input-group">
+                          <span>Previous booking ends at</span>
+                          <input
+                            type="time"
+                            value={previousBookingTime}
+                            onChange={(event) =>
+                              setPreviousBookingTime(event.target.value)
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <p className="muted subtle">{travelNote}</p>
                     <CalendarSection
                       availabilityNotice={availabilityNotice}
                       loading={loading}
@@ -1724,61 +1739,13 @@ const BookingModal = ({ service, onClose }) => {
                         <button
                           type="button"
                           className="ghost-button"
-                          onClick={() => goToStepAndScroll("travel")}
-                          disabled={!canContinueFromCalendar}
-                        >
-                          Continue to Eircode
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {currentStep === "travel" && (
-                  <div className="step-card" ref={travelSectionRef}>
-                    <div className="step-toolbar">
-                      <div className="actions-stack">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("calendar")}
-                        >
-                          Back to calendar
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-button"
                           onClick={() => goToStepAndScroll("time")}
-                          disabled={!normalizeEircode(clientEircode)}
+                          disabled={!canContinueFromCalendar}
                         >
                           Continue to times
                         </button>
                       </div>
-                    </div>
-                    <div className="form-grid">
-                      <label className="input-group">
-                        <span>Your Eircode</span>
-                        <input
-                          type="text"
-                          value={clientEircode}
-                          onChange={(event) => setClientEircode(event.target.value)}
-                          placeholder="e.g. A98H940"
-                        />
-                      </label>
-                      {travelAnchor === "previous" && (
-                        <label className="input-group">
-                          <span>Previous booking ends at</span>
-                          <input
-                            type="time"
-                            value={previousBookingTime}
-                            onChange={(event) =>
-                              setPreviousBookingTime(event.target.value)
-                            }
-                          />
-                        </label>
-                      )}
-                    </div>
-                    <p className="muted subtle">{travelNote}</p>
+                    )}
                   </div>
                 )}
 
@@ -1794,7 +1761,7 @@ const BookingModal = ({ service, onClose }) => {
                       }
                       formatTime={formatTime}
                       onContinue={() => goToStepAndScroll("customer")}
-                      onBack={() => goToStepAndScroll("travel")}
+                      onBack={() => goToStepAndScroll("calendar")}
                       canContinue={canProceedToCustomer}
                       timesSectionRef={timesSectionRef}
                       hiddenSlotCount={selectedDayWithTravel.hiddenCount}

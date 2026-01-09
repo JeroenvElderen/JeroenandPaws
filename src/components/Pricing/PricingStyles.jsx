@@ -54,7 +54,7 @@ const PricingStyles = () => (
           flex-direction: column;
           gap: 12px;
           max-height: calc(100dvh - 24px);
-          height: 100%;
+          height: auto;
           overflow: hidden;
         }
         .service-chooser__header {
@@ -1309,6 +1309,9 @@ const PricingStyles = () => (
           .booking-overlay {
             padding: 12px;
             align-items: flex-start;
+          }
+          .service-chooser {
+            height: 100%;
           }
           .booking-modal {
             height: auto;
