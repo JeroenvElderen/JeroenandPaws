@@ -1789,107 +1789,44 @@ const BookingModal = ({ service, onClose }) => {
                         Change time
                       </button>
                     </div>
-                    <div className="input-group full-width">
-                      <div className="label-row">
-                        <span>Account access</span>
-                        <div className="actions-stack">
-                          <button
-                            type="button"
-                            className={`ghost-button ${
-                              customerMode === "login" ? "active" : ""
-                            }`}
-                            onClick={() => handleCustomerModeChange("login")}
-                            aria-pressed={customerMode === "login"}
-                          >
-                            Login
-                          </button>
-                          <button
-                            type="button"
-                            className={`ghost-button ${
-                              customerMode === "new" ? "active" : ""
-                            }`}
-                            onClick={() => handleCustomerModeChange("new")}
-                            aria-pressed={customerMode === "new"}
-                          >
-                            Register
-                          </button>
+                    {!isAuthenticated && (
+                      <div className="input-group full-width">
+                        <div className="label-row">
+                          <span>Account access</span>
+                          <div className="actions-stack">
+                            <button
+                              type="button"
+                              className={`ghost-button ${
+                                customerMode === "login" ? "active" : ""
+                              }`}
+                              onClick={() => handleCustomerModeChange("login")}
+                              aria-pressed={customerMode === "login"}
+                            >
+                              Login
+                            </button>
+                            <button
+                              type="button"
+                              className={`ghost-button ${
+                                customerMode === "new" ? "active" : ""
+                              }`}
+                              onClick={() => handleCustomerModeChange("new")}
+                              aria-pressed={customerMode === "new"}
+                            >
+                              Register
+                            </button>
+                          </div>
                         </div>
-                      </div>
 
                       {customerMode === "login" ? (
-                        <form
-                          className="auth-form"
-                          onSubmit={handleSupabaseLogin}
-                        >
-                          {authError && (
-                            <p className="error-banner">{authError}</p>
-                          )}
-                          <div className="form-grid">
-                            <label className="input-group">
-                              <span>Email</span>
-                              <input
-                                type="email"
-                                value={loginEmail}
-                                onChange={(e) => setLoginEmail(e.target.value)}
-                                placeholder="you@example.com"
-                                autoComplete="email"
-                              />
-                            </label>
-                            <label className="input-group">
-                              <span>Password</span>
-                              <input
-                                type="password"
-                                value={loginPassword}
-                                onChange={(e) =>
-                                  setLoginPassword(e.target.value)
-                                }
-                                placeholder="Enter your password"
-                                autoComplete="current-password"
-                              />
-                            </label>
-                          </div>
-                          <div className="actions-row">
-                            <div className="actions-stack">
-                              <button
-                                type="submit"
-                                className="button w-button"
-                                disabled={authLoading}
-                              >
-                                {authLoading
-                                  ? "Logging in…"
-                                  : "Login to Jeroen & Paws"}
-                              </button>
-                              <button
-                                type="button"
-                                className="ghost-button"
-                                onClick={() => {
-                                  setShowLoginReset(true);
-                                  setLoginResetStatus({ state: "idle", message: "" });
-                                }}
-                              >
-                                Set a new password
-                              </button>
-                            </div>
-                          </div>
-                          {showLoginReset && (
-                            <div
-                              style={{
-                                marginTop: "12px",
-                                padding: "12px",
-                                borderRadius: "12px",
-                                border: "1px solid #e5e7eb",
-                                background: "#f9fafb",
-                                display: "grid",
-                                gap: "10px",
-                              }}
-                            >
-                              <p style={{ margin: 0, color: "#111827", fontWeight: 700 }}>
-                                Set a new password
-                              </p>
-                              <p style={{ margin: 0, color: "#4b5563" }}>
-                                After multiple login attempts, request a secure email to create a new password.
-                              </p>
-                              <label className="input-group" style={{ margin: 0 }}>
+                          <form
+                            className="auth-form"
+                            onSubmit={handleSupabaseLogin}
+                          >
+                            {authError && (
+                              <p className="error-banner">{authError}</p>
+                            )}
+                            <div className="form-grid">
+                              <label className="input-group">
                                 <span>Email</span>
                                 <input
                                   type="email"
@@ -1899,74 +1836,155 @@ const BookingModal = ({ service, onClose }) => {
                                   autoComplete="email"
                                 />
                               </label>
-                              <div className="actions-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                                <button
-                                  type="button"
-                                  className="button w-button"
-                                  disabled={loginResetStatus.state === "loading"}
-                                  onClick={sendLoginResetRequest}
-                                >
-                                  {loginResetStatus.state === "loading"
-                                    ? "Sending reset link…"
-                                    : "Email me a reset link"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ghost-button"
-                                  onClick={() => setShowLoginReset(false)}
-                                >
-                                  Keep trying to log in
-                                </button>
-                              </div>
-                              {loginResetStatus.message && (
-                                <p
-                                  className={
-                                    loginResetStatus.state === "success" ? "success-banner subtle" : "error-banner"
+                              <label className="input-group">
+                                <span>Password</span>
+                                <input
+                                  type="password"
+                                  value={loginPassword}
+                                  onChange={(e) =>
+                                    setLoginPassword(e.target.value)
                                   }
-                                  style={{ margin: 0 }}
-                                >
-                                  {loginResetStatus.message}
-                                </p>
-                              )}
+                                  placeholder="Enter your password"
+                                  autoComplete="current-password"
+                                />
+                              </label>
                             </div>
-                          )}
-                          {isAuthenticated && (
-                            <p className="success-banner subtle">
-                              You’re logged in as {clientEmail || loginEmail}.
-                            </p>
-                          )}
-                          {eircodeChoiceOpen && (
-                            <div className="success-banner subtle">
-                              <p>
-                                We found a saved Eircode. Which do you want to use?
-                              </p>
-                              <div className="actions-row">
+                            <div className="actions-row">
+                              <div className="actions-stack">
                                 <button
-                                  type="button"
+                                  type="submit"
                                   className="button w-button"
-                                  onClick={handleUseSavedEircode}
+                                  disabled={authLoading}
                                 >
-                                  Use saved
+                                  {authLoading
+                                    ? "Logging in…"
+                                    : "Login to Jeroen & Paws"}
                                 </button>
                                 <button
                                   type="button"
                                   className="ghost-button"
-                                  onClick={handleKeepEnteredEircode}
+                                  onClick={() => {
+                                    setShowLoginReset(true);
+                                    setLoginResetStatus({
+                                      state: "idle",
+                                      message: "",
+                                    });
+                                  }}
                                 >
-                                  Keep entered
+                                  Set a new password
                                 </button>
                               </div>
-                            </div>
-                          )}
-                        </form>
-                      ) : customerMode === "new" ? (
-                        <div className="actions-stack">
-                          <p className="muted subtle">
-                            We’ll create your account after booking.
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
+                              </div>
+                            {showLoginReset && (
+                              <div
+                                style={{
+                                  marginTop: "12px",
+                                  padding: "12px",
+                                  borderRadius: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  background: "#f9fafb",
+                                  display: "grid",
+                                  gap: "10px",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    color: "#111827",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Set a new password
+                                </p>
+                              <p style={{ margin: 0, color: "#4b5563" }}>
+                                  After multiple login attempts, request a
+                                  secure email to create a new password.
+                                </p>
+                                <label className="input-group" style={{ margin: 0 }}>
+                                  <span>Email</span>
+                                  <input
+                                    type="email"
+                                    value={loginEmail}
+                                    onChange={(e) =>
+                                      setLoginEmail(e.target.value)
+                                    }
+                                    placeholder="you@example.com"
+                                    autoComplete="email"
+                                  />
+                                </label>
+                                <div
+                                  className="actions-row"
+                                  style={{
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    className="button w-button"
+                                    disabled={loginResetStatus.state === "loading"}
+                                    onClick={sendLoginResetRequest}
+                                  >
+                                    {loginResetStatus.state === "loading"
+                                      ? "Sending reset link…"
+                                      : "Email me a reset link"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ghost-button"
+                                    onClick={() => setShowLoginReset(false)}
+                                  >
+                                    Keep trying to log in
+                                  </button>
+                                </div>
+                                {loginResetStatus.message && (
+                                  <p
+                                    className={
+                                      loginResetStatus.state === "success"
+                                        ? "success-banner subtle"
+                                        : "error-banner"
+                                    }
+                                    style={{ margin: 0 }}
+                                  >
+                                    {loginResetStatus.message}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {eircodeChoiceOpen && (
+                              <div className="success-banner subtle">
+                                <p>
+                                  We found a saved Eircode. Which do you want to
+                                  use?
+                                </p>
+                                <div className="actions-row">
+                                  <button
+                                    type="button"
+                                    className="button w-button"
+                                    onClick={handleUseSavedEircode}
+                                  >
+                                    Use saved
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ghost-button"
+                                    onClick={handleKeepEnteredEircode}
+                                  >
+                                    Keep entered
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </form>
+                        ) : customerMode === "new" ? (
+                          <div className="actions-stack">
+                            <p className="muted subtle">
+                              We’ll create your account after booking.
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                     {(customerMode === "new" || isAuthenticated) && (
                       <BookingForm
                         error={error}

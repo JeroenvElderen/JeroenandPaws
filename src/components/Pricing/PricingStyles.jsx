@@ -1511,6 +1511,17 @@ const PricingStyles = () => (
           gap: 6px;
         }
 
+        .summary-tag {
+          align-self: flex-start;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: rgba(125, 211, 252, 0.15);
+          color: #c5e9ff;
+          font-size: 0.85rem;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+        }
+
         .summary-label {
           color: #d2cef7;
           font-weight: 600;
@@ -1530,6 +1541,69 @@ const PricingStyles = () => (
           color: #f5f3ff;
           font-weight: 700;
         }
+        
+        .summary-subvalue {
+          margin-top: 2px;
+        }
+
+        .chip-option {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          background: rgba(255, 255, 255, 0.04);
+          cursor: pointer;
+          font-weight: 600;
+          color: #eef0ff;
+          transition: border-color 0.2s ease, background 0.2s ease,
+            transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .chip-option:hover {
+          border-color: rgba(125, 211, 252, 0.5);
+          background: rgba(125, 211, 252, 0.1);
+          transform: translateY(-1px);
+        }
+
+        .chip-option input {
+          appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          display: grid;
+          place-content: center;
+          background: rgba(15, 19, 48, 0.8);
+          transition: border-color 0.2s ease, background 0.2s ease,
+            box-shadow 0.2s ease;
+        }
+
+        .chip-option input::before {
+          content: "";
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          transform: scale(0);
+          transition: transform 0.2s ease;
+          background: #7dd3fc;
+        }
+
+        .chip-option input:checked {
+          border-color: #7dd3fc;
+          box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.2);
+        }
+
+        .chip-option input:checked::before {
+          transform: scale(1);
+        }
+
+        .chip-option:focus-within {
+          border-color: rgba(144, 166, 255, 0.7);
+          box-shadow: 0 0 0 2px rgba(144, 166, 255, 0.2);
+        }
+          
           @media (min-width: 1024px) {
           .searchable-select .options-list {
             max-height: none;

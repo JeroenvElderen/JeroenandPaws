@@ -83,6 +83,16 @@ const BookingForm = ({
       : recurrence === "yearly"
       ? "Yearly"
       : "One-time booking";
+  const recurrenceSummaryText =
+    recurrence === "weekly"
+      ? "Repeats weekly"
+      : recurrence === "monthly"
+      ? "Repeats monthly"
+      : recurrence === "six-months"
+      ? "Repeats every 6 months"
+      : recurrence === "yearly"
+      ? "Repeats yearly"
+      : null;
   const recurrenceOptions = isMultiDay
     ? [{ value: "weekly", label: "Weekly (multi-day schedule)" }]
     : [
@@ -102,6 +112,7 @@ const BookingForm = ({
   const savedPets = existingPets.filter((pet) =>
     selectedPetIds.includes(pet.id)
   );
+  const additionalLabels = (selectedAdditionalLabels || []).filter(Boolean);
 
   const newDogDetails = dogs
     .slice(0, dogCount)
@@ -123,7 +134,7 @@ const BookingForm = ({
             <h4>Service</h4>
             <p className="summary-value">{service?.title || "Selected service"}</p>
             {service?.duration && (
-              <p className="muted subtle">{service.duration}</p>
+              <p className="muted subtle summary-subvalue">{service.duration}</p>
             )}
           </div>
 
@@ -147,14 +158,10 @@ const BookingForm = ({
             ) : (
               <p className="muted subtle">Choose a date and time to confirm.</p>
             )}
+            {allowRecurring && recurrenceSummaryText && (
+              <div className="summary-tag">{recurrenceSummaryText}</div>
+            )}
           </div>
-
-          {travelNote && (
-            <div className="summary-card">
-              <h4>Travel</h4>
-              <p className="summary-value">{travelNote}</p>
-            </div>
-          )}
 
           <div className="summary-card">
             <h4>Customer</h4>
@@ -200,18 +207,11 @@ const BookingForm = ({
             <p className="summary-value">{notes || "No notes added."}</p>
           </div>
 
-          {allowRecurring && (
-            <div className="summary-card">
-              <h4>Recurring</h4>
-              <p className="summary-value">{recurrenceLabel}</p>
-            </div>
-          )}
-
-          {selectedAdditionalLabels?.length > 0 && (
+          {additionalLabels.length > 0 && (
             <div className="summary-card">
               <h4>Add-ons</h4>
               <ul className="summary-list">
-                {selectedAdditionalLabels.map((label) => (
+                {additionalLabels.map((label) => (
                   <li key={label} className="summary-item">
                     <span className="summary-value">{label}</span>
                   </li>
@@ -219,17 +219,6 @@ const BookingForm = ({
               </ul>
             </div>
           )}
-
-          <div className="summary-card">
-            <h4>Payment</h4>
-            <div className="summary-list plain">
-              <p className="summary-value">
-                {paymentPreference === "invoice"
-                  ? "Invoice me after confirmation"
-                  : "Pay online now"}
-              </p>
-            </div>
-          </div>
         </div>
 
         <div className="summary-card">
