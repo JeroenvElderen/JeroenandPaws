@@ -115,7 +115,6 @@ const CalendarSection = ({
                   <span>{dateObj.getDate()}</span>
                   <span className="day-dot-wrapper">
                     {isAvailable && <span className="day-dot" />}
-                    {isScheduled && !isSelected && <span className="day-check">✓</span>}
                   </span>
                 </button>
               );

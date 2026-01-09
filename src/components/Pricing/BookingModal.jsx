@@ -1262,6 +1262,9 @@ const BookingModal = ({ service, onClose }) => {
     normalizeEircode(clientEircode) &&
     isSelectedTimeReachable
   );
+  const canContinueFromCalendar = isMultiDay
+    ? scheduleEntries.length > 0
+    : Boolean(selectedDate);
 
   const removeDateFromSchedule = (date) => {
     setSelectedSlots((prev) => {
@@ -1716,6 +1719,18 @@ const BookingModal = ({ service, onClose }) => {
                       onPreviousMonth={handlePreviousMonth}
                       onNextMonth={handleNextMonth}
                     />
+                    {isMultiDay && (
+                      <div className="calendar-actions">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => goToStepAndScroll("travel")}
+                          disabled={!canContinueFromCalendar}
+                        >
+                          Continue to Eircode
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

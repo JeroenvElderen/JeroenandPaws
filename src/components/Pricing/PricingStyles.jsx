@@ -53,6 +53,9 @@ const PricingStyles = () => (
           display: flex;
           flex-direction: column;
           gap: 12px;
+          max-height: calc(100dvh - 24px);
+          height: 100%;
+          overflow: hidden;
         }
         .service-chooser__header {
           display: flex;
@@ -66,6 +69,10 @@ const PricingStyles = () => (
           display: flex;
           flex-direction: column;
           gap: 12px;
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          padding-right: 4px;
         }
         .service-chooser__grid {
           display: grid;
@@ -730,9 +737,10 @@ const PricingStyles = () => (
 }
 
 .day.scheduled {
-  border-color: rgba(124, 93, 242, 0.6);
-  background: rgba(124, 93, 242, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(124, 93, 242, 0.5);
+  background: linear-gradient(145deg, #6e4bd8, #7c5df2);
+  border-color: transparent;
+  color: #0c061a;
+  box-shadow: 0 6px 16px rgba(124, 93, 242, 0.35);
 }
 
 .day-dot-wrapper {
