@@ -1,10 +1,11 @@
 const { DateTime } = require("luxon");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { sendMail } = require("./_lib/graph");
+const { createEvent, sendMail } = require("./_lib/graph");
 const {
   createBookingWithProfiles,
   findAdjacentBookings,
   resolveBookingTimes,
+  saveBookingCalendarEventId,
 } = require("./_lib/supabase");
 const { DEFAULT_HOME_ADDRESS, validateTravelWindow } = require("./_lib/travel");
 
@@ -20,6 +21,13 @@ const resolveCalendarEmail = (calendarId) =>
   process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
   process.env.OUTLOOK_SENDER_EMAIL?.trim() ||
   calendarId;
+
+const resolveNotificationEmail = (calendarId) =>
+  process.env.CONTACT_NOTIFICATION_EMAIL ||
+  process.env.NOTIFY_EMAIL ||
+  process.env.JEROEN_AND_PAWS_EMAIL ||
+  process.env.ADMIN_EMAIL ||
+  resolveCalendarEmail(calendarId);
 
 const parseBody = async (req) => {
   const chunks = [];
@@ -170,6 +178,7 @@ const buildNotificationBody = ({
   schedule,
   recurrence,
   additionals,
+  paymentPreference,
 }) => {
   const readable = service?.title || "Training";
   return `
@@ -184,6 +193,9 @@ const buildNotificationBody = ({
       <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
       <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
       <li><strong>Time zone:</strong> ${escapeHtml(timing.timeZone)}</li>
+      <li><strong>Payment:</strong> ${escapeHtml(
+        paymentPreference === "invoice" ? "Invoice requested" : "Pay now"
+      )}</li>
     </ul>
     <p><strong>Pets:</strong></p>
     <ol>${renderPetList(pets, { includePhotos: true }).join("")}</ol>
@@ -248,6 +260,7 @@ module.exports = async (req, res) => {
       bookingMode,
       additionals = [],
       amount,
+      payment_preference: paymentPreference,
     } = body;
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
@@ -304,6 +317,7 @@ module.exports = async (req, res) => {
       .join("\n\n");
 
     const bookingResults = [];
+    const calendarResults = [];
 
     for (const entry of preparedSchedule) {
       const { start, end } = resolveBookingTimes({
@@ -361,7 +375,47 @@ module.exports = async (req, res) => {
         client: bookingResult.client,
         pets: bookingResult.pets,
         timing,
+        startIso: start.toUTC().toISO(),
+        endIso: end.toUTC().toISO(),
       });
+
+      if (calendarId && accessToken && bookingResult?.booking?.id) {
+        try {
+          const calendarEvent = await createEvent({
+            accessToken,
+            calendarId,
+            subject: serviceTitle || bookingResult?.booking?.service_title,
+            start: start.toUTC().toISO(),
+            end: end.toUTC().toISO(),
+            attendeeEmail: clientEmail,
+            timeZone,
+            locationDisplayName: clientAddress,
+            body: `Booking confirmed for ${
+              serviceTitle || bookingResult?.booking?.service_title || "Service"
+            }`,
+            bodyContentType: "HTML",
+          });
+
+          if (calendarEvent?.id) {
+            await saveBookingCalendarEventId(
+              bookingResult.booking.id,
+              calendarEvent.id
+            );
+          }
+
+          calendarResults.push({
+            bookingId: bookingResult.booking.id,
+            ok: Boolean(calendarEvent?.id),
+          });
+        } catch (calendarError) {
+          console.error("Calendar creation failed", calendarError);
+          calendarResults.push({
+            bookingId: bookingResult.booking.id,
+            ok: false,
+            error: calendarError.message,
+          });
+        }
+      }
     }
 
     // ---------------------------------------
@@ -383,6 +437,78 @@ module.exports = async (req, res) => {
       );
     }
 
+    const scheduleSummary = bookingResults.map((e, i) => ({
+      label: `Visit ${i + 1}`,
+      start: e.timing.start,
+      end: e.timing.end,
+    }));
+
+    const confirmationBody = buildConfirmationBody({
+      clientName,
+      timing: bookingResults[0]?.timing || buildFriendlyTiming({
+        start: DateTime.now().toUTC(),
+        end: DateTime.now().toUTC(),
+        timeZone,
+      }),
+      service: { title: serviceTitle },
+      notes: aggregatedNotes,
+      pets: petsFromBody,
+      clientAddress,
+      schedule: scheduleSummary,
+      recurrence: recurrenceLabel || (autoRenew ? "requested" : ""),
+      additionals: additionalsList,
+      paymentPreference,
+    });
+
+    const notificationBody = buildNotificationBody({
+      service: { title: serviceTitle },
+      client: { full_name: clientName, email: clientEmail },
+      timing: bookingResults[0]?.timing || buildFriendlyTiming({
+        start: DateTime.now().toUTC(),
+        end: DateTime.now().toUTC(),
+        timeZone,
+      }),
+      notes: aggregatedNotes,
+      pets: petsFromBody,
+      schedule: scheduleSummary,
+      recurrence: recurrenceLabel || (autoRenew ? "requested" : ""),
+      additionals: additionalsList,
+      paymentPreference,
+    });
+
+    let emailStatus = { ok: false };
+    if (calendarId && accessToken) {
+      try {
+        await sendMail({
+          accessToken,
+          fromCalendarId: calendarId,
+          to: clientEmail,
+          subject: `Booking Confirmed: ${serviceTitle || "Service"}`,
+          body: confirmationBody,
+          contentType: "HTML",
+        });
+
+        const notificationEmail = resolveNotificationEmail(calendarId);
+        if (notificationEmail) {
+          await sendMail({
+            accessToken,
+            fromCalendarId: calendarId,
+            to: notificationEmail,
+            subject: `New booking: ${serviceTitle || "Service"}`,
+            body: notificationBody,
+            contentType: "HTML",
+          });
+        }
+
+        emailStatus = { ok: true };
+      } catch (emailError) {
+        console.error("Email send failed", emailError);
+        emailStatus = { ok: false, error: emailError.message };
+      }
+    } else {
+      emailStatus = { ok: false, skipped: true };
+    }
+
     // ---------------------------------------
     // CORRECT, MINIMAL RESPONSE TO FRONTEND
     // ---------------------------------------
@@ -390,16 +516,14 @@ module.exports = async (req, res) => {
     return res.end(
       JSON.stringify({
         booking_id: primaryBookingId,
-        schedule: bookingResults.map((e, i) => ({
-          label: `Visit ${i + 1}`,
-          start: e.timing.start,
-          end: e.timing.end,
-        })),
+        schedule: scheduleSummary,
         recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
         bookingMode:
           bookingMode || (preparedSchedule.length > 1 ? "multi-day" : "single"),
-        emailStatus: { skipped: true },
-        calendarStatus: { skipped: true },
+        emailStatus,
+        calendarStatus: calendarResults.length
+          ? { ok: calendarResults.every((entry) => entry.ok), calendarResults }
+          : { ok: false, skipped: true },
       })
     );
   } catch (err) {
