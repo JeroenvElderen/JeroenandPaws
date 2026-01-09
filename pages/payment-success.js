@@ -82,7 +82,7 @@ export default function PaymentSuccess() {
           </h2>
           <ul style={{ margin: 0, paddingLeft: "20px", color: "#4b5563" }}>
             <li>We&apos;re sending a confirmation email to you and our team.</li>
-            <li>Your booking will appear in the Outlook calendar.</li>
+            <li>Your booking is logged in our calendar system.</li>
             <li>You can keep browsing or return to your profile.</li>
           </ul>
           {isVerifying && (

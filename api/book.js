@@ -387,7 +387,6 @@ module.exports = async (req, res) => {
             subject: serviceTitle || bookingResult?.booking?.service_title,
             start: start.toUTC().toISO(),
             end: end.toUTC().toISO(),
-            attendeeEmail: clientEmail,
             timeZone,
             locationDisplayName: clientAddress,
             body: `Booking confirmed for ${

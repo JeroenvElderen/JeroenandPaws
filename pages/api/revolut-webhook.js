@@ -121,7 +121,6 @@ export default async function handler(req, res) {
       subject: booking.service_title,
       start,
       end,
-      attendeeEmail: booking.client_email,
       timeZone: booking.time_zone || "UTC",
       locationDisplayName: booking.client_address,
       body: `Booking confirmed for ${booking.service_title}`,
