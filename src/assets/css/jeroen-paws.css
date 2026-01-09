@@ -4331,6 +4331,14 @@ html {
   position: relative;
 }
 
+.testimonials .card.is-testimonial-featured .card_body_small {
+  padding: calc(var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---spacing--2x) * 1.25);
+}
+
+.testimonials .card.is-testimonial-featured {
+  min-height: 100%;
+}
+
 .sg_code-embed {
   z-index: 99;
   width: 2rem;
