@@ -465,6 +465,16 @@ export default function HomeSliderSection() {
             font-weight: 600;
           }
 
+          @media (max-width: 767px) {
+            .stage {
+              height: 480px;
+            }
+
+            .cardWrap {
+              aspect-ratio: 4 / 3;
+            }
+          }
+            
           @media (min-width: 768px) {
             .cf {
               --cf-spread: 220px;
