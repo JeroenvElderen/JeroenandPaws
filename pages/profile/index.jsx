@@ -163,7 +163,6 @@ const ProfilePage = () => {
     message: "",
   });
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [following, setFollowing] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
   const landingRef = useRef(null);
   const landingBgRef = useRef(null);
@@ -193,6 +192,11 @@ const ProfilePage = () => {
     cancelling: false,
     error: "",
   });
+  const isAllTab = activeTab === "All";
+  const showDetails = isAllTab || activeTab === "Details";
+  const showPets = isAllTab || activeTab === "Pets";
+  const showBookings = isAllTab || activeTab === "Bookings";
+  const showSupporters = isAllTab || activeTab === "Supporters";
 
   const activeBookings = useMemo(() => {
     const clean = (status = "") => status?.toLowerCase();
@@ -685,7 +689,7 @@ const ProfilePage = () => {
         (percentage * 50) * -1 + 50
       }%)`;
       avatar.style.marginTop = `${percentage * 10}px`;
-      profileHeader.style.gridTemplateColumns = `${dimensions + 40}px auto auto`;
+      profileHeader.style.gridTemplateColumns = `${dimensions + 40}px auto`;
 
       if (scrollPos >= 300) {
         landing.classList.add("locked");
@@ -797,38 +801,6 @@ const ProfilePage = () => {
 
   return (
     <main className="jp-profile-page">
-      <header className="jp-app-header">
-        <div className="content">
-          <div className="jp-logo">
-            <img src="/logo192.png" alt="Jeroen & Paws" />
-          </div>
-          <div className="jp-search">
-            <input type="text" placeholder="Search your profile..." />
-          </div>
-          <div className="jp-header-profile">
-            <img
-              src={avatarImage}
-              alt={`${displayName} avatar`}
-              className="jp-header-avatar"
-            />
-            <p>{displayName}</p>
-            <span className="jp-header-chevron">▾</span>
-          </div>
-          <div className="jp-header-actions">
-            <div className="jp-divider" />
-            <button type="button" className="jp-header-button jp-unread">
-              💬
-            </button>
-            <button type="button" className="jp-header-button">
-              🔔
-            </button>
-            <button type="button" className="jp-header-button">
-              ⋯
-            </button>
-          </div>
-        </div>
-      </header>
-
       <section className="jp-app-landing" ref={landingRef}>
         <div
           className="jp-app-landing-bg"
@@ -849,27 +821,13 @@ const ProfilePage = () => {
           </div>
 
           <div className="jp-profile-meta">
-            <p className="jp-type-title">{displayName}</p>
-            <p className="jp-type-subtitle">{subtitleText}</p>
-          </div>
-
-          <div className="jp-profile-actions">
-            <button
-              type="button"
-              onClick={() => setFollowing((value) => !value)}
-              className={following ? "is-following" : ""}
-            >
-              {following ? "Following" : "Follow"}
-            </button>
-            <button type="button" className="jp-hide-s">
-              Share
-            </button>
-            <button type="button" className="jp-hide-s">
-              Message
-            </button>
-            <button type="button" className="jp-icon-button">
-              ⋯
-            </button>
+            <p className="jp-type-title jp-profile-title-line">
+              <span>{displayName}</span>
+              <span className="jp-profile-title-divider">·</span>
+              <span className="jp-profile-inline-subtitle">
+                {subtitleText}
+              </span>
+            </p>
           </div>
         </div>
 
@@ -897,330 +855,334 @@ const ProfilePage = () => {
             {error && <div className="jp-profile-error">{error}</div>}
 
             <>
-              <SectionCard
-                title="Your details"
-                description="Update your contact information, password, and login email."
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "12px",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                  }}
+              {showDetails && (
+                <SectionCard
+                  title="Your details"
+                  description="Update your contact information, password, and login email."
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Full name
-                    </label>
-                    <input
-                      type="text"
-                      value={contactForm.fullName}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          fullName: e.target.value,
-                        })
-                      }
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
-                        color: brand.ink,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={contactForm.phone}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          phone: e.target.value,
-                        })
-                      }
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
-                        color: brand.ink,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Service address
-                    </label>
-                    <textarea
-                      value={contactForm.address}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          address: e.target.value,
-                        })
-                      }
-                      placeholder="Where should we meet you?"
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
-                        color: brand.ink,
-                        minHeight: "72px",
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={contactForm.email}
-                      onChange={(e) =>
-                        setContactForm({
-                          ...contactForm,
-                          email: e.target.value,
-                        })
-                      }
-                      style={{
-                        padding: "12px",
-                        borderRadius: "12px",
-                        border: `1px solid ${brand.cardBorder}`,
-                        background: "rgba(255,255,255,0.04)",
-                        color: brand.ink,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    <label style={{ color: brand.subtleText, fontWeight: 700 }}>
-                      Change password
-                    </label>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = !showPasswordForm;
-                          setShowPasswordForm(next);
-                          if (!next) {
-                            setCurrentPasswordInput("");
-                            setNewPassword("");
-                            setConfirmPassword("");
-                          } else {
-                            setError("");
-                          }
-                        }}
-                        style={{
-                          alignSelf: "flex-start",
-                          padding: "10px 14px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: brand.surfaceHighlight,
-                          color: brand.ink,
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          boxShadow: brand.cardShadow,
-                        }}
-                      >
-                        {showPasswordForm
-                          ? "Close password form"
-                          : "Change password"}
-                      </button>
-
-                      {showPasswordForm && (
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: "10px",
-                            borderRadius: "14px",
-                            padding: "12px",
-                            background: "rgba(255,255,255,0.03)",
-                            border: `1px solid ${brand.cardBorder}`,
-                          }}
-                        >
-                          <input
-                            type="password"
-                            placeholder="Current password"
-                            value={currentPasswordInput}
-                            onChange={(e) =>
-                              setCurrentPasswordInput(e.target.value)
-                            }
-                            style={{
-                              padding: "12px",
-                              borderRadius: "12px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.04)",
-                              color: brand.ink,
-                            }}
-                          />
-                          <input
-                            type="password"
-                            placeholder="New password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            style={{
-                              padding: "12px",
-                              borderRadius: "12px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.04)",
-                              color: brand.ink,
-                            }}
-                          />
-                          <input
-                            type="password"
-                            placeholder="Confirm new password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            style={{
-                              padding: "12px",
-                              borderRadius: "12px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.04)",
-                              color: brand.ink,
-                            }}
-                          />
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              justifyContent: "flex-end",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowPasswordForm(false);
-                                setCurrentPasswordInput("");
-                                setNewPassword("");
-                                setConfirmPassword("");
-                              }}
-                              style={{
-                                padding: "10px 14px",
-                                borderRadius: "12px",
-                                border: `1px solid ${brand.cardBorder}`,
-                                background: "transparent",
-                                color: brand.subtleText,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={savePassword}
-                              disabled={savingPassword}
-                              style={{
-                                padding: "12px 16px",
-                                borderRadius: "12px",
-                                border: "none",
-                                background: savingPassword
-                                  ? brand.primarySoft
-                                  : brand.primary,
-                                color: "white",
-                                fontWeight: 800,
-                                cursor: savingPassword
-                                  ? "not-allowed"
-                                  : "pointer",
-                                boxShadow: brand.cardShadow,
-                              }}
-                            >
-                              {savingPassword ? "Saving…" : "Update password"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={saveContact}
-                    disabled={savingContact}
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: savingContact
-                        ? brand.primarySoft
-                        : brand.primary,
-                      color: "white",
-                      fontWeight: 800,
-                      cursor: savingContact ? "not-allowed" : "pointer",
-                      boxShadow: brand.cardShadow,
-                    }}
-                  >
-                    {savingContact ? "Saving…" : "Save details"}
-                  </button>
-                </div>
-              </SectionCard>
-
-              <SectionCard
-                title="Your pets"
-                description="Open any card to edit names, breeds, or notes."
-              >
-                {hasPets ? (
                   <div
                     style={{
                       display: "grid",
                       gap: "12px",
                       gridTemplateColumns:
-                        "repeat(auto-fit, minmax(260px, 1fr))",
+                        "repeat(auto-fit, minmax(240px, 1fr))",
                     }}
                   >
-                    {profile.pets.map((pet) => {
-                      const isEditing = Boolean(editingPets[pet.id]);
-                      const editing = editingPets[pet.id] || {};
-                      const petPhoto =
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>
+                        Full name
+                      </label>
+                      <input
+                        type="text"
+                        value={contactForm.fullName}
+                        onChange={(e) =>
+                          setContactForm({
+                            ...contactForm,
+                            fullName: e.target.value,
+                          })
+                        }
+                        style={{
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: "rgba(255,255,255,0.04)",
+                          color: brand.ink,
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>
+                        Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={contactForm.phone}
+                        onChange={(e) =>
+                          setContactForm({
+                            ...contactForm,
+                            phone: e.target.value,
+                          })
+                        }
+                        style={{
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: "rgba(255,255,255,0.04)",
+                          color: brand.ink,
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>
+                        Service address
+                      </label>
+                      <textarea
+                        value={contactForm.address}
+                        onChange={(e) =>
+                          setContactForm({
+                            ...contactForm,
+                            address: e.target.value,
+                          })
+                        }
+                        placeholder="Where should we meet you?"
+                        style={{
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: "rgba(255,255,255,0.04)",
+                          color: brand.ink,
+                          minHeight: "72px",
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={contactForm.email}
+                        onChange={(e) =>
+                          setContactForm({
+                            ...contactForm,
+                            email: e.target.value,
+                          })
+                        }
+                        style={{
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: `1px solid ${brand.cardBorder}`,
+                          background: "rgba(255,255,255,0.04)",
+                          color: brand.ink,
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label style={{ color: brand.subtleText, fontWeight: 700 }}>
+                        Change password
+                      </label>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !showPasswordForm;
+                            setShowPasswordForm(next);
+                            if (!next) {
+                              setCurrentPasswordInput("");
+                              setNewPassword("");
+                              setConfirmPassword("");
+                            } else {
+                              setError("");
+                            }
+                          }}
+                          style={{
+                            alignSelf: "flex-start",
+                            padding: "10px 14px",
+                            borderRadius: "12px",
+                            border: `1px solid ${brand.cardBorder}`,
+                            background: brand.surfaceHighlight,
+                            color: brand.ink,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            boxShadow: brand.cardShadow,
+                          }}
+                        >
+                          {showPasswordForm
+                            ? "Close password form"
+                            : "Change password"}
+                        </button>
+
+                        {showPasswordForm && (
+                          <div
+                            style={{
+                              display: "grid",
+                              gap: "10px",
+                              borderRadius: "14px",
+                              padding: "12px",
+                              background: "rgba(255,255,255,0.03)",
+                              border: `1px solid ${brand.cardBorder}`,
+                            }}
+                          >
+                            <input
+                              type="password"
+                              placeholder="Current password"
+                              value={currentPasswordInput}
+                              onChange={(e) =>
+                                setCurrentPasswordInput(e.target.value)
+                              }
+                              style={{
+                                padding: "12px",
+                                borderRadius: "12px",
+                                border: `1px solid ${brand.cardBorder}`,
+                                background: "rgba(255,255,255,0.04)",
+                                color: brand.ink,
+                              }}
+                            />
+                            <input
+                              type="password"
+                              placeholder="New password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              style={{
+                                padding: "12px",
+                                borderRadius: "12px",
+                                border: `1px solid ${brand.cardBorder}`,
+                                background: "rgba(255,255,255,0.04)",
+                                color: brand.ink,
+                              }}
+                            />
+                            <input
+                              type="password"
+                              placeholder="Confirm new password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              style={{
+                                padding: "12px",
+                                borderRadius: "12px",
+                                border: `1px solid ${brand.cardBorder}`,
+                                background: "rgba(255,255,255,0.04)",
+                                color: brand.ink,
+                              }}
+                            />
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "8px",
+                                justifyContent: "flex-end",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowPasswordForm(false);
+                                  setCurrentPasswordInput("");
+                                  setNewPassword("");
+                                  setConfirmPassword("");
+                                }}
+                                style={{
+                                  padding: "10px 14px",
+                                  borderRadius: "12px",
+                                  border: `1px solid ${brand.cardBorder}`,
+                                  background: "transparent",
+                                  color: brand.subtleText,
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={savePassword}
+                                disabled={savingPassword}
+                                style={{
+                                  padding: "12px 16px",
+                                  borderRadius: "12px",
+                                  border: "none",
+                                  background: savingPassword
+                                    ? brand.primarySoft
+                                    : brand.primary,
+                                  color: "white",
+                                  fontWeight: 800,
+                                  cursor: savingPassword
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  boxShadow: brand.cardShadow,
+                                }}
+                              >
+                                {savingPassword ? "Saving…" : "Update password"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      display: "flex",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={saveContact}
+                      disabled={savingContact}
+                      style={{
+                        padding: "12px 18px",
+                        borderRadius: "12px",
+                        border: "none",
+                        background: savingContact
+                          ? brand.primarySoft
+                          : brand.primary,
+                        color: "white",
+                        fontWeight: 800,
+                        cursor: savingContact ? "not-allowed" : "pointer",
+                        boxShadow: brand.cardShadow,
+                      }}
+                    >
+                      {savingContact ? "Saving…" : "Save details"}
+                    </button>
+                  </div>
+                </SectionCard>
+              )}
+
+              {showPets && (
+                <SectionCard
+                  title="Your pets"
+                  description="Open any card to edit names, breeds, or notes."
+                >
+                  {hasPets ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "12px",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(260px, 1fr))",
+                      }}
+                    >
+                      {profile.pets.map((pet) => {
+                        const isEditing = Boolean(editingPets[pet.id]);
+                        const editing = editingPets[pet.id] || {};
+                        const petPhoto =
                         editing.photoDataUrl ||
                         editing.photo_data_url ||
                         pet.photo_data_url;
@@ -1534,310 +1496,336 @@ const ProfilePage = () => {
                           )}
                         </div>
                       );
-                    })}
-                  </div>
-                ) : (
-                  <div style={emptyStateStyle}>
-                    <p style={{ margin: 0 }}>
-                      <strong>Ready to add a pet?</strong> Your companions will
-                      show here with their favorite details.
-                    </p>
-                  </div>
-                )}
+                      })}
+                    </div>
+                  ) : (
+                    <div style={emptyStateStyle}>
+                      <p style={{ margin: 0 }}>
+                        <strong>Ready to add a pet?</strong> Your companions
+                        will show here with their favorite details.
+                      </p>
+                    </div>
+                  )}
 
-                <div
-                  style={{
-                    marginTop: "18px",
-                    padding: "16px",
-                    borderRadius: "16px",
-                    background: brand.surface,
-                    border: `1px solid ${brand.cardBorder}`,
-                    color: brand.ink,
-                  }}
-                >
-                  <h3 style={{ margin: "0 0 10px", color: brand.ink }}>
-                    Add a new pet
-                  </h3>
                   <div
                     style={{
-                      display: "grid",
-                      gap: "10px",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(220px, 1fr))",
+                      marginTop: "18px",
+                      padding: "16px",
+                      borderRadius: "16px",
+                      background: brand.surface,
+                      border: `1px solid ${brand.cardBorder}`,
+                      color: brand.ink,
                     }}
                   >
+                    <h3 style={{ margin: "0 0 10px", color: brand.ink }}>
+                      Add a new pet
+                    </h3>
                     <div
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
+                        display: "grid",
+                        gap: "10px",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(220px, 1fr))",
                       }}
                     >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
-                      >
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Luna"
-                        value={newPet.name}
-                        onChange={(e) =>
-                          setNewPet({ ...newPet, name: e.target.value })
-                        }
+                      <div
                         style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
-                          color: brand.ink,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
                         }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
                       >
-                        Profile photo
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleNewPetPhotoChange(e.target.files?.[0])
-                        }
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
-                          color: brand.ink,
-                        }}
-                      />
-                      {newPet.photoDataUrl && (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                          }}
+                        <label
+                          style={{ color: brand.subtleText, fontWeight: 700 }}
                         >
-                          <img
-                            src={newPet.photoDataUrl}
-                            alt={`${newPet.name || "New pet"} preview`}
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Luna"
+                          value={newPet.name}
+                          onChange={(e) =>
+                            setNewPet({ ...newPet, name: e.target.value })
+                          }
+                          style={{
+                            padding: "12px",
+                            borderRadius: "12px",
+                            border: `1px solid ${brand.cardBorder}`,
+                            background: "rgba(255,255,255,0.04)",
+                            color: brand.ink,
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <label
+                          style={{ color: brand.subtleText, fontWeight: 700 }}
+                        >
+                          Profile photo
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleNewPetPhotoChange(e.target.files?.[0])
+                          }
+                          style={{
+                            padding: "12px",
+                            borderRadius: "12px",
+                            border: `1px solid ${brand.cardBorder}`,
+                            background: "rgba(255,255,255,0.04)",
+                            color: brand.ink,
+                          }}
+                        />
+                        {newPet.photoDataUrl && (
+                          <div
                             style={{
-                              width: "72px",
-                              height: "72px",
-                              borderRadius: "14px",
-                              objectFit: "cover",
-                              border: `1px solid ${brand.cardBorder}`,
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={clearNewPetPhoto}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "10px",
-                              border: `1px solid ${brand.cardBorder}`,
-                              background: "rgba(255,255,255,0.06)",
-                              color: brand.ink,
-                              fontWeight: 700,
-                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
                             }}
                           >
-                            Remove photo
-                          </button>
-                        </div>
-                      )}
+                            <img
+                              src={newPet.photoDataUrl}
+                              alt={`${newPet.name || "New pet"} preview`}
+                              style={{
+                                width: "72px",
+                                height: "72px",
+                                borderRadius: "14px",
+                                objectFit: "cover",
+                                border: `1px solid ${brand.cardBorder}`,
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={clearNewPetPhoto}
+                              style={{
+                                padding: "8px 12px",
+                                borderRadius: "10px",
+                                border: `1px solid ${brand.cardBorder}`,
+                                background: "rgba(255,255,255,0.06)",
+                                color: brand.ink,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Remove photo
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <label
+                          style={{ color: brand.subtleText, fontWeight: 700 }}
+                        >
+                          Breed
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Golden Retriever"
+                          value={newPet.breed}
+                          onChange={(e) =>
+                            setNewPet({ ...newPet, breed: e.target.value })
+                          }
+                          style={{
+                            padding: "12px",
+                            borderRadius: "12px",
+                            border: `1px solid ${brand.cardBorder}`,
+                            background: "rgba(255,255,255,0.04)",
+                            color: brand.ink,
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          gridColumn: "1 / -1",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <label
+                          style={{ color: brand.subtleText, fontWeight: 700 }}
+                        >
+                          Notes
+                        </label>
+                        <textarea
+                          placeholder="Feeding instructions, personality notes, medication..."
+                          value={newPet.notes}
+                          onChange={(e) =>
+                            setNewPet({ ...newPet, notes: e.target.value })
+                          }
+                          style={{
+                            padding: "12px",
+                            borderRadius: "12px",
+                            border: `1px solid ${brand.cardBorder}`,
+                            background: "rgba(255,255,255,0.04)",
+                            color: brand.ink,
+                            minHeight: "90px",
+                          }}
+                        />
+                      </div>
                     </div>
                     <div
                       style={{
+                        marginTop: "10px",
                         display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
-                      >
-                        Breed
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Golden Retriever"
-                        value={newPet.breed}
-                        onChange={(e) =>
-                          setNewPet({ ...newPet, breed: e.target.value })
-                        }
+                      <button
+                        type="button"
+                        onClick={createPet}
                         style={{
-                          padding: "12px",
+                          padding: "12px 16px",
                           borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
-                          color: brand.ink,
+                          border: "none",
+                          background: brand.primary,
+                          color: "white",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          boxShadow: brand.cardShadow,
                         }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        gridColumn: "1 / -1",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <label
-                        style={{ color: brand.subtleText, fontWeight: 700 }}
                       >
-                        Notes
-                      </label>
-                      <textarea
-                        placeholder="Feeding instructions, personality notes, medication..."
-                        value={newPet.notes}
-                        onChange={(e) =>
-                          setNewPet({ ...newPet, notes: e.target.value })
-                        }
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.04)",
-                          color: brand.ink,
-                          minHeight: "90px",
-                        }}
-                      />
+                        Save pet
+                      </button>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      display: "flex",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={createPet}
-                      style={{
-                        padding: "12px 16px",
-                        borderRadius: "12px",
-                        border: "none",
-                        background: brand.primary,
-                        color: "white",
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        boxShadow: brand.cardShadow,
-                      }}
-                    >
-                      Save pet
-                    </button>
-                  </div>
-                </div>
-              </SectionCard>
+                </SectionCard>
+              )}
 
-              <SectionCard
-                title="Bookings"
-                description="Tap a booking to view details or cancel recurring visits. Cancelling removes the event from your calendar, and cancelled bookings are hidden."
-              >
-                {hasBookings ? (
+              {showBookings && (
+                <SectionCard
+                  title="Bookings"
+                  description="Tap a booking to view details or cancel recurring visits. Cancelling removes the event from your calendar, and cancelled bookings are hidden."
+                >
+                  {hasBookings ? (
+                    <ul
+                      style={{
+                        listStyle: "none",
+                        padding: 0,
+                        margin: 0,
+                        display: "grid",
+                        gap: "12px",
+                      }}
+                    >
+                      {activeBookings.map((booking) => (
+                        <li
+                          key={booking.id}
+                          onClick={() => openBooking(booking)}
+                          style={{
+                            background: brand.surfaceHighlight,
+                            border: `1px solid ${brand.cardBorder}`,
+                            borderRadius: "16px",
+                            padding: "14px",
+                            boxShadow: brand.cardShadow,
+                            cursor: "pointer",
+                            transition:
+                              "transform 150ms ease, box-shadow 150ms ease",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: "12px",
+                            }}
+                          >
+                            <div>
+                              <p
+                                style={{
+                                  margin: "0 0 4px",
+                                  fontWeight: 800,
+                                  color: brand.primary,
+                                }}
+                              >
+                                {booking.service_title ||
+                                  booking?.services_catalog?.title ||
+                                  "Service"}
+                              </p>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: brand.subtleText,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {formatDateRange(booking)}
+                              </p>
+                            </div>
+                            <span
+                              style={{
+                                background: brand.primary,
+                                color: brand.ink,
+                                padding: "6px 12px",
+                                borderRadius: "999px",
+                                fontWeight: 700,
+                                fontSize: "0.9rem",
+                                border: `1px solid ${brand.cardBorder}`,
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {bookingStatusLabel(booking.status)}
+                            </span>
+                          </div>
+                          {booking.notes && (
+                            <p
+                              style={{
+                                margin: "8px 0 0",
+                                color: brand.subtleText,
+                              }}
+                            >
+                              {booking.notes}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={emptyStateStyle}>
+                      <p style={{ margin: 0 }}>
+                        <strong>No bookings yet.</strong> Bookings will appear
+                        here with times, services, and notes.
+                      </p>
+                    </div>
+                  )}
+                </SectionCard>
+              )}
+
+              {showSupporters && (
+                <SectionCard
+                  title="Supporters"
+                  description="The people and programs cheering you on."
+                >
                   <ul
                     style={{
                       listStyle: "none",
-                      padding: 0,
                       margin: 0,
+                      padding: 0,
                       display: "grid",
-                      gap: "12px",
+                      gap: "10px",
+                      color: brand.subtleText,
+                      fontWeight: 600,
                     }}
                   >
-                    {activeBookings.map((booking) => (
-                      <li
-                        key={booking.id}
-                        onClick={() => openBooking(booking)}
-                        style={{
-                          background: brand.surfaceHighlight,
-                          border: `1px solid ${brand.cardBorder}`,
-                          borderRadius: "16px",
-                          padding: "14px",
-                          boxShadow: brand.cardShadow,
-                          cursor: "pointer",
-                          transition:
-                            "transform 150ms ease, box-shadow 150ms ease",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: "12px",
-                          }}
-                        >
-                          <div>
-                            <p
-                              style={{
-                                margin: "0 0 4px",
-                                fontWeight: 800,
-                                color: brand.primary,
-                              }}
-                            >
-                              {booking.service_title ||
-                                booking?.services_catalog?.title ||
-                                "Service"}
-                            </p>
-                            <p
-                              style={{
-                                margin: 0,
-                                color: brand.subtleText,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {formatDateRange(booking)}
-                            </p>
-                          </div>
-                          <span
-                            style={{
-                              background: brand.primary,
-                              color: brand.ink,
-                              padding: "6px 12px",
-                              borderRadius: "999px",
-                              fontWeight: 700,
-                              fontSize: "0.9rem",
-                              border: `1px solid ${brand.cardBorder}`,
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            {bookingStatusLabel(booking.status)}
-                          </span>
-                        </div>
-                        {booking.notes && (
-                          <p
-                            style={{
-                              margin: "8px 0 0",
-                              color: brand.subtleText,
-                            }}
-                          >
-                            {booking.notes}
-                          </p>
-                        )}
-                      </li>
-                    ))}
+                    <li>Jeroen & Paws family</li>
+                    <li>Community walks</li>
+                    <li>Pawsitive training</li>
                   </ul>
-                ) : (
-                  <div style={emptyStateStyle}>
-                    <p style={{ margin: 0 }}>
-                      <strong>No bookings yet.</strong> Bookings will appear
-                      here with times, services, and notes.
-                    </p>
-                  </div>
-                )}
-              </SectionCard>
+                </SectionCard>
+              )}
             </>
           </div>
         </div>
@@ -1858,52 +1846,46 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          <div className="jp-detail-grid detail-section">
-            <div>
-              <p className="jp-type-caption">Pets</p>
-              <p className="jp-type-heading-4">
-                {profile?.pets?.length ?? 0}
-              </p>
-            </div>
-            <div>
-              <p className="jp-type-caption">Bookings</p>
-              <p className="jp-type-heading-4">
-                {profile?.bookings?.length ?? 0}
-              </p>
-            </div>
-            <div>
-              <p className="jp-type-caption">Upcoming</p>
-              <p className="jp-type-heading-4">{activeBookings.length}</p>
-            </div>
-            <div className="jp-grid-icon">📊</div>
-          </div>
+          {showDetails && (
+            <>
+              <div className="jp-detail-grid detail-section">
+                <div>
+                  <p className="jp-type-caption">Pets</p>
+                  <p className="jp-type-heading-4">
+                    {profile?.pets?.length ?? 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="jp-type-caption">Bookings</p>
+                  <p className="jp-type-heading-4">
+                    {profile?.bookings?.length ?? 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="jp-type-caption">Upcoming</p>
+                  <p className="jp-type-heading-4">{activeBookings.length}</p>
+                </div>
+              </div>
 
-          <div className="detail-section">
-            <p className="jp-type-caption">Description</p>
-            <p>
-              {contactForm.fullName
-                ? `${contactForm.fullName} keeps their pups in the loop with Jeroen & Paws.`
-                : "Manage your pets, appointments, and contact details in one place."}
-            </p>
-          </div>
+              <div className="detail-section">
+                <p className="jp-type-caption">Description</p>
+                <p>
+                  {contactForm.fullName
+                    ? `${contactForm.fullName} keeps their pups in the loop with Jeroen & Paws.`
+                    : "Manage your pets, appointments, and contact details in one place."}
+                </p>
+              </div>
 
-          <div className="detail-section">
-            <p className="jp-type-caption">Contact</p>
-            <ul className="jp-detail-list">
-              <li>{contactForm.email || "hello@jeroenandpaws.com"}</li>
-              <li>{contactForm.phone || "+353 85 123 4567"}</li>
-              <li>{contactForm.address || "Dublin, Ireland"}</li>
-            </ul>
-          </div>
-
-          <div className="detail-section">
-            <p className="jp-type-caption">Supporters</p>
-            <ul className="jp-detail-list">
-              <li>Jeroen & Paws family</li>
-              <li>Community walks</li>
-              <li>Pawsitive training</li>
-            </ul>
-          </div>
+              <div className="detail-section">
+                <p className="jp-type-caption">Contact</p>
+                <ul className="jp-detail-list">
+                  <li>{contactForm.email || "hello@jeroenandpaws.com"}</li>
+                  <li>{contactForm.phone || "+353 85 123 4567"}</li>
+                  <li>{contactForm.address || "Dublin, Ireland"}</li>
+                </ul>
+              </div>
+            </>
+          )}
         </aside>
       </div>
       
