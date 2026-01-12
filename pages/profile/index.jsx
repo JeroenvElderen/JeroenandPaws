@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../src/context/AuthContext";
+import CalendarSection from "../../src/components/Pricing/components/CalendarSection";
+import { buildMonthMatrix } from "../../src/components/Pricing/utils";
+import { weekdayLabels } from "../../src/components/Pricing/constants";
 
 const brand = {
   primary: "#7c45f3",
@@ -98,6 +101,13 @@ const formatDateRange = (booking) => {
   })} — ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
 
+const formatBookingDateKey = (dateValue) => {
+  if (!dateValue) return "";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-CA");
+};
+
 const bookingStatusLabel = (status = "") => {
   const normalized = status.toLowerCase();
 
@@ -164,6 +174,8 @@ const ProfilePage = () => {
   });
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [activeTab, setActiveTab] = useState("All");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
   const landingRef = useRef(null);
   const landingBgRef = useRef(null);
   const contentRef = useRef(null);
@@ -211,6 +223,74 @@ const ProfilePage = () => {
     () => activeBookings.length > 0,
     [activeBookings]
   );
+
+  const bookingCalendarMap = useMemo(() => {
+    return activeBookings.reduce((acc, booking) => {
+      const dateKey = formatBookingDateKey(booking.start_at);
+      if (!dateKey) return acc;
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, bookings: [] };
+      }
+      acc[dateKey].bookings.push(booking);
+      return acc;
+    }, {});
+  }, [activeBookings]);
+
+  const bookedDateSlots = useMemo(() => {
+    return Object.keys(bookingCalendarMap).reduce((acc, dateKey) => {
+      acc[dateKey] = "booked";
+      return acc;
+    }, {});
+  }, [bookingCalendarMap]);
+
+  const selectedDateBookings = useMemo(() => {
+    if (!selectedDate) return [];
+    return (bookingCalendarMap[selectedDate]?.bookings || []).slice().sort(
+      (a, b) => new Date(a.start_at) - new Date(b.start_at)
+    );
+  }, [bookingCalendarMap, selectedDate]);
+
+  const monthMatrix = useMemo(
+    () => buildMonthMatrix(visibleMonth),
+    [visibleMonth]
+  );
+
+  const monthLabel = useMemo(
+    () =>
+      visibleMonth.toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      }),
+    [visibleMonth]
+  );
+
+  const handleDaySelection = useCallback((iso) => {
+    setSelectedDate(iso);
+  }, []);
+
+  const handlePreviousMonth = useCallback(() => {
+    setVisibleMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    setVisibleMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }, []);
+
+  const isBookingDayAvailable = useCallback(
+    (dayData) => Boolean(dayData?.bookings?.length),
+    []
+  );
+
+  const selectedDateLabel = useMemo(() => {
+    if (!selectedDate) return "Select a date to see bookings.";
+    const date = new Date(`${selectedDate}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return "Select a date to see bookings.";
+    return date.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
+  }, [selectedDate]);
 
   const refreshContactForm = useCallback((payload) => {
     setContactForm({
@@ -273,6 +353,28 @@ const ProfilePage = () => {
     setEmail("");
     setResetEmail("");
   }, [authProfile, refreshContactForm, useMockProfile]);
+
+  useEffect(() => {
+    if (!hasBookings) {
+      setSelectedDate("");
+      return;
+    }
+
+    const bookingDates = Object.keys(bookingCalendarMap).sort();
+    const firstDate = bookingDates[0];
+    const shouldUpdateSelection =
+      !selectedDate || !bookingCalendarMap[selectedDate];
+
+    if (shouldUpdateSelection && firstDate) {
+      setSelectedDate(firstDate);
+      const firstDateObj = new Date(`${firstDate}T00:00:00`);
+      if (!Number.isNaN(firstDateObj.getTime())) {
+        setVisibleMonth(
+          new Date(firstDateObj.getFullYear(), firstDateObj.getMonth(), 1)
+        );
+      }
+    }
+  }, [bookingCalendarMap, hasBookings, selectedDate]);
 
   const loadProfile = async () => {
     if (!email || !password) {
@@ -1210,156 +1312,235 @@ const ProfilePage = () => {
                             display: "grid",
                             gap: "10px",
                             color: brand.ink,
+                            position: "relative"
                           }}
                         >
-                          {!isEditing ? (
-                            <>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                              }}
+                            >
+                              {petPhoto ? (
+                                <img
+                                  src={petPhoto}
+                                  alt={`${pet.name} profile`}
+                                  style={{
+                                    width: "64px",
+                                    height: "64px",
+                                    borderRadius: "14px",
+                                    objectFit: "cover",
+                                    border: `1px solid ${brand.cardBorder}`,
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: "64px",
+                                    height: "64px",
+                                    borderRadius: "14px",
+                                    background: brand.primarySoft,
+                                    color: brand.primary,
+                                    display: "grid",
+                                    placeItems: "center",
+                                    fontWeight: 800,
+                                    border: `1px solid ${brand.cardBorder}`,
+                                  }}
+                                >
+                                  {petInitial}
+                                </div>
+                              )}
+                              <div>
+                                <div
+                                  style={{
+                                    fontWeight: 800,
+                                    fontSize: "1.1rem",
+                                    color: brand.ink,
+                                  }}
+                                >
+                                  {pet.name}
+                                </div>
+                                {pet.breed && (
+                                  <span
+                                    style={{
+                                      display: "inline-block",
+                                      marginTop: "6px",
+                                      background: brand.primary,
+                                      color: brand.ink,
+                                      padding: "6px 10px",
+                                      borderRadius: "999px",
+                                      fontSize: "0.85rem",
+                                      fontWeight: 700,
+                                      border: `1px solid ${brand.cardBorder}`,
+                                    }}
+                                  >
+                                    {pet.breed}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {pet.notes ? (
+                            <p style={{ margin: 0, color: brand.subtleText }}>
+                              {pet.notes}
+                            </p>
+                          ) : (
+                            <p style={{ margin: 0, color: "#9ca3af" }}>
+                              No notes added yet.
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => startEditingPet(pet)}
+                            style={{
+                              justifySelf: "flex-start",
+                              padding: "10px 14px",
+                              borderRadius: "12px",
+                              border: `1px solid ${brand.cardBorder}`,
+                              background: brand.primary,
+                              color: brand.ink,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Edit pet
+                          </button>
+                          {isEditing && (
+                            <div
+                              style={{
+                                position: "fixed",
+                                inset: 0,
+                                background: "rgba(15, 23, 42, 0.72)",
+                                backdropFilter: "blur(6px)",
+                                zIndex: 40,
+                                display: "grid",
+                                placeItems: "center",
+                                padding: "32px 20px",
+                              }}
+                            >
                               <div
                                 style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  gap: "12px",
+                                  background: brand.surface,
+                                  border: `1px solid ${brand.cardBorder}`,
+                                  borderRadius: "20px",
+                                  padding: "24px",
+                                  boxShadow: brand.cardShadow,
+                                  width: "min(720px, 100%)",
+                                  display: "grid",
+                                  gap: "16px",
+                                  maxHeight: "calc(100vh - 64px)",
+                                  overflowY: "auto",
                                 }}
                               >
                                 <div
                                   style={{
                                     display: "flex",
+                                    justifyContent: "space-between",
                                     alignItems: "center",
-                                    gap: "12px",
+                                    gap: "8px",
                                   }}
                                 >
-                                  {petPhoto ? (
-                                    <img
-                                      src={petPhoto}
-                                      alt={`${pet.name} profile`}
+                                  <strong
+                                    style={{ color: brand.ink, fontSize: "1.2rem" }}
+                                  >
+                                    Edit {pet.name}
+                                  </strong>
+                                  <button
+                                    type="button"
+                                    onClick={() => stopEditingPet(pet.id)}
+                                    style={{
+                                      padding: "8px 12px",
+                                      borderRadius: "999px",
+                                      border: `1px solid ${brand.cardBorder}`,
+                                      background: "rgba(255,255,255,0.06)",
+                                      color: brand.ink,
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gap: "12px",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(240px, 1fr))",
+                                  }}
+                                >
+                                  <div style={{ display: "grid", gap: "8px" }}>
+                                    <label
                                       style={{
-                                        width: "64px",
-                                        height: "64px",
-                                        borderRadius: "14px",
-                                        objectFit: "cover",
-                                        border: `1px solid ${brand.cardBorder}`,
-                                      }}
-                                    />
-                                  ) : (
-                                    <div
-                                      style={{
-                                        width: "64px",
-                                        height: "64px",
-                                        borderRadius: "14px",
-                                        background: brand.primarySoft,
-                                        color: brand.primary,
-                                        display: "grid",
-                                        placeItems: "center",
-                                        fontWeight: 800,
-                                        border: `1px solid ${brand.cardBorder}`,
+                                        color: brand.subtleText,
+                                        fontWeight: 700,
                                       }}
                                     >
-                                      {petInitial}
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div
+                                      Name
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={editing.name || ""}
+                                      onChange={(e) =>
+                                        updatePetField(
+                                          pet.id,
+                                          "name",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Name"
                                       style={{
-                                        fontWeight: 800,
-                                        fontSize: "1.1rem",
+                                        padding: "12px",
+                                        borderRadius: "12px",
+                                        border: `1px solid ${brand.cardBorder}`,
+                                        background: "rgba(255,255,255,0.04)",
                                         color: brand.ink,
                                       }}
+                                    />
+                                   </div>
+                                  <div style={{ display: "grid", gap: "8px" }}>
+                                    <label
+                                      style={{
+                                        color: brand.subtleText,
+                                        fontWeight: 700,
+                                      }}
                                     >
-                                      {pet.name}
-                                    </div>
-                                    {pet.breed && (
-                                      <span
-                                        style={{
-                                          display: "inline-block",
-                                          marginTop: "6px",
-                                          background: brand.primary,
-                                          color: brand.ink,
-                                          padding: "6px 10px",
-                                          borderRadius: "999px",
-                                          fontSize: "0.85rem",
-                                          fontWeight: 700,
-                                          border: `1px solid ${brand.cardBorder}`,
-                                        }}
-                                      >
-                                        {pet.breed}
-                                      </span>
-                                    )}
+                                      Breed
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={editing.breed || ""}
+                                      onChange={(e) =>
+                                        updatePetField(
+                                          pet.id,
+                                          "breed",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Breed"
+                                      style={{
+                                        padding: "12px",
+                                        borderRadius: "12px",
+                                        border: `1px solid ${brand.cardBorder}`,
+                                        background: "rgba(255,255,255,0.04)",
+                                        color: brand.ink,
+                                      }}
+                                    />
                                   </div>
                                 </div>
-                              </div>
-                              {pet.notes ? (
-                                <p
-                                  style={{ margin: 0, color: brand.subtleText }}
-                                >
-                                  {pet.notes}
-                                </p>
-                              ) : (
-                                <p style={{ margin: 0, color: "#9ca3af" }}>
-                                  No notes added yet.
-                                </p>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => startEditingPet(pet)}
-                                style={{
-                                  justifySelf: "flex-start",
-                                  padding: "10px 14px",
-                                  borderRadius: "12px",
-                                  border: `1px solid ${brand.cardBorder}`,
-                                  background: brand.primary,
-                                  color: brand.ink,
-                                  fontWeight: 700,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Edit pet
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <div style={{ display: "grid", gap: "8px" }}>
-                                <input
-                                  type="text"
-                                  value={editing.name || ""}
-                                  onChange={(e) =>
-                                    updatePetField(
-                                      pet.id,
-                                      "name",
-                                      e.target.value
-                                    )
-                                  }
-                                  style={{
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    background: "rgba(255,255,255,0.04)",
-                                    color: brand.ink,
-                                  }}
-                                />
-                                <input
-                                  type="text"
-                                  value={editing.breed || ""}
-                                  onChange={(e) =>
-                                    updatePetField(
-                                      pet.id,
-                                      "breed",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Breed"
-                                  style={{
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    background: "rgba(255,255,255,0.04)",
-                                    color: brand.ink,
-                                  }}
-                                />
                                 <div
                                   style={{
                                     display: "flex",
-                                    gap: "12px",
+                                    gap: "16px",
                                     alignItems: "center",
                                     flexWrap: "wrap",
                                   }}
@@ -1403,7 +1584,7 @@ const ProfilePage = () => {
                                       style={{
                                         display: "flex",
                                         alignItems: "center",
-                                        gap: "10px",
+                                        gap: "12px",
                                       }}
                                     >
                                       <img
@@ -1415,9 +1596,9 @@ const ProfilePage = () => {
                                           editing.name || pet.name
                                         } preview`}
                                         style={{
-                                          width: "72px",
-                                          height: "72px",
-                                          borderRadius: "14px",
+                                          width: "84px",
+                                          height: "84px",
+                                          borderRadius: "16px",
                                           objectFit: "cover",
                                           border: `1px solid ${brand.cardBorder}`,
                                         }}
@@ -1442,66 +1623,77 @@ const ProfilePage = () => {
                                     </div>
                                   )}
                                 </div>
-                                <textarea
-                                  value={editing.notes || ""}
-                                  onChange={(e) =>
-                                    updatePetField(
-                                      pet.id,
-                                      "notes",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Notes"
+                                <div style={{ display: "grid", gap: "8px" }}>
+                                  <label
+                                    style={{
+                                      color: brand.subtleText,
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    Notes
+                                  </label>
+                                  <textarea
+                                    value={editing.notes || ""}
+                                    onChange={(e) =>
+                                      updatePetField(
+                                        pet.id,
+                                        "notes",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="Notes"
+                                    style={{
+                                      padding: "12px",
+                                      borderRadius: "12px",
+                                      border: `1px solid ${brand.cardBorder}`,
+                                      minHeight: "140px",
+                                      background: "rgba(255,255,255,0.04)",
+                                      color: brand.ink,
+                                    }}
+                                  />
+                                </div>
+                                <div
                                   style={{
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    minHeight: "80px",
-                                    background: "rgba(255,255,255,0.04)",
-                                    color: brand.ink,
-                                  }}
-                                />
-                              </div>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "8px",
-                                  justifyContent: "flex-end",
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => stopEditingPet(pet.id)}
-                                  style={{
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${brand.cardBorder}`,
-                                    background: "rgba(255,255,255,0.06)",
-                                    color: brand.ink,
-                                    fontWeight: 700,
-                                    cursor: "pointer",
+                                    display: "flex",
+                                    gap: "10px",
+                                    justifyContent: "flex-end",
+                                    flexWrap: "wrap",
                                   }}
                                 >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => savePetEdit(pet.id)}
-                                  style={{
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    border: "none",
-                                    background: brand.primary,
-                                    color: "#fff",
-                                    fontWeight: 800,
-                                    cursor: "pointer",
-                                    boxShadow: brand.cardShadow,
-                                  }}
-                                >
-                                  Save pet
-                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => stopEditingPet(pet.id)}
+                                    style={{
+                                      padding: "12px 16px",
+                                      borderRadius: "12px",
+                                      border: `1px solid ${brand.cardBorder}`,
+                                      background: "rgba(255,255,255,0.06)",
+                                      color: brand.ink,
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => savePetEdit(pet.id)}
+                                    style={{
+                                      padding: "12px 18px",
+                                      borderRadius: "12px",
+                                      border: "none",
+                                      background: brand.primary,
+                                      color: "#fff",
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                      boxShadow: brand.cardShadow,
+                                    }}
+                                  >
+                                    Save pet
+                                  </button>
+                                </div>
                               </div>
-                            </>
+                            </div>
                           )}
                         </div>
                       );
@@ -1720,88 +1912,71 @@ const ProfilePage = () => {
                   description="Tap a booking to view details or cancel recurring visits. Cancelling removes the event from your calendar, and cancelled bookings are hidden."
                 >
                   {hasBookings ? (
-                    <ul
-                      style={{
-                        listStyle: "none",
-                        padding: 0,
-                        margin: 0,
-                        display: "grid",
-                        gap: "12px",
-                      }}
-                    >
-                      {activeBookings.map((booking) => (
-                        <li
-                          key={booking.id}
-                          onClick={() => openBooking(booking)}
-                          style={{
-                            background: brand.surfaceHighlight,
-                            border: `1px solid ${brand.cardBorder}`,
-                            borderRadius: "16px",
-                            padding: "14px",
-                            boxShadow: brand.cardShadow,
-                            cursor: "pointer",
-                            transition:
-                              "transform 150ms ease, box-shadow 150ms ease",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              gap: "12px",
-                            }}
-                          >
-                            <div>
-                              <p
-                                style={{
-                                  margin: "0 0 4px",
-                                  fontWeight: 800,
-                                  color: brand.primary,
-                                }}
+                    <div className="jp-profile-booking-calendar">
+                      <CalendarSection
+                        monthLabel={monthLabel}
+                        weekdayLabels={weekdayLabels}
+                        monthMatrix={monthMatrix}
+                        visibleMonth={visibleMonth}
+                        availabilityMap={bookingCalendarMap}
+                        isDayAvailableForService={isBookingDayAvailable}
+                        selectedDate={selectedDate}
+                        selectedSlots={bookedDateSlots}
+                        handleDaySelection={handleDaySelection}
+                        onPreviousMonth={handlePreviousMonth}
+                        onNextMonth={handleNextMonth}
+                        disablePastDates={false}
+                      />
+                      <div className="jp-booking-day-panel">
+                        <div className="jp-booking-day-header">
+                          <p className="jp-booking-day-title">
+                            {selectedDateLabel}
+                          </p>
+                          <p className="jp-booking-day-subtitle">
+                            Tap a booking to view details or cancel.
+                          </p>
+                        </div>
+                        {selectedDateBookings.length ? (
+                          <ul className="jp-booking-day-list">
+                            {selectedDateBookings.map((booking) => (
+                              <li
+                                key={booking.id}
+                                onClick={() => openBooking(booking)}
+                                className="jp-booking-card"
                               >
-                                {booking.service_title ||
-                                  booking?.services_catalog?.title ||
-                                  "Service"}
-                              </p>
-                              <p
-                                style={{
-                                  margin: 0,
-                                  color: brand.subtleText,
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {formatDateRange(booking)}
-                              </p>
-                            </div>
-                            <span
-                              style={{
-                                background: brand.primary,
-                                color: brand.ink,
-                                padding: "6px 12px",
-                                borderRadius: "999px",
-                                fontWeight: 700,
-                                fontSize: "0.9rem",
-                                border: `1px solid ${brand.cardBorder}`,
-                                textTransform: "capitalize",
-                              }}
-                            >
-                              {bookingStatusLabel(booking.status)}
-                            </span>
-                          </div>
-                          {booking.notes && (
-                            <p
-                              style={{
-                                margin: "8px 0 0",
-                                color: brand.subtleText,
-                              }}
-                            >
-                              {booking.notes}
+                                <div className="jp-booking-card__row">
+                                  <div>
+                                    <p className="jp-booking-card__service">
+                                      {booking.service_title ||
+                                        booking?.services_catalog?.title ||
+                                        "Service"}
+                                    </p>
+                                    <p className="jp-booking-card__time">
+                                      {formatDateRange(booking)}
+                                    </p>
+                                  </div>
+                                  <span className="jp-booking-card__status">
+                                    {bookingStatusLabel(booking.status)}
+                                  </span>
+                                </div>
+                                {booking.notes && (
+                                  <p className="jp-booking-card__notes">
+                                    {booking.notes}
+                                  </p>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div style={emptyStateStyle}>
+                            <p style={{ margin: 0 }}>
+                              <strong>No bookings on this date.</strong> Pick
+                              another day to review upcoming visits.
                             </p>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <div style={emptyStateStyle}>
                       <p style={{ margin: 0 }}>

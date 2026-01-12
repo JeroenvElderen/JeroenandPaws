@@ -15,6 +15,7 @@ const CalendarSection = ({
   calendarSectionRef,
   onPreviousMonth,
   onNextMonth,
+  disablePastDates = true,
 }) => {
   const touchStartX = useRef(null);
 
@@ -95,7 +96,9 @@ const CalendarSection = ({
               const isAvailable = isDayAvailableForService(dayData);
               const isSelected = iso === selectedDate;
               const isScheduled = Boolean(selectedSlots[iso]);
-              const isPastDate = dateObj < new Date().setHours(0, 0, 0, 0);
+              const isPastDate =
+                disablePastDates &&
+                dateObj < new Date().setHours(0, 0, 0, 0);
               const isFirstDay = index === 0;
               const gridColumnStart = isFirstDay
                 ? ((dateObj.getDay() + 6) % 7) + 1
