@@ -4240,11 +4240,13 @@ html {
   align-self: center;
   align-items: center;
   display: flex;
+  height: 100%;
 }
 
 .nav_logo-image {
-  margin-top: 15px;
-  height: 6rem;
+  margin-top: 0;
+  height: 100%;
+  max-height: 2.5rem;
   width: auto;
   object-fit: contain;
 }

@@ -706,13 +706,6 @@ const ProfilePage = () => {
       }%)`;
       avatar.style.marginTop = `${percentage * 10}px`;
 
-      if (scrollPos >= 300) {
-        landing.classList.add("locked");
-        content.classList.add("header-locked");
-      } else {
-        landing.classList.remove("locked");
-        content.classList.remove("header-locked");
-      }
     };
 
     const onScroll = () => window.requestAnimationFrame(handleScroll);
