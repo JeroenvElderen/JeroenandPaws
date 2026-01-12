@@ -252,7 +252,7 @@
 .jp-app-landing {
   width: 100%;
   height: 340px;
-  margin-top: 60px;
+  margin-top: 0;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
   overflow: hidden;
   position: relative;
@@ -269,7 +269,7 @@
 
 .jp-app-landing.locked .jp-app-landing-bg {
   position: fixed;
-  height: 60px;
+  height: 4rem;
   top: 0;
   left: 0;
   z-index: 20;
@@ -372,7 +372,7 @@
 .jp-app-content.header-locked .jp-profile-header {
   position: fixed;
   width: min(1200px, calc(100% - 32px));
-  top: 60px;
+  top: 4rem;
   left: 50%;
   transform: translateX(-50%);
   grid-template-columns: 80px auto;

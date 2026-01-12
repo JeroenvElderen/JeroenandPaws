@@ -197,6 +197,7 @@ const ProfilePage = () => {
   const showPets = isAllTab || activeTab === "Pets";
   const showBookings = isAllTab || activeTab === "Bookings";
   const showSupporters = isAllTab || activeTab === "Supporters";
+
   const showSidebar =
     isAllTab || activeTab === "Details" || activeTab === "Supporters";
 
@@ -803,38 +804,6 @@ const ProfilePage = () => {
 
   return (
     <main className="jp-profile-page">
-      <header className="jp-app-header">
-        <div className="content">
-          <div className="jp-logo">
-            <img src="/logo192.png" alt="Jeroen & Paws" />
-          </div>
-          <div className="jp-search">
-            <input type="text" placeholder="Search your profile..." />
-          </div>
-          <div className="jp-header-profile">
-            <img
-              src={avatarImage}
-              alt={`${displayName} avatar`}
-              className="jp-header-avatar"
-            />
-            <p>{displayName}</p>
-            <span className="jp-header-chevron">▾</span>
-          </div>
-          <div className="jp-header-actions">
-            <div className="jp-divider" />
-            <button type="button" className="jp-header-button jp-unread">
-              💬
-            </button>
-            <button type="button" className="jp-header-button">
-              🔔
-            </button>
-            <button type="button" className="jp-header-button">
-              ⋯
-            </button>
-          </div>
-        </div>
-      </header>
-
       <section className="jp-app-landing" ref={landingRef}>
         <div
           className="jp-app-landing-bg"
