@@ -196,7 +196,8 @@ const ProfilePage = () => {
   const showPets = isAllTab || activeTab === "Pets";
   const showBookings = isAllTab || activeTab === "Bookings";
   
-  const showSidebar = isAllTab || activeTab === "Details";
+  const showSidebar = true;
+  const showSidebarDetails = true;
 
   const activeBookings = useMemo(() => {
     const clean = (status = "") => status?.toLowerCase();
@@ -1836,7 +1837,7 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {showDetails && (
+              {showSidebarDetails && (
                 <>
                   <div className="jp-detail-grid detail-section">
                     <div>
