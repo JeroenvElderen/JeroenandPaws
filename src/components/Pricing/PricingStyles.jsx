@@ -1607,12 +1607,6 @@ const PricingStyles = () => (
           box-shadow: 0 0 0 2px rgba(144, 166, 255, 0.2);
         }
           
-          @media (min-width: 1024px) {
-          .searchable-select .options-list {
-            max-height: none;
-            overflow: visible;
-          }
-        }
         .dog-row__actions {
           grid-column: 1 / -1;
           display: flex;

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../src/context/AuthContext";
 
 const brand = {
@@ -16,48 +16,13 @@ const brand = {
   surfaceHighlight: "linear-gradient(150deg, #251a3f, #150f28)",
 };
 
-const pillStyles = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "8px",
-  padding: "8px 12px",
-  borderRadius: "999px",
-  background: "rgba(255, 255, 255, 0.9)",
-  color: brand.primary,
-  fontWeight: 700,
-  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-  letterSpacing: "0.01em",
-};
-
-const SectionCard = ({ title, description, children }) => (
-  <section
-    style={{
-      background: brand.surface,
-      borderRadius: "20px",
-      padding: "24px",
-      boxShadow: brand.cardShadow,
-      border: `1px solid ${brand.cardBorder}`,
-      color: brand.ink,
-      position: "relative",
-      overflow: "hidden",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        gap: "16px",
-      }}
-    >
+const SectionCard = ({ title, description, children, className = "" }) => (
+  <section className={`jp-section-card ${className}`.trim()}>
+    <div className="jp-section-card__header">
       <div>
-        <h2 style={{ margin: 0, color: brand.ink, fontSize: "1.4rem" }}>
-          {title}
-        </h2>
+        <h2 className="jp-section-card__title">{title}</h2>
         {description && (
-          <p style={{ margin: "6px 0 16px", color: brand.subtleText }}>
-            {description}
-          </p>
+          <p className="jp-section-card__description">{description}</p>
         )}
       </div>
     </div>
@@ -198,6 +163,32 @@ const ProfilePage = () => {
     message: "",
   });
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [following, setFollowing] = useState(true);
+  const [activeTab, setActiveTab] = useState("All");
+  const landingRef = useRef(null);
+  const landingBgRef = useRef(null);
+  const contentRef = useRef(null);
+  const profileHeaderRef = useRef(null);
+  const avatarRef = useRef(null);
+  const tabs = ["All", "Pets", "Bookings", "Details", "Supporters"];
+  const coverImage =
+    profile?.client?.cover_url ||
+    "/images/background/bg3.jpg";
+  const avatarImage =
+    profile?.client?.avatar_url ||
+    profile?.pets?.find((pet) => pet.photo_data_url)?.photo_data_url ||
+    "/images/Jeroen.jpg";
+  const displayName =
+    contactForm.fullName ||
+    profile?.client?.full_name ||
+    "Jeroen & Paws Client";
+  const subtitleParts = [
+    profile?.client?.email ? "Client" : "Guest",
+    profile?.pets?.length
+      ? `${profile.pets.length} pet${profile.pets.length > 1 ? "s" : ""}`
+      : "Pet parent",
+  ];
+  const subtitleText = subtitleParts.filter(Boolean).join(" · ");
   const [bookingAction, setBookingAction] = useState({
     cancelling: false,
     error: "",
@@ -662,326 +653,249 @@ const ProfilePage = () => {
     setResetStatus({ state: "idle", message: "" });
   };
 
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: brand.background,
-        padding: "32px 16px 48px",
-      }}
-    >
-      <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
-        <header
-          style={{
-            background: `linear-gradient(120deg, ${brand.primary} 0%, #5d3ce6 45%, ${brand.neutral} 100%)`,
-            color: "white",
-            borderRadius: "28px",
-            padding: "32px",
-            boxShadow: "0 24px 60px rgba(15, 23, 42, 0.3)",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.15), transparent 30%),\n               radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.12), transparent 35%)",
-            }}
-          />
-          <div
-            style={{
-              position: "relative",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "24px",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ flex: "1 1 320px" }}>
-              <div style={pillStyles}>
-                <span role="img" aria-label="sparkles">
-                  ✨
-                </span>
-                Your client hub
-              </div>
-              <h1
-                style={{
-                  margin: "12px 0 8px",
-                  fontSize: "2.4rem",
-                  lineHeight: 1.2,
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleScroll = () => {
+      const scrollPos = window.scrollY;
+      const landing = landingRef.current;
+      const bg = landingBgRef.current;
+      const content = contentRef.current;
+      const profileHeader = profileHeaderRef.current;
+      const avatar = avatarRef.current;
+
+      if (!landing || !bg || !content || !profileHeader || !avatar) return;
+
+      if (scrollPos < 300) {
+        bg.style.marginTop = `${scrollPos / 2}px`;
+      }
+
+      const percentage = Math.max(
+        Math.min(((scrollPos - 216) / 84) * 1.05, 1),
+        0
+      );
+      const max = 128;
+      const min = 48;
+      const diff = max - min;
+      const dimensions = max - diff * percentage;
+
+      avatar.style.width = `${dimensions}px`;
+      avatar.style.height = `${dimensions}px`;
+      avatar.style.transform = `translate(0, -${
+        (percentage * 50) * -1 + 50
+      }%)`;
+      avatar.style.marginTop = `${percentage * 10}px`;
+      profileHeader.style.gridTemplateColumns = `${dimensions + 40}px auto auto`;
+
+      if (scrollPos >= 300) {
+        landing.classList.add("locked");
+        content.classList.add("header-locked");
+      } else {
+        landing.classList.remove("locked");
+        content.classList.remove("header-locked");
+      }
+    };
+
+    const onScroll = () => window.requestAnimationFrame(handleScroll);
+    window.addEventListener("scroll", onScroll);
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  if (!profile) {
+    return (
+      <main className="jp-profile-page jp-profile-login">
+        <div className="jp-login-shell">
+          <div className="jp-login-card">
+            <img
+              src="/logo192.png"
+              alt="Jeroen & Paws"
+              className="jp-login-logo"
+            />
+            <h1>Welcome back</h1>
+            <p>
+              Log in with the email you used when booking to access your
+              profile.
+            </p>
+            {error && <div className="jp-profile-error">{error}</div>}
+            <div className="jp-login-form">
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={loadProfile}
+                disabled={loading || !email || !password}
+              >
+                {loading ? "Loading…" : "View profile"}
+              </button>
+              <button
+                type="button"
+                className="jp-login-secondary"
+                onClick={() => {
+                  setShowInlineReset(true);
+                  setResetStatus({ state: "idle", message: "" });
+                  setResetEmail(email || resetEmail);
                 }}
               >
-                Profile & Booking Center
-              </h1>
-              <p
-                style={{
-                  margin: 0,
-                  color: "rgba(255,255,255,0.88)",
-                  fontSize: "1rem",
-                  lineHeight: 1.6,
-                }}
-              >
-                Manage your contact details, pets, and bookings with the same
-                styling as our Webflow hub.
-              </p>
+                Set a new password
+              </button>
             </div>
-            {!profile ? (
-              <div
-                style={{
-                  flex: "1 1 280px",
-                  background: brand.surfaceHighlight,
-                  borderRadius: "18px",
-                  padding: "16px",
-                  border: `1px solid ${brand.cardBorder}`,
-                  boxShadow: brand.cardShadow,
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    color: "rgba(255,255,255,0.9)",
-                    fontWeight: 700,
-                  }}
-                >
-                  Access your profile
+            {showInlineReset && (
+              <div className="jp-detail-card__reset">
+                <p className="jp-detail-card__reset-title">
+                  Reset your password
                 </p>
-                <p
-                  style={{
-                    margin: "0 0 12px",
-                    color: "rgba(255,255,255,0.75)",
-                  }}
-                >
-                  Use the email you provided when booking with us.
+                <p className="jp-detail-card__reset-subtitle">
+                  After a few unsuccessful login attempts we’ll help you
+                  request a reset link so you can set a new password.
                 </p>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div className="jp-detail-card__reset-row">
                   <input
                     type="email"
                     placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{
-                      flex: "1 1 200px",
-                      padding: "12px 14px",
-                      borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      background: "rgba(255,255,255,0.15)",
-                      color: "white",
-                    }}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{
-                      flex: "1 1 180px",
-                      padding: "12px 14px",
-                      borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      background: "rgba(255,255,255,0.15)",
-                      color: "white",
-                    }}
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
                   />
                   <button
                     type="button"
-                    onClick={loadProfile}
-                    disabled={loading || !email || !password}
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: "#22c55e",
-                      color: "#0f172a",
-                      fontWeight: 800,
-                      cursor: loading || !email ? "not-allowed" : "pointer",
-                      boxShadow: "0 12px 30px rgba(34, 197, 94, 0.35)",
-                    }}
+                    onClick={requestPasswordReset}
+                    disabled={resetStatus.state === "loading"}
+                    className="jp-detail-card__primary"
                   >
-                    {loading ? "Loading…" : "View profile"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowInlineReset(true);
-                      setResetStatus({ state: "idle", message: "" });
-                      setResetEmail(email || resetEmail);
-                    }}
-                    style={{
-                      padding: "12px 18px",
-                      borderRadius: "12px",
-                      border: `1px solid ${brand.cardBorder}`,
-                      background: "rgba(255,255,255,0.12)",
-                      color: "white",
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Set a new password
+                    {resetStatus.state === "loading"
+                      ? "Sending reset link…"
+                      : "Email me a reset link"}
                   </button>
                 </div>
-                {showInlineReset && (
-                  <div
-                    style={{
-                      marginTop: "12px",
-                      padding: "12px",
-                      borderRadius: "14px",
-                      background: "rgba(255,255,255,0.1)",
-                      border: `1px solid ${brand.cardBorder}`,
-                      display: "grid",
-                      gap: "10px",
-                    }}
+                {resetStatus.message && (
+                  <p
+                    className={`jp-detail-card__reset-message ${
+                      resetStatus.state === "success" ? "success" : "error"
+                    }`}
                   >
-                    <p style={{ margin: 0, fontWeight: 800 }}>
-                      Reset your password
-                    </p>
-                    <p style={{ margin: 0, color: "rgba(255,255,255,0.85)" }}>
-                      After a few unsuccessful login attempts we’ll help you
-                      request a reset link so you can set a new password.
-                    </p>
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: "8px",
-                        gridTemplateColumns: "2fr 1fr",
-                        alignItems: "center",
-                      }}
-                    >
-                      <input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        style={{
-                          padding: "12px",
-                          borderRadius: "12px",
-                          border: `1px solid ${brand.cardBorder}`,
-                          background: "rgba(255,255,255,0.15)",
-                          color: "white",
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={requestPasswordReset}
-                        disabled={resetStatus.state === "loading"}
-                        style={{
-                          padding: "12px 16px",
-                          borderRadius: "12px",
-                          border: "none",
-                          background:
-                            resetStatus.state === "loading"
-                              ? brand.primarySoft
-                              : brand.primary,
-                          color: "white",
-                          fontWeight: 800,
-                          cursor:
-                            resetStatus.state === "loading"
-                              ? "not-allowed"
-                              : "pointer",
-                          boxShadow: brand.cardShadow,
-                        }}
-                      >
-                        {resetStatus.state === "loading"
-                          ? "Sending reset link…"
-                          : "Email me a reset link"}
-                      </button>
-                    </div>
-                    {resetStatus.message && (
-                      <p
-                        style={{
-                          margin: 0,
-                          color:
-                            resetStatus.state === "success"
-                              ? "#bbf7d0"
-                              : "#fecdd3",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {resetStatus.message}
-                      </p>
-                    )}
-                  </div>
+                    {resetStatus.message}
+                  </p>
                 )}
-              </div>
-            ) : (
-              <div
-                style={{
-                  flex: "1 1 280px",
-                  background: brand.surfaceHighlight,
-                  borderRadius: "18px",
-                  padding: "16px",
-                  border: `1px solid ${brand.cardBorder}`,
-                  boxShadow: brand.cardShadow,
-                  color: "white",
-                  display: "grid",
-                  gap: "10px",
-                }}
-              >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
-                >
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700 }}>Signed in</p>
-                    <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-                      {contactForm.fullName || "Client"} · {contactForm.email}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={loadProfile}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      background: "rgba(255,255,255,0.16)",
-                      color: "white",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Refresh data
-                  </button>
-                  <button
-                    type="button"
-                    onClick={signOut}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "12px",
-                      border: "none",
-                      background: brand.primary,
-                      color: "white",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Sign out
-                  </button>
-                </div>
               </div>
             )}
           </div>
-        </header>
+        </div>
+      </main>
+    );
+  }
 
-        <div style={{ marginTop: "28px", display: "grid", gap: "20px" }}>
-          {error && (
-            <div
-              style={{
-                background: "#fef2f2",
-                border: "1px solid #fecdd3",
-                color: "#b91c1c",
-                padding: "12px 16px",
-                borderRadius: "12px",
-                fontWeight: 600,
-              }}
+  return (
+    <main className="jp-profile-page">
+      <header className="jp-app-header">
+        <div className="content">
+          <div className="jp-logo">
+            <img src="/logo192.png" alt="Jeroen & Paws" />
+          </div>
+          <div className="jp-search">
+            <input type="text" placeholder="Search your profile..." />
+          </div>
+          <div className="jp-header-profile">
+            <img
+              src={avatarImage}
+              alt={`${displayName} avatar`}
+              className="jp-header-avatar"
+            />
+            <p>{displayName}</p>
+            <span className="jp-header-chevron">▾</span>
+          </div>
+          <div className="jp-header-actions">
+            <div className="jp-divider" />
+            <button type="button" className="jp-header-button jp-unread">
+              💬
+            </button>
+            <button type="button" className="jp-header-button">
+              🔔
+            </button>
+            <button type="button" className="jp-header-button">
+              ⋯
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <section className="jp-app-landing" ref={landingRef}>
+        <div
+          className="jp-app-landing-bg"
+          ref={landingBgRef}
+          style={{ backgroundImage: `url(${coverImage})` }}
+        />
+      </section>
+
+      <div className="jp-app-content" ref={contentRef}>
+        <div className="jp-profile-header" ref={profileHeaderRef}>
+          <div className="jp-profile-avatar">
+            <img
+              src={avatarImage}
+              alt={`${displayName} avatar`}
+              className="jp-avatar"
+              ref={avatarRef}
+            />
+          </div>
+
+          <div className="jp-profile-meta">
+            <p className="jp-type-title">{displayName}</p>
+            <p className="jp-type-subtitle">{subtitleText}</p>
+          </div>
+
+          <div className="jp-profile-actions">
+            <button
+              type="button"
+              onClick={() => setFollowing((value) => !value)}
+              className={following ? "is-following" : ""}
             >
-              {error}
-            </div>
-          )}
+              {following ? "Following" : "Follow"}
+            </button>
+            <button type="button" className="jp-hide-s">
+              Share
+            </button>
+            <button type="button" className="jp-hide-s">
+              Message
+            </button>
+            <button type="button" className="jp-icon-button">
+              ⋯
+            </button>
+          </div>
+        </div>
 
-          {profile ? (
+        <div className="jp-profile-content">
+          <nav className="jp-content-navigation">
+            <ul>
+              {tabs.map((tab) => (
+                <li
+                  key={tab}
+                  className={tab === activeTab ? "active" : ""}
+                  onClick={() => setActiveTab(tab)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") setActiveTab(tab);
+                  }}
+                >
+                  {tab}
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="jp-profile-main">
+            {error && <div className="jp-profile-error">{error}</div>}
+
             <>
               <SectionCard
                 title="Your details"
@@ -1925,24 +1839,75 @@ const ProfilePage = () => {
                 )}
               </SectionCard>
             </>
-          ) : (
-            <SectionCard
-              title="Welcome back"
-              description="Enter your email above to unlock your personalized client hub."
-            >
-              <div
-                style={{ ...emptyStateStyle, background: brand.primarySoft }}
-              >
-                <p style={{ margin: 0 }}>
-                  <strong>Tip:</strong> Use the same email you used during
-                  booking to instantly load your profile.
-                </p>
-              </div>
-            </SectionCard>
-          )}
+          </div>
         </div>
-      </div>
 
+        <aside className="jp-profile-details">
+          <div className="jp-detail-card">
+            <p className="jp-detail-card__title">Signed in</p>
+            <p className="jp-detail-card__subtitle">
+              {contactForm.fullName || "Client"} · {contactForm.email}
+            </p>
+            <div className="jp-detail-card__actions">
+              <button type="button" onClick={loadProfile}>
+                Refresh data
+              </button>
+              <button type="button" onClick={signOut} className="primary">
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          <div className="jp-detail-grid detail-section">
+            <div>
+              <p className="jp-type-caption">Pets</p>
+              <p className="jp-type-heading-4">
+                {profile?.pets?.length ?? 0}
+              </p>
+            </div>
+            <div>
+              <p className="jp-type-caption">Bookings</p>
+              <p className="jp-type-heading-4">
+                {profile?.bookings?.length ?? 0}
+              </p>
+            </div>
+            <div>
+              <p className="jp-type-caption">Upcoming</p>
+              <p className="jp-type-heading-4">{activeBookings.length}</p>
+            </div>
+            <div className="jp-grid-icon">📊</div>
+          </div>
+
+          <div className="detail-section">
+            <p className="jp-type-caption">Description</p>
+            <p>
+              {contactForm.fullName
+                ? `${contactForm.fullName} keeps their pups in the loop with Jeroen & Paws.`
+                : "Manage your pets, appointments, and contact details in one place."}
+            </p>
+          </div>
+
+          <div className="detail-section">
+            <p className="jp-type-caption">Contact</p>
+            <ul className="jp-detail-list">
+              <li>{contactForm.email || "hello@jeroenandpaws.com"}</li>
+              <li>{contactForm.phone || "+353 85 123 4567"}</li>
+              <li>{contactForm.address || "Dublin, Ireland"}</li>
+            </ul>
+          </div>
+
+          <div className="detail-section">
+            <p className="jp-type-caption">Supporters</p>
+            <ul className="jp-detail-list">
+              <li>Jeroen & Paws family</li>
+              <li>Community walks</li>
+              <li>Pawsitive training</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+      
+      
       {selectedBooking && (
         <div
           style={{
