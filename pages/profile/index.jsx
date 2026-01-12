@@ -167,7 +167,6 @@ const ProfilePage = () => {
   const landingRef = useRef(null);
   const landingBgRef = useRef(null);
   const contentRef = useRef(null);
-  const profileHeaderRef = useRef(null);
   const avatarRef = useRef(null);
   const tabs = ["All", "Pets", "Bookings", "Details", "Supporters"];
   const coverImage =
@@ -663,15 +662,31 @@ const ProfilePage = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const updateNavOffset = () => {
+      const nav = document.querySelector(".nav");
+      const offset = nav ? nav.getBoundingClientRect().height : 0;
+      document.documentElement.style.setProperty(
+        "--jp-nav-offset",
+        `${offset}px`
+      );
+    };
+
+    updateNavOffset();
+    window.addEventListener("resize", updateNavOffset);
+    return () => window.removeEventListener("resize", updateNavOffset);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handleScroll = () => {
       const scrollPos = window.scrollY;
       const landing = landingRef.current;
       const bg = landingBgRef.current;
       const content = contentRef.current;
-      const profileHeader = profileHeaderRef.current;
       const avatar = avatarRef.current;
 
-      if (!landing || !bg || !content || !profileHeader || !avatar) return;
+      if (!landing || !bg || !content || !avatar) return;
 
       if (scrollPos < 300) {
         bg.style.marginTop = `${scrollPos / 2}px`;
@@ -692,7 +707,6 @@ const ProfilePage = () => {
         (percentage * 50) * -1 + 50
       }%)`;
       avatar.style.marginTop = `${percentage * 10}px`;
-      profileHeader.style.gridTemplateColumns = `${dimensions + 40}px auto`;
 
       if (scrollPos >= 300) {
         landing.classList.add("locked");
@@ -813,7 +827,7 @@ const ProfilePage = () => {
       </section>
 
       <div className="jp-app-content" ref={contentRef}>
-        <div className="jp-profile-header" ref={profileHeaderRef}>
+        <div className="jp-profile-header">
           <div className="jp-profile-avatar">
             <img
               src={avatarImage}
@@ -2014,5 +2028,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-
-ProfilePage.getLayout = (page) => page;

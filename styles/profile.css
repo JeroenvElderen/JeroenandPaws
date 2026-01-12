@@ -22,6 +22,9 @@
     var(--jp-background);
   color: var(--jp-ink);
   padding-bottom: 64px;
+  --jp-nav-offset: 0px;
+  --jp-profile-header-gap: 16px;
+  --jp-profile-avatar-space: 168px;
 }
 
 .jp-profile-login {
@@ -258,6 +261,7 @@
   position: relative;
   background: var(--jp-background);
   z-index: 1;
+  transition: height 0.3s ease;
 }
 
 .jp-app-landing-bg {
@@ -265,14 +269,14 @@
   height: 100%;
   background-size: cover;
   background-position: center;
+  transition: opacity 0.3s ease;
 }
 
 .jp-app-landing.locked .jp-app-landing-bg {
-  position: fixed;
-  height: 4rem;
-  top: 0;
-  left: 0;
-  z-index: 20;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .jp-app-content {
@@ -291,7 +295,9 @@
   background: var(--jp-surface);
   height: 80px;
   display: grid;
-  grid-template-columns: 168px auto;
+  grid-template-columns: var(--jp-profile-avatar-space) 1fr var(
+      --jp-profile-avatar-space
+    );
   align-items: center;
   border-radius: 18px;
   border: 1px solid var(--jp-border);
@@ -319,6 +325,9 @@
 .jp-profile-meta {
   display: grid;
   gap: 4px;
+  justify-self: center;
+  text-align: center;
+  padding: 0 8px;
 }
 
 .jp-profile-title-line {
@@ -326,6 +335,7 @@
   align-items: baseline;
   gap: 8px;
   white-space: nowrap;
+  justify-content: center;
 }
 
 .jp-profile-title-divider {
@@ -372,10 +382,10 @@
 .jp-app-content.header-locked .jp-profile-header {
   position: fixed;
   width: min(1200px, calc(100% - 32px));
-  top: 4rem;
+  top: calc(var(--jp-nav-offset) + var(--jp-profile-header-gap));
   left: 50%;
   transform: translateX(-50%);
-  grid-template-columns: 80px auto;
+  --jp-profile-avatar-space: 80px;
   z-index: 25;
 }
 
@@ -633,7 +643,7 @@
   }
 
   .jp-profile-header {
-    grid-template-columns: 80px auto;
+    --jp-profile-avatar-space: 80px;
   }
 
   .jp-avatar {
