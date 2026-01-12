@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import logo from '../../assets/images/transparent-logo.png';
 
 const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
@@ -75,9 +74,11 @@ const Navbar = () => {
         <Link href="/" className="nav_logo w-inline-block">
           <div className="nav_logo-icon">
             <Image
-              src={logo}
+              src="/logo1.svg"
               alt="Jeroen & Paws logo"
               className="nav_logo-image"
+              width={50}
+              height={50}
               priority
             />
           </div>
