@@ -198,6 +198,9 @@ const ProfilePage = () => {
   const showBookings = isAllTab || activeTab === "Bookings";
   const showSupporters = isAllTab || activeTab === "Supporters";
 
+  const showSidebar =
+    isAllTab || activeTab === "Details" || activeTab === "Supporters";
+
   const activeBookings = useMemo(() => {
     const clean = (status = "") => status?.toLowerCase();
     return (profile?.bookings || []).filter(
@@ -1830,63 +1833,65 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <aside className="jp-profile-details">
-          <div className="jp-detail-card">
-            <p className="jp-detail-card__title">Signed in</p>
-            <p className="jp-detail-card__subtitle">
-              {contactForm.fullName || "Client"} · {contactForm.email}
-            </p>
-            <div className="jp-detail-card__actions">
-              <button type="button" onClick={loadProfile}>
-                Refresh data
-              </button>
-              <button type="button" onClick={signOut} className="primary">
-                Sign out
-              </button>
+        {showSidebar && (
+          <aside className="jp-profile-details">
+            <div className="jp-detail-card">
+              <p className="jp-detail-card__title">Signed in</p>
+              <p className="jp-detail-card__subtitle">
+                {contactForm.fullName || "Client"} · {contactForm.email}
+              </p>
+              <div className="jp-detail-card__actions">
+                <button type="button" onClick={loadProfile}>
+                  Refresh data
+                </button>
+                <button type="button" onClick={signOut} className="primary">
+                  Sign out
+                </button>
+              </div>
             </div>
-          </div>
 
-          {showDetails && (
-            <>
-              <div className="jp-detail-grid detail-section">
-                <div>
-                  <p className="jp-type-caption">Pets</p>
-                  <p className="jp-type-heading-4">
-                    {profile?.pets?.length ?? 0}
+            {showDetails && (
+              <>
+                <div className="jp-detail-grid detail-section">
+                  <div>
+                    <p className="jp-type-caption">Pets</p>
+                    <p className="jp-type-heading-4">
+                      {profile?.pets?.length ?? 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="jp-type-caption">Bookings</p>
+                    <p className="jp-type-heading-4">
+                      {profile?.bookings?.length ?? 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="jp-type-caption">Upcoming</p>
+                    <p className="jp-type-heading-4">{activeBookings.length}</p>
+                  </div>
+                </div>
+
+                <div className="detail-section">
+                  <p className="jp-type-caption">Description</p>
+                  <p>
+                    {contactForm.fullName
+                      ? `${contactForm.fullName} keeps their pups in the loop with Jeroen & Paws.`
+                      : "Manage your pets, appointments, and contact details in one place."}
                   </p>
                 </div>
-                <div>
-                  <p className="jp-type-caption">Bookings</p>
-                  <p className="jp-type-heading-4">
-                    {profile?.bookings?.length ?? 0}
-                  </p>
-                </div>
-                <div>
-                  <p className="jp-type-caption">Upcoming</p>
-                  <p className="jp-type-heading-4">{activeBookings.length}</p>
-                </div>
-              </div>
 
-              <div className="detail-section">
-                <p className="jp-type-caption">Description</p>
-                <p>
-                  {contactForm.fullName
-                    ? `${contactForm.fullName} keeps their pups in the loop with Jeroen & Paws.`
-                    : "Manage your pets, appointments, and contact details in one place."}
-                </p>
-              </div>
-
-              <div className="detail-section">
-                <p className="jp-type-caption">Contact</p>
-                <ul className="jp-detail-list">
-                  <li>{contactForm.email || "hello@jeroenandpaws.com"}</li>
-                  <li>{contactForm.phone || "+353 85 123 4567"}</li>
-                  <li>{contactForm.address || "Dublin, Ireland"}</li>
-                </ul>
-              </div>
-            </>
-          )}
-        </aside>
+                <div className="detail-section">
+                  <p className="jp-type-caption">Contact</p>
+                  <ul className="jp-detail-list">
+                    <li>{contactForm.email || "hello@jeroenandpaws.com"}</li>
+                    <li>{contactForm.phone || "+353 85 123 4567"}</li>
+                    <li>{contactForm.address || "Dublin, Ireland"}</li>
+                  </ul>
+                </div>
+              </>
+            )}
+          </aside>
+        )}
       </div>
       
       
@@ -2009,3 +2014,5 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+
+ProfilePage.getLayout = (page) => page;
