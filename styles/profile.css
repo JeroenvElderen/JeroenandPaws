@@ -296,11 +296,9 @@ html { scrollbar-gutter: stable; }
   grid-column: 1 / -1;
   background: var(--jp-surface);
   height: 80px;
-  display: grid;
-  grid-template-columns: var(--jp-profile-avatar-space) 1fr var(
-      --jp-profile-avatar-space
-    );
+  display: flex;
   align-items: center;
+  justify-content: center;
   border-radius: 18px;
   border: 1px solid var(--jp-border);
   box-shadow: var(--jp-shadow-soft);
@@ -312,6 +310,10 @@ html { scrollbar-gutter: stable; }
 .jp-profile-avatar {
   display: flex;
   align-items: center;
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
 }
 
 .jp-avatar {
@@ -319,15 +321,13 @@ html { scrollbar-gutter: stable; }
   height: 128px;
   border: 4px solid var(--jp-surface);
   border-radius: 18px;
-  margin-left: 16px;
-  transform: translate(0, -50%);
+  margin-left: 0;
   object-fit: cover;
 }
 
 .jp-profile-meta {
   display: grid;
   gap: 4px;
-  justify-self: center;
   text-align: center;
   padding: 0 8px;
 }
@@ -387,7 +387,6 @@ html { scrollbar-gutter: stable; }
   top: calc(var(--jp-nav-offset) + var(--jp-profile-header-gap));
   left: 50%;
   transform: translateX(-50%);
-  --jp-profile-avatar-space: 80px;
   z-index: 25;
 }
 
