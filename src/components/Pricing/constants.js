@@ -180,3 +180,6 @@ export const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export const cancellationPolicy =
   "Free changes up to 24 hours before the visit. Within 24 hours we charge 50% to protect your sitter’s time.";
+
+export const meetAndGreetPolicy =
+  "For first-time bookings, we schedule a meet & greet. If it isn’t a fit after the meet & greet, we refund 90% and retain 10% as a reservation fee.";

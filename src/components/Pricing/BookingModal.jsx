@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { DateTime } from "luxon";
-import { cancellationPolicy, weekdayLabels, DOG_BREEDS } from "./constants";
+import { weekdayLabels, DOG_BREEDS } from "./constants";
 import {
   buildMonthMatrix,
   createEmptyDogProfile,
@@ -108,7 +108,6 @@ const BookingModal = ({ service, onClose }) => {
   const [travelNote, setTravelNote] = useState("");
   const [travelValidationState, setTravelValidationState] = useState("pending");
   const isTravelValidationPending = travelValidationState === "pending";
-  const [paymentPreference, setPaymentPreference] = useState("pay_now");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
   const addonsSectionRef = useRef(null);
@@ -1292,16 +1291,6 @@ const BookingModal = ({ service, onClose }) => {
         return;
       }
 
-      if (paymentPreference === "invoice") {
-        const bookingId = await handleBook(null, "invoice");
-        if (bookingId) {
-          setSuccess(
-            "Invoice requested — we will email payment details once the booking is confirmed."
-          );
-        }
-        return;
-      }
-
       const amountInEuro = Number(pricing.totalPrice.toFixed(2));
 
       const paymentRes = await fetch("/api/create-payment-link", {
@@ -1320,7 +1309,7 @@ const BookingModal = ({ service, onClose }) => {
 
       const paymentOrderId = paymentData.orderId;
 
-      const bookingId = await handleBook(paymentOrderId, "pay_now");
+      const bookingId = await handleBook(paymentOrderId);
       if (!bookingId) throw new Error("No booking ID returned!");
 
       if (paymentData.url) {
@@ -1334,7 +1323,7 @@ const BookingModal = ({ service, onClose }) => {
     }
   };
 
-  const handleBook = async (paymentOrderId, preference = paymentPreference) => {
+  const handleBook = async (paymentOrderId) => {
     const sortedSchedule = Object.entries(selectedSlots || {})
       .map(([date, time]) => ({ date, time }))
       .filter((entry) => entry.date)
@@ -1410,7 +1399,7 @@ const BookingModal = ({ service, onClose }) => {
         bookingMode,
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
-        payment_preference: preference,
+        payment_preference: "pay_now",
         travel_minutes: travelMinutes,
         travel_anchor: travelAnchor,
         previous_booking_time: previousBookingTime,
@@ -2043,8 +2032,6 @@ const BookingModal = ({ service, onClose }) => {
                         filteredBreeds={filteredBreeds}
                         customerDetailsRef={customerDetailsRef}
                         travelNote={travelNote}
-                        paymentPreference={paymentPreference}
-                        onPaymentPreferenceChange={setPaymentPreference}
                         allowRecurring={allowWeeklyRecurring}
                         recurrence={recurrence}
                         isMultiDay={isMultiDay}
@@ -2133,8 +2120,6 @@ const BookingModal = ({ service, onClose }) => {
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
                       travelNote={travelNote}
-                      paymentPreference={paymentPreference}
-                      onPaymentPreferenceChange={setPaymentPreference}
                       allowRecurring={allowWeeklyRecurring}
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
@@ -2222,8 +2207,6 @@ const BookingModal = ({ service, onClose }) => {
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
                       travelNote={travelNote}
-                      paymentPreference={paymentPreference}
-                      onPaymentPreferenceChange={setPaymentPreference}
                       allowRecurring={allowWeeklyRecurring}
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
@@ -2302,8 +2285,6 @@ const BookingModal = ({ service, onClose }) => {
                       filteredBreeds={filteredBreeds}
                       customerDetailsRef={customerDetailsRef}
                       travelNote={travelNote}
-                      paymentPreference={paymentPreference}
-                      onPaymentPreferenceChange={setPaymentPreference}
                       allowRecurring={allowWeeklyRecurring}
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}

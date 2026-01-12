@@ -1,6 +1,6 @@
 import React from "react";
 import SearchableSelect from "../SearchableSelect";
-import { DOG_BREEDS } from "../constants";
+import { DOG_BREEDS, meetAndGreetPolicy } from "../constants";
 import { createEmptyDogProfile } from "../utils";
 
 const BookingForm = ({
@@ -59,8 +59,6 @@ const BookingForm = ({
   onContinue,
   customerDetailsRef,
   travelNote,
-  paymentPreference,
-  onPaymentPreferenceChange,
   allowRecurring,
   recurrence,
   isMultiDay,
@@ -222,27 +220,13 @@ const BookingForm = ({
         </div>
 
         <div className="summary-card">
-          <h4>How would you like to pay?</h4>
-          <div className="actions-stack">
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="payment-preference"
-                checked={paymentPreference === "pay_now"}
-                onChange={() => onPaymentPreferenceChange?.("pay_now")}
-              />
-              <span>Pay now (payment link)</span>
-            </label>
-            <label className="chip-option">
-              <input
-                type="radio"
-                name="payment-preference"
-                checked={paymentPreference === "invoice"}
-                onChange={() => onPaymentPreferenceChange?.("invoice")}
-              />
-              <span>Request an invoice</span>
-            </label>
-          </div>
+          <h4>Meet &amp; greet policy</h4>
+          <p className="summary-value">{meetAndGreetPolicy}</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Payment</h4>
+          <p className="summary-value">Pay now</p>
         </div>
 
         <div className="actions-row">

@@ -907,9 +907,8 @@ const PricingStyles = () => (
           margin: 16px 0;
           flex: 1;
           min-height: 0;
-          overflow-y: auto;
+          overflow: visible;
           padding-right: 6px;
-          max-height: 420px;
         }
         .form-grid::-webkit-scrollbar {
           width: 6px;
@@ -936,9 +935,10 @@ const PricingStyles = () => (
           padding: 10px 12px;
           color: #f8f6ff;
           font-size: 14px;
+          height: 44px;
         }
         .input-group textarea {
-          resize: vertical;
+          resize: none;
         }
         .input-group.full-width {
           grid-column: 1 / -1;
@@ -1300,6 +1300,7 @@ const PricingStyles = () => (
           border-radius: 12px;
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          height: 44px;
         }
         .searchable-select .select-input:focus-within {
           border-color: rgba(255, 255, 255, 0.35);
@@ -1313,6 +1314,7 @@ const PricingStyles = () => (
           font-size: 15px;
           padding: 10px 4px;
           outline: none;
+          height: 100%;
         }
         
         @media (max-width: 900px) {
@@ -1416,8 +1418,8 @@ const PricingStyles = () => (
           top: calc(100% + 6px);
           left: 0;
           right: 0;
-          max-height: 240px;
-          overflow: auto;
+          max-height: calc(5 * 44px);
+          overflow-y: auto;
           padding: 6px;
           margin: 0;
           list-style: none;
@@ -1431,6 +1433,7 @@ const PricingStyles = () => (
           display: flex;
           align-items: center;
           justify-content: space-between;
+          min-height: 44px;
           padding: 10px 12px;
           margin: 2px 0;
           border-radius: 10px;
