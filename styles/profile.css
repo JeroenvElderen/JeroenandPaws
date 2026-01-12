@@ -12,6 +12,8 @@
   --jp-shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
+html { scrollbar-gutter: stable; }
+
 .jp-profile-page {
   min-height: 100vh;
   background: radial-gradient(
@@ -430,13 +432,17 @@
   box-shadow: inset 0 -3px 0 var(--jp-primary);
 }
 
+/* IMPORTANT: give the main column a higher stacking context than the sticky sidebar */
 .jp-profile-main {
   display: grid;
   gap: 20px;
+  position: relative;
+  z-index: 2;
 }
 
+/* IMPORTANT: keep sidebar sticky but ensure it does NOT visually overlay the main cards */
 .jp-profile-details {
-  background: rgba(12, 8, 31, 0.6);
+  background: rgba(12, 8, 31, 0.95); /* was rgba(12, 8, 31, 0.6) */
   padding: 16px;
   border-radius: 18px;
   border: 1px solid var(--jp-border);
@@ -445,6 +451,12 @@
   align-self: start;
   display: grid;
   gap: 24px;
+
+  position: sticky;
+  top: calc(var(--jp-nav-offset) + 24px);
+
+  /* ensures predictable paint order vs the left column */
+  z-index: 1;
 }
 
 .jp-detail-grid {
@@ -634,6 +646,10 @@
 
   .jp-profile-details {
     grid-row: 3;
+    position: static;
+    top: auto;
+    z-index: auto;
+    background: rgba(12, 8, 31, 0.95);
   }
 }
 
