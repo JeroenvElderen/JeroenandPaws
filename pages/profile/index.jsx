@@ -168,7 +168,7 @@ const ProfilePage = () => {
   const landingBgRef = useRef(null);
   const contentRef = useRef(null);
   const avatarRef = useRef(null);
-  const tabs = ["All", "Pets", "Bookings", "Details", "Supporters"];
+  const tabs = ["All", "Pets", "Bookings", "Details"];
   const coverImage =
     profile?.client?.cover_url ||
     "/images/background/bg3.jpg";
@@ -195,10 +195,8 @@ const ProfilePage = () => {
   const showDetails = isAllTab || activeTab === "Details";
   const showPets = isAllTab || activeTab === "Pets";
   const showBookings = isAllTab || activeTab === "Bookings";
-  const showSupporters = isAllTab || activeTab === "Supporters";
-
-  const showSidebar =
-    isAllTab || activeTab === "Details" || activeTab === "Supporters";
+  
+  const showSidebar = isAllTab || activeTab === "Details";
 
   const activeBookings = useMemo(() => {
     const clean = (status = "") => status?.toLowerCase();
@@ -951,7 +949,8 @@ const ProfilePage = () => {
                       <label style={{ color: brand.subtleText, fontWeight: 700 }}>
                         Service address
                       </label>
-                      <textarea
+                      <input
+                        type="text"
                         value={contactForm.address}
                         onChange={(e) =>
                           setContactForm({
@@ -966,7 +965,6 @@ const ProfilePage = () => {
                           border: `1px solid ${brand.cardBorder}`,
                           background: "rgba(255,255,255,0.04)",
                           color: brand.ink,
-                          minHeight: "72px",
                         }}
                       />
                     </div>
@@ -1818,29 +1816,6 @@ const ProfilePage = () => {
                       </p>
                     </div>
                   )}
-                </SectionCard>
-              )}
-
-              {showSupporters && (
-                <SectionCard
-                  title="Supporters"
-                  description="The people and programs cheering you on."
-                >
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      margin: 0,
-                      padding: 0,
-                      display: "grid",
-                      gap: "10px",
-                      color: brand.subtleText,
-                      fontWeight: 600,
-                    }}
-                  >
-                    <li>Jeroen & Paws family</li>
-                    <li>Community walks</li>
-                    <li>Pawsitive training</li>
-                  </ul>
                 </SectionCard>
               )}
             </>
