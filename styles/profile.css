@@ -400,6 +400,7 @@ html { scrollbar-gutter: stable; }
 
 .jp-profile-content {
   grid-row: 2;
+  grid-column: 1 / 2;
 }
 
 .jp-content-navigation ul {
@@ -452,11 +453,19 @@ html { scrollbar-gutter: stable; }
   display: grid;
   gap: 24px;
 
+  grid-column: 2 / 3;
+  grid-row: 2;
+
   position: sticky;
   top: calc(var(--jp-nav-offset) + 24px);
 
   /* ensures predictable paint order vs the left column */
   z-index: 1;
+}
+
+.jp-profile-details.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .jp-detail-grid {
@@ -644,7 +653,12 @@ html { scrollbar-gutter: stable; }
     grid-template-columns: 1fr;
   }
 
+  .jp-profile-content {
+    grid-column: 1 / -1;
+  }
+
   .jp-profile-details {
+    grid-column: 1 / -1;
     grid-row: 3;
     position: static;
     top: auto;
