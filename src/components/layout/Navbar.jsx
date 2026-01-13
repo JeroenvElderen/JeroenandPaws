@@ -5,7 +5,7 @@ import Link from 'next/link';
 const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isContactNavOpen, setIsContactNavOpen] = useState(false);
+  const [isProfileNavOpen, setIsProfileNavOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navRef = useRef(null);
 
@@ -13,8 +13,8 @@ const Navbar = () => {
     setIsMegaNavOpen(false);
   }, []);
 
-  const closeContactNav = useCallback(() => {
-    setIsContactNavOpen(false);
+  const closeProfileNav = useCallback(() => {
+    setIsProfileNavOpen(false);
   }, []);
 
   const closeMobileMenu = useCallback(() => {
@@ -23,9 +23,9 @@ const Navbar = () => {
 
   const closeAllMenus = useCallback(() => {
     closeMegaNav();
-    closeContactNav();
+    closeProfileNav();
     closeMobileMenu();
-  }, [closeMegaNav, closeContactNav, closeMobileMenu]);
+  }, [closeMegaNav, closeMobileMenu, closeProfileNav]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -61,8 +61,8 @@ const Navbar = () => {
     setIsMegaNavOpen((prev) => !prev);
   }, []);
 
-  const toggleContactNav = useCallback(() => {
-    setIsContactNavOpen((prev) => {
+  const toggleProfileNav = useCallback(() => {
+    setIsProfileNavOpen((prev) => {
       if (!prev) closeMegaNav();
       return !prev;
     });
@@ -270,49 +270,37 @@ const Navbar = () => {
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/profile" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
-                <div>Profile</div>
-              </Link>
-            </li>
-            {/* <li className ="nav_menu-list-item">
-              <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
-                  <div>
-                    Booking
-                  </div>
-              </Link>
-            </li> */}
-            <li className="nav_menu-list-item">
               <div
                 data-delay="0"
                 data-hover="false"
-                className={`nav_dropdown-menu w-dropdown${isContactNavOpen ? ' w--open' : ''}`}
+                className={`nav_dropdown-menu w-dropdown${isProfileNavOpen ? ' w--open' : ''}`}
               >
                 <div
-                  className={`nav_link on-accent-primary w-dropdown-toggle${isContactNavOpen ? ' w--open' : ''}`}
+                  className={`nav_link on-accent-primary w-dropdown-toggle${isProfileNavOpen ? ' w--open' : ''}`}
                   role="button"
                   tabIndex={0}
-                  aria-expanded={isContactNavOpen}
-                  onClick={toggleContactNav}
+                  aria-expanded={isProfileNavOpen}
+                  onClick={toggleProfileNav}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      toggleContactNav();
+                      toggleProfileNav();
                     }
                   }}
                 >
-                  <div>Contact</div>
+                  <div>Account</div>
                   <div className="nav-caret w-icon-dropdown-toggle"></div>
                 </div>
                 <nav
-                  className={`dropdown_list w-dropdown-list${isContactNavOpen ? ' w--open' : ''}`}
-                  aria-hidden={!isContactNavOpen}
+                  className={`dropdown_list w-dropdown-list${isProfileNavOpen ? ' w--open' : ''}`}
+                  aria-hidden={!isProfileNavOpen}
                 >
                   <Link
-                    href="/contact"
+                    href="/profile"
                     className="w-dropdown-link"
                     onClick={closeAllMenus}
                   >
-                    Contact
+                    Profile
                   </Link>
                   <Link
                     href="/resume-booking"
@@ -323,6 +311,18 @@ const Navbar = () => {
                   </Link>
                 </nav>
               </div>
+            </li>
+            {/* <li className ="nav_menu-list-item">
+              <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+                  <div>
+                    Booking
+                  </div>
+              </Link>
+            </li> */}
+            <li className="nav_menu-list-item">
+              <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+                <div>Contact</div>
+              </Link>
             </li>
           </ul>
         </nav>
