@@ -74,7 +74,7 @@ const Navbar = () => {
         <Link href="/" className="nav_logo w-inline-block">
           <div className="nav_logo-icon">
             <Image
-              src="/logo1.svg"
+              src="/logo3.svg"
               alt="Jeroen & Paws logo"
               className="nav_logo-image"
               width={50}
@@ -82,7 +82,6 @@ const Navbar = () => {
               priority
             />
           </div>
-          <div data-brand-name="true" className="paragraph_large margin-bottom_none">Jeroen & Paws</div>
         </Link>
       </div>
       <div className="nav_center">

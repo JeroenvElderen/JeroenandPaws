@@ -9,6 +9,12 @@ const {
 } = require("./_lib/supabase");
 const { DEFAULT_HOME_ADDRESS, validateTravelWindow } = require("./_lib/travel");
 
+const {
+  buildConfirmationBody,
+  buildNotificationBody,
+  buildConfirmationSubject,
+} = require("./_lib/confirmation-email");
+
 const ADDITIONAL_LABELS = {
   feeding: "Feeding & fresh water",
   meds: "Medication support",
@@ -36,55 +42,6 @@ const parseBody = async (req) => {
   return body ? JSON.parse(body) : {};
 };
 
-const escapeHtml = (value = "") =>
-  String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-const renderPetList = (pets = [], { includePhotos = false } = {}) =>
-  (pets || []).map((pet, i) => {
-    const name = escapeHtml(pet?.name || `Pet ${i + 1}`);
-    const breed = escapeHtml(pet?.breed || "Breed pending");
-    const photo = includePhotos
-      ? escapeHtml(
-          pet?.photo_url || pet?.photoDataUrl || pet?.photo_data_url || ""
-        )
-      : "";
-
-    return `<li><strong>${name}</strong> (${breed})${
-      photo
-        ? `<div style="margin:6px 0 0;"><img src="${photo}" alt="${name} photo"
-           style="width:140px;max-width:100%;border-radius:12px;object-fit:cover"/></div>`
-        : ""
-    }</li>`;
-  });
-
-const renderScheduleBlock = (schedule = []) =>
-  !Array.isArray(schedule) || !schedule.length
-    ? ""
-    : `<p style="margin:12px 0 8px;"><strong>Schedule:</strong></p><ul style="margin:0;padding-left:20px;">${schedule
-        .map((item, i) => {
-          const label = escapeHtml(item?.label || `Visit ${i + 1}`);
-          const start = escapeHtml(item?.start || "");
-          const end = escapeHtml(item?.end || "");
-          return `<li><strong>${label}</strong>${start ? ` — ${start}` : ""}${
-            end ? ` (ends ${end})` : ""
-          }</li>`;
-        })
-        .join("")}</ul>`;
-
-const formatRecurrenceMessage = (r) =>
-  ({
-    weekly: "Auto-renews every week.",
-    monthly: "Auto-renews every month.",
-    "every 6 months": "Auto-renews every 6 months.",
-    yearly: "Auto-renews every year.",
-    requested: "Auto-renewal requested.",
-  }[r] || "");
-
 const WINDOWS_TO_IANA = {
   "GMT Standard Time": "Europe/London",
 };
@@ -106,116 +63,6 @@ const buildFriendlyTiming = ({ start, end, timeZone = "UTC" }) => {
   };
 
   return { start: fix(start), end: fix(end), timeZone: zone };
-};
-
-const buildConfirmationBody = ({
-  clientName,
-  timing,
-  service,
-  notes,
-  pets,
-  passwordDelivery,
-  clientAddress,
-  schedule = [],
-  recurrence = "",
-  additionals = [],
-}) => {
-  const readable = service?.title || "Training";
-  const petsList = renderPetList(pets).join("");
-  const addBlock =
-    additionals.length > 0
-      ? `<p style="margin:12px 0 0;"><strong>Extras:</strong></p><ul style="margin:0;padding-left:20px;">${additionals
-          .map((i) => `<li>${escapeHtml(i)}</li>`)
-          .join("")}</ul>`
-      : "";
-  const notesBlock = notes
-    ? `<p style="margin:16px 0 0;"><strong>Notes from you:</strong><br>${escapeHtml(
-        notes
-      )}</p>`
-    : "";
-  const pwdBlock = passwordDelivery
-    ? `<p style="margin:16px 0 0;">Your temporary password: <strong>${escapeHtml(
-        passwordDelivery.temporaryPassword
-      )}</strong></p>`
-    : "";
-  const addr = clientAddress
-    ? `<p style="margin:12px 0 0;"><strong>Address:</strong><br>${escapeHtml(
-        clientAddress
-      )}</p>`
-    : "";
-
-  return `
-  <div>
-    <p>Hi ${escapeHtml(clientName)},</p>
-    <p>Thank you for booking <strong>${escapeHtml(readable)}</strong>.</p>
-    <ul>
-      <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
-      <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
-      <li><strong>Time zone:</strong> ${escapeHtml(timing.timeZone)}</li>
-    </ul>
-    <p><strong>Pets:</strong></p>
-    <ol>${petsList}</ol>
-    ${addr}
-    ${renderScheduleBlock(schedule)}
-    ${
-      formatRecurrenceMessage(recurrence)
-        ? `<p>${formatRecurrenceMessage(recurrence)}</p>`
-        : ""
-    }
-    ${addBlock}
-    ${notesBlock}
-    ${pwdBlock}
-    <p>See you soon!</p>
-  </div>`;
-};
-
-const buildNotificationBody = ({
-  service,
-  client,
-  timing,
-  notes,
-  pets,
-  schedule,
-  recurrence,
-  additionals,
-  paymentPreference,
-}) => {
-  const readable = service?.title || "Training";
-  return `
-  <div>
-    <p>New booking received:</p>
-    <ul>
-      <li><strong>Client:</strong> ${escapeHtml(
-        client?.full_name || client?.email
-      )}</li>
-      <li><strong>Email:</strong> ${escapeHtml(client?.email)}</li>
-      <li><strong>Service:</strong> ${escapeHtml(readable)}</li>
-      <li><strong>Starts:</strong> ${escapeHtml(timing.start)}</li>
-      <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
-      <li><strong>Time zone:</strong> ${escapeHtml(timing.timeZone)}</li>
-      <li><strong>Payment:</strong> ${escapeHtml(
-        paymentPreference === "invoice" ? "Invoice requested" : "Pay now"
-      )}</li>
-    </ul>
-    <p><strong>Pets:</strong></p>
-    <ol>${renderPetList(pets, { includePhotos: true }).join("")}</ol>
-    ${
-      notes
-        ? `<p><strong>Client notes:</strong><br>${escapeHtml(notes)}</p>`
-        : ""
-    }
-    ${schedule ? renderScheduleBlock(schedule) : ""}
-    ${
-      formatRecurrenceMessage(recurrence)
-        ? `<p>${formatRecurrenceMessage(recurrence)}</p>`
-        : ""
-    }
-    ${
-      additionals.length
-        ? `<p><strong>Extras:</strong> ${additionals.join(", ")}</p>`
-        : ""
-    }
-  </div>`;
 };
 
 module.exports = async (req, res) => {
@@ -364,7 +211,6 @@ module.exports = async (req, res) => {
         timeZone,
         pets: petsFromBody,
         dogCount,
-        amount: Number(amount) || null,
         payment_order_id: body.payment_order_id,
       });
       console.log("BOOKING RESULT RAW:", bookingResult);
@@ -374,6 +220,7 @@ module.exports = async (req, res) => {
         booking: bookingResult.booking,
         client: bookingResult.client,
         pets: bookingResult.pets,
+        service: bookingResult.service,
         timing,
         startIso: start.toUTC().toISO(),
         endIso: end.toUTC().toISO(),
@@ -449,13 +296,14 @@ module.exports = async (req, res) => {
         end: DateTime.now().toUTC(),
         timeZone,
       }),
-      service: { title: serviceTitle },
+      service: bookingResults[0]?.service || { title: serviceTitle },
       notes: aggregatedNotes,
       pets: petsFromBody,
       clientAddress,
       schedule: scheduleSummary,
       recurrence: recurrenceLabel || (autoRenew ? "requested" : ""),
       additionals: additionalsList,
+      amount: Number(amount) || null,
       paymentPreference,
     });
 
@@ -482,7 +330,10 @@ module.exports = async (req, res) => {
           accessToken,
           fromCalendarId: calendarId,
           to: clientEmail,
-          subject: `Booking Confirmed: ${serviceTitle || "Service"}`,
+          subject: buildConfirmationSubject({
+            pets: petsFromBody,
+            service: bookingResults[0]?.service || { title: serviceTitle },
+          }),
           body: confirmationBody,
           contentType: "HTML",
         });

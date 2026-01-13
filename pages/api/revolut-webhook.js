@@ -11,7 +11,8 @@ import { saveBookingCalendarEventId } from "../../api/_lib/supabase";
 import {
   buildConfirmationBody,
   buildNotificationBody,
-} from "./emails";
+  buildConfirmationSubject,
+} from "../../api/_lib/confirmation-email";
 
 // Invoice + OneDrive
 import { generateInvoiceNumber } from "../../api/_lib/invoices";
@@ -167,7 +168,10 @@ export default async function handler(req, res) {
       accessToken,
       fromCalendarId: process.env.OUTLOOK_CALENDAR_ID,
       to: booking.client_email,
-      subject: `Booking Confirmed: ${booking.service_title}`,
+      subject: buildConfirmationSubject({
+        pets: booking.pets,
+        service: { title: booking.service_title },
+      }),
       body: confirmationBody,
       contentType: "HTML",
     });
