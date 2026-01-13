@@ -73,6 +73,43 @@ module.exports = async function handler(req, res) {
       clientProfile = clientResult.data || {};
     }
 
+    const bookingIds = data.map((booking) => booking.id).filter(Boolean);
+    let pets = [];
+
+    if (bookingIds.length) {
+      const bookingPetsResult = await supabaseAdmin
+        .from("booking_pets")
+        .select("pet_id")
+        .in("booking_id", bookingIds);
+
+      if (bookingPetsResult.error) {
+        console.error("Supabase resume-booking pets query error:", bookingPetsResult.error);
+        return res.status(500).json({ message: "Failed to resume booking." });
+      }
+
+      const petIds = Array.from(
+        new Set(
+          (bookingPetsResult.data || [])
+            .map((row) => row.pet_id)
+            .filter(Boolean)
+        )
+      );
+
+      if (petIds.length) {
+        const petsResult = await supabaseAdmin
+          .from("pets")
+          .select("id,name,breed,notes,photo_data_url")
+          .in("id", petIds);
+
+        if (petsResult.error) {
+          console.error("Supabase resume-booking pet details error:", petsResult.error);
+          return res.status(500).json({ message: "Failed to resume booking." });
+        }
+
+        pets = petsResult.data || [];
+      }
+    }
+
     const schedule = data.map((booking) => {
       const zone = booking.time_zone || "UTC";
       const start = DateTime.fromISO(booking.start_at, { zone });
@@ -107,6 +144,7 @@ module.exports = async function handler(req, res) {
         address: primary.client_address || clientProfile.address || "",
       },
       notes: primary.notes,
+      pets,
       additionals: [],
       recurrence: "none",
       schedule,

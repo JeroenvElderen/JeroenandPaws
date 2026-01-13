@@ -124,6 +124,14 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   const draftSaveTimeoutRef = useRef(null);
   const lastDraftSignatureRef = useRef("");
   const [currentStep, setCurrentStep] = useState("calendar");
+  const resumePetIds = useMemo(
+    () =>
+      Array.isArray(resumeBooking?.pets)
+        ? resumeBooking.pets.map((pet) => pet.id).filter(Boolean)
+        : [],
+    [resumeBooking]
+  );
+  const hasResumePets = resumePetIds.length > 0;
   const hasRequiredClientInfo = useMemo(
     () =>
       Boolean(
@@ -168,6 +176,9 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     setSelectedSlots(slotMap);
     setSelectedDate(nextSelectedDate);
     setSelectedTime(nextSelectedDate ? slotMap[nextSelectedDate] || "" : "");
+    if (nextSelectedDate) {
+      setVisibleMonth(new Date(nextSelectedDate));
+    }
     setIsMultiDay(scheduleEntries.length > 1);
     setRecurrence(resumeBooking.recurrence || "none");
     setAdditionals(resumeBooking.additionals || []);
@@ -176,7 +187,13 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     setClientPhone(resumeBooking.client?.phone || "");
     setClientAddress(resumeBooking.client?.address || "");
     setNotes(resumeBooking.notes || "");
-  }, [resumeBooking]);
+  if (hasResumePets) {
+      setExistingPets(resumeBooking.pets || []);
+      setSelectedPetIds(resumePetIds);
+      setHasAttemptedPetLoad(true);
+      setShowDogDetails(false);
+    }
+  }, [hasResumePets, resumeBooking, resumePetIds]);
 
   const normalizeEircode = useCallback((value) => {
     return (value || "").replace(/\s+/g, "").toUpperCase();
@@ -565,11 +582,13 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     setError("");
     setSuccess("");
     setAvailabilityNotice("");
-    setSelectedSlots({});
-    setSelectedDate("");
-    setSelectedTime("");
-    setIsMultiDay(false);
-    setRecurrence("none");
+    if (!resumeBooking) {
+      setSelectedSlots({});
+      setSelectedDate("");
+      setSelectedTime("");
+      setIsMultiDay(false);
+      setRecurrence("none");
+    }
     try {
       const cached = getCachedAvailability(service.id);
       if (cached) {
@@ -600,6 +619,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     apiBaseUrl,
     normalizeAvailability,
     setInitialVisibleMonth,
+    resumeBooking,
     service.durationMinutes,
     service.id,
   ]);
@@ -734,11 +754,12 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   ]);
 
   useEffect(() => {
+    if (hasResumePets) return;
     setExistingPets([]);
     setSelectedPetIds([]);
     setHasAttemptedPetLoad(false);
     setShowDogDetails(true);
-  }, [clientEmail]);
+  }, [clientEmail, hasResumePets]);
 
   const applyProfileDetails = useCallback(() => {
     const client = profile?.client;
@@ -932,7 +953,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
 
       const data = await parseJsonSafely(response, requestUrl);
       setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
-      setSelectedPetIds([]);
+      setSelectedPetIds((prev) => (prev.length ? prev : resumePetIds));
       const hasPets = Array.isArray(data?.pets) && data.pets.length > 0;
 
       if (!hasPets) {
@@ -950,7 +971,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
       setIsLoadingPets(false);
       setHasAttemptedPetLoad(true);
     }
-  }, [apiBaseUrl, clientEmail, parseJsonSafely]);
+  }, [apiBaseUrl, clientEmail, parseJsonSafely, resumePetIds]);
 
   useEffect(() => {
     const selectedPets = existingPets.filter((pet) =>
