@@ -2,8 +2,9 @@ const { DateTime } = require("luxon");
 const crypto = require("crypto");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { createEvent, sendMail } = require("./_lib/graph");
-const {
+  const {
   createBookingWithProfiles,
+  deleteDraftBookingsByResumeToken,
   findAdjacentBookings,
   resolveBookingTimes,
   saveBookingCalendarEventId,
@@ -132,6 +133,7 @@ module.exports = async (req, res) => {
       amount,
       payment_preference: paymentPreference,
     } = body;
+    const resumeOnly = Boolean(body?.resume_only || body?.resumeOnly);
     const paymentOrderId = body?.payment_order_id || null;
     const resumeToken =
       normalizeResumeToken(body?.resume_token || body?.resumeToken) ||
@@ -197,6 +199,8 @@ module.exports = async (req, res) => {
     const bookingResults = [];
     const calendarResults = [];
 
+    await deleteDraftBookingsByResumeToken(resumeToken);
+
     for (const entry of preparedSchedule) {
       const { start, end } = resolveBookingTimes({
         date: entry.date,
@@ -259,7 +263,7 @@ module.exports = async (req, res) => {
         endIso: end.toUTC().toISO(),
       });
 
-      if (calendarId && accessToken && bookingResult?.booking?.id) {
+      if (!resumeOnly && calendarId && accessToken && bookingResult?.booking?.id) {
         try {
           const calendarEvent = await createEvent({
             accessToken,
@@ -363,8 +367,8 @@ module.exports = async (req, res) => {
 
     let emailStatus = { ok: false };
     const shouldSendClientEmail =
-      paymentPreference !== "pay_now" && Boolean(clientEmail);
-    if (calendarId && accessToken) {
+      !resumeOnly && paymentPreference !== "pay_now" && Boolean(clientEmail);
+    if (!resumeOnly && calendarId && accessToken) {
       try {
         if (shouldSendClientEmail) {
           await sendMail({

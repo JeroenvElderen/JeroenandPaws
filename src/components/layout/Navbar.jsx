@@ -58,8 +58,13 @@ const Navbar = () => {
   }, [closeAllMenus, closeMobileMenu]);
 
   const toggleMegaNav = useCallback(() => {
-    setIsMegaNavOpen((prev) => !prev);
-  }, []);
+    setIsMegaNavOpen((prev) => {
+      if (!prev) {
+        closeProfileNav();
+      }
+      return !prev;
+    });
+  }, [closeProfileNav]);
 
   const toggleProfileNav = useCallback(() => {
     setIsProfileNavOpen((prev) => {
@@ -292,23 +297,45 @@ const Navbar = () => {
                   <div className="nav-caret w-icon-dropdown-toggle"></div>
                 </div>
                 <nav
-                  className={`dropdown_list w-dropdown-list${isProfileNavOpen ? ' w--open' : ''}`}
+                  className={`mega-nav_dropdown-list w-dropdown-list account-dropdown${isProfileNavOpen ? ' w--open' : ''}`}
                   aria-hidden={!isProfileNavOpen}
                 >
-                  <Link
-                    href="/profile"
-                    className="w-dropdown-link"
-                    onClick={closeAllMenus}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/resume-booking"
-                    className="w-dropdown-link"
-                    onClick={closeAllMenus}
-                  >
-                    Resume booking
-                  </Link>
+                  <div className={`mega-nav_dropdown-list-wrapper account-dropdown${isProfileNavOpen ? ' w--open' : ''}`}>
+                    <ul className="grid_1-col gap-small margin-bottom_none w-list-unstyled">
+                      <li className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc673e-93dc6729">
+                        <div className="w-layout-grid grid_1-col gap-small">
+                          <div>
+                            <ul className="mega-nav_list w-list-unstyled">
+                              <li className="margin-bottom_none">
+                                <Link
+                                  href="/profile"
+                                  className="mega-nav_link-item w-inline-block"
+                                  onClick={closeAllMenus}
+                                >
+                                  <div>
+                                    <div><strong>Profile</strong></div>
+                                    <div className="paragraph_small text-color_secondary">Update your details and preferences.</div>
+                                  </div>
+                                </Link>
+                              </li>
+                              <li className="margin-bottom_none">
+                                <Link
+                                  href="/resume-booking"
+                                  className="mega-nav_link-item w-inline-block"
+                                  onClick={closeAllMenus}
+                                >
+                                  <div>
+                                    <div><strong>Resume booking</strong></div>
+                                    <div className="paragraph_small text-color_secondary">Pick up where you left off.</div>
+                                  </div>
+                                </Link>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
                 </nav>
               </div>
             </li>

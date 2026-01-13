@@ -64,6 +64,9 @@ const BookingForm = ({
   isMultiDay,
   onRecurrenceChange,
   resumeToken,
+  onSaveResumeBooking,
+  resumeSaveState,
+  showResumeToken = true,
 }) => {
   const isSummaryMode = visibleStage === "summary";
   const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
@@ -126,6 +129,13 @@ const BookingForm = ({
   if (isSummaryMode) {
     const handleCopyToken = async () => {
       if (!resumeToken || typeof navigator === "undefined") return;
+      if (onSaveResumeBooking && resumeSaveState !== "saved") {
+        const saved = await onSaveResumeBooking();
+        if (!saved) {
+          setCopyState("error");
+          return;
+        }
+      }
       try {
         await navigator.clipboard.writeText(resumeToken);
         setCopyState("copied");
@@ -142,7 +152,7 @@ const BookingForm = ({
         {success && <p className="success-banner">{success}</p>}
 
         <div className="summary-readonly">
-          {resumeToken && (
+          {resumeToken && showResumeToken && (
             <div className="summary-card">
               <h4>Resume token</h4>
               <div className="summary-list plain">

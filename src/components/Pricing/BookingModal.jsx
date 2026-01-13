@@ -110,6 +110,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   const [travelValidationState, setTravelValidationState] = useState("pending");
   const isTravelValidationPending = travelValidationState === "pending";
   const [resumeToken, setResumeToken] = useState(() => generateResumeToken());
+  const [resumeSaveState, setResumeSaveState] = useState("idle");
   const [resumeTokenCopyState, setResumeTokenCopyState] = useState("idle");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
@@ -119,7 +120,20 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
   const resumeAppliedRef = useRef(false);
+  const draftSaveInFlightRef = useRef(false);
+  const draftSaveTimeoutRef = useRef(null);
+  const lastDraftSignatureRef = useRef("");
   const [currentStep, setCurrentStep] = useState("calendar");
+  const hasRequiredClientInfo = useMemo(
+    () =>
+      Boolean(
+        clientName.trim() &&
+          clientPhone.trim() &&
+          clientEmail.trim() &&
+          clientAddress.trim()
+      ),
+    [clientAddress, clientEmail, clientName, clientPhone]
+  );
   const parsePriceValue = useCallback((value) => {
     if (value === null || value === undefined) return 0;
     if (typeof value === "number") return value;
@@ -129,21 +143,10 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     return Number.isFinite(numeric) ? numeric : 0;
   }, []);
 
-  const handleCopyResumeToken = useCallback(async () => {
-    if (!resumeToken || typeof navigator === "undefined") return;
-    try {
-      await navigator.clipboard.writeText(resumeToken);
-      setResumeTokenCopyState("copied");
-      window.setTimeout(() => setResumeTokenCopyState("idle"), 2000);
-    } catch (copyError) {
-      console.error("Failed to copy resume token", copyError);
-      setResumeTokenCopyState("error");
-    }
-  }, [resumeToken]);
-
   useEffect(() => {
     if (!resumeBooking?.resumeToken) return;
     setResumeToken(resumeBooking.resumeToken);
+    setResumeSaveState("saved");
   }, [resumeBooking]);
 
   useEffect(() => {
@@ -1007,7 +1010,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     fetchExistingPets();
   }, [canLoadPets, fetchExistingPets, hasAttemptedPetLoad, isAuthenticated]);
 
-  const preparePetPayload = () => {
+  const preparePetPayload = useCallback(() => {
     const normalizedDogs = dogs.slice(0, dogCount).map((dog) => {
       const name = (dog?.name || "").trim();
       const breed = (dog?.breed || "").trim();
@@ -1030,7 +1033,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     });
 
     return normalizedDogs.filter(Boolean);
-  };
+  }, [dogCount, dogs]);
 
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
@@ -1368,7 +1371,9 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
 
       const paymentOrderId = paymentData.orderId;
 
-      const bookingId = await handleBook(paymentOrderId);
+      const bookingId = await handleBook(paymentOrderId, {
+        paymentPreference: "pay_now",
+      });
       if (!bookingId) throw new Error("No booking ID returned!");
 
       if (paymentData.url) {
@@ -1382,7 +1387,12 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     }
   };
 
-  const handleBook = async (paymentOrderId) => {
+  const handleBook = async (paymentOrderId, options = {}) => {
+    const {
+      resumeOnly = false,
+      paymentPreference = "pay_now",
+      silent = false,
+    } = options;
     const sortedSchedule = Object.entries(selectedSlots || {})
       .map(([date, time]) => ({ date, time }))
       .filter((entry) => entry.date)
@@ -1391,12 +1401,16 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     const validSchedule = sortedSchedule.filter((entry) => Boolean(entry.time));
 
     if (!validSchedule.length) {
-      setError("Please pick at least one date and time.");
+      if (!resumeOnly) {
+        setError("Please pick at least one date and time.");
+      }
       return;
     }
 
     if (isMultiDay && validSchedule.length !== sortedSchedule.length) {
-      setError("Please choose a time for each selected day.");
+      if (!resumeOnly) {
+        setError("Please choose a time for each selected day.");
+      }
       return;
     }
 
@@ -1411,15 +1425,20 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
       !clientEmail.trim() ||
       !clientAddress.trim()
     ) {
-      setError(
-        "Please add your name, phone number, email, and address so we can confirm your booking."
-      );
+      if (!resumeOnly) {
+        setError(
+          "Please add your name, phone number, email, and address so we can confirm your booking."
+        );
+      }
       return;
     }
 
-    setIsBooking(true);
-    setError("");
-    setSuccess("");
+    const shouldMuteUi = resumeOnly || silent;
+    if (!shouldMuteUi) {
+      setIsBooking(true);
+      setError("");
+      setSuccess("");
+    }
 
     try {
       const durationMinutes = Number.isFinite(service.durationMinutes)
@@ -1459,11 +1478,12 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
         resume_token: resumeToken,
-        payment_preference: "pay_now",
+        payment_preference: paymentPreference,
         travel_minutes: travelMinutes,
         travel_anchor: travelAnchor,
         previous_booking_time: previousBookingTime,
         client_coordinates: clientCoordinates,
+        resume_only: resumeOnly,
       };
 
       const requestUrl = `${apiBaseUrl}/api/book`;
@@ -1498,14 +1518,164 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
       return bookingId;
     } catch (bookingError) {
       console.error("Booking failed", bookingError);
-      setError(
-        bookingError.message ||
-          "Unable to send booking. Please try again later."
-      );
+      if (!shouldMuteUi) {
+        setError(
+          bookingError.message ||
+            "Unable to send booking. Please try again later."
+        );
+      }
     } finally {
-      setIsBooking(false);
+      if (!shouldMuteUi) {
+        setIsBooking(false);
+      }
     }
   };
+
+  const saveDraftBooking = useCallback(
+    async ({ silent = false } = {}) => {
+      if (resumeBooking || draftSaveInFlightRef.current) return false;
+      draftSaveInFlightRef.current = true;
+
+      if (!silent) {
+        setResumeSaveState("saving");
+      }
+
+      try {
+        const bookingId = await handleBook(null, {
+          resumeOnly: true,
+          paymentPreference: "resume_only",
+          silent,
+        });
+
+        if (bookingId) {
+          setResumeSaveState("saved");
+          return true;
+        }
+
+        if (!silent) {
+          setResumeSaveState("error");
+        }
+        return false;
+      } finally {
+        draftSaveInFlightRef.current = false;
+      }
+    },
+    [handleBook, resumeBooking]
+  );
+
+  const handleSaveResumeBooking = useCallback(async () => {
+    if (resumeBooking || resumeSaveState === "saved") return true;
+    if (resumeSaveState === "saving") return false;
+
+    const saved = await saveDraftBooking();
+    if (saved) return true;
+
+    if (resumeSaveState !== "error") {
+      setResumeSaveState("error");
+    }
+    return false;
+  }, [resumeBooking, resumeSaveState, saveDraftBooking]);
+
+  useEffect(() => {
+    if (resumeBooking) return;
+    if (!resumeToken) return;
+    if (!hasRequiredClientInfo) return;
+
+    const sortedSchedule = Object.entries(selectedSlots || {})
+      .map(([date, time]) => ({ date, time }))
+      .filter((entry) => entry.date)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const validSchedule = sortedSchedule.filter((entry) => Boolean(entry.time));
+
+    if (!validSchedule.length) return;
+    if (isMultiDay && validSchedule.length !== sortedSchedule.length) return;
+
+    const petSignature = preparePetPayload().map((pet) => ({
+      id: pet.id || null,
+      name: pet.name || "",
+      breed: pet.breed || "",
+      notes: pet.notes || "",
+      photoName: pet.photoName || "",
+    }));
+
+    const draftSignature = JSON.stringify({
+      serviceId: service?.id || null,
+      schedule: validSchedule,
+      clientName: clientName.trim(),
+      clientPhone: clientPhone.trim(),
+      clientEmail: clientEmail.trim(),
+      clientAddress: clientAddress.trim(),
+      clientEircode: normalizeEircode(clientEircode),
+      notes: notes.trim(),
+      additionals,
+      dogCount,
+      pets: petSignature,
+      recurrence,
+    });
+
+    if (draftSignature === lastDraftSignatureRef.current) return;
+
+    if (draftSaveTimeoutRef.current) {
+      clearTimeout(draftSaveTimeoutRef.current);
+    }
+
+    draftSaveTimeoutRef.current = window.setTimeout(async () => {
+      const saved = await saveDraftBooking({ silent: true });
+      if (saved) {
+        lastDraftSignatureRef.current = draftSignature;
+      }
+    }, 800);
+
+    return () => {
+      if (draftSaveTimeoutRef.current) {
+        clearTimeout(draftSaveTimeoutRef.current);
+      }
+    };
+  }, [
+    additionals,
+    clientAddress,
+    clientEircode,
+    clientEmail,
+    clientName,
+    clientPhone,
+    dogCount,
+    hasRequiredClientInfo,
+    isMultiDay,
+    notes,
+    normalizeEircode,
+    preparePetPayload,
+    recurrence,
+    resumeBooking,
+    resumeToken,
+    saveDraftBooking,
+    selectedSlots,
+    service?.id,
+  ]);
+
+  const handleCopyResumeToken = useCallback(async () => {
+    if (!resumeToken || typeof navigator === "undefined") return;
+    if (!resumeBooking && resumeSaveState !== "saved") {
+      const saved = await handleSaveResumeBooking();
+      if (!saved) {
+        setResumeTokenCopyState("error");
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(resumeToken);
+      setResumeTokenCopyState("copied");
+      window.setTimeout(() => setResumeTokenCopyState("idle"), 2000);
+    } catch (copyError) {
+      console.error("Failed to copy resume token", copyError);
+      setResumeTokenCopyState("error");
+    }
+  }, [
+    handleSaveResumeBooking,
+    resumeBooking,
+    resumeSaveState,
+    resumeToken,
+  ]);
 
   useEffect(() => {
     if (!selectedDate) return;
@@ -2097,6 +2267,9 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                         isMultiDay={isMultiDay}
                         onRecurrenceChange={setRecurrence}
                         resumeToken={resumeToken}
+                        showResumeToken={hasRequiredClientInfo}
+                        onSaveResumeBooking={handleSaveResumeBooking}
+                        resumeSaveState={resumeSaveState}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />
@@ -2186,6 +2359,9 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
                       resumeToken={resumeToken}
+                      showResumeToken={hasRequiredClientInfo}
+                      onSaveResumeBooking={handleSaveResumeBooking}
+                      resumeSaveState={resumeSaveState}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("addons")}
                     />
@@ -2274,6 +2450,9 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
                       resumeToken={resumeToken}
+                      showResumeToken={hasRequiredClientInfo}
+                      onSaveResumeBooking={handleSaveResumeBooking}
+                      resumeSaveState={resumeSaveState}
                       visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2353,6 +2532,9 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
                       resumeToken={resumeToken}
+                      showResumeToken={hasRequiredClientInfo}
+                      onSaveResumeBooking={handleSaveResumeBooking}
+                      resumeSaveState={resumeSaveState}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2400,7 +2582,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       {formatCurrency(pricing.servicePrice)}
                     </li>
                   </ul>
-                  {resumeToken && (
+                  {resumeToken && hasRequiredClientInfo && (
                     <div className="price-summary__token">
                       <p className="muted small">Resume token</p>
                       <div className="selection-summary-actions">

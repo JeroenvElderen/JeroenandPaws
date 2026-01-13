@@ -4818,6 +4818,11 @@ html {
   right: 0;
 }
 
+.mega-nav_dropdown-list.account-dropdown.w--open {
+  left: auto;
+  right: auto;
+}
+
 .mega-nav_dropdown-list-wrapper {
   border-top-left-radius: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-radius);
   border-top-right-radius: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1759229239308_sizes---card--card-radius);
@@ -4846,6 +4851,15 @@ html {
   position: absolute;
   inset: 100% 0% auto;
   box-shadow: 0 8px 8px -4px #0000001a;
+}
+
+.mega-nav_dropdown-list-wrapper.account-dropdown {
+  width: min(320px, 90vw);
+}
+
+.mega-nav_dropdown-list-wrapper.account-dropdown.w--open {
+  inset: 100% auto auto 0;
+  padding: 1.25rem;
 }
 
 .mega-nav_list {
