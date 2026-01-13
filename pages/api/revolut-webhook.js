@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 // Correct shared lib imports
 import { supabase } from "../../api/_lib/supabase";
 import { getAppOnlyAccessToken } from "../../api/_lib/auth";
-import { createEvent, sendMail } from "../../api/_lib/graph";
+import { createEvent, sendMail, updateEvent } from "../../api/_lib/graph";
 import { saveBookingCalendarEventId } from "../../api/_lib/supabase";
 import {
   buildConfirmationBody,
@@ -19,6 +19,8 @@ import { generateInvoiceNumber } from "../../api/_lib/invoices";
 import { createInvoicePdf } from "../../api/_lib/invoicePdf";
 import { uploadToOneDrive } from "../../api/_lib/onedrive";
 
+const PAID_BOOKING_CATEGORY =
+  process.env.OUTLOOK_PAID_BOOKING_CATEGORY || "Paid booking";
 
 export const config = { api: { bodyParser: false } };
 
@@ -116,22 +118,42 @@ export default async function handler(req, res) {
     const start = DateTime.fromISO(booking.start_at).toUTC().toISO();
     const end = DateTime.fromISO(booking.end_at).toUTC().toISO();
 
-    const calendarEvent = await createEvent({
-      accessToken,
-      calendarId: process.env.OUTLOOK_CALENDAR_ID,
-      subject: booking.service_title,
-      start,
-      end,
-      timeZone: booking.time_zone || "UTC",
-      locationDisplayName: booking.client_address,
-      body: `Booking confirmed for ${booking.service_title}`,
-      bodyContentType: "HTML",
-    });
+    if (booking.calendar_event_id) {
+      await updateEvent({
+        accessToken,
+        calendarId: process.env.OUTLOOK_CALENDAR_ID,
+        eventId: booking.calendar_event_id,
+        updates: {
+          subject: booking.service_title,
+          body: {
+            contentType: "HTML",
+            content: `Booking confirmed for ${booking.service_title}`,
+          },
+          categories: [PAID_BOOKING_CATEGORY],
+          showAs: "busy",
+        },
+      });
+      console.log("📅 Calendar event updated");
+    } else {
+      const calendarEvent = await createEvent({
+        accessToken,
+        calendarId: process.env.OUTLOOK_CALENDAR_ID,
+        subject: booking.service_title,
+        start,
+        end,
+        timeZone: booking.time_zone || "UTC",
+        locationDisplayName: booking.client_address,
+        body: `Booking confirmed for ${booking.service_title}`,
+        bodyContentType: "HTML",
+        categories: [PAID_BOOKING_CATEGORY],
+        showAs: "busy",
+      });
 
-    if (calendarEvent?.id)
-      await saveBookingCalendarEventId(booking.id, calendarEvent.id);
+      if (calendarEvent?.id)
+        await saveBookingCalendarEventId(booking.id, calendarEvent.id);
 
-    console.log("📅 Calendar event created");
+      console.log("📅 Calendar event created");
+    }
   } catch (err) {
     console.error("❌ Calendar creation failed", err);
   }

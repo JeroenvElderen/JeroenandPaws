@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   console.log(">>> HIT /api/create-payment-link (LIVE)");
 
   try {
-    const { amount, description } = req.body;
+    const { amount, description, cancelPath } = req.body;
 
     // 🔍 Check input
     console.log("💰 Amount received:", amount);
@@ -41,6 +41,11 @@ export default async function handler(req, res) {
     console.log("🌍 Domain:", domain);
 
     // 🚀 Request body
+    const safeCancelPath =
+      typeof cancelPath === "string" && cancelPath.startsWith("/")
+        ? cancelPath
+        : "/services";
+
     const body = {
       amount: Math.round(amount * 100),
       currency: "EUR",
@@ -48,7 +53,7 @@ export default async function handler(req, res) {
       capture_mode: "AUTOMATIC",
       settle_payment: true,
       redirect_url: `${domain}/payment-success`,
-      cancel_url: `${domain}/payment-cancelled`,
+      cancel_url: `${domain}${safeCancelPath}`,
     };
     console.log("📦 Request body being sent:", body);
 

@@ -1,4 +1,5 @@
 const { DateTime } = require("luxon");
+const crypto = require("crypto");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { createEvent, sendMail } = require("./_lib/graph");
 const {
@@ -35,6 +36,9 @@ const resolveNotificationEmail = (calendarId) =>
   process.env.ADMIN_EMAIL ||
   resolveCalendarEmail(calendarId);
 
+const PENDING_PAYMENT_CATEGORY =
+  process.env.OUTLOOK_PENDING_PAYMENT_CATEGORY || "Pending payment";
+
 const parseBody = async (req) => {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -63,6 +67,25 @@ const buildFriendlyTiming = ({ start, end, timeZone = "UTC" }) => {
   };
 
   return { start: fix(start), end: fix(end), timeZone: zone };
+};
+
+const normalizeResumeToken = (value) => {
+  const cleaned = String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  if (!cleaned) return "";
+  return cleaned.match(/.{1,4}/g).join("-");
+};
+
+const generateResumeToken = () => {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(8);
+  const chars = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]);
+  const chunks = [];
+  for (let i = 0; i < chars.length; i += 4) {
+    chunks.push(chars.slice(i, i + 4).join(""));
+  }
+  return chunks.join("-");
 };
 
 module.exports = async (req, res) => {
@@ -109,6 +132,14 @@ module.exports = async (req, res) => {
       amount,
       payment_preference: paymentPreference,
     } = body;
+    const paymentOrderId = body?.payment_order_id || null;
+    const resumeToken =
+      normalizeResumeToken(body?.resume_token || body?.resumeToken) ||
+      generateResumeToken();
+    const resumeTokenExpiresAt = DateTime.now()
+      .toUTC()
+      .plus({ hours: 24 })
+      .toISO();
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
       res.statusCode = 400;
@@ -211,7 +242,9 @@ module.exports = async (req, res) => {
         timeZone,
         pets: petsFromBody,
         dogCount,
-        payment_order_id: body.payment_order_id,
+        paymentOrderId,
+        resumeToken,
+        resumeTokenExpiresAt,
       });
       console.log("BOOKING RESULT RAW:", bookingResult);
 
@@ -231,15 +264,19 @@ module.exports = async (req, res) => {
           const calendarEvent = await createEvent({
             accessToken,
             calendarId,
-            subject: serviceTitle || bookingResult?.booking?.service_title,
+            subject: `Pending payment · ${
+              serviceTitle || bookingResult?.booking?.service_title || "Service"
+            }`,
             start: start.toUTC().toISO(),
             end: end.toUTC().toISO(),
             timeZone,
             locationDisplayName: clientAddress,
-            body: `Booking confirmed for ${
+            body: `Booking pending payment for ${
               serviceTitle || bookingResult?.booking?.service_title || "Service"
-            }`,
+            }.`,
             bodyContentType: "HTML",
+            categories: [PENDING_PAYMENT_CATEGORY],
+            showAs: "tentative",
           });
 
           if (calendarEvent?.id) {
@@ -321,22 +358,27 @@ module.exports = async (req, res) => {
       recurrence: recurrenceLabel || (autoRenew ? "requested" : ""),
       additionals: additionalsList,
       paymentPreference,
+      paymentReference: paymentOrderId,
     });
 
     let emailStatus = { ok: false };
+    const shouldSendClientEmail =
+      paymentPreference !== "pay_now" && Boolean(clientEmail);
     if (calendarId && accessToken) {
       try {
-        await sendMail({
-          accessToken,
-          fromCalendarId: calendarId,
-          to: clientEmail,
-          subject: buildConfirmationSubject({
-            pets: petsFromBody,
-            service: bookingResults[0]?.service || { title: serviceTitle },
-          }),
-          body: confirmationBody,
-          contentType: "HTML",
-        });
+        if (shouldSendClientEmail) {
+          await sendMail({
+            accessToken,
+            fromCalendarId: calendarId,
+            to: clientEmail,
+            subject: buildConfirmationSubject({
+              pets: petsFromBody,
+              service: bookingResults[0]?.service || { title: serviceTitle },
+            }),
+            body: confirmationBody,
+            contentType: "HTML",
+          });
+        }
 
         const notificationEmail = resolveNotificationEmail(calendarId);
         if (notificationEmail) {
@@ -350,7 +392,7 @@ module.exports = async (req, res) => {
           });
         }
 
-        emailStatus = { ok: true };
+        emailStatus = { ok: true, client: shouldSendClientEmail };
       } catch (emailError) {
         console.error("Email send failed", emailError);
         emailStatus = { ok: false, error: emailError.message };
@@ -366,6 +408,8 @@ module.exports = async (req, res) => {
     return res.end(
       JSON.stringify({
         booking_id: primaryBookingId,
+        resume_token: resumeToken,
+        resume_token_expires_at: resumeTokenExpiresAt,
         schedule: scheduleSummary,
         recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
         bookingMode:

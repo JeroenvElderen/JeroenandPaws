@@ -11,6 +11,7 @@ import {
   buildMonthMatrix,
   createEmptyDogProfile,
   generateDemoAvailability,
+  generateResumeToken,
 } from "./utils";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -48,7 +49,7 @@ const ROUTING_COORDS = {
   W91: { lat: 53.179, lng: -6.667 },
 };
 
-const BookingModal = ({ service, onClose }) => {
+const BookingModal = ({ service, onClose, resumeBooking }) => {
   const MAX_DOGS = 4;
   const { profile, isAuthenticated, setProfile } = useAuth();
   const [customerMode, setCustomerMode] = useState(() =>
@@ -108,6 +109,8 @@ const BookingModal = ({ service, onClose }) => {
   const [travelNote, setTravelNote] = useState("");
   const [travelValidationState, setTravelValidationState] = useState("pending");
   const isTravelValidationPending = travelValidationState === "pending";
+  const [resumeToken, setResumeToken] = useState(() => generateResumeToken());
+  const [resumeTokenCopyState, setResumeTokenCopyState] = useState("idle");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
   const addonsSectionRef = useRef(null);
@@ -115,6 +118,7 @@ const BookingModal = ({ service, onClose }) => {
   const calendarSectionRef = useRef(null);
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
+  const resumeAppliedRef = useRef(false);
   const [currentStep, setCurrentStep] = useState("calendar");
   const parsePriceValue = useCallback((value) => {
     if (value === null || value === undefined) return 0;
@@ -124,6 +128,52 @@ const BookingModal = ({ service, onClose }) => {
     const numeric = Number(normalized.replace(/[^0-9.]/g, ""));
     return Number.isFinite(numeric) ? numeric : 0;
   }, []);
+
+  const handleCopyResumeToken = useCallback(async () => {
+    if (!resumeToken || typeof navigator === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(resumeToken);
+      setResumeTokenCopyState("copied");
+      window.setTimeout(() => setResumeTokenCopyState("idle"), 2000);
+    } catch (copyError) {
+      console.error("Failed to copy resume token", copyError);
+      setResumeTokenCopyState("error");
+    }
+  }, [resumeToken]);
+
+  useEffect(() => {
+    if (!resumeBooking?.resumeToken) return;
+    setResumeToken(resumeBooking.resumeToken);
+  }, [resumeBooking]);
+
+  useEffect(() => {
+    if (!resumeBooking || resumeAppliedRef.current) return;
+    resumeAppliedRef.current = true;
+
+    const scheduleEntries = Array.isArray(resumeBooking.schedule)
+      ? resumeBooking.schedule
+      : [];
+    const slotMap = scheduleEntries.reduce((acc, entry) => {
+      if (!entry?.date || !entry?.time) return acc;
+      acc[entry.date] = entry.time;
+      return acc;
+    }, {});
+
+    const dates = Object.keys(slotMap);
+    const nextSelectedDate = dates[0] || "";
+
+    setSelectedSlots(slotMap);
+    setSelectedDate(nextSelectedDate);
+    setSelectedTime(nextSelectedDate ? slotMap[nextSelectedDate] || "" : "");
+    setIsMultiDay(scheduleEntries.length > 1);
+    setRecurrence(resumeBooking.recurrence || "none");
+    setAdditionals(resumeBooking.additionals || []);
+    setClientName(resumeBooking.client?.name || "");
+    setClientEmail(resumeBooking.client?.email || "");
+    setClientPhone(resumeBooking.client?.phone || "");
+    setClientAddress(resumeBooking.client?.address || "");
+    setNotes(resumeBooking.notes || "");
+  }, [resumeBooking]);
 
   const normalizeEircode = useCallback((value) => {
     return (value || "").replace(/\s+/g, "").toUpperCase();
@@ -1293,12 +1343,21 @@ const BookingModal = ({ service, onClose }) => {
 
       const amountInEuro = Number(pricing.totalPrice.toFixed(2));
 
+      const bookingReturnPath = (() => {
+        if (typeof window === "undefined") return "/services";
+        const url = new URL(window.location.href);
+        url.searchParams.set("booking", "1");
+        url.searchParams.set("service", service.id);
+        return `${url.pathname}?${url.searchParams.toString()}`;
+      })();
+
       const paymentRes = await fetch("/api/create-payment-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amountInEuro,
           description: pricing.description || `Booking: ${service.title}`,
+          cancelPath: bookingReturnPath,
         }),
       });
 
@@ -1399,6 +1458,7 @@ const BookingModal = ({ service, onClose }) => {
         bookingMode,
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
+        resume_token: resumeToken,
         payment_preference: "pay_now",
         travel_minutes: travelMinutes,
         travel_anchor: travelAnchor,
@@ -2036,6 +2096,7 @@ const BookingModal = ({ service, onClose }) => {
                         recurrence={recurrence}
                         isMultiDay={isMultiDay}
                         onRecurrenceChange={setRecurrence}
+                        resumeToken={resumeToken}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />
@@ -2124,6 +2185,7 @@ const BookingModal = ({ service, onClose }) => {
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
+                      resumeToken={resumeToken}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("addons")}
                     />
@@ -2211,6 +2273,7 @@ const BookingModal = ({ service, onClose }) => {
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
+                      resumeToken={resumeToken}
                       visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2289,6 +2352,7 @@ const BookingModal = ({ service, onClose }) => {
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
+                      resumeToken={resumeToken}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2336,6 +2400,28 @@ const BookingModal = ({ service, onClose }) => {
                       {formatCurrency(pricing.servicePrice)}
                     </li>
                   </ul>
+                  {resumeToken && (
+                    <div className="price-summary__token">
+                      <p className="muted small">Resume token</p>
+                      <div className="selection-summary-actions">
+                        <span className="summary-chip">{resumeToken}</span>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={handleCopyResumeToken}
+                        >
+                          {resumeTokenCopyState === "copied"
+                            ? "Copied!"
+                            : resumeTokenCopyState === "error"
+                            ? "Copy failed"
+                            : "Copy"}
+                        </button>
+                      </div>
+                      <p className="muted subtle">
+                        Save this token to resume your booking within 24 hours.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -183,6 +183,8 @@ const createEvent = async ({
   attendeeEmails = [],
   timeZone = BUSINESS_TIME_ZONE,
   locationDisplayName,
+  categories,
+  showAs,
 }) => {
   const principalPath = buildPrincipalPath(calendarId);
 
@@ -213,35 +215,72 @@ const createEvent = async ({
 
   const response = await fetch(`${GRAPH_BASE}${principalPath}/events`, {
   method: "POST",
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    subject,
-    body: {
-      contentType: bodyContentType,
-      content: body,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-    start: { dateTime: start, timeZone },
-    end: { dateTime: end, timeZone },
-    attendees,
-    isReminderOn: true,
-    reminderMinutesBeforeStart: 60,
-    ...(locationDisplayName
-      ? { location: { displayName: locationDisplayName } }
-      : {}),
-  }),
-});
+    body: JSON.stringify({
+      subject,
+      body: {
+        contentType: bodyContentType,
+        content: body,
+      },
+      start: { dateTime: start, timeZone },
+      end: { dateTime: end, timeZone },
+      attendees,
+      isReminderOn: true,
+      reminderMinutesBeforeStart: 60,
+      ...(locationDisplayName
+        ? { location: { displayName: locationDisplayName } }
+        : {}),
+      ...(Array.isArray(categories) && categories.length
+        ? { categories }
+        : {}),
+      ...(showAs ? { showAs } : {}),
+    }),
+  });
 
   if (!response.ok) {
   const text = await response.text();
-  console.error("GRAPH EVENT ERROR:", {
-    status: response.status,
-    body: text
-  });
-  throw new Error(`Graph create event error: ${response.status} ${text}`);
-}
+    console.error("GRAPH EVENT ERROR:", {
+      status: response.status,
+      body: text,
+    });
+    throw new Error(`Graph create event error: ${response.status} ${text}`);
+  }
+
+  return response.json();
+};
+
+const updateEvent = async ({
+  accessToken,
+  calendarId,
+  eventId,
+  updates = {},
+}) => {
+  if (!accessToken || !eventId) return null;
+  const principalPath = buildPrincipalPath(calendarId);
+
+  const response = await fetch(
+    `${GRAPH_BASE}${principalPath}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Graph update event error: ${response.status} ${text}`);
+  }
+
+  if (response.status === 204) {
+    return { ok: true };
+  }
 
   return response.json();
 };
@@ -375,4 +414,11 @@ const sendMail = async ({
   }
 };
 
-module.exports = { createEvent, deleteEvent, getEvent, getSchedule, sendMail };
+module.exports = {
+  createEvent,
+  deleteEvent,
+  getEvent,
+  getSchedule,
+  sendMail,
+  updateEvent,
+};

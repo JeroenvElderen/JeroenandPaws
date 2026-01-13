@@ -567,6 +567,9 @@ const createBookingRecord = async ({
   timeZone,
   clientAddress,
   notes,
+  paymentOrderId,
+  resumeToken,
+  resumeTokenExpiresAt,
 }) => {
   requireSupabase();
 
@@ -582,6 +585,9 @@ const createBookingRecord = async ({
       client_address: clientAddress || null,
       notes: notes || null,
       status: "pending",
+      payment_order_id: paymentOrderId || null,
+      resume_token: resumeToken || null,
+      resume_token_expires_at: resumeTokenExpiresAt || null,
     })
     .select("*")
     .single();
@@ -648,6 +654,9 @@ const createBookingWithProfiles = async ({
   notes,
   pets = [],
   dogCount,
+  paymentOrderId,
+  resumeToken,
+  resumeTokenExpiresAt,
 }) => {
   requireSupabase();
 
@@ -686,6 +695,9 @@ const createBookingWithProfiles = async ({
     timeZone,
     clientAddress,
     notes,
+    paymentOrderId,
+  resumeToken,
+  resumeTokenExpiresAt,
   });
 
   await linkBookingPets(booking.id, ensuredPets);

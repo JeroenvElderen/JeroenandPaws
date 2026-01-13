@@ -5,11 +5,16 @@ import Link from 'next/link';
 const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isContactNavOpen, setIsContactNavOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navRef = useRef(null);
 
   const closeMegaNav = useCallback(() => {
     setIsMegaNavOpen(false);
+  }, []);
+
+  const closeContactNav = useCallback(() => {
+    setIsContactNavOpen(false);
   }, []);
 
   const closeMobileMenu = useCallback(() => {
@@ -18,8 +23,9 @@ const Navbar = () => {
 
   const closeAllMenus = useCallback(() => {
     closeMegaNav();
+    closeContactNav();
     closeMobileMenu();
-  }, [closeMegaNav, closeMobileMenu]);
+  }, [closeMegaNav, closeContactNav, closeMobileMenu]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -54,6 +60,13 @@ const Navbar = () => {
   const toggleMegaNav = useCallback(() => {
     setIsMegaNavOpen((prev) => !prev);
   }, []);
+
+  const toggleContactNav = useCallback(() => {
+    setIsContactNavOpen((prev) => {
+      if (!prev) closeMegaNav();
+      return !prev;
+    });
+  }, [closeMegaNav]);
 
   const toggleMobileMenu = useCallback(() => {
     setIsMobileMenuOpen((prev) => !prev);
@@ -269,9 +282,47 @@ const Navbar = () => {
               </Link>
             </li> */}
             <li className="nav_menu-list-item">
-              <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
-                <div>Contact</div>
-              </Link>
+              <div
+                data-delay="0"
+                data-hover="false"
+                className={`nav_dropdown-menu w-dropdown${isContactNavOpen ? ' w--open' : ''}`}
+              >
+                <div
+                  className={`nav_link on-accent-primary w-dropdown-toggle${isContactNavOpen ? ' w--open' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isContactNavOpen}
+                  onClick={toggleContactNav}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleContactNav();
+                    }
+                  }}
+                >
+                  <div>Contact</div>
+                  <div className="nav-caret w-icon-dropdown-toggle"></div>
+                </div>
+                <nav
+                  className={`dropdown_list w-dropdown-list${isContactNavOpen ? ' w--open' : ''}`}
+                  aria-hidden={!isContactNavOpen}
+                >
+                  <Link
+                    href="/contact"
+                    className="w-dropdown-link"
+                    onClick={closeAllMenus}
+                  >
+                    Contact
+                  </Link>
+                  <Link
+                    href="/resume-booking"
+                    className="w-dropdown-link"
+                    onClick={closeAllMenus}
+                  >
+                    Resume booking
+                  </Link>
+                </nav>
+              </div>
             </li>
           </ul>
         </nav>

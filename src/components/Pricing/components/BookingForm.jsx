@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import SearchableSelect from "../SearchableSelect";
 import { DOG_BREEDS, meetAndGreetPolicy } from "../constants";
 import { createEmptyDogProfile } from "../utils";
@@ -63,11 +63,13 @@ const BookingForm = ({
   recurrence,
   isMultiDay,
   onRecurrenceChange,
+  resumeToken,
 }) => {
   const isSummaryMode = visibleStage === "summary";
   const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
   const showPetDetails = ["pet", "summary"].includes(visibleStage);
   const showPricingSummary = ["summary"].includes(visibleStage);
+  const [copyState, setCopyState] = useState("idle");
   const canAdvanceToPets = Boolean(
     clientName.trim() && clientEmail.trim() && clientPhone.trim()
   );
@@ -122,12 +124,49 @@ const BookingForm = ({
     });
 
   if (isSummaryMode) {
+    const handleCopyToken = async () => {
+      if (!resumeToken || typeof navigator === "undefined") return;
+      try {
+        await navigator.clipboard.writeText(resumeToken);
+        setCopyState("copied");
+        window.setTimeout(() => setCopyState("idle"), 2000);
+      } catch (copyError) {
+        console.error("Failed to copy resume token", copyError);
+        setCopyState("error");
+      }
+    };
+
     return (
       <>
         {error && <p className="error-banner">{error}</p>}
         {success && <p className="success-banner">{success}</p>}
 
         <div className="summary-readonly">
+          {resumeToken && (
+            <div className="summary-card">
+              <h4>Resume token</h4>
+              <div className="summary-list plain">
+                <p className="summary-value">{resumeToken}</p>
+                <p className="muted subtle">
+                  Save this token to resume your booking within 24 hours.
+                </p>
+              </div>
+              <div className="button-group">
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={handleCopyToken}
+                >
+                  {copyState === "copied"
+                    ? "Copied!"
+                    : copyState === "error"
+                    ? "Copy failed"
+                    : "Copy token"}
+                </button>
+              </div>
+            </div>
+          )}
+          
           <div className="summary-card">
             <h4>Service</h4>
             <p className="summary-value">{service?.title || "Selected service"}</p>

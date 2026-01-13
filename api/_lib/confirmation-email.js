@@ -307,6 +307,7 @@ const buildNotificationBody = ({
   recurrence = "",
   additionals = [],
   paymentPreference,
+  paymentReference,
 }) => {
   const readableService = service?.title || service?.serviceTitle || "Service";
   const petDetails = renderPetList(pets, { includePhotos: true });
@@ -319,6 +320,12 @@ const buildNotificationBody = ({
   const paymentBlock = paymentPreference
     ? `<li><strong>Payment:</strong> ${escapeHtml(
         paymentPreference === "invoice" ? "Invoice requested" : "Pay now"
+      )}</li>`
+    : "";
+
+  const paymentReferenceBlock = paymentReference
+    ? `<li><strong>Payment reference:</strong> ${escapeHtml(
+        paymentReference
       )}</li>`
     : "";
 
@@ -341,6 +348,7 @@ const buildNotificationBody = ({
       <li><strong>Ends:</strong> ${escapeHtml(timing.end)}</li>
       <li><strong>Time zone:</strong> ${escapeHtml(timing.timeZone)}</li>
       ${paymentBlock}
+      ${paymentReferenceBlock}
     </ul>
     <p><strong>Pets:</strong></p>
     <ol style="margin:0;padding-left:20px;">${petDetails.join("")}</ol>

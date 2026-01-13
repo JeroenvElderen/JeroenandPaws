@@ -91,3 +91,21 @@ export const createEmptyDogProfile = () => ({
   photoName: "",
   profileId: null,
 });
+
+const RESUME_TOKEN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+export const generateResumeToken = (segments = 2, segmentLength = 4) => {
+  const totalLength = Math.max(1, segments) * Math.max(1, segmentLength);
+  const randomValues = Array.from({ length: totalLength }, () =>
+    RESUME_TOKEN_ALPHABET.charAt(
+      Math.floor(Math.random() * RESUME_TOKEN_ALPHABET.length)
+    )
+  );
+
+  const chunks = [];
+  for (let i = 0; i < randomValues.length; i += segmentLength) {
+    chunks.push(randomValues.slice(i, i + segmentLength).join(""));
+  }
+
+  return chunks.join("-");
+};
