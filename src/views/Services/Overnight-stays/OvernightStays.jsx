@@ -26,6 +26,7 @@ const OvernightStays = () => {
           id: service.slug,
           title: service.title,
           description: service.description || "",
+          category: service.category || "Overnight Support",
           price: service.price || "Tailored",
           label: service.duration_minutes === 1440 ? "Boarding — 24 hrs" : "Custom duration",
           duration: service.duration_minutes === 1440 ? "Overnight Stay" : "Custom Duration",

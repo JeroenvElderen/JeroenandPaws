@@ -99,11 +99,14 @@ const useServiceBooking = ({
         const payload = await response.json();
         const resumeServiceId =
           payload?.service?.slug || payload?.service?.id || null;
+        const resumeCategory = payload?.service?.category || null;
         if (!resumeServiceId) return;
 
-        const matchingService = services.find(
-          (service) => service?.id === resumeServiceId
-        );
+        const matchingService = services.find((service) => {
+          if (service?.id === resumeServiceId) return true;
+          if (!resumeCategory) return false;
+          return service?.category === resumeCategory;
+        });
 
         if (matchingService) {
           setResumeBooking(payload);

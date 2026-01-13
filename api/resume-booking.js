@@ -1,5 +1,5 @@
 const { DateTime } = require("luxon");
-const { supabaseAdmin } = require("./_lib/supabase");
+const { getServiceByIdentifier, supabaseAdmin } = require("./_lib/supabase");
 
 const normalizeResumeToken = (value) => {
   const cleaned = String(value || "")
@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await supabaseAdmin
       .from("bookings")
       .select(
-        "id, client_id, service_id, service_title, start_at, end_at, time_zone, client_address, notes, resume_token, resume_token_expires_at, services_catalog(slug,title)"
+        "id, client_id, service_id, service_title, start_at, end_at, time_zone, client_address, notes, resume_token, resume_token_expires_at, services_catalog(slug,title,category)"
       )
       .eq("resume_token", token)
       .gt("resume_token_expires_at", nowIso)
@@ -51,6 +51,11 @@ module.exports = async function handler(req, res) {
     }
 
     const primary = data[0];
+    const resolvedService =
+      primary.services_catalog ||
+      (primary.service_id
+        ? await getServiceByIdentifier(primary.service_id)
+        : null);
     let clientProfile = {};
 
     if (primary.client_id) {
@@ -90,9 +95,10 @@ module.exports = async function handler(req, res) {
       resumeTokenExpiresAt: primary.resume_token_expires_at,
       service: {
         // keep your current behavior: id is slug when available, otherwise service_id
-        id: primary.services_catalog?.slug || primary.service_id,
-        title: primary.service_title,
-        slug: primary.services_catalog?.slug || null,
+        id: resolvedService?.slug || primary.service_id,
+        title: primary.service_title || resolvedService?.title,
+        slug: resolvedService?.slug || null,
+        category: resolvedService?.category || null,
       },
       client: {
         name: clientProfile.full_name || "",

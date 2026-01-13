@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 
+const CATEGORY_ROUTE_MAP = {
+  "Daily Strolls": "daily-strolls",
+  "Group Adventures": "group-adventures",
+  "Solo Journeys": "solo-journeys",
+  "Overnight Support": "overnight-stays",
+  "Daytime Care": "daytime-care",
+  "Home Visits": "home-check-ins",
+  Training: "training-help",
+  "Custom Care": "custom-solutions",
+};
+
 const ResumeBookingPage = () => {
   const router = useRouter();
   const [token, setToken] = useState("");
@@ -27,6 +38,7 @@ const ResumeBookingPage = () => {
       const payload = await response.json();
       const serviceSlug = payload?.service?.slug || payload?.service?.id;
       const serviceId = payload?.service?.id || payload?.service?.slug;
+      const category = payload?.service?.category;
 
       if (!serviceSlug || !serviceId) {
         throw new Error("Missing service details for this booking.");
@@ -38,7 +50,12 @@ const ResumeBookingPage = () => {
         resume: payload.resumeToken || token,
       });
 
-      await router.push(`/services/${serviceSlug}?${params.toString()}`);
+      const categoryRoute = category ? CATEGORY_ROUTE_MAP[category] : null;
+      const resumePath = categoryRoute
+        ? `/services/${categoryRoute}?${params.toString()}`
+        : `/services/${serviceSlug}?${params.toString()}`;
+
+      await router.push(resumePath);
     } catch (resumeError) {
       setError(resumeError.message || "Unable to resume booking.");
       setStatus("error");

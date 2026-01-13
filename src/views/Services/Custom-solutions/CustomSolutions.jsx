@@ -24,6 +24,7 @@ const CustomSolutions = () => {
         id: service.slug,
         title: service.title,
         description: service.description || "",
+        category: service.category || "Custom Care",
         price: service.price || "Custom Quote",
         label: service.duration_minutes ? "Multi-Session" : "Tailored Care",
         duration: service.duration_minutes ? "Multi-Session" : "Custom Plan",

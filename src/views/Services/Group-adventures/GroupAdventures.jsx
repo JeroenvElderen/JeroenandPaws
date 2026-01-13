@@ -26,6 +26,7 @@ const GroupAdventures = () => {
           id: service.slug,
           title: service.title,
           description: service.description || "",
+          category: service.category || "Group Adventures",
           price: service.price || "Custom",
           label: service.duration_minutes
             ? `${service.duration_minutes / 60}-Hour Adventure`

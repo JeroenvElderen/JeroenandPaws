@@ -26,6 +26,7 @@ const SoloJourneys = () => {
           id: service.slug,
           title: service.title,
           description: service.description || "",
+          category: service.category || "Solo Journeys",
           price: service.price || "Tailored",
           label: service.duration_minutes
             ? `${service.duration_minutes / 60}-Hour Journey`

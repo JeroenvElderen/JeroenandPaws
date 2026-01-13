@@ -25,6 +25,7 @@ const TrainingHelp = () => {
           id: service.slug,
           title: service.title,
           description: service.description || "",
+          category: service.category || "Training",
           price: service.price || "Tailored",
           label: service.duration_minutes
             ? `${service.duration_minutes}-Min Session`
