@@ -11,7 +11,6 @@ import {
   buildMonthMatrix,
   createEmptyDogProfile,
   generateDemoAvailability,
-  generateResumeToken,
 } from "./utils";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -49,7 +48,7 @@ const ROUTING_COORDS = {
   W91: { lat: 53.179, lng: -6.667 },
 };
 
-const BookingModal = ({ service, onClose, resumeBooking }) => {
+const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
   const { profile, isAuthenticated, setProfile } = useAuth();
   const [customerMode, setCustomerMode] = useState(() =>
@@ -109,9 +108,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   const [travelNote, setTravelNote] = useState("");
   const [travelValidationState, setTravelValidationState] = useState("pending");
   const isTravelValidationPending = travelValidationState === "pending";
-  const [resumeToken, setResumeToken] = useState(() => generateResumeToken());
-  const [resumeSaveState, setResumeSaveState] = useState("idle");
-  const [resumeTokenCopyState, setResumeTokenCopyState] = useState("idle");
   const customerDetailsRef = useRef(null);
   const addOnDropdownRef = useRef(null);
   const addonsSectionRef = useRef(null);
@@ -119,29 +115,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   const calendarSectionRef = useRef(null);
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
-  const resumeAppliedRef = useRef(false);
-  const draftSaveInFlightRef = useRef(false);
-  const draftSaveTimeoutRef = useRef(null);
-  const lastDraftSignatureRef = useRef("");
   const [currentStep, setCurrentStep] = useState("calendar");
-  const resumePetIds = useMemo(
-    () =>
-      Array.isArray(resumeBooking?.pets)
-        ? resumeBooking.pets.map((pet) => pet.id).filter(Boolean)
-        : [],
-    [resumeBooking]
-  );
-  const hasResumePets = resumePetIds.length > 0;
-  const hasRequiredClientInfo = useMemo(
-    () =>
-      Boolean(
-        clientName.trim() &&
-          clientPhone.trim() &&
-          clientEmail.trim() &&
-          clientAddress.trim()
-      ),
-    [clientAddress, clientEmail, clientName, clientPhone]
-  );
   const parsePriceValue = useCallback((value) => {
     if (value === null || value === undefined) return 0;
     if (typeof value === "number") return value;
@@ -151,49 +125,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     return Number.isFinite(numeric) ? numeric : 0;
   }, []);
 
-  useEffect(() => {
-    if (!resumeBooking?.resumeToken) return;
-    setResumeToken(resumeBooking.resumeToken);
-    setResumeSaveState("saved");
-  }, [resumeBooking]);
-
-  useEffect(() => {
-    if (!resumeBooking || resumeAppliedRef.current) return;
-    resumeAppliedRef.current = true;
-
-    const scheduleEntries = Array.isArray(resumeBooking.schedule)
-      ? resumeBooking.schedule
-      : [];
-    const slotMap = scheduleEntries.reduce((acc, entry) => {
-      if (!entry?.date || !entry?.time) return acc;
-      acc[entry.date] = entry.time;
-      return acc;
-    }, {});
-
-    const dates = Object.keys(slotMap);
-    const nextSelectedDate = dates[0] || "";
-
-    setSelectedSlots(slotMap);
-    setSelectedDate(nextSelectedDate);
-    setSelectedTime(nextSelectedDate ? slotMap[nextSelectedDate] || "" : "");
-    if (nextSelectedDate) {
-      setVisibleMonth(new Date(nextSelectedDate));
-    }
-    setIsMultiDay(scheduleEntries.length > 1);
-    setRecurrence(resumeBooking.recurrence || "none");
-    setAdditionals(resumeBooking.additionals || []);
-    setClientName(resumeBooking.client?.name || "");
-    setClientEmail(resumeBooking.client?.email || "");
-    setClientPhone(resumeBooking.client?.phone || "");
-    setClientAddress(resumeBooking.client?.address || "");
-    setNotes(resumeBooking.notes || "");
-  if (hasResumePets) {
-      setExistingPets(resumeBooking.pets || []);
-      setSelectedPetIds(resumePetIds);
-      setHasAttemptedPetLoad(true);
-      setShowDogDetails(false);
-    }
-  }, [hasResumePets, resumeBooking, resumePetIds]);
 
   const normalizeEircode = useCallback((value) => {
     return (value || "").replace(/\s+/g, "").toUpperCase();
@@ -582,13 +513,11 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     setError("");
     setSuccess("");
     setAvailabilityNotice("");
-    if (!resumeBooking) {
-      setSelectedSlots({});
-      setSelectedDate("");
-      setSelectedTime("");
-      setIsMultiDay(false);
-      setRecurrence("none");
-    }
+    setSelectedSlots({});
+    setSelectedDate("");
+    setSelectedTime("");
+    setIsMultiDay(false);
+    setRecurrence("none");
     try {
       const cached = getCachedAvailability(service.id);
       if (cached) {
@@ -619,7 +548,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     apiBaseUrl,
     normalizeAvailability,
     setInitialVisibleMonth,
-    resumeBooking,
     service.durationMinutes,
     service.id,
   ]);
@@ -754,12 +682,11 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   ]);
 
   useEffect(() => {
-    if (hasResumePets) return;
     setExistingPets([]);
     setSelectedPetIds([]);
     setHasAttemptedPetLoad(false);
     setShowDogDetails(true);
-  }, [clientEmail, hasResumePets]);
+  }, [clientEmail]);
 
   const applyProfileDetails = useCallback(() => {
     const client = profile?.client;
@@ -953,7 +880,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
 
       const data = await parseJsonSafely(response, requestUrl);
       setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
-      setSelectedPetIds((prev) => (prev.length ? prev : resumePetIds));
       const hasPets = Array.isArray(data?.pets) && data.pets.length > 0;
 
       if (!hasPets) {
@@ -971,7 +897,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
       setIsLoadingPets(false);
       setHasAttemptedPetLoad(true);
     }
-  }, [apiBaseUrl, clientEmail, parseJsonSafely, resumePetIds]);
+  }, [apiBaseUrl, clientEmail, parseJsonSafely]);
 
   useEffect(() => {
     const selectedPets = existingPets.filter((pet) =>
@@ -1409,11 +1335,7 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
   };
 
   const handleBook = async (paymentOrderId, options = {}) => {
-    const {
-      resumeOnly = false,
-      paymentPreference = "pay_now",
-      silent = false,
-    } = options;
+    const { paymentPreference = "pay_now" } = options;
     const sortedSchedule = Object.entries(selectedSlots || {})
       .map(([date, time]) => ({ date, time }))
       .filter((entry) => entry.date)
@@ -1422,16 +1344,12 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
     const validSchedule = sortedSchedule.filter((entry) => Boolean(entry.time));
 
     if (!validSchedule.length) {
-      if (!resumeOnly) {
-        setError("Please pick at least one date and time.");
-      }
+      setError("Please pick at least one date and time.");
       return;
     }
 
     if (isMultiDay && validSchedule.length !== sortedSchedule.length) {
-      if (!resumeOnly) {
-        setError("Please choose a time for each selected day.");
-      }
+      setError("Please choose a time for each selected day.");
       return;
     }
 
@@ -1446,20 +1364,15 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
       !clientEmail.trim() ||
       !clientAddress.trim()
     ) {
-      if (!resumeOnly) {
-        setError(
-          "Please add your name, phone number, email, and address so we can confirm your booking."
-        );
-      }
+      setError(
+        "Please add your name, phone number, email, and address so we can confirm your booking."
+      );
       return;
     }
 
-    const shouldMuteUi = resumeOnly || silent;
-    if (!shouldMuteUi) {
-      setIsBooking(true);
-      setError("");
-      setSuccess("");
-    }
+    setIsBooking(true);
+    setError("");
+    setSuccess("");
 
     try {
       const durationMinutes = Number.isFinite(service.durationMinutes)
@@ -1498,13 +1411,11 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
         bookingMode,
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
-        resume_token: resumeToken,
         payment_preference: paymentPreference,
         travel_minutes: travelMinutes,
         travel_anchor: travelAnchor,
         previous_booking_time: previousBookingTime,
         client_coordinates: clientCoordinates,
-        resume_only: resumeOnly,
       };
 
       const requestUrl = `${apiBaseUrl}/api/book`;
@@ -1539,164 +1450,14 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
       return bookingId;
     } catch (bookingError) {
       console.error("Booking failed", bookingError);
-      if (!shouldMuteUi) {
-        setError(
-          bookingError.message ||
-            "Unable to send booking. Please try again later."
-        );
-      }
+      setError(
+        bookingError.message ||
+          "Unable to send booking. Please try again later."
+      );
     } finally {
-      if (!shouldMuteUi) {
-        setIsBooking(false);
-      }
+      setIsBooking(false);
     }
   };
-
-  const saveDraftBooking = useCallback(
-    async ({ silent = false } = {}) => {
-      if (resumeBooking || draftSaveInFlightRef.current) return false;
-      draftSaveInFlightRef.current = true;
-
-      if (!silent) {
-        setResumeSaveState("saving");
-      }
-
-      try {
-        const bookingId = await handleBook(null, {
-          resumeOnly: true,
-          paymentPreference: "resume_only",
-          silent,
-        });
-
-        if (bookingId) {
-          setResumeSaveState("saved");
-          return true;
-        }
-
-        if (!silent) {
-          setResumeSaveState("error");
-        }
-        return false;
-      } finally {
-        draftSaveInFlightRef.current = false;
-      }
-    },
-    [handleBook, resumeBooking]
-  );
-
-  const handleSaveResumeBooking = useCallback(async () => {
-    if (resumeBooking || resumeSaveState === "saved") return true;
-    if (resumeSaveState === "saving") return false;
-
-    const saved = await saveDraftBooking();
-    if (saved) return true;
-
-    if (resumeSaveState !== "error") {
-      setResumeSaveState("error");
-    }
-    return false;
-  }, [resumeBooking, resumeSaveState, saveDraftBooking]);
-
-  useEffect(() => {
-    if (resumeBooking) return;
-    if (!resumeToken) return;
-    if (!hasRequiredClientInfo) return;
-
-    const sortedSchedule = Object.entries(selectedSlots || {})
-      .map(([date, time]) => ({ date, time }))
-      .filter((entry) => entry.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
-    const validSchedule = sortedSchedule.filter((entry) => Boolean(entry.time));
-
-    if (!validSchedule.length) return;
-    if (isMultiDay && validSchedule.length !== sortedSchedule.length) return;
-
-    const petSignature = preparePetPayload().map((pet) => ({
-      id: pet.id || null,
-      name: pet.name || "",
-      breed: pet.breed || "",
-      notes: pet.notes || "",
-      photoName: pet.photoName || "",
-    }));
-
-    const draftSignature = JSON.stringify({
-      serviceId: service?.id || null,
-      schedule: validSchedule,
-      clientName: clientName.trim(),
-      clientPhone: clientPhone.trim(),
-      clientEmail: clientEmail.trim(),
-      clientAddress: clientAddress.trim(),
-      clientEircode: normalizeEircode(clientEircode),
-      notes: notes.trim(),
-      additionals,
-      dogCount,
-      pets: petSignature,
-      recurrence,
-    });
-
-    if (draftSignature === lastDraftSignatureRef.current) return;
-
-    if (draftSaveTimeoutRef.current) {
-      clearTimeout(draftSaveTimeoutRef.current);
-    }
-
-    draftSaveTimeoutRef.current = window.setTimeout(async () => {
-      const saved = await saveDraftBooking({ silent: true });
-      if (saved) {
-        lastDraftSignatureRef.current = draftSignature;
-      }
-    }, 800);
-
-    return () => {
-      if (draftSaveTimeoutRef.current) {
-        clearTimeout(draftSaveTimeoutRef.current);
-      }
-    };
-  }, [
-    additionals,
-    clientAddress,
-    clientEircode,
-    clientEmail,
-    clientName,
-    clientPhone,
-    dogCount,
-    hasRequiredClientInfo,
-    isMultiDay,
-    notes,
-    normalizeEircode,
-    preparePetPayload,
-    recurrence,
-    resumeBooking,
-    resumeToken,
-    saveDraftBooking,
-    selectedSlots,
-    service?.id,
-  ]);
-
-  const handleCopyResumeToken = useCallback(async () => {
-    if (!resumeToken || typeof navigator === "undefined") return;
-    if (!resumeBooking && resumeSaveState !== "saved") {
-      const saved = await handleSaveResumeBooking();
-      if (!saved) {
-        setResumeTokenCopyState("error");
-        return;
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(resumeToken);
-      setResumeTokenCopyState("copied");
-      window.setTimeout(() => setResumeTokenCopyState("idle"), 2000);
-    } catch (copyError) {
-      console.error("Failed to copy resume token", copyError);
-      setResumeTokenCopyState("error");
-    }
-  }, [
-    handleSaveResumeBooking,
-    resumeBooking,
-    resumeSaveState,
-    resumeToken,
-  ]);
 
   useEffect(() => {
     if (!selectedDate) return;
@@ -2287,10 +2048,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                         recurrence={recurrence}
                         isMultiDay={isMultiDay}
                         onRecurrenceChange={setRecurrence}
-                        resumeToken={resumeToken}
-                        showResumeToken={hasRequiredClientInfo}
-                        onSaveResumeBooking={handleSaveResumeBooking}
-                        resumeSaveState={resumeSaveState}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />
@@ -2379,10 +2136,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
-                      resumeToken={resumeToken}
-                      showResumeToken={hasRequiredClientInfo}
-                      onSaveResumeBooking={handleSaveResumeBooking}
-                      resumeSaveState={resumeSaveState}
                       visibleStage="pet"
                       onContinue={() => goToStepAndScroll("addons")}
                     />
@@ -2470,10 +2223,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
-                      resumeToken={resumeToken}
-                      showResumeToken={hasRequiredClientInfo}
-                      onSaveResumeBooking={handleSaveResumeBooking}
-                      resumeSaveState={resumeSaveState}
                       visibleStage="addons"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2552,10 +2301,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       recurrence={recurrence}
                       isMultiDay={isMultiDay}
                       onRecurrenceChange={setRecurrence}
-                      resumeToken={resumeToken}
-                      showResumeToken={hasRequiredClientInfo}
-                      onSaveResumeBooking={handleSaveResumeBooking}
-                      resumeSaveState={resumeSaveState}
                       visibleStage="summary"
                       onContinue={() => goToStepAndScroll("summary")}
                     />
@@ -2603,28 +2348,6 @@ const BookingModal = ({ service, onClose, resumeBooking }) => {
                       {formatCurrency(pricing.servicePrice)}
                     </li>
                   </ul>
-                  {resumeToken && hasRequiredClientInfo && (
-                    <div className="price-summary__token">
-                      <p className="muted small">Resume token</p>
-                      <div className="selection-summary-actions">
-                        <span className="summary-chip">{resumeToken}</span>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={handleCopyResumeToken}
-                        >
-                          {resumeTokenCopyState === "copied"
-                            ? "Copied!"
-                            : resumeTokenCopyState === "error"
-                            ? "Copy failed"
-                            : "Copy"}
-                        </button>
-                      </div>
-                      <p className="muted subtle">
-                        Save this token to resume your booking within 24 hours.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
