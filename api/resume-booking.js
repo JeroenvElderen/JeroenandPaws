@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await supabaseAdmin
       .from("bookings")
       .select(
-        "id, service_id, service_title, start_at, end_at, time_zone, client_name, client_email, client_phone, client_address, notes, additionals, recurrence, resume_token, resume_token_expires_at, services_catalog(slug,title)"
+        "id, client_id, service_id, service_title, start_at, end_at, time_zone, client_address, notes, resume_token, resume_token_expires_at, services_catalog(slug,title)"
       )
       .eq("resume_token", token)
       .gt("resume_token_expires_at", nowIso)
@@ -51,6 +51,22 @@ module.exports = async function handler(req, res) {
     }
 
     const primary = data[0];
+    let clientProfile = {};
+
+    if (primary.client_id) {
+      const clientResult = await supabaseAdmin
+        .from("clients")
+        .select("full_name,email,phone_number,address")
+        .eq("id", primary.client_id)
+        .maybeSingle();
+
+      if (clientResult.error) {
+        console.error("Supabase resume-booking client query error:", clientResult.error);
+        return res.status(500).json({ message: "Failed to resume booking." });
+      }
+
+      clientProfile = clientResult.data || {};
+    }
 
     const schedule = data.map((booking) => {
       const zone = booking.time_zone || "UTC";
@@ -79,14 +95,14 @@ module.exports = async function handler(req, res) {
         slug: primary.services_catalog?.slug || null,
       },
       client: {
-        name: primary.client_name,
-        email: primary.client_email,
-        phone: primary.client_phone,
-        address: primary.client_address,
+        name: clientProfile.full_name || "",
+        email: clientProfile.email || "",
+        phone: clientProfile.phone_number || "",
+        address: primary.client_address || clientProfile.address || "",
       },
       notes: primary.notes,
-      additionals: primary.additionals || [],
-      recurrence: primary.recurrence || "none",
+      additionals: [],
+      recurrence: "none",
       schedule,
     });
   } catch (error) {
