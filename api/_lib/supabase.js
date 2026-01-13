@@ -568,8 +568,6 @@ const createBookingRecord = async ({
   clientAddress,
   notes,
   paymentOrderId,
-  resumeToken,
-  resumeTokenExpiresAt,
 }) => {
   requireSupabase();
 
@@ -586,8 +584,6 @@ const createBookingRecord = async ({
       notes: notes || null,
       status: "pending",
       payment_order_id: paymentOrderId || null,
-      resume_token: resumeToken || null,
-      resume_token_expires_at: resumeTokenExpiresAt || null,
     })
     .select("*")
     .single();
@@ -640,49 +636,6 @@ const deleteBookingById = async (bookingId) => {
   return deleteResult.data;
 };
 
-const deleteDraftBookingsByResumeToken = async (resumeToken) => {
-  requireSupabase();
-
-  if (!resumeToken) return [];
-
-  const { data: draftBookings, error: selectError } = await supabaseAdmin
-    .from("bookings")
-    .select("id")
-    .eq("resume_token", resumeToken)
-    .or("payment_status.is.null,payment_status.neq.paid");
-
-  if (selectError) {
-    throw selectError;
-  }
-
-  const bookingIds = (draftBookings || [])
-    .map((booking) => booking.id)
-    .filter(Boolean);
-
-  if (bookingIds.length === 0) return [];
-
-  const petDeleteResult = await supabaseAdmin
-    .from("booking_pets")
-    .delete()
-    .in("booking_id", bookingIds);
-
-  if (petDeleteResult.error) {
-    throw petDeleteResult.error;
-  }
-
-  const deleteResult = await supabaseAdmin
-    .from("bookings")
-    .delete()
-    .in("id", bookingIds)
-    .select("id");
-
-  if (deleteResult.error) {
-    throw deleteResult.error;
-  }
-
-  return deleteResult.data;
-};
-
 const createBookingWithProfiles = async ({
   date,
   time,
@@ -698,8 +651,6 @@ const createBookingWithProfiles = async ({
   pets = [],
   dogCount,
   paymentOrderId,
-  resumeToken,
-  resumeTokenExpiresAt,
 }) => {
   requireSupabase();
 
@@ -739,8 +690,6 @@ const createBookingWithProfiles = async ({
     clientAddress,
     notes,
     paymentOrderId,
-  resumeToken,
-  resumeTokenExpiresAt,
   });
 
   await linkBookingPets(booking.id, ensuredPets);
@@ -775,7 +724,6 @@ module.exports = {
   findAuthUserByEmail,
   hashPassword,
   deleteBookingById,
-  deleteDraftBookingsByResumeToken,
   uploadPetPhoto,
   deletePetPhotoFromStorage,
   createSignedPetPhotoUrl,

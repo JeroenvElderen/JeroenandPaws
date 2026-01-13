@@ -318,18 +318,6 @@ const Navbar = () => {
                                   </div>
                                 </Link>
                               </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/resume-booking"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div>
-                                    <div><strong>Resume booking</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Pick up where you left off.</div>
-                                  </div>
-                                </Link>
-                              </li>
                             </ul>
                           </div>
                         </div>
@@ -385,4 +373,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

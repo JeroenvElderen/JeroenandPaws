@@ -1,10 +1,8 @@
 const { DateTime } = require("luxon");
-const crypto = require("crypto");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
 const { createEvent, sendMail } = require("./_lib/graph");
-  const {
+const {
   createBookingWithProfiles,
-  deleteDraftBookingsByResumeToken,
   findAdjacentBookings,
   resolveBookingTimes,
   saveBookingCalendarEventId,
@@ -70,25 +68,6 @@ const buildFriendlyTiming = ({ start, end, timeZone = "UTC" }) => {
   return { start: fix(start), end: fix(end), timeZone: zone };
 };
 
-const normalizeResumeToken = (value) => {
-  const cleaned = String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
-  if (!cleaned) return "";
-  return cleaned.match(/.{1,4}/g).join("-");
-};
-
-const generateResumeToken = () => {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const bytes = crypto.randomBytes(8);
-  const chars = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]);
-  const chunks = [];
-  for (let i = 0; i < chars.length; i += 4) {
-    chunks.push(chars.slice(i, i + 4).join(""));
-  }
-  return chunks.join("-");
-};
-
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.statusCode = 405;
@@ -133,15 +112,7 @@ module.exports = async (req, res) => {
       amount,
       payment_preference: paymentPreference,
     } = body;
-    const resumeOnly = Boolean(body?.resume_only || body?.resumeOnly);
     const paymentOrderId = body?.payment_order_id || null;
-    const resumeToken =
-      normalizeResumeToken(body?.resume_token || body?.resumeToken) ||
-      generateResumeToken();
-    const resumeTokenExpiresAt = DateTime.now()
-      .toUTC()
-      .plus({ hours: 24 })
-      .toISO();
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
       res.statusCode = 400;
@@ -199,8 +170,6 @@ module.exports = async (req, res) => {
     const bookingResults = [];
     const calendarResults = [];
 
-    await deleteDraftBookingsByResumeToken(resumeToken);
-
     for (const entry of preparedSchedule) {
       const { start, end } = resolveBookingTimes({
         date: entry.date,
@@ -247,8 +216,6 @@ module.exports = async (req, res) => {
         pets: petsFromBody,
         dogCount,
         paymentOrderId,
-        resumeToken,
-        resumeTokenExpiresAt,
       });
       console.log("BOOKING RESULT RAW:", bookingResult);
 
@@ -263,7 +230,7 @@ module.exports = async (req, res) => {
         endIso: end.toUTC().toISO(),
       });
 
-      if (!resumeOnly && calendarId && accessToken && bookingResult?.booking?.id) {
+      if (calendarId && accessToken && bookingResult?.booking?.id) {
         try {
           const calendarEvent = await createEvent({
             accessToken,
@@ -367,8 +334,8 @@ module.exports = async (req, res) => {
 
     let emailStatus = { ok: false };
     const shouldSendClientEmail =
-      !resumeOnly && paymentPreference !== "pay_now" && Boolean(clientEmail);
-    if (!resumeOnly && calendarId && accessToken) {
+      paymentPreference !== "pay_now" && Boolean(clientEmail);
+    if (calendarId && accessToken) {
       try {
         if (shouldSendClientEmail) {
           await sendMail({
@@ -412,8 +379,6 @@ module.exports = async (req, res) => {
     return res.end(
       JSON.stringify({
         booking_id: primaryBookingId,
-        resume_token: resumeToken,
-        resume_token_expires_at: resumeTokenExpiresAt,
         schedule: scheduleSummary,
         recurrence: recurrenceLabel || (autoRenew ? "requested" : null),
         bookingMode:
