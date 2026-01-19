@@ -171,6 +171,47 @@ const getSchedule = async ({
   return { timeZone, dates, busy: busyWindows };
 };
 
+const getCalendarEvents = async ({
+  accessToken,
+  calendarId,
+  startTime,
+  endTime,
+}) => {
+  if (!accessToken) return [];
+  const principalPath = buildPrincipalPath(calendarId);
+  const start = formatGraphDateTime(startTime);
+  const end = formatGraphDateTime(endTime);
+  let requestUrl = `${GRAPH_BASE}${principalPath}/calendarView?startDateTime=${encodeURIComponent(
+    start
+  )}&endDateTime=${encodeURIComponent(
+    end
+  )}&$select=subject,start,end,location,showAs,isCancelled`;
+  const events = [];
+
+  while (requestUrl) {
+    const response = await fetch(requestUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Graph calendarView error: ${response.status} ${error}`);
+    }
+
+    const data = await response.json();
+    if (Array.isArray(data.value)) {
+      events.push(...data.value);
+    }
+
+    requestUrl = data["@odata.nextLink"] || "";
+  }
+
+  return events;
+};
+
 const createEvent = async ({
   accessToken,
   calendarId,
@@ -479,6 +520,7 @@ module.exports = {
   createSubscription,
   deleteEvent,
   getEvent,
+  getCalendarEvents,
   getSchedule,
   renewSubscription,
   sendMail,

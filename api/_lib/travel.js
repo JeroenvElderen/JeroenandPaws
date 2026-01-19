@@ -148,6 +148,7 @@ const validateTravelWindow = async ({
 
 module.exports = {
   DEFAULT_HOME_ADDRESS,
+  DEFAULT_MIN_TRAVEL_MINUTES,
   estimateTravelMinutes,
   validateTravelWindow,
 };

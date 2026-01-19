@@ -364,6 +364,8 @@ const ProfilePage = () => {
     return 60;
   }, []);
 
+  const profileAddress = profile?.client?.address || "";
+
   const loadRescheduleAvailability = useCallback(
     async (booking) => {
       if (!booking) return;
@@ -375,7 +377,14 @@ const ProfilePage = () => {
 
       try {
         const durationMinutes = resolveRescheduleDuration(booking);
-        const url = `${apiBaseUrl}/api/availability?durationMinutes=${durationMinutes}`;
+        const resolvedAddress = booking?.client_address || profileAddress || "";
+        const params = new URLSearchParams({
+          durationMinutes: `${durationMinutes}`,
+        });
+        if (resolvedAddress) {
+          params.set("clientAddress", resolvedAddress);
+        }
+        const url = `${apiBaseUrl}/api/availability?${params.toString()}`;
         const response = await fetch(url, {
           headers: { Accept: "application/json" },
         });
@@ -415,7 +424,12 @@ const ProfilePage = () => {
         setRescheduleLoading(false);
       }
     },
-    [apiBaseUrl, resolveRescheduleDuration, rescheduleMinNoticeHours]
+    [
+      apiBaseUrl,
+      profileAddress,
+      resolveRescheduleDuration,
+      rescheduleMinNoticeHours,
+    ]
   );
 
   const openReschedule = useCallback(
