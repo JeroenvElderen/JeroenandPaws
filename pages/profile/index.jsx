@@ -434,10 +434,19 @@ const ProfilePage = () => {
     setRescheduleSelectedTime("");
   }, []);
 
-  const handleRescheduleDaySelection = useCallback((iso) => {
-    setRescheduleSelectedDate(iso);
-    setRescheduleSelectedTime("");
-  }, []);
+  const handleRescheduleDaySelection = useCallback(
+    (iso) => {
+      setRescheduleSelectedDate(iso);
+      const dayData = rescheduleAvailabilityMap[iso];
+      const firstAvailableTime =
+        dayData?.slots?.find(
+          (slot) =>
+            slot.available && (slot.reachable !== false || slot.forceVisible)
+        )?.time || "";
+      setRescheduleSelectedTime(firstAvailableTime);
+    },
+    [rescheduleAvailabilityMap]
+  );
 
   const handleReschedulePreviousMonth = useCallback(() => {
     setRescheduleVisibleMonth(
@@ -2414,41 +2423,12 @@ const ProfilePage = () => {
       )}
 
       {rescheduleBooking && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "grid",
-            placeItems: "center",
-            padding: "16px",
-            zIndex: 22,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "18px",
-              padding: "20px",
-              width: "min(820px, 96vw)",
-              boxShadow: brand.cardShadow,
-              border: `1px solid ${brand.cardBorder}`,
-              display: "grid",
-              gap: "14px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+        <div className="jp-reschedule-overlay" role="dialog" aria-modal="true">
+          <div className="jp-reschedule-modal">
+            <div className="jp-reschedule-header">
               <div>
-                <p style={{ margin: 0, color: brand.subtleText }}>
-                  Reschedule booking
-                </p>
-                <h3 style={{ margin: "4px 0 0", color: brand.neutral }}>
+                <p className="jp-reschedule-kicker">Reschedule booking</p>
+                <h3 className="jp-reschedule-title">
                   {rescheduleBooking.service_title ||
                     rescheduleBooking?.services_catalog?.title ||
                     "Service"}
@@ -2457,95 +2437,78 @@ const ProfilePage = () => {
               <button
                 type="button"
                 onClick={closeReschedule}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "1.2rem",
-                  cursor: "pointer",
-                  color: brand.subtleText,
-                }}
+                className="jp-reschedule-close"
+                aria-label="Close reschedule panel"
               >
                 ✕
               </button>
             </div>
-            <p style={{ margin: 0, color: brand.subtleText }}>
-              Choose a new time at least {rescheduleMinNoticeHours} hours in
-              advance. We'll re-check availability, travel buffers, and send an
-              Outlook update that adds the new visit to your calendar
-              automatically.
-            </p>
+            <div className="jp-reschedule-content">
+              <p className="jp-reschedule-note">
+                Choose a new time at least {rescheduleMinNoticeHours} hours in
+                advance. We'll re-check availability, travel buffers, and send an
+                Outlook update that adds the new visit to your calendar
+                automatically.
+              </p>
             {rescheduleError && (
-              <p style={{ margin: 0, color: "#b91c1c", fontWeight: 700 }}>
-                {rescheduleError}
-              </p>
-            )}
-            {rescheduleSuccess && (
-              <p style={{ margin: 0, color: "#15803d", fontWeight: 700 }}>
-                {rescheduleSuccess}
-              </p>
-            )}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr)",
-                gap: "16px",
-              }}
-            >
-              <CalendarSection
-                monthLabel={rescheduleMonthLabel}
-                weekdayLabels={weekdayLabels}
-                monthMatrix={rescheduleMonthMatrix}
-                visibleMonth={rescheduleVisibleMonth}
-                availabilityMap={rescheduleAvailabilityMap}
-                isDayAvailableForService={isRescheduleDayAvailable}
-                selectedDate={rescheduleSelectedDate}
-                selectedSlots={
-                  rescheduleSelectedDate && rescheduleSelectedTime
-                    ? { [rescheduleSelectedDate]: rescheduleSelectedTime }
-                    : {}
-                }
-                handleDaySelection={handleRescheduleDaySelection}
-                onPreviousMonth={handleReschedulePreviousMonth}
-                onNextMonth={handleRescheduleNextMonth}
-                loading={rescheduleLoading}
-                disablePastDates={true}
-              />
-              <TimesSection
-                selectedDay={rescheduleSelectedDay}
-                isDayAvailableForService={isRescheduleDayAvailable}
-                selectedTime={rescheduleSelectedTime}
-                handleTimeSelection={setRescheduleSelectedTime}
-                formatTime={formatRescheduleTime}
-                onContinue={submitReschedule}
-                onBack={null}
-                canContinue={
-                  Boolean(rescheduleSelectedTime) && !rescheduleSubmitting
-                }
-                continueLabel={
-                  rescheduleSubmitting ? "Rescheduling…" : "Reschedule"
-                }
-                travelMinutes={0}
-                travelAnchor="home"
-                isTravelValidationPending={false}
-                travelNote=""
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={closeReschedule}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: "10px",
-                  border: `1px solid ${brand.cardBorder}`,
-                  background: "transparent",
-                  color: brand.neutral,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Close
-              </button>
+                <p className="jp-reschedule-alert jp-reschedule-alert--error">
+                  {rescheduleError}
+                </p>
+              )}
+              {rescheduleSuccess && (
+                <p className="jp-reschedule-alert jp-reschedule-alert--success">
+                  {rescheduleSuccess}
+                </p>
+              )}
+              <div className="jp-reschedule-grid">
+                <CalendarSection
+                  monthLabel={rescheduleMonthLabel}
+                  weekdayLabels={weekdayLabels}
+                  monthMatrix={rescheduleMonthMatrix}
+                  visibleMonth={rescheduleVisibleMonth}
+                  availabilityMap={rescheduleAvailabilityMap}
+                  isDayAvailableForService={isRescheduleDayAvailable}
+                  selectedDate={rescheduleSelectedDate}
+                  selectedSlots={
+                    rescheduleSelectedDate && rescheduleSelectedTime
+                      ? { [rescheduleSelectedDate]: rescheduleSelectedTime }
+                      : {}
+                  }
+                  handleDaySelection={handleRescheduleDaySelection}
+                  onPreviousMonth={handleReschedulePreviousMonth}
+                  onNextMonth={handleRescheduleNextMonth}
+                  loading={rescheduleLoading}
+                  disablePastDates={true}
+                />
+                <TimesSection
+                  selectedDay={rescheduleSelectedDay}
+                  isDayAvailableForService={isRescheduleDayAvailable}
+                  selectedTime={rescheduleSelectedTime}
+                  handleTimeSelection={setRescheduleSelectedTime}
+                  formatTime={formatRescheduleTime}
+                  onContinue={submitReschedule}
+                  onBack={null}
+                  canContinue={
+                    Boolean(rescheduleSelectedTime) && !rescheduleSubmitting
+                  }
+                  continueLabel={
+                    rescheduleSubmitting ? "Rescheduling…" : "Reschedule"
+                  }
+                  travelMinutes={0}
+                  travelAnchor="home"
+                  isTravelValidationPending={false}
+                  travelNote=""
+                />
+              </div>
+              <div className="jp-reschedule-footer">
+                <button
+                  type="button"
+                  onClick={closeReschedule}
+                  className="jp-reschedule-secondary"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

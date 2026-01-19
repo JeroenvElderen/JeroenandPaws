@@ -681,6 +681,226 @@ html { scrollbar-gutter: stable; }
   gap: 6px;
 }
 
+.jp-profile-page .times-card {
+  background: var(--jp-surface);
+  border: 1px solid var(--jp-border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--jp-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.jp-profile-page .times-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.jp-profile-page .times-header h4 {
+  margin: 0;
+  color: var(--jp-ink);
+}
+
+.jp-profile-page .times-actions .actions-stack {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.jp-profile-page .ghost-button {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 8px 14px;
+  font-weight: 700;
+  color: var(--jp-ink);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.jp-profile-page .ghost-button:hover:not(:disabled) {
+  background: rgba(124, 69, 243, 0.2);
+  transform: translateY(-1px);
+}
+
+.jp-profile-page .ghost-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.jp-profile-page .times-list {
+  display: grid;
+  gap: 10px;
+}
+
+.jp-profile-page .muted {
+  color: var(--jp-muted);
+  margin: 0;
+}
+
+.jp-profile-page .muted.subtle {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.jp-profile-page .time-slot {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--jp-ink);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.jp-profile-page .time-slot .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22d3ee;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.2);
+}
+
+.jp-profile-page .time-slot:hover:not(.active) {
+  border-color: rgba(124, 69, 243, 0.5);
+  background: rgba(124, 69, 243, 0.2);
+}
+
+.jp-profile-page .time-slot.active {
+  background: linear-gradient(145deg, #6e4bd8, #7c5df2);
+  border-color: transparent;
+  color: #0c061a;
+  box-shadow: 0 8px 18px rgba(124, 93, 242, 0.4);
+}
+
+.jp-reschedule-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 5, 16, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 30;
+  overflow-y: auto;
+}
+
+.jp-reschedule-modal {
+  width: min(860px, 96vw);
+  background: var(--jp-surface);
+  border-radius: 22px;
+  padding: 22px;
+  border: 1px solid var(--jp-border);
+  box-shadow: var(--jp-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--jp-ink);
+  max-height: min(720px, calc(100vh - 32px));
+  overflow: hidden;
+}
+
+.jp-reschedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.jp-reschedule-kicker {
+  margin: 0;
+  color: var(--jp-muted);
+  font-weight: 600;
+}
+
+.jp-reschedule-title {
+  margin: 6px 0 0;
+  color: var(--jp-ink);
+}
+
+.jp-reschedule-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--jp-ink);
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.jp-reschedule-note {
+  margin: 0;
+  color: var(--jp-muted);
+}
+
+.jp-reschedule-content {
+  display: grid;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.jp-reschedule-alert {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.jp-reschedule-alert--error {
+  background: #2b0f13;
+  border: 1px solid #7f1d1d;
+  color: #fecaca;
+}
+
+.jp-reschedule-alert--success {
+  background: #072918;
+  border: 1px solid #15803d;
+  color: #bbf7d0;
+}
+
+.jp-reschedule-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.jp-reschedule-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jp-reschedule-secondary {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--jp-border);
+  background: transparent;
+  color: var(--jp-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .jp-reschedule-overlay {
+    align-items: flex-start;
+  }
+
+  .jp-reschedule-modal {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 18px;
+  }
+}
+
 .jp-profile-page .day {
   height: 58px;
   border-radius: 14px;
