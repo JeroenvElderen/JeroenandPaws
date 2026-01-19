@@ -3,11 +3,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { getCachedAvailability, prefetchAvailability } from "./availabilityCache";
 
 const DEFAULT_TIME_ZONE = "Europe/Dublin";
+const MIN_LEAD_MINUTES = 30;
 
 const buildPreviewSlots = (availability, limit = 3) => {
   if (!availability?.dates?.length) return [];
   const timeZone = availability.timeZone || DEFAULT_TIME_ZONE;
   const slots = [];
+  const cutoffTime = DateTime.now()
+    .setZone(timeZone)
+    .plus({ minutes: MIN_LEAD_MINUTES });
 
   for (const day of availability.dates) {
     if (!day?.slots?.length) continue;
@@ -16,6 +20,7 @@ const buildPreviewSlots = (availability, limit = 3) => {
       const dateTime = DateTime.fromISO(`${day.date}T${slot.time}`, {
         zone: timeZone,
       });
+      if (!dateTime.isValid || dateTime < cutoffTime) continue;
       slots.push({
         key: `${day.date}-${slot.time}`,
         dateLabel: dateTime.toFormat("EEE d LLL"),

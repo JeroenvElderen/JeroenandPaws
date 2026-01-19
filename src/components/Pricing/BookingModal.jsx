@@ -25,6 +25,7 @@ import BookingForm from "./components/BookingForm";
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
 const HOME_EIRCODE = "A98H940";
+const MIN_LEAD_MINUTES = 30;
 const HOME_COORDS = { lat: 53.204, lng: -6.111 }; // Bray (home)
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
 const ROUTING_COORDS = {
@@ -225,6 +226,13 @@ const BookingModal = ({ service, onClose }) => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + (minutes || 0);
   }, []);
+  const getBookingCutoff = useCallback(
+    () =>
+      DateTime.now()
+        .setZone(BUSINESS_TIME_ZONE)
+        .plus({ minutes: MIN_LEAD_MINUTES }),
+    []
+  );
 
   const formatCurrency = useCallback((value) => {
     const numeric = Number.isFinite(value) ? value : 0;
@@ -343,6 +351,15 @@ const BookingModal = ({ service, onClose }) => {
   const isSlotReachable = useCallback(
     (slot, slotDate) => {
       if (!slot || !slot.available) return false;
+      if (!slotDate) return false;
+
+      const slotDateTime = DateTime.fromISO(`${slotDate}T${slot.time}`, {
+        zone: BUSINESS_TIME_ZONE,
+      });
+      if (!slotDateTime.isValid) return false;
+
+      const cutoffTime = getBookingCutoff();
+      if (slotDateTime < cutoffTime) return false;
 
       const startMinutes = parseTimeToMinutes(slot.time);
 
@@ -375,6 +392,7 @@ const BookingModal = ({ service, onClose }) => {
       serviceDuration,
       travelAnchor,
       travelMinutes,
+      getBookingCutoff,
     ]
   );
 
