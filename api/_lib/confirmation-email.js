@@ -407,8 +407,32 @@ const buildConfirmationSubject = ({ pets, service }) => {
   return `${prompt} ${petPossessive} ${serviceLabel || "session"} at ${BUSINESS_NAME}`;
 };
 
+const buildPaymentLinkSubject = ({ serviceTitle } = {}) =>
+  `Complete your payment for ${serviceTitle || "your booking"} at ${BUSINESS_NAME}`;
+
+const buildPaymentLinkBody = ({ clientName, serviceTitle, paymentLink }) => `
+  <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111;">
+    <p style="margin:0 0 12px;">Hi ${escapeHtml(clientName || "there")},</p>
+    <p style="margin:0 0 12px;">
+      Your booking for <strong>${escapeHtml(
+        serviceTitle || "your service"
+      )}</strong> is still waiting for payment.
+    </p>
+    <p style="margin:0 0 12px;">
+      Please complete payment using this link within 24 hours:
+    </p>
+    <p style="margin:0 0 16px;word-break:break-all;">
+      <a href="${escapeHtml(paymentLink)}" style="color:#111827;">${escapeHtml(
+        paymentLink
+      )}</a>
+    </p>
+    <p style="margin:0;">Thanks,<br>${escapeHtml(SIGN_OFF_NAME)}</p>
+  </div>`;
+
 module.exports = {
   buildConfirmationBody,
   buildNotificationBody,
   buildConfirmationSubject,
+  buildPaymentLinkBody,
+  buildPaymentLinkSubject,
 };

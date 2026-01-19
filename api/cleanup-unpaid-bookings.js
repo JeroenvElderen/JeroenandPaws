@@ -1,6 +1,10 @@
 const { DateTime } = require("luxon");
 const { getAppOnlyAccessToken } = require("./_lib/auth");
-const { deleteEvent } = require("./_lib/graph");
+const { deleteEvent, sendMail } = require("./_lib/graph");
+const {
+  buildPaymentLinkBody,
+  buildPaymentLinkSubject,
+} = require("./_lib/confirmation-email");
 const { supabaseAdmin } = require("./_lib/supabase");
 
 const matchesAuth = (req) => {
@@ -27,66 +31,128 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const cutoff = DateTime.now().toUTC().minus({ hours: 24 }).toISO();
-    const { data, error } = await supabaseAdmin
-      .from("bookings")
-      .select("id, calendar_event_id")
-      .in("status", ["pending", "cancelled", "canceled"])
-      .lt("created_at", cutoff)
-      .or("payment_status.is.null,payment_status.neq.paid");
-
-    if (error) throw error;
+    const now = DateTime.now().toUTC();
+    const resendCutoff = now.minus({ hours: 24 }).toISO();
+    const cancelCutoff = now.minus({ hours: 48 }).toISO();
 
     res.setHeader("Content-Type", "application/json");
 
-    if (!data || data.length === 0) {
-      res.statusCode = 200;
-      res.end(JSON.stringify({ deleted: 0 }));
-      return;
-    }
-
     const calendarId = process.env.OUTLOOK_CALENDAR_ID;
     const accessToken = calendarId ? await getAppOnlyAccessToken() : null;
-    const deletableIds = [];
-    const failures = [];
+    
+    const { data: resendCandidates, error: resendError } = await supabaseAdmin
+      .from("bookings")
+      .select(
+        "id, client_email, client_name, service_title, payment_link, payment_link_last_sent_at"
+      )
+      .eq("status", "pending")
+      .lt("created_at", resendCutoff)
+      .or("payment_status.is.null,payment_status.neq.paid")
+      .is("payment_link_last_sent_at", null)
+      .not("payment_link", "is", null);
 
-    for (const booking of data) {
-      if (booking.calendar_event_id && accessToken && calendarId) {
-        try {
-          await deleteEvent({
-            accessToken,
-            calendarId,
-            eventId: booking.calendar_event_id,
-          });
-        } catch (deleteError) {
-          failures.push({
+    if (resendError) throw resendError;
+
+    const resendFailures = [];
+    const resentIds = [];
+
+    if (resendCandidates?.length && calendarId && accessToken) {
+      for (const booking of resendCandidates) {
+        if (!booking.client_email || !booking.payment_link) {
+          resendFailures.push({
             id: booking.id,
-            error: deleteError.message,
+            error: "Missing client email or payment link",
           });
           continue;
         }
-      }
 
-      deletableIds.push(booking.id);
+      try {
+          await sendMail({
+            accessToken,
+            fromCalendarId: calendarId,
+            to: booking.client_email,
+            subject: buildPaymentLinkSubject({
+              serviceTitle: booking.service_title,
+            }),
+            body: buildPaymentLinkBody({
+              clientName: booking.client_name,
+              serviceTitle: booking.service_title,
+              paymentLink: booking.payment_link,
+            }),
+            contentType: "HTML",
+          });
+          resentIds.push(booking.id);
+        } catch (sendError) {
+          resendFailures.push({ id: booking.id, error: sendError.message });
+        }
+      }
+    } else if (resendCandidates?.length) {
+      resendFailures.push({
+        error: "Missing Outlook calendar access for resend",
+      });
     }
 
-    if (deletableIds.length) {
-      const deleteResult = await supabaseAdmin
+    if (resentIds.length) {
+      const resendUpdate = await supabaseAdmin
         .from("bookings")
-        .delete()
-        .in("id", deletableIds);
+        .update({ payment_link_last_sent_at: now.toISO() })
+        .in("id", resentIds);
 
-      if (deleteResult.error) {
-        throw deleteResult.error;
+      if (resendUpdate.error) throw resendUpdate.error;
+    }
+
+    const { data: cancelCandidates, error: cancelError } = await supabaseAdmin
+      .from("bookings")
+      .select("id, calendar_event_id")
+      .eq("status", "pending")
+      .lt("created_at", cancelCutoff)
+      .or("payment_status.is.null,payment_status.neq.paid");
+
+    if (cancelError) throw cancelError;
+
+    const cancelFailures = [];
+    const cancellableIds = [];
+
+    if (cancelCandidates?.length) {
+      for (const booking of cancelCandidates) {
+        if (booking.calendar_event_id && accessToken && calendarId) {
+          try {
+            await deleteEvent({
+              accessToken,
+              calendarId,
+              eventId: booking.calendar_event_id,
+            });
+          } catch (deleteError) {
+            cancelFailures.push({
+              id: booking.id,
+              error: deleteError.message,
+            });
+            continue;
+          }
+        }
+
+        cancellableIds.push(booking.id);
+      }
+    }
+
+    if (cancellableIds.length) {
+      const cancelUpdate = await supabaseAdmin
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .in("id", cancellableIds);
+
+      if (cancelUpdate.error) {
+        throw cancelUpdate.error;
       }
     }
 
     res.statusCode = 200;
     res.end(
       JSON.stringify({
-        deleted: deletableIds.length,
-        skipped: failures.length,
-        failures,
+        resent: resentIds.length,
+        resendFailures,
+        cancelled: cancellableIds.length,
+        cancelFailures,
       })
     );
   } catch (error) {

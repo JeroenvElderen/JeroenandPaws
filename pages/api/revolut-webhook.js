@@ -167,7 +167,6 @@ export default async function handler(req, res) {
           serviceTitle: booking.service_title,
         }),
         showAs: "busy",
-        attendeeEmail: booking.client_email,
       });
 
       if (calendarEvent?.id)

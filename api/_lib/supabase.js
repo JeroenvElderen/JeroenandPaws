@@ -578,6 +578,7 @@ const createBookingRecord = async ({
   clientAddress,
   notes,
   paymentOrderId,
+  paymentLink,
 }) => {
   requireSupabase();
 
@@ -594,6 +595,7 @@ const createBookingRecord = async ({
       notes: notes || null,
       status: "pending",
       payment_order_id: paymentOrderId || null,
+      payment_link: paymentLink || null,
     })
     .select("*")
     .single();
@@ -661,6 +663,7 @@ const createBookingWithProfiles = async ({
   pets = [],
   dogCount,
   paymentOrderId,
+  paymentLink,
 }) => {
   requireSupabase();
 
@@ -700,6 +703,7 @@ const createBookingWithProfiles = async ({
     clientAddress,
     notes,
     paymentOrderId,
+    paymentLink,
   });
 
   await linkBookingPets(booking.id, ensuredPets);

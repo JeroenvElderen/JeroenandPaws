@@ -16,7 +16,6 @@ const {
 } = require("./_lib/confirmation-email");
 const {
   buildCalendarBody,
-  buildClientCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
 } = require("./_lib/calendar-events");
@@ -220,6 +219,7 @@ module.exports = async (req, res) => {
         pets: petsFromBody,
         dogCount,
         paymentOrderId,
+        paymentLink,
       });
       console.log("BOOKING RESULT RAW:", bookingResult);
 
@@ -271,35 +271,7 @@ module.exports = async (req, res) => {
             bookingId: bookingResult.booking.id,
             ok: Boolean(calendarEvent?.id),
           });
-
-          if (clientEmail) {
-            try {
-              await createEvent({
-                accessToken,
-                calendarId,
-                subject: buildCalendarSubject({
-                  serviceTitle:
-                    serviceTitle || bookingResult?.booking?.service_title,
-                  status: "pending",
-                }),
-                start: start.toUTC().toISO(),
-                end: end.toUTC().toISO(),
-                timeZone,
-                locationDisplayName: clientAddress,
-                body: buildClientCalendarBody(),
-                bodyContentType: "Text",
-                categories: buildCalendarCategories({
-                  status: "pending",
-                  serviceTitle:
-                    serviceTitle || bookingResult?.booking?.service_title,
-                }),
-                showAs: "tentative",
-                attendeeEmail: clientEmail,
-              });
-            } catch (clientCalendarError) {
-              console.error("Client calendar invite failed", clientCalendarError);
-            }
-          }
+          
         } catch (calendarError) {
           console.error("Calendar creation failed", calendarError);
           calendarResults.push({
