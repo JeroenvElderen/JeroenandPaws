@@ -33,6 +33,30 @@ const buildPreviewSlots = (availability, limit = 3) => {
   return slots;
 };
 
+const countWeeklyOpenings = (availability, limitDays = 7) => {
+  if (!availability?.dates?.length) return 0;
+  const timeZone = availability.timeZone || DEFAULT_TIME_ZONE;
+  const start = DateTime.now().setZone(timeZone);
+  const end = start.plus({ days: limitDays });
+  const cutoffTime = start.plus({ minutes: MIN_LEAD_MINUTES });
+  let count = 0;
+
+  for (const day of availability.dates) {
+    if (!day?.slots?.length) continue;
+    for (const slot of day.slots) {
+      if (!slot?.available) continue;
+      const dateTime = DateTime.fromISO(`${day.date}T${slot.time}`, {
+        zone: timeZone,
+      });
+      if (!dateTime.isValid) continue;
+      if (dateTime < cutoffTime || dateTime > end) continue;
+      count += 1;
+    }
+  }
+
+  return count;
+};
+
 const AvailabilityPreview = ({ service, limit = 3 }) => {
   const serviceId = service?.id || null;
   const durationMinutes = Number.isFinite(service?.durationMinutes)
@@ -78,12 +102,24 @@ const AvailabilityPreview = ({ service, limit = 3 }) => {
     () => buildPreviewSlots(availability, limit),
     [availability, limit]
   );
+  const weeklyOpenings = useMemo(
+    () => countWeeklyOpenings(availability, 7),
+    [availability]
+  );
 
   if (status === "hidden") return null;
 
   return (
     <div className="availability-preview">
       <span className="eyebrow">Next openings</span>
+      {status === "ready" && weeklyOpenings > 0 && (
+        <p className="availability-capacity">
+          {weeklyOpenings} spot{weeklyOpenings === 1 ? "" : "s"} left this week
+        </p>
+      )}
+      {status === "ready" && weeklyOpenings === 0 && (
+        <p className="availability-capacity is-full">Fully booked this week</p>
+      )}
       {status === "loading" && <p className="muted">Loading openings…</p>}
       {status === "error" && (
         <p className="muted">Live availability loads once you open the calendar.</p>

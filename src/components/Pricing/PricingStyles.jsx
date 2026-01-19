@@ -20,6 +20,15 @@ const PricingStyles = () => (
           display: inline-flex;
           margin-bottom: 6px;
         }
+        .availability-capacity {
+          margin: 0 0 8px;
+          font-weight: 600;
+          font-size: 13px;
+          color: #7C3AED;
+        }
+        .availability-capacity.is-full {
+          color: rgba(242, 236, 255, 0.7);
+        }
         .availability-slots {
           list-style: none;
           margin: 8px 0 0;
