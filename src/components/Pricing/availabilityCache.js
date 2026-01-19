@@ -2,6 +2,8 @@ const availabilityCache = new Map();
 const availabilityErrors = new Map();
 const inflightRequests = new Map();
 
+const DEFAULT_AVAILABILITY_WINDOW_DAYS = 90;
+
 const computeApiBaseUrl = () => {
   const configured = (process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "").replace(/\/$/, "");
   if (configured) return configured;
@@ -17,7 +19,7 @@ const buildAvailabilityUrl = (service, baseUrl = computeApiBaseUrl()) => {
     ? service.durationMinutes
     : 60;
   const sanitizedBase = (baseUrl || "").replace(/\/$/, "");
-  return `${sanitizedBase}/api/availability?serviceId=${service.id}&durationMinutes=${durationMinutes}`;
+  return `${sanitizedBase}/api/availability?serviceId=${service.id}&durationMinutes=${durationMinutes}&windowDays=${DEFAULT_AVAILABILITY_WINDOW_DAYS}`;
 };
 
 const parseAvailabilityResponse = async (response, requestUrl) => {

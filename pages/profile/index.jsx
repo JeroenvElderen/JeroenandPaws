@@ -87,6 +87,7 @@ const mockProfile = {
 const useMockProfile =
   typeof process !== "undefined" &&
   process.env.NEXT_PUBLIC_MOCK_PROFILE === "true";
+const RESCHEDULE_WINDOW_DAYS = 60;
 
 const formatDateRange = (booking) => {
   if (!booking?.start_at || !booking?.end_at) return "Scheduled time pending";
@@ -380,6 +381,7 @@ const ProfilePage = () => {
         const resolvedAddress = booking?.client_address || profileAddress || "";
         const params = new URLSearchParams({
           durationMinutes: `${durationMinutes}`,
+          windowDays: `${RESCHEDULE_WINDOW_DAYS}`,
         });
         if (resolvedAddress) {
           params.set("clientAddress", resolvedAddress);

@@ -269,24 +269,30 @@ module.exports = async (req, res) => {
       throw new Error("Missing OUTLOOK_CALENDAR_ID env var");
     }
 
-    const { durationMinutes, clientAddress } = req.query || {};
+    const { durationMinutes, clientAddress, windowDays: windowDaysParam } =
+      req.query || {};
     const serviceDurationMinutes = Number.parseInt(durationMinutes, 10);
 
     const accessToken = await getAppOnlyAccessToken();
-    const windowDays = Number.parseInt(
+    const configuredWindowDays = Number.parseInt(
       process.env.WINDOW_DAYS ?? "365",
       10
     );
+    const defaultWindowDays = Number.isNaN(configuredWindowDays)
+      ? 21
+      : Math.max(configuredWindowDays, 1);
+    const requestedWindowDays = Number.parseInt(windowDaysParam, 10);
+    const windowDays = Number.isNaN(requestedWindowDays)
+      ? defaultWindowDays
+      : Math.min(Math.max(requestedWindowDays, 1), defaultWindowDays);
 
     const startTime = DateTime.now().setZone("Europe/Dublin");
-    const endTime = startTime.plus({
-      days: Number.isNaN(windowDays) ? 21 : Math.max(windowDays, 1),
-    });
+    const endTime = startTime.plus({ days: windowDays });
 
     let availability = await getSchedule({
       accessToken,
       calendarId,
-      windowDays: Number.isNaN(windowDays) ? 21 : Math.max(windowDays, 1),
+      windowDays,
       serviceDurationMinutes: Number.isNaN(serviceDurationMinutes)
         ? undefined
         : serviceDurationMinutes,
@@ -307,7 +313,7 @@ module.exports = async (req, res) => {
         : serviceDurationMinutes,
       events,
     });
-    
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(availability));
   } catch (error) {
