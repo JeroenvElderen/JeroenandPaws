@@ -240,7 +240,6 @@ const BookingForm = ({
                 ) : (
                   <p className="summary-value">No travel surcharge.</p>
                 )}
-                {travelNote && <p className="muted subtle">{travelNote}</p>}
               </div>
             </div>
           )}
