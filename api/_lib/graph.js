@@ -198,7 +198,12 @@ const getCalendarEvents = async ({
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Graph calendarView error: ${response.status} ${error}`);
+      const graphError = new Error(
+        `Graph calendarView error: ${response.status} ${error}`
+      );
+      graphError.status = response.status;
+      graphError.retryAfter = response.headers.get("Retry-After");
+      throw graphError;
     }
 
     const data = await response.json();

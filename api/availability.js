@@ -254,6 +254,13 @@ const applyTravelBufferToAvailability = async ({
   return { ...availability, dates: updatedDates };
 };
 
+const isMailboxConcurrencyError = (error) => {
+  if (!error) return false;
+  const status = error.status || error.statusCode;
+  if (status === 429) return true;
+  return /ApplicationThrottled|MailboxConcurrency/i.test(error.message || "");
+};
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
     res.statusCode = 405;
@@ -298,12 +305,21 @@ module.exports = async (req, res) => {
         : serviceDurationMinutes,
     });
 
-    const events = await getCalendarEvents({
-      accessToken,
-      calendarId,
-      startTime,
-      endTime,
-    });
+    let events = [];
+    try {
+      events = await getCalendarEvents({
+        accessToken,
+        calendarId,
+        startTime,
+        endTime,
+      });
+    } catch (error) {
+      if (isMailboxConcurrencyError(error)) {
+        console.warn("Availability calendarView throttled, skipping events.");
+      } else {
+        throw error;
+      }
+    }
 
     availability = await applyTravelBufferToAvailability({
       availability,
