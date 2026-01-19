@@ -30,6 +30,7 @@ const HOME_COORDS = { lat: 53.204, lng: -6.111 }; // Bray (home)
 const TRAVEL_DISTANCE_THRESHOLD_KM = 30;
 const TRAVEL_SURCHARGE_PER_KM = 1;
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
+const OSRM_ENDPOINT = "https://router.project-osrm.org/route/v1/driving";
 const ROUTING_COORDS = {
   // Approximate centroids for common routing keys so we can estimate travel when
   // an online lookup fails. These are fallbacks and should be avoided when the
@@ -46,6 +47,7 @@ const ROUTING_COORDS = {
   D15: { lat: 53.385, lng: -6.398 },
   D18: { lat: 53.262, lng: -6.149 },
   K36: { lat: 53.449, lng: -6.226 }, // Swords
+  K67: { lat: 53.159, lng: -6.909 }, // Kildare
   K78: { lat: 53.347, lng: -6.446 }, // Lucan
   W23: { lat: 53.351, lng: -6.538 },
   W91: { lat: 53.179, lng: -6.667 },
@@ -179,6 +181,31 @@ const BookingModal = ({ service, onClose }) => {
 
     return { lat, lng };
   }, [isFullEircode, normalizeEircode]);
+
+  const getRouteMetrics = useCallback(async (fromCoords, toCoords, signal) => {
+    if (!fromCoords || !toCoords) return null;
+
+    const url = `${OSRM_ENDPOINT}/${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}?overview=false`;
+    const response = await fetch(url, { signal });
+
+    if (!response.ok) {
+      throw new Error(`OSRM error ${response.status}`);
+    }
+
+    const data = await response.json();
+    const route = data?.routes?.[0];
+    const distanceMeters = Number(route?.distance);
+    const durationSeconds = Number(route?.duration);
+
+    if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
+      return null;
+    }
+
+    return {
+      distanceKm: distanceMeters / 1000,
+      durationMinutes: durationSeconds / 60,
+    };
+  }, []);
 
   const haversineKm = (coordA, coordB) => {
     const toRadians = (deg) => (deg * Math.PI) / 180;
@@ -673,14 +700,36 @@ const BookingModal = ({ service, onClose }) => {
         setClientCoordinates(fromCoords);
         setClientAddress(normalized);
 
-        const minutes = estimateTravelMinutes(
+        const fallbackMinutes = estimateTravelMinutes(
           { eircode: normalized, coords: fromCoords },
           { eircode: anchorEircode, coords: resolvedAnchorCoords }
         );
-        const distance = estimateTravelDistanceKm(
+        const fallbackDistance = estimateTravelDistanceKm(
           { eircode: normalized, coords: fromCoords },
           { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
         );
+        let minutes = fallbackMinutes;
+        let distance = fallbackDistance;
+
+        if (fromCoords && resolvedAnchorCoords) {
+          try {
+            const routeMetrics = await getRouteMetrics(
+              fromCoords,
+              resolvedAnchorCoords,
+              controller.signal
+            );
+            if (routeMetrics) {
+              distance = routeMetrics.distanceKm;
+              const bufferedMinutes = Math.round(routeMetrics.durationMinutes + 10);
+              minutes = Math.min(Math.max(bufferedMinutes, 12), 120);
+            }
+          } catch (routeError) {
+            console.warn("Route lookup failed, using fallback estimate", {
+              error: routeError,
+            });
+          }
+        }
+
         setTravelMinutes(minutes);
         setTravelDistanceKm(distance);
         setTravelValidationState("ready");
@@ -750,6 +799,7 @@ const BookingModal = ({ service, onClose }) => {
     clientAddress,
     clientEircode,
     estimateTravelMinutes,
+    getRouteMetrics,
     estimateTravelDistanceKm,
     geocodeEircode,
     homeCoordinates,
@@ -2449,17 +2499,21 @@ const BookingModal = ({ service, onClose }) => {
                         {formatCurrency(parsePriceValue(addon.price))}
                       </li>
                     ))}
-                    {pricing.travelSurcharge > 0 && (
-                      <li>
-                        Travel surcharge: {formatCurrency(pricing.travelSurcharge)}{" "}
-                        ({pricing.travelSurchargeKm} km over{" "}
-                        {pricing.travelSurchargeThreshold} km
-                        {pricing.visitCount > 1
-                          ? ` × ${pricing.visitCount} visits`
-                          : ""}
-                        )
-                      </li>
-                    )}
+                    <li>
+                      Travel cost: {formatCurrency(pricing.travelSurcharge)}{" "}
+                      {pricing.travelSurcharge > 0 ? (
+                        <>
+                          ({pricing.travelSurchargeKm} km over{" "}
+                          {pricing.travelSurchargeThreshold} km
+                          {pricing.visitCount > 1
+                            ? ` × ${pricing.visitCount} visits`
+                            : ""}
+                          )
+                        </>
+                      ) : (
+                        <>({pricing.travelSurchargeThreshold} km included)</>
+                      )}
+                    </li>
                     <li>
                       Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
                     </li>
