@@ -217,6 +217,33 @@ const BookingForm = ({
               </ul>
             </div>
           )}
+
+          {(travelNote || pricing.travelDistanceKm > 0) && (
+            <div className="summary-card">
+              <h4>Travel</h4>
+              <div className="summary-list plain">
+                {pricing.travelDistanceKm > 0 && (
+                  <p className="summary-value">
+                    Estimated distance: {pricing.travelDistanceKm.toFixed(1)} km
+                  </p>
+                )}
+                {pricing.travelSurcharge > 0 ? (
+                  <p className="summary-value">
+                    Travel surcharge: {formatCurrency(pricing.travelSurcharge)} (
+                    {pricing.travelSurchargeKm} km over{" "}
+                    {pricing.travelSurchargeThreshold} km
+                    {pricing.visitCount > 1
+                      ? ` × ${pricing.visitCount} visits`
+                      : ""}
+                    )
+                  </p>
+                ) : (
+                  <p className="summary-value">No travel surcharge.</p>
+                )}
+                {travelNote && <p className="muted subtle">{travelNote}</p>}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="summary-card">
