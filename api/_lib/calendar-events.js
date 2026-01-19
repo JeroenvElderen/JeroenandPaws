@@ -50,10 +50,21 @@ const buildCalendarSubject = ({ serviceTitle, status }) => {
   return `${COMPANY_PREFIX} • ${getServiceLabel(serviceTitle)} • ${statusLabel}`;
 };
 
-const buildCalendarBody = ({ serviceTitle, status }) => {
+const buildCalendarBody = ({ serviceTitle, status, paymentLink }) => {
   const statusLabel = CALENDAR_STATUS[status] || status || "Booking";
-  return `Status: ${statusLabel}\nService: ${getServiceLabel(serviceTitle)}`;
+  const lines = [
+    `Status: ${statusLabel}`,
+    `Service: ${getServiceLabel(serviceTitle)}`,
+  ];
+
+  if (paymentLink) {
+    lines.push(`Payment link: ${paymentLink}`);
+  }
+
+  return lines.join("\n");
 };
+
+const buildClientCalendarBody = () => "";
 
 const getCalendarCategory = (status) =>
   CALENDAR_CATEGORIES[status] || CALENDAR_CATEGORIES.confirmed;
@@ -71,6 +82,7 @@ const buildCalendarCategories = ({ status, serviceTitle }) => {
 
 module.exports = {
   buildCalendarBody,
+  buildClientCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
   CALENDAR_STATUS,

@@ -1473,6 +1473,7 @@ const BookingModal = ({ service, onClose }) => {
 
       const bookingId = await handleBook(paymentOrderId, {
         paymentPreference: "pay_now",
+        paymentLink: paymentData.url,
       });
       if (!bookingId) throw new Error("No booking ID returned!");
 
@@ -1488,7 +1489,7 @@ const BookingModal = ({ service, onClose }) => {
   };
 
   const handleBook = async (paymentOrderId, options = {}) => {
-    const { paymentPreference = "pay_now" } = options;
+    const { paymentPreference = "pay_now", paymentLink = null } = options;
     const sortedSchedule = Object.entries(selectedSlots || {})
       .map(([date, time]) => ({ date, time }))
       .filter((entry) => entry.date)
@@ -1565,6 +1566,7 @@ const BookingModal = ({ service, onClose }) => {
         amount: amountInEuro,
         payment_order_id: paymentOrderId, // <-- CRITICAL
         payment_preference: paymentPreference,
+        payment_link: paymentLink,
         travel_minutes: travelMinutes,
         travel_anchor: travelAnchor,
         previous_booking_time: previousBookingTime,

@@ -16,6 +16,7 @@ const {
 } = require("./_lib/confirmation-email");
 const {
   buildCalendarBody,
+  buildClientCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
 } = require("./_lib/calendar-events");
@@ -115,6 +116,7 @@ module.exports = async (req, res) => {
       payment_preference: paymentPreference,
     } = body;
     const paymentOrderId = body?.payment_order_id || null;
+    const paymentLink = body?.payment_link || null;
 
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
       res.statusCode = 400;
@@ -248,6 +250,7 @@ module.exports = async (req, res) => {
             body: buildCalendarBody({
               serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
               status: "pending",
+              paymentLink,
             }),
             bodyContentType: "Text",
             categories: buildCalendarCategories({
@@ -255,7 +258,6 @@ module.exports = async (req, res) => {
               serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
             }),
             showAs: "tentative",
-            attendeeEmail: clientEmail,
           });
 
           if (calendarEvent?.id) {
@@ -269,6 +271,35 @@ module.exports = async (req, res) => {
             bookingId: bookingResult.booking.id,
             ok: Boolean(calendarEvent?.id),
           });
+
+          if (clientEmail) {
+            try {
+              await createEvent({
+                accessToken,
+                calendarId,
+                subject: buildCalendarSubject({
+                  serviceTitle:
+                    serviceTitle || bookingResult?.booking?.service_title,
+                  status: "pending",
+                }),
+                start: start.toUTC().toISO(),
+                end: end.toUTC().toISO(),
+                timeZone,
+                locationDisplayName: clientAddress,
+                body: buildClientCalendarBody(),
+                bodyContentType: "Text",
+                categories: buildCalendarCategories({
+                  status: "pending",
+                  serviceTitle:
+                    serviceTitle || bookingResult?.booking?.service_title,
+                }),
+                showAs: "tentative",
+                attendeeEmail: clientEmail,
+              });
+            } catch (clientCalendarError) {
+              console.error("Client calendar invite failed", clientCalendarError);
+            }
+          }
         } catch (calendarError) {
           console.error("Calendar creation failed", calendarError);
           calendarResults.push({

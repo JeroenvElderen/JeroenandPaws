@@ -1,17 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PricingStyles from "../../components/Pricing/PricingStyles";
 
-const formatCurrency = (value) => {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return "Custom";
-  }
-
-  return new Intl.NumberFormat("en-IE", {
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("en-IE", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 2,
   }).format(value);
-};
 
 const parsePriceValue = (value) => {
   if (value === null || value === undefined || value === "") {
@@ -26,44 +21,7 @@ const parsePriceValue = (value) => {
   return Number.isFinite(numeric) ? numeric : null;
 };
 
-const formatServicePrice = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "Custom";
-  }
-
-  if (typeof value === "number") {
-    return formatCurrency(value);
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return "Custom";
-    }
-
-    if (/^[0-9,.]+$/.test(trimmed)) {
-      const parsed = parsePriceValue(trimmed);
-      return parsed !== null ? formatCurrency(parsed) : trimmed;
-    }
-
-    return trimmed;
-  }
-
-  return "Custom";
-};
-
-const formatAddonPrice = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "Custom";
-  }
-
-  if (typeof value === "string" && /[^0-9,.-]/.test(value)) {
-    return value;
-  }
-
-  const parsed = parsePriceValue(value);
-  return parsed !== null ? formatCurrency(parsed) : "Custom";
-};
+const hasNumericPrice = (value) => parsePriceValue(value) !== null;
 
 const formatDuration = (minutes) => {
   if (!minutes || Number.isNaN(minutes)) return null;
@@ -98,8 +56,15 @@ const Pricing = () => {
 
         if (!isActive) return;
 
-        setServices(servicesData.services || []);
-        setAddons(addonsData.addons || []);
+        const filteredServices = (servicesData.services || []).filter((service) =>
+          hasNumericPrice(service.price)
+        );
+        const filteredAddons = (addonsData.addons || []).filter((addon) =>
+          hasNumericPrice(addon.price)
+        );
+
+        setServices(filteredServices);
+        setAddons(filteredAddons);
       } catch (error) {
         console.error(error);
       } finally {
@@ -159,7 +124,7 @@ const Pricing = () => {
 
           {!isLoading && groupedServices.length === 0 && (
             <div className="text-align_center">
-              <p>No services are available right now.</p>
+              <p>No priced services are available right now.</p>
             </div>
           )}
 
@@ -180,7 +145,9 @@ const Pricing = () => {
                             {durationLabel && (
                               <div className="eyebrow">{durationLabel}</div>
                             )}
-                            <p className="heading_h3">{formatServicePrice(service.price)}</p>
+                            <p className="heading_h3">
+                              {formatCurrency(parsePriceValue(service.price))}
+                            </p>
                             {service.description && <p>{service.description}</p>}
                           </div>
                         </div>
@@ -205,7 +172,7 @@ const Pricing = () => {
 
           {!isLoading && addons.length === 0 && (
             <div className="text-align_center">
-              <p>No add-ons are available right now.</p>
+              <p>No priced add-ons are available right now.</p>
             </div>
           )}
 
@@ -215,7 +182,9 @@ const Pricing = () => {
                 <div className="card_body">
                   <div className="eyebrow">Add-on</div>
                   <h4>{addon.label || addon.title}</h4>
-                  <p className="heading_h3">{formatAddonPrice(addon.price)}</p>
+                  <p className="heading_h3">
+                    {formatCurrency(parsePriceValue(addon.price))}
+                  </p>
                   {addon.description && <p>{addon.description}</p>}
                 </div>
               </div>
