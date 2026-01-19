@@ -60,9 +60,14 @@ const BookingModal = ({ service, onClose }) => {
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const is24h = true;
-  const [availability, setAvailability] = useState({
-    dates: [],
-    timeZone: BUSINESS_TIME_ZONE,
+  const [availability, setAvailability] = useState(() => {
+    const cached = service?.id ? getCachedAvailability(service.id) : null;
+    return {
+      ...(cached || {}),
+      dates: cached?.dates || [],
+      busy: cached?.busy || [],
+      timeZone: cached?.timeZone || BUSINESS_TIME_ZONE,
+    };
   });
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -527,7 +532,8 @@ const BookingModal = ({ service, onClose }) => {
   );
 
   const loadAvailability = useCallback(async () => {
-    setLoading(true);
+    const cached = getCachedAvailability(service.id);
+    setLoading(!cached);
     setError("");
     setSuccess("");
     setAvailabilityNotice("");
@@ -537,7 +543,6 @@ const BookingModal = ({ service, onClose }) => {
     setIsMultiDay(false);
     setRecurrence("none");
     try {
-      const cached = getCachedAvailability(service.id);
       if (cached) {
         const normalized = normalizeAvailability(cached);
         setAvailability(normalized);
