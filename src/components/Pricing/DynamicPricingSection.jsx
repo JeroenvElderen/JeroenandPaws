@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import BookingModal from "./BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
+import AvailabilityPreview from "./AvailabilityPreview";
 import { prefetchAvailability } from "./availabilityCache";
 
 const DynamicPricingSection = ({
@@ -60,6 +61,7 @@ const DynamicPricingSection = ({
                   {service.label && <div className="eyebrow">{service.label}</div>}
                   {service.price && <p className="heading_h3">{service.price}</p>}
                   {service.description && <p>{service.description}</p>}
+                  <AvailabilityPreview service={service} />
                 </div>
                 <div className="button-group is-align-center">
                   {service.ctaHref ? (

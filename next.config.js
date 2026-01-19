@@ -5,6 +5,7 @@ const supabaseHostname = supabaseUrl
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
   images: {
     remotePatterns: supabaseHostname
       ? [
@@ -16,6 +17,8 @@ const nextConfig = {
         ]
       : [],
   },
+  poweredByHeader: false,
+  reactStrictMode: true,
 };
 
 if (!supabaseHostname) {

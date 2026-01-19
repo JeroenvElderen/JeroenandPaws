@@ -8,6 +8,37 @@ const PricingStyles = () => (
           transform: translateY(-6px);
           box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
         }
+        .availability-preview {
+          margin-top: 12px;
+          padding: 12px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          text-align: left;
+        }
+        .availability-preview .eyebrow {
+          display: inline-flex;
+          margin-bottom: 6px;
+        }
+        .availability-slots {
+          list-style: none;
+          margin: 8px 0 0;
+          padding: 0;
+          display: grid;
+          gap: 6px;
+        }
+        .availability-slot {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 600;
+          font-size: 13px;
+          color: #f2ecff;
+        }
+        .availability-slot time {
+          font-variant-numeric: tabular-nums;
+          color: rgba(242, 236, 255, 0.75);
+        }
         .button.w-button {
           transition: background-color 0.25s ease, color 0.25s ease;
         }
