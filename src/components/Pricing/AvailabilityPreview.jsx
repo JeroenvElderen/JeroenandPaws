@@ -34,30 +34,31 @@ const buildPreviewSlots = (availability, limit = 3) => {
 };
 
 const AvailabilityPreview = ({ service, limit = 3 }) => {
-  const [availability, setAvailability] = useState(() =>
-    service?.id ? getCachedAvailability(service.id) : null
-  );
-  const [status, setStatus] = useState(() =>
-    service?.id ? "loading" : "hidden"
-  );
+  const serviceId = service?.id || null;
+  const durationMinutes = Number.isFinite(service?.durationMinutes)
+    ? service.durationMinutes
+    : 60;
+  const initialAvailability = serviceId ? getCachedAvailability(serviceId) : null;
+  const [availability, setAvailability] = useState(initialAvailability);
+  const [status, setStatus] = useState(() => {
+    if (!serviceId) return "hidden";
+    return initialAvailability ? "ready" : "loading";
+  });
 
   useEffect(() => {
-    if (!service?.id || service?.ctaHref) {
+    if (!serviceId) {
+      setAvailability(null);
       setStatus("hidden");
       return;
     }
 
     let isMounted = true;
-    const cached = getCachedAvailability(service.id);
+    const cached = getCachedAvailability(serviceId);
 
-    if (cached) {
-      setAvailability(cached);
-      setStatus("ready");
-    } else {
-      setStatus("loading");
-    }
+    setAvailability(cached || null);
+    setStatus(cached ? "ready" : "loading");
 
-    prefetchAvailability(service)
+    prefetchAvailability({ id: serviceId, durationMinutes })
       .then((data) => {
         if (!isMounted) return;
         setAvailability(data);
@@ -71,7 +72,7 @@ const AvailabilityPreview = ({ service, limit = 3 }) => {
     return () => {
       isMounted = false;
     };
-  }, [service]);
+  }, [serviceId, durationMinutes]);
 
   const previewSlots = useMemo(
     () => buildPreviewSlots(availability, limit),
