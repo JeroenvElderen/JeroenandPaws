@@ -14,6 +14,11 @@ const {
   buildNotificationBody,
   buildConfirmationSubject,
 } = require("./_lib/confirmation-email");
+const {
+  buildCalendarBody,
+  buildCalendarSubject,
+  buildCalendarCategories,
+} = require("./_lib/calendar-events");
 
 const ADDITIONAL_LABELS = {
   feeding: "Feeding & fresh water",
@@ -34,9 +39,6 @@ const resolveNotificationEmail = (calendarId) =>
   process.env.JEROEN_AND_PAWS_EMAIL ||
   process.env.ADMIN_EMAIL ||
   resolveCalendarEmail(calendarId);
-
-const PENDING_PAYMENT_CATEGORY =
-  process.env.OUTLOOK_PENDING_PAYMENT_CATEGORY || "Pending payment";
 
 const parseBody = async (req) => {
   const chunks = [];
@@ -235,18 +237,23 @@ module.exports = async (req, res) => {
           const calendarEvent = await createEvent({
             accessToken,
             calendarId,
-            subject: `Pending payment · ${
-              serviceTitle || bookingResult?.booking?.service_title || "Service"
-            }`,
+            subject: buildCalendarSubject({
+              serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
+              status: "pending",
+            }),
             start: start.toUTC().toISO(),
             end: end.toUTC().toISO(),
             timeZone,
             locationDisplayName: clientAddress,
-            body: `Booking pending payment for ${
-              serviceTitle || bookingResult?.booking?.service_title || "Service"
-            }.`,
-            bodyContentType: "HTML",
-            categories: [PENDING_PAYMENT_CATEGORY],
+            body: buildCalendarBody({
+              serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
+              status: "pending",
+            }),
+            bodyContentType: "Text",
+            categories: buildCalendarCategories({
+              status: "pending",
+              serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
+            }),
             showAs: "tentative",
             attendeeEmail: clientEmail,
           });

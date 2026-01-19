@@ -13,14 +13,16 @@ import {
   buildNotificationBody,
   buildConfirmationSubject,
 } from "../../api/_lib/confirmation-email";
+import {
+  buildCalendarBody,
+  buildCalendarSubject,
+  buildCalendarCategories,
+} from "../../api/_lib/calendar-events";
 
 // Invoice + OneDrive
 import { generateInvoiceNumber } from "../../api/_lib/invoices";
 import { createInvoicePdf } from "../../api/_lib/invoicePdf";
 import { uploadToOneDrive } from "../../api/_lib/onedrive";
-
-const PAID_BOOKING_CATEGORY =
-  process.env.OUTLOOK_PAID_BOOKING_CATEGORY || "Paid booking";
 
 export const config = { api: { bodyParser: false } };
 
@@ -124,12 +126,21 @@ export default async function handler(req, res) {
         calendarId: process.env.OUTLOOK_CALENDAR_ID,
         eventId: booking.calendar_event_id,
         updates: {
-          subject: booking.service_title,
+          subject: buildCalendarSubject({
+            serviceTitle: booking.service_title,
+            status: "confirmed",
+          }),
           body: {
-            contentType: "HTML",
-            content: `Booking confirmed for ${booking.service_title}`,
+            contentType: "Text",
+            content: buildCalendarBody({
+              serviceTitle: booking.service_title,
+              status: "confirmed",
+            }),
           },
-          categories: [PAID_BOOKING_CATEGORY],
+          categories: buildCalendarCategories({
+            status: "confirmed",
+            serviceTitle: booking.service_title,
+          }),
           showAs: "busy",
         },
       });
@@ -138,14 +149,23 @@ export default async function handler(req, res) {
       const calendarEvent = await createEvent({
         accessToken,
         calendarId: process.env.OUTLOOK_CALENDAR_ID,
-        subject: booking.service_title,
+        subject: buildCalendarSubject({
+          serviceTitle: booking.service_title,
+          status: "confirmed",
+        }),
         start,
         end,
         timeZone: booking.time_zone || "UTC",
         locationDisplayName: booking.client_address,
-        body: `Booking confirmed for ${booking.service_title}`,
-        bodyContentType: "HTML",
-        categories: [PAID_BOOKING_CATEGORY],
+        body: buildCalendarBody({
+          serviceTitle: booking.service_title,
+          status: "confirmed",
+        }),
+        bodyContentType: "Text",
+        categories: buildCalendarCategories({
+          status: "confirmed",
+          serviceTitle: booking.service_title,
+        }),
         showAs: "busy",
         attendeeEmail: booking.client_email,
       });

@@ -1,9 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAppOnlyAccessToken } from "../../api/_lib/auth";
 import { updateEvent } from "../../api/_lib/graph";
-
-const PAID_BOOKING_CATEGORY =
-  process.env.OUTLOOK_PAID_BOOKING_CATEGORY || "Paid booking";
+import {
+  buildCalendarBody,
+  buildCalendarSubject,
+  buildCalendarCategories,
+} from "../../api/_lib/calendar-events";
 
 export const config = {
   api: {
@@ -96,12 +98,21 @@ export default async function handler(req, res) {
           calendarId: process.env.OUTLOOK_CALENDAR_ID,
           eventId: data.calendar_event_id,
           updates: {
-            subject: data.service_title || "Booking confirmed",
+            subject: buildCalendarSubject({
+              serviceTitle: data.service_title,
+              status: "confirmed",
+            }),
             body: {
-              contentType: "HTML",
-              content: `Booking confirmed for ${data.service_title || "Service"}`,
+              contentType: "Text",
+              content: buildCalendarBody({
+                serviceTitle: data.service_title,
+                status: "confirmed",
+              }),
             },
-            categories: [PAID_BOOKING_CATEGORY],
+            categories: buildCalendarCategories({
+              status: "confirmed",
+              serviceTitle: data.service_title,
+            }),
             showAs: "busy",
           },
         });

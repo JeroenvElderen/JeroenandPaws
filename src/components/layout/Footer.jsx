@@ -111,6 +111,11 @@ const Footer = () => (
             </Link>
           </li>
           <li>
+            <Link href="/pricing" className="footer_link on-inverse w-inline-block">
+              <div>Pricing</div>
+            </Link>
+          </li>
+          <li>
             <Link href="/contact" className="footer_link on-inverse w-inline-block">
               <div>Contact</div>
             </Link>

@@ -3,6 +3,11 @@ const { supabaseAdmin, requireSupabase, findAdjacentBookings, resolveBookingTime
 const { getAppOnlyAccessToken } = require('./_lib/auth');
 const { deleteEvent, updateEvent } = require('./_lib/graph');
 const {
+  buildCalendarBody,
+  buildCalendarSubject,
+  buildCalendarCategories,
+} = require('./_lib/calendar-events');
+const {
   reconcileBookingsWithCalendar,
   cancelBookingInSupabase,
 } = require('./_lib/bookings');
@@ -243,7 +248,10 @@ module.exports = async (req, res) => {
               calendarId,
               eventId: bookingEventId,
               updates: {
-                subject: updateResult.data.service_title || 'Booking rescheduled',
+                subject: buildCalendarSubject({
+                  serviceTitle: updateResult.data.service_title,
+                  status: 'rescheduled',
+                }),
                 start: { dateTime: start.toUTC().toISO(), timeZone: resolvedTimeZone },
                 end: { dateTime: end.toUTC().toISO(), timeZone: resolvedTimeZone },
                 location: updateResult.data.client_address
@@ -251,8 +259,15 @@ module.exports = async (req, res) => {
                   : undefined,
                 body: {
                   contentType: 'Text',
-                  content: `Booking rescheduled for ${updateResult.data.service_title || 'service'}.`,
+                  content: buildCalendarBody({
+                    serviceTitle: updateResult.data.service_title,
+                    status: 'rescheduled',
+                  }),
                 },
+                categories: buildCalendarCategories({
+                  status: 'rescheduled',
+                  serviceTitle: updateResult.data.service_title,
+                }),
                 attendees: normalizedEmail
                   ? [
                       {
