@@ -636,8 +636,14 @@ const BookingForm = ({
                 </li>
                 {pricing.secondDogDiscount > 0 && (
                   <li>
-                    Second dog: {formatCurrency(pricing.secondDogPrice)} (save {" "}
+                    Second dog: {formatCurrency(pricing.secondDogPrice)} (save{" "}
                     {formatCurrency(pricing.secondDogDiscount)})
+                  </li>
+                )}
+                {pricing.thirdDogDiscount > 0 && pricing.dogCount >= 3 && (
+                  <li>
+                    Third dog: {formatCurrency(pricing.thirdDogPrice)} (save{" "}
+                    {formatCurrency(pricing.thirdDogDiscount)})
                   </li>
                 )}
                 {pricing.selectedAddons.map((addon) => (

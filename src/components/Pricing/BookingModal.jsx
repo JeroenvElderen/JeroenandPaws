@@ -1063,15 +1063,20 @@ const BookingModal = ({ service, onClose }) => {
 
     const visitCount = visitsWithTime || 0;
     const perDogPerVisit = servicePrice;
-    const secondDogPrice = 10;
-    const secondDogDiscount =
-      activeDogsCount >= 2 ? Math.max(perDogPerVisit - secondDogPrice, 0) : 0;
+    const additionalDogPrice = perDogPerVisit * 0.5;
+    const additionalDogDiscount =
+      activeDogsCount >= 2
+        ? Math.max(perDogPerVisit - additionalDogPrice, 0)
+        : 0;
+    const secondDogPrice = additionalDogPrice;
+    const thirdDogPrice = additionalDogPrice;
+    const secondDogDiscount = additionalDogDiscount;
+    const thirdDogDiscount = additionalDogDiscount;
 
     let perVisitTotal = 0;
     if (activeDogsCount >= 1) perVisitTotal += perDogPerVisit;
-    if (activeDogsCount >= 2) perVisitTotal += secondDogPrice;
-    if (activeDogsCount > 2)
-      perVisitTotal += perDogPerVisit * (activeDogsCount - 2);
+    if (activeDogsCount >= 2)
+      perVisitTotal += additionalDogPrice * (activeDogsCount - 1);
 
     const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
     const totalPrice = baseTotal + addonTotal;
@@ -1106,6 +1111,10 @@ const BookingModal = ({ service, onClose }) => {
       selectedAddons: selectedAddonObjects,
       secondDogDiscount,
       secondDogPrice,
+      thirdDogDiscount,
+      thirdDogPrice,
+      additionalDogDiscount,
+      additionalDogPrice,
       perVisitTotal,
     };
   }, [
@@ -2353,8 +2362,14 @@ const BookingModal = ({ service, onClose }) => {
                     </li>
                     {pricing.dogCount >= 2 && (
                       <li>
-                        Second dog rate: {formatCurrency(pricing.secondDogPrice)}
-                        / visit (flat €10 add-on)
+                        Second dog: {formatCurrency(pricing.secondDogPrice)} (save{" "}
+                        {formatCurrency(pricing.secondDogDiscount)})
+                      </li>
+                    )}
+                    {pricing.dogCount >= 3 && (
+                      <li>
+                        Third dog: {formatCurrency(pricing.thirdDogPrice)} (save{" "}
+                        {formatCurrency(pricing.thirdDogDiscount)})
                       </li>
                     )}
                     {pricing.selectedAddons.map((addon) => (
