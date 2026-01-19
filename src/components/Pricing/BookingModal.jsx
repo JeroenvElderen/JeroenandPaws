@@ -27,6 +27,8 @@ const BUSINESS_TIME_ZONE = "Europe/Dublin";
 const HOME_EIRCODE = "A98H940";
 const MIN_LEAD_MINUTES = 30;
 const HOME_COORDS = { lat: 53.204, lng: -6.111 }; // Bray (home)
+const TRAVEL_DISTANCE_THRESHOLD_KM = 30;
+const TRAVEL_SURCHARGE_PER_KM = 1;
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
 const ROUTING_COORDS = {
   // Approximate centroids for common routing keys so we can estimate travel when
@@ -111,6 +113,7 @@ const BookingModal = ({ service, onClose }) => {
   const [previousBookingTime, setPreviousBookingTime] = useState("");
   const [clientCoordinates, setClientCoordinates] = useState(null);
   const [travelMinutes, setTravelMinutes] = useState(0);
+  const [travelDistanceKm, setTravelDistanceKm] = useState(0);
   const [travelNote, setTravelNote] = useState("");
   const [travelValidationState, setTravelValidationState] = useState("pending");
   const isTravelValidationPending = travelValidationState === "pending";
@@ -222,6 +225,36 @@ const BookingModal = ({ service, onClose }) => {
 
       if (routingKey === anchorKey) return 15;
       return 45;
+    },
+    [getRoutingKey, homeCoordinates]
+  );
+
+  const estimateTravelDistanceKm = useCallback(
+    (from, to) => {
+      const anchor =
+        to || {
+          eircode: HOME_EIRCODE,
+          coords: homeCoordinates,
+        };
+
+      if (from?.coords && anchor?.coords) {
+        return haversineKm(from.coords, anchor.coords);
+      }
+
+      const routingKey = getRoutingKey(from?.eircode);
+      const anchorKey = getRoutingKey(anchor?.eircode);
+
+      if (!routingKey || !anchorKey) return 0;
+
+      const fromCoord = ROUTING_COORDS[routingKey];
+      const anchorCoord = ROUTING_COORDS[anchorKey];
+
+      if (fromCoord && anchorCoord) {
+        return haversineKm(fromCoord, anchorCoord);
+      }
+
+      if (routingKey === anchorKey) return 5;
+      return 15;
     },
     [getRoutingKey, homeCoordinates]
   );
@@ -586,6 +619,7 @@ const BookingModal = ({ service, onClose }) => {
     if (!normalized) {
       setClientCoordinates(null);
       setTravelMinutes(0);
+      setTravelDistanceKm(0);
       setTravelNote("Enter your full Eircode to calculate travel time.");
       setTravelValidationState("pending");
       return () => controller.abort();
@@ -597,15 +631,22 @@ const BookingModal = ({ service, onClose }) => {
       travelAnchor === "home"
         ? HOME_EIRCODE
         : normalizeEircode(clientAddress) || HOME_EIRCODE;
+    const pricingAnchorEircode = HOME_EIRCODE;
+    const pricingAnchorCoords = homeCoordinates;
 
     if (!hasFullClientEircode) {
       const minutes = estimateTravelMinutes(
         { eircode: normalized, coords: null },
         { eircode: anchorEircode, coords: null }
       );
+      const distance = estimateTravelDistanceKm(
+        { eircode: normalized, coords: null },
+        { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
+      );
 
       setClientCoordinates(null);
       setTravelMinutes(minutes);
+      setTravelDistanceKm(distance);
       setTravelNote(
         "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
       );
@@ -636,7 +677,12 @@ const BookingModal = ({ service, onClose }) => {
           { eircode: normalized, coords: fromCoords },
           { eircode: anchorEircode, coords: resolvedAnchorCoords }
         );
+        const distance = estimateTravelDistanceKm(
+          { eircode: normalized, coords: fromCoords },
+          { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
+        );
         setTravelMinutes(minutes);
+        setTravelDistanceKm(distance);
         setTravelValidationState("ready");
 
         if (travelAnchor === "previous" && !previousBookingTime) {
@@ -677,8 +723,16 @@ const BookingModal = ({ service, onClose }) => {
             coords: travelAnchor === "home" ? homeCoordinates : null,
           }
         );
+        const distance = estimateTravelDistanceKm(
+          { eircode: normalized, coords: null },
+          {
+            eircode: pricingAnchorEircode,
+            coords: pricingAnchorCoords,
+          }
+        );
 
         setTravelMinutes(minutes);
+        setTravelDistanceKm(distance);
         setTravelValidationState("approximate");
         setTravelNote(
           "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
@@ -696,6 +750,7 @@ const BookingModal = ({ service, onClose }) => {
     clientAddress,
     clientEircode,
     estimateTravelMinutes,
+    estimateTravelDistanceKm,
     geocodeEircode,
     homeCoordinates,
     isFullEircode,
@@ -1079,7 +1134,13 @@ const BookingModal = ({ service, onClose }) => {
       perVisitTotal += additionalDogPrice * (activeDogsCount - 1);
 
     const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
-    const totalPrice = baseTotal + addonTotal;
+    const chargeableTravelKm = Math.max(
+      0,
+      Math.ceil(travelDistanceKm - TRAVEL_DISTANCE_THRESHOLD_KM)
+    );
+    const travelSurcharge =
+      chargeableTravelKm * TRAVEL_SURCHARGE_PER_KM * (visitCount || 0);
+    const totalPrice = baseTotal + addonTotal + travelSurcharge;
 
     const descriptionParts = [service.title];
 
@@ -1100,6 +1161,10 @@ const BookingModal = ({ service, onClose }) => {
       descriptionParts.push(`Add-ons: ${addonNames}`);
     }
 
+    if (travelSurcharge > 0) {
+      descriptionParts.push(`Travel surcharge`);
+    }
+
     return {
       servicePrice,
       addonTotal,
@@ -1116,6 +1181,11 @@ const BookingModal = ({ service, onClose }) => {
       additionalDogDiscount,
       additionalDogPrice,
       perVisitTotal,
+      travelDistanceKm,
+      travelSurcharge,
+      travelSurchargeRate: TRAVEL_SURCHARGE_PER_KM,
+      travelSurchargeThreshold: TRAVEL_DISTANCE_THRESHOLD_KM,
+      travelSurchargeKm: chargeableTravelKm,
     };
   }, [
     dogCount,
@@ -1126,6 +1196,7 @@ const BookingModal = ({ service, onClose }) => {
     service.cost,
     service.price,
     service.title,
+    travelDistanceKm,
   ]);
 
   useEffect(() => {
@@ -2378,6 +2449,17 @@ const BookingModal = ({ service, onClose }) => {
                         {formatCurrency(parsePriceValue(addon.price))}
                       </li>
                     ))}
+                    {pricing.travelSurcharge > 0 && (
+                      <li>
+                        Travel surcharge: {formatCurrency(pricing.travelSurcharge)}{" "}
+                        ({pricing.travelSurchargeKm} km over{" "}
+                        {pricing.travelSurchargeThreshold} km
+                        {pricing.visitCount > 1
+                          ? ` × ${pricing.visitCount} visits`
+                          : ""}
+                        )
+                      </li>
+                    )}
                     <li>
                       Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
                     </li>

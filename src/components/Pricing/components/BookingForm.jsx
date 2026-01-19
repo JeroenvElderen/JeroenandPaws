@@ -651,6 +651,17 @@ const BookingForm = ({
                     + {addon.label}: {formatCurrency(parsePriceValue(addon.price))}
                   </li>
                 ))}
+                {pricing.travelSurcharge > 0 && (
+                  <li>
+                    Travel surcharge: {formatCurrency(pricing.travelSurcharge)} (
+                    {pricing.travelSurchargeKm} km over{" "}
+                    {pricing.travelSurchargeThreshold} km
+                    {pricing.visitCount > 1
+                      ? ` × ${pricing.visitCount} visits`
+                      : ""}
+                    )
+                  </li>
+                )}
                 <li>
                   Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
                 </li>
