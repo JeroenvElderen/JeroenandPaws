@@ -147,6 +147,7 @@ export default async function handler(req, res) {
         bodyContentType: "HTML",
         categories: [PAID_BOOKING_CATEGORY],
         showAs: "busy",
+        attendeeEmail: booking.client_email,
       });
 
       if (calendarEvent?.id)

@@ -16,6 +16,7 @@ const TimesSection = ({
   travelAnchor = "home",
   isTravelValidationPending = false,
   travelNote,
+  continueLabel = "Continue",
 }) => {
   return (
     <div className="times-card" ref={timesSectionRef}>
@@ -38,7 +39,7 @@ const TimesSection = ({
               onClick={onContinue}
               disabled={!canContinue}
             >
-              Continue
+              {continueLabel}
             </button>
           </div>
         </div>

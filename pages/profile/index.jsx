@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../src/context/AuthContext";
 import CalendarSection from "../../src/components/Pricing/components/CalendarSection";
+import TimesSection from "../../src/components/Pricing/components/TimesSection";
 import { buildMonthMatrix } from "../../src/components/Pricing/utils";
 import { weekdayLabels } from "../../src/components/Pricing/constants";
 
@@ -203,11 +204,33 @@ const ProfilePage = () => {
     cancelling: false,
     error: "",
   });
+  const [rescheduleBooking, setRescheduleBooking] = useState(null);
+  const [rescheduleAvailability, setRescheduleAvailability] = useState({
+    dates: [],
+    timeZone: "Europe/Dublin",
+  });
+  const [rescheduleSelectedDate, setRescheduleSelectedDate] = useState("");
+  const [rescheduleSelectedTime, setRescheduleSelectedTime] = useState("");
+  const [rescheduleVisibleMonth, setRescheduleVisibleMonth] = useState(
+    () => new Date()
+  );
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState("");
+  const [rescheduleSuccess, setRescheduleSuccess] = useState("");
   const isAllTab = activeTab === "All";
   const showDetails = isAllTab || activeTab === "Details";
   const showPets = isAllTab || activeTab === "Pets";
   const showBookings = isAllTab || activeTab === "Bookings";
   
+  const rescheduleMinNoticeHours = useMemo(() => {
+    const parsed = Number.parseInt(
+      process.env.NEXT_PUBLIC_RESCHEDULE_MIN_NOTICE_HOURS || "24",
+      10
+    );
+    return Number.isNaN(parsed) ? 24 : Math.max(parsed, 1);
+  }, []);
+
   const showSidebar = true;
   const showSidebarDetails = true;
 
@@ -291,6 +314,201 @@ const ProfilePage = () => {
       day: "numeric",
     });
   }, [selectedDate]);
+
+  const rescheduleAvailabilityMap = useMemo(() => {
+    return (rescheduleAvailability?.dates || []).reduce((acc, day) => {
+      acc[day.date] = day;
+      return acc;
+    }, {});
+  }, [rescheduleAvailability]);
+
+  const rescheduleSelectedDay = useMemo(
+    () => rescheduleAvailabilityMap[rescheduleSelectedDate],
+    [rescheduleAvailabilityMap, rescheduleSelectedDate]
+  );
+
+  const rescheduleMonthMatrix = useMemo(
+    () => buildMonthMatrix(rescheduleVisibleMonth),
+    [rescheduleVisibleMonth]
+  );
+
+  const rescheduleMonthLabel = useMemo(
+    () =>
+      rescheduleVisibleMonth.toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      }),
+    [rescheduleVisibleMonth]
+  );
+
+  const isRescheduleDayAvailable = useCallback(
+    (dayData) => Boolean(dayData?.slots?.some((slot) => slot.available)),
+    []
+  );
+
+  const formatRescheduleTime = useCallback((slot) => slot, []);
+
+  const resolveRescheduleDuration = useCallback((booking) => {
+    const catalogDuration = booking?.services_catalog?.duration_minutes;
+    if (Number.isFinite(catalogDuration)) {
+      return catalogDuration;
+    }
+    if (booking?.start_at && booking?.end_at) {
+      const start = new Date(booking.start_at);
+      const end = new Date(booking.end_at);
+      const diff = (end - start) / 60000;
+      if (Number.isFinite(diff) && diff > 0) {
+        return Math.round(diff);
+      }
+    }
+    return 60;
+  }, []);
+
+  const loadRescheduleAvailability = useCallback(
+    async (booking) => {
+      if (!booking) return;
+      setRescheduleLoading(true);
+      setRescheduleError("");
+      setRescheduleSuccess("");
+      setRescheduleSelectedDate("");
+      setRescheduleSelectedTime("");
+
+      try {
+        const durationMinutes = resolveRescheduleDuration(booking);
+        const url = `${apiBaseUrl}/api/availability?durationMinutes=${durationMinutes}`;
+        const response = await fetch(url, {
+          headers: { Accept: "application/json" },
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload?.message || "Unable to load availability.");
+        }
+
+        const now = new Date();
+        const minNoticeTime = new Date(
+          now.getTime() + rescheduleMinNoticeHours * 60 * 60 * 1000
+        );
+
+        const filteredDates = (payload?.dates || []).filter((day) => {
+          const dayDate = new Date(`${day.date}T00:00:00`);
+          return dayDate >= new Date(minNoticeTime.toDateString());
+        });
+
+        setRescheduleAvailability({
+          ...payload,
+          dates: filteredDates,
+        });
+
+        if (filteredDates.length) {
+          const firstAvailable = new Date(`${filteredDates[0].date}T00:00:00`);
+          setRescheduleVisibleMonth(
+            new Date(firstAvailable.getFullYear(), firstAvailable.getMonth(), 1)
+          );
+        }
+      } catch (err) {
+        console.error("Reschedule availability error", err);
+        setRescheduleError(
+          err?.message || "Unable to load rescheduling availability."
+        );
+      } finally {
+        setRescheduleLoading(false);
+      }
+    },
+    [apiBaseUrl, resolveRescheduleDuration, rescheduleMinNoticeHours]
+  );
+
+  const openReschedule = useCallback(
+    (booking) => {
+      setRescheduleBooking(booking);
+      loadRescheduleAvailability(booking);
+    },
+    [loadRescheduleAvailability]
+  );
+
+  const closeReschedule = useCallback(() => {
+    setRescheduleBooking(null);
+    setRescheduleError("");
+    setRescheduleSuccess("");
+    setRescheduleSelectedDate("");
+    setRescheduleSelectedTime("");
+  }, []);
+
+  const handleRescheduleDaySelection = useCallback((iso) => {
+    setRescheduleSelectedDate(iso);
+    setRescheduleSelectedTime("");
+  }, []);
+
+  const handleReschedulePreviousMonth = useCallback(() => {
+    setRescheduleVisibleMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+    );
+  }, []);
+
+  const handleRescheduleNextMonth = useCallback(() => {
+    setRescheduleVisibleMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+    );
+  }, []);
+
+  const submitReschedule = useCallback(async () => {
+    if (!rescheduleBooking) return;
+    if (!rescheduleSelectedDate || !rescheduleSelectedTime) {
+      setRescheduleError("Choose a new date and time to continue.");
+      return;
+    }
+
+    setRescheduleSubmitting(true);
+    setRescheduleError("");
+    setRescheduleSuccess("");
+
+    try {
+      const durationMinutes = resolveRescheduleDuration(rescheduleBooking);
+      const response = await fetch("/api/client-bookings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reschedule",
+          bookingId: rescheduleBooking.id,
+          clientEmail: contactForm.email,
+          date: rescheduleSelectedDate,
+          time: rescheduleSelectedTime,
+          timeZone:
+            rescheduleAvailability?.timeZone ||
+            rescheduleBooking?.time_zone ||
+            "UTC",
+          durationMinutes,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "Unable to reschedule booking.");
+      }
+
+      setProfile((currentProfile) => {
+        const updatedBookings = (currentProfile?.bookings || []).map((booking) =>
+          booking.id === payload?.booking?.id ? payload.booking : booking
+        );
+        return { ...currentProfile, bookings: updatedBookings };
+      });
+
+      setRescheduleSuccess("Your booking has been rescheduled.");
+    } catch (err) {
+      console.error("Reschedule failed", err);
+      setRescheduleError(err?.message || "Unable to reschedule booking.");
+    } finally {
+      setRescheduleSubmitting(false);
+    }
+  }, [
+    contactForm.email,
+    rescheduleAvailability?.timeZone,
+    rescheduleBooking,
+    rescheduleSelectedDate,
+    rescheduleSelectedTime,
+    resolveRescheduleDuration,
+  ]);
 
   const refreshContactForm = useCallback((payload) => {
     setContactForm({
@@ -2154,6 +2372,26 @@ const ProfilePage = () => {
               )}
               <button
                 type="button"
+                onClick={() => {
+                  setSelectedBooking(null);
+                  openReschedule(selectedBooking);
+                }}
+                disabled={!contactForm.email}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  border: `1px solid ${brand.primary}`,
+                  background: "transparent",
+                  color: brand.primary,
+                  fontWeight: 800,
+                  cursor: contactForm.email ? "pointer" : "not-allowed",
+                  opacity: contactForm.email ? 1 : 0.6,
+                }}
+              >
+                Reschedule
+              </button>
+              <button
+                type="button"
                 onClick={cancelBooking}
                 disabled={bookingAction.cancelling}
                 style={{
@@ -2169,6 +2407,144 @@ const ProfilePage = () => {
                 }}
               >
                 {bookingAction.cancelling ? "Cancelling…" : "Cancel booking"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rescheduleBooking && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "grid",
+            placeItems: "center",
+            padding: "16px",
+            zIndex: 22,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "18px",
+              padding: "20px",
+              width: "min(820px, 96vw)",
+              boxShadow: brand.cardShadow,
+              border: `1px solid ${brand.cardBorder}`,
+              display: "grid",
+              gap: "14px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <p style={{ margin: 0, color: brand.subtleText }}>
+                  Reschedule booking
+                </p>
+                <h3 style={{ margin: "4px 0 0", color: brand.neutral }}>
+                  {rescheduleBooking.service_title ||
+                    rescheduleBooking?.services_catalog?.title ||
+                    "Service"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeReschedule}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  fontSize: "1.2rem",
+                  cursor: "pointer",
+                  color: brand.subtleText,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: 0, color: brand.subtleText }}>
+              Choose a new time at least {rescheduleMinNoticeHours} hours in
+              advance. We'll re-check availability, travel buffers, and send an
+              Outlook update that adds the new visit to your calendar
+              automatically.
+            </p>
+            {rescheduleError && (
+              <p style={{ margin: 0, color: "#b91c1c", fontWeight: 700 }}>
+                {rescheduleError}
+              </p>
+            )}
+            {rescheduleSuccess && (
+              <p style={{ margin: 0, color: "#15803d", fontWeight: 700 }}>
+                {rescheduleSuccess}
+              </p>
+            )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr)",
+                gap: "16px",
+              }}
+            >
+              <CalendarSection
+                monthLabel={rescheduleMonthLabel}
+                weekdayLabels={weekdayLabels}
+                monthMatrix={rescheduleMonthMatrix}
+                visibleMonth={rescheduleVisibleMonth}
+                availabilityMap={rescheduleAvailabilityMap}
+                isDayAvailableForService={isRescheduleDayAvailable}
+                selectedDate={rescheduleSelectedDate}
+                selectedSlots={
+                  rescheduleSelectedDate && rescheduleSelectedTime
+                    ? { [rescheduleSelectedDate]: rescheduleSelectedTime }
+                    : {}
+                }
+                handleDaySelection={handleRescheduleDaySelection}
+                onPreviousMonth={handleReschedulePreviousMonth}
+                onNextMonth={handleRescheduleNextMonth}
+                loading={rescheduleLoading}
+                disablePastDates={true}
+              />
+              <TimesSection
+                selectedDay={rescheduleSelectedDay}
+                isDayAvailableForService={isRescheduleDayAvailable}
+                selectedTime={rescheduleSelectedTime}
+                handleTimeSelection={setRescheduleSelectedTime}
+                formatTime={formatRescheduleTime}
+                onContinue={submitReschedule}
+                onBack={null}
+                canContinue={
+                  Boolean(rescheduleSelectedTime) && !rescheduleSubmitting
+                }
+                continueLabel={
+                  rescheduleSubmitting ? "Rescheduling…" : "Reschedule"
+                }
+                travelMinutes={0}
+                travelAnchor="home"
+                isTravelValidationPending={false}
+                travelNote=""
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={closeReschedule}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  border: `1px solid ${brand.cardBorder}`,
+                  background: "transparent",
+                  color: brand.neutral,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Close
               </button>
             </div>
           </div>

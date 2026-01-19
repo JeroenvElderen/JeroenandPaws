@@ -1,10 +1,17 @@
-const { supabaseAdmin, requireSupabase } = require('./_lib/supabase');
+const { DateTime } = require('luxon');
+const { supabaseAdmin, requireSupabase, findAdjacentBookings, resolveBookingTimes } = require('./_lib/supabase');
 const { getAppOnlyAccessToken } = require('./_lib/auth');
-const { deleteEvent } = require('./_lib/graph');
+const { deleteEvent, updateEvent } = require('./_lib/graph');
 const {
   reconcileBookingsWithCalendar,
   cancelBookingInSupabase,
 } = require('./_lib/bookings');
+const { DEFAULT_HOME_ADDRESS, validateTravelWindow } = require('./_lib/travel');
+
+const RESCHEDULE_MIN_NOTICE_HOURS = Number.parseInt(
+  process.env.RESCHEDULE_MIN_NOTICE_HOURS || '24',
+  10
+);
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
@@ -62,7 +69,7 @@ module.exports = async (req, res) => {
     try {
       requireSupabase();
 
-      const { bookingId, clientEmail } = req.body || {};
+      const { bookingId, clientEmail, action } = req.body || {};
       const normalizedEmail = (clientEmail || '').toLowerCase();
       const calendarId = process.env.OUTLOOK_CALENDAR_ID;
       let calendarAccessToken = null;
@@ -98,7 +105,7 @@ module.exports = async (req, res) => {
 
       const bookingResult = await supabaseAdmin
         .from('bookings')
-        .select('id, client_id, status, calendar_event_id')
+        .select('id, client_id, status, calendar_event_id, start_at, end_at, time_zone, client_address, service_title, services_catalog(duration_minutes)')
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -124,6 +131,147 @@ module.exports = async (req, res) => {
       }
 
       const bookingEventId = bookingResult.data?.calendar_event_id;
+
+      if (action === 'reschedule') {
+        const { date, time, timeZone, durationMinutes } = req.body || {};
+
+        if (!date || !time) {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ message: 'Date and time are required to reschedule.' }));
+          return;
+        }
+
+        const durationFromBooking = bookingResult.data?.services_catalog?.duration_minutes;
+        const fallbackDuration = (() => {
+          const start = DateTime.fromISO(bookingResult.data?.start_at || '', { zone: 'UTC' });
+          const end = DateTime.fromISO(bookingResult.data?.end_at || '', { zone: 'UTC' });
+          if (start.isValid && end.isValid) {
+            return Math.max(15, Math.round(end.diff(start, 'minutes').minutes));
+          }
+          return 60;
+        })();
+
+        const duration = Number.isFinite(Number(durationMinutes))
+          ? Number(durationMinutes)
+          : Number.isFinite(durationFromBooking)
+          ? durationFromBooking
+          : fallbackDuration;
+
+        const resolvedTimeZone = timeZone || bookingResult.data?.time_zone || 'UTC';
+        const { start, end } = resolveBookingTimes({
+          date,
+          time,
+          durationMinutes: duration,
+          timeZone: resolvedTimeZone,
+        });
+
+        const now = DateTime.now().setZone(resolvedTimeZone);
+        const minNoticeHours = Number.isNaN(RESCHEDULE_MIN_NOTICE_HOURS)
+          ? 24
+          : Math.max(1, RESCHEDULE_MIN_NOTICE_HOURS);
+        const earliestAllowed = now.plus({ hours: minNoticeHours });
+
+        if (start.toMillis() < earliestAllowed.toMillis()) {
+          res.statusCode = 422;
+          res.end(JSON.stringify({
+            message: `Reschedules must be at least ${minNoticeHours} hours in advance. Please choose a later time.`,
+          }));
+          return;
+        }
+
+        const conflictCheck = await supabaseAdmin
+          .from('bookings')
+          .select('id')
+          .neq('id', bookingId)
+          .lt('start_at', end.toUTC().toISO())
+          .gt('end_at', start.toUTC().toISO())
+          .not('status', 'in', '(cancelled,canceled)')
+          .limit(1)
+          .maybeSingle();
+
+        if (conflictCheck?.data?.id) {
+          res.statusCode = 409;
+          res.end(JSON.stringify({ message: 'That slot was just booked. Please choose another time.' }));
+          return;
+        }
+
+        const adjacent = await findAdjacentBookings({
+          start: start.toUTC().toISO(),
+          end: end.toUTC().toISO(),
+          excludeBookingId: bookingId,
+        });
+
+        const travel = await validateTravelWindow({
+          start,
+          end,
+          clientAddress: bookingResult.data?.client_address,
+          previousBooking: adjacent.previous,
+          nextBooking: adjacent.next,
+          baseAddress:
+            process.env.TRAVEL_HOME_ADDRESS ||
+            process.env.HOME_BASE_ADDRESS ||
+            DEFAULT_HOME_ADDRESS,
+        });
+
+        if (!travel.ok) {
+          res.statusCode = 409;
+          res.end(JSON.stringify({ message: travel.message }));
+          return;
+        }
+
+        const updateResult = await supabaseAdmin
+          .from('bookings')
+          .update({
+            start_at: start.toUTC().toISO(),
+            end_at: end.toUTC().toISO(),
+            time_zone: resolvedTimeZone,
+          })
+          .eq('id', bookingId)
+          .select('*, services_catalog(*), booking_pets(pet_id)')
+          .maybeSingle();
+
+        if (updateResult.error || !updateResult.data) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ message: 'Failed to update booking' }));
+          return;
+        }
+
+        if (calendarAccessToken && calendarId && bookingEventId) {
+          try {
+            await updateEvent({
+              accessToken: calendarAccessToken,
+              calendarId,
+              eventId: bookingEventId,
+              updates: {
+                subject: updateResult.data.service_title || 'Booking rescheduled',
+                start: { dateTime: start.toUTC().toISO(), timeZone: resolvedTimeZone },
+                end: { dateTime: end.toUTC().toISO(), timeZone: resolvedTimeZone },
+                location: updateResult.data.client_address
+                  ? { displayName: updateResult.data.client_address }
+                  : undefined,
+                body: {
+                  contentType: 'Text',
+                  content: `Booking rescheduled for ${updateResult.data.service_title || 'service'}.`,
+                },
+                attendees: normalizedEmail
+                  ? [
+                      {
+                        emailAddress: { address: normalizedEmail },
+                        type: 'required',
+                      },
+                    ]
+                  : [],
+              },
+            });
+          } catch (updateError) {
+            console.error('Failed to update calendar event for booking', updateError);
+          }
+        }
+
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ booking: updateResult.data }));
+        return;
+      }
 
       let updatedBooking = null;
       try {

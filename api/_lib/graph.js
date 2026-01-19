@@ -285,6 +285,66 @@ const updateEvent = async ({
   return response.json();
 };
 
+const createSubscription = async ({
+  accessToken,
+  calendarId,
+  notificationUrl,
+  clientState,
+  expirationDateTime,
+}) => {
+  if (!accessToken || !notificationUrl) return null;
+  const principalPath = buildPrincipalPath(calendarId).replace(/^\//, "");
+
+  const response = await fetch(`${GRAPH_BASE}/subscriptions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      changeType: "updated",
+      notificationUrl,
+      resource: `${principalPath}/events`,
+      expirationDateTime,
+      clientState,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Graph create subscription error: ${response.status} ${text}`);
+  }
+
+  return response.json();
+};
+
+const renewSubscription = async ({
+  accessToken,
+  subscriptionId,
+  expirationDateTime,
+}) => {
+  if (!accessToken || !subscriptionId) return null;
+
+  const response = await fetch(
+    `${GRAPH_BASE}/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expirationDateTime }),
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Graph renew subscription error: ${response.status} ${text}`);
+  }
+
+  return response.json();
+};
+
 const getEvent = async ({ accessToken, calendarId, eventId }) => {
   if (!accessToken || !eventId) return { exists: false };
 
@@ -416,9 +476,11 @@ const sendMail = async ({
 
 module.exports = {
   createEvent,
+  createSubscription,
   deleteEvent,
   getEvent,
   getSchedule,
+  renewSubscription,
   sendMail,
   updateEvent,
 };

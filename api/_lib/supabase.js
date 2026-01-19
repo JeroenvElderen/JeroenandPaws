@@ -345,30 +345,40 @@ const ensureClientProfile = async ({ email, fullName, phone, address }) => {
   };
 };
 
-const findAdjacentBookings = async ({ start, end }) => {
+const findAdjacentBookings = async ({ start, end, excludeBookingId }) => {
   requireSupabase();
 
-  const { data: previous, error: previousError } = await supabaseAdmin
+  let previousQuery = supabaseAdmin
     .from("bookings")
     .select("id, start_at, end_at, client_address")
     .lt("end_at", start)
     .not("status", "in", "(cancelled,canceled)")
     .order("end_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+
+  if (excludeBookingId) {
+    previousQuery = previousQuery.neq("id", excludeBookingId);
+  }
+
+  const { data: previous, error: previousError } = await previousQuery.maybeSingle();
 
   if (previousError) {
     throw previousError;
   }
 
-  const { data: next, error: nextError } = await supabaseAdmin
+  let nextQuery = supabaseAdmin
     .from("bookings")
     .select("id, start_at, end_at, client_address")
     .gt("start_at", end)
     .not("status", "in", "(cancelled,canceled)")
     .order("start_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+
+  if (excludeBookingId) {
+    nextQuery = nextQuery.neq("id", excludeBookingId);
+  }
+
+  const { data: next, error: nextError } = await nextQuery.maybeSingle();
 
   if (nextError) {
     throw nextError;

@@ -248,6 +248,7 @@ module.exports = async (req, res) => {
             bodyContentType: "HTML",
             categories: [PENDING_PAYMENT_CATEGORY],
             showAs: "tentative",
+            attendeeEmail: clientEmail,
           });
 
           if (calendarEvent?.id) {
