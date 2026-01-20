@@ -17,6 +17,7 @@ import {
   buildCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
+  resolveCalendarLocationDisplayName,
 } from "../../api/_lib/calendar-events";
 
 // Invoice + OneDrive
@@ -121,6 +122,9 @@ export default async function handler(req, res) {
     const end = DateTime.fromISO(booking.end_at).toUTC().toISO();
 
     if (booking.calendar_event_id) {
+      const locationDisplayName = resolveCalendarLocationDisplayName({
+        clientAddress: booking.client_address,
+      });
       await updateEvent({
         accessToken,
         calendarId: process.env.OUTLOOK_CALENDAR_ID,
@@ -135,17 +139,31 @@ export default async function handler(req, res) {
             content: buildCalendarBody({
               serviceTitle: booking.service_title,
               status: "confirmed",
+              clientName: booking.client_name,
+              clientPhone: booking.client_phone,
+              clientEmail: booking.client_email,
+              clientAddress: booking.client_address,
+              notes: booking.notes,
+              pets: booking.pets,
+              schedule: booking.schedule,
+              additionals: booking.additionals,
             }),
           },
           categories: buildCalendarCategories({
             status: "confirmed",
             serviceTitle: booking.service_title,
           }),
+          ...(locationDisplayName
+            ? { location: { displayName: locationDisplayName } }
+            : {}),
           showAs: "busy",
         },
       });
       console.log("📅 Calendar event updated");
     } else {
+      const locationDisplayName = resolveCalendarLocationDisplayName({
+        clientAddress: booking.client_address,
+      });
       const calendarEvent = await createEvent({
         accessToken,
         calendarId: process.env.OUTLOOK_CALENDAR_ID,
@@ -156,10 +174,18 @@ export default async function handler(req, res) {
         start,
         end,
         timeZone: booking.time_zone || "UTC",
-        locationDisplayName: booking.client_address,
+        locationDisplayName,
         body: buildCalendarBody({
           serviceTitle: booking.service_title,
           status: "confirmed",
+          clientName: booking.client_name,
+          clientPhone: booking.client_phone,
+          clientEmail: booking.client_email,
+          clientAddress: booking.client_address,
+          notes: booking.notes,
+          pets: booking.pets,
+          schedule: booking.schedule,
+          additionals: booking.additionals,
         }),
         bodyContentType: "Text",
         categories: buildCalendarCategories({

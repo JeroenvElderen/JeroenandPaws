@@ -5,6 +5,7 @@ import {
   buildCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
+  resolveCalendarLocationDisplayName,
 } from "../../api/_lib/calendar-events";
 
 export const config = {
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
       })
       .eq("payment_order_id", paymentOrderId)
       .select(
-        "id, calendar_event_id, service_title, start_at, end_at, time_zone, client_address"
+        "id, calendar_event_id, service_title, start_at, end_at, time_zone, client_address, client_name, client_phone, client_email, notes, pets, schedule, additionals"
       )
       .single();
 
@@ -93,6 +94,9 @@ export default async function handler(req, res) {
     if (data?.calendar_event_id && process.env.OUTLOOK_CALENDAR_ID) {
       try {
         const accessToken = await getAppOnlyAccessToken();
+        const locationDisplayName = resolveCalendarLocationDisplayName({
+          clientAddress: data.client_address,
+        });
         await updateEvent({
           accessToken,
           calendarId: process.env.OUTLOOK_CALENDAR_ID,
@@ -101,6 +105,14 @@ export default async function handler(req, res) {
             subject: buildCalendarSubject({
               serviceTitle: data.service_title,
               status: "confirmed",
+              clientName: data.client_name,
+                clientPhone: data.client_phone,
+                clientEmail: data.client_email,
+                clientAddress: data.client_address,
+                notes: data.notes,
+                pets: data.pets,
+                schedule: data.schedule,
+                additionals: data.additionals,
             }),
             body: {
               contentType: "Text",
@@ -113,6 +125,9 @@ export default async function handler(req, res) {
               status: "confirmed",
               serviceTitle: data.service_title,
             }),
+            ...(locationDisplayName
+              ? { location: { displayName: locationDisplayName } }
+              : {}),
             showAs: "busy",
           },
         });

@@ -7,8 +7,9 @@ const BUSINESS_TIME_ZONE = "Europe/Dublin";
 const PET_PHOTO_BUCKET =
   process.env.SUPABASE_PET_PHOTO_BUCKET || "pet-photos";
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL;
+console.log("BOOT SUPABASE_URL =", process.env.SUPABASE_URL);
+
 const supabaseServiceRoleKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 

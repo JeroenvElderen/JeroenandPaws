@@ -33,7 +33,16 @@ const SERVICE_COLOR_NAMES = [
   "Steel",
 ];
 
+const EIRCODE_FULL_REGEX = /\b([AC-FHKNPRTV-Y]\d{2}[AC-FHKNPRTV-Y0-9]{4})\b/i;
+const EIRCODE_ROUTING_REGEX = /\b([AC-FHKNPRTV-Y]\d{2})\b/i;
+
 const getServiceLabel = (serviceTitle) => serviceTitle || "Service";
+
+const normalizeString = (value) =>
+  typeof value === "string" ? value.trim() : "";
+
+const normalizeEircode = (value) =>
+  normalizeString(value).toUpperCase().replace(/\s+/g, "");
 
 const hashString = (value) =>
   String(value || "")
@@ -50,13 +59,90 @@ const buildCalendarSubject = ({ serviceTitle, status }) => {
   return `${COMPANY_PREFIX} • ${getServiceLabel(serviceTitle)} • ${statusLabel}`;
 };
 
-const buildCalendarBody = ({ serviceTitle, status, paymentLink }) => {
+const extractEircode = (value = "") => {
+  const trimmed = normalizeString(value).toUpperCase();
+  if (!trimmed) return "";
+  const fullMatch = trimmed.match(EIRCODE_FULL_REGEX);
+  if (fullMatch) return fullMatch[1];
+  const routingMatch = trimmed.match(EIRCODE_ROUTING_REGEX);
+  return routingMatch ? routingMatch[1] : "";
+};
+
+const resolveCalendarLocationDisplayName = ({
+  clientAddress,
+  clientEircode,
+} = {}) => {
+  const eircode = normalizeEircode(clientEircode) || extractEircode(clientAddress);
+  return eircode || normalizeString(clientAddress);
+};
+
+const formatPets = (pets = []) => {
+  if (!pets) return "";
+  if (Array.isArray(pets)) {
+    const names = pets
+      .map((pet) => normalizeString(pet?.name || pet))
+      .filter(Boolean);
+    return names.join(", ");
+  }
+  if (typeof pets === "string") return pets.trim();
+  return "";
+};
+
+const formatSchedule = (schedule = []) => {
+  if (!Array.isArray(schedule) || schedule.length === 0) return "";
+  return schedule
+    .map((item, index) => {
+      const label = normalizeString(item?.label) || `Visit ${index + 1}`;
+      const start = normalizeString(item?.start);
+      const end = normalizeString(item?.end);
+      if (!start && !end) return "";
+      return `${label}: ${start}${end ? ` (ends ${end})` : ""}`.trim();
+    })
+    .filter(Boolean)
+    .join(" | ");
+};
+
+const buildCalendarBody = ({
+  serviceTitle,
+  status,
+  paymentLink,
+  clientName,
+  clientPhone,
+  clientEmail,
+  clientAddress,
+  clientEircode,
+  notes,
+  pets,
+  schedule,
+  additionals,
+}) => {
   const statusLabel = CALENDAR_STATUS[status] || status || "Booking";
   const lines = [
     `Status: ${statusLabel}`,
     `Service: ${getServiceLabel(serviceTitle)}`,
   ];
 
+  if (clientName) lines.push(`Client: ${normalizeString(clientName)}`);
+  if (clientPhone) lines.push(`Phone: ${normalizeString(clientPhone)}`);
+  if (clientEmail) lines.push(`Email: ${normalizeString(clientEmail)}`);
+
+  const resolvedEircode =
+    normalizeEircode(clientEircode) || extractEircode(clientAddress);
+  if (resolvedEircode) lines.push(`Eircode: ${resolvedEircode}`);
+  if (clientAddress) lines.push(`Address: ${normalizeString(clientAddress)}`);
+
+  const petSummary = formatPets(pets);
+  if (petSummary) lines.push(`Pets: ${petSummary}`);
+
+  if (additionals?.length) {
+    lines.push(`Extras: ${(additionals || []).filter(Boolean).join(", ")}`);
+  }
+
+  const scheduleSummary = formatSchedule(schedule);
+  if (scheduleSummary) lines.push(`Schedule: ${scheduleSummary}`);
+
+  if (notes) lines.push(`Notes: ${normalizeString(notes)}`);
+  
   if (paymentLink) {
     lines.push(`Payment link: ${paymentLink}`);
   }
@@ -85,5 +171,6 @@ module.exports = {
   buildClientCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
+  resolveCalendarLocationDisplayName,
   CALENDAR_STATUS,
 };
