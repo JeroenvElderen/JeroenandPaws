@@ -16,6 +16,8 @@ const extraImageHostnames = process.env.NEXT_IMAGE_REMOTE_HOSTNAMES
 const nextConfig = {
   compress: true,
   images: {
+    deviceSizes: [320, 375, 414, 640, 768, 1024, 1280, 1536, 1920],
+    imageSizes: [16, 24, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       ...(supabaseHostname
         ? [
