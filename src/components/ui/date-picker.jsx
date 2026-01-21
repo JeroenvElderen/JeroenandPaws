@@ -1,5 +1,5 @@
 import * as React from "react"
-import { format } from "date-fns"
+import { DateTime } from "luxon"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "./popover"
 import { Calendar } from "./calendar"
@@ -20,7 +20,9 @@ export function DatePicker({ value, onChange }) {
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : "Pick a date"}
+          {date
+            ? DateTime.fromJSDate(date).toLocaleString(DateTime.DATE_FULL)
+            : "Pick a date"}
         </Button>
       </PopoverTrigger>
 
