@@ -3,6 +3,10 @@ const supabaseHostname = supabaseUrl
   ? supabaseUrl.replace(/^https?:\/\//, "")
   : null;
 
+  const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
@@ -28,4 +32,4 @@ if (!supabaseHostname) {
   );
 }
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);
