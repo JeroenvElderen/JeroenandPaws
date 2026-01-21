@@ -45,8 +45,18 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "npx --yes prettier --write .",
+    "prepare": "husky",
     "test": "next lint",
     "typecheck": "npx --yes tsc --noEmit --project jsconfig.json"
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx}": [
+      "next lint --fix",
+      "npx --yes prettier --write"
+    ],
+    "**/*.{css,html,json,md,mdx,yml,yaml}": [
+      "npx --yes prettier --write"
+    ]
   },
   "eslintConfig": {
     "extends": [
@@ -99,6 +109,8 @@
     "@next/bundle-analyzer": "^16.1.4",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18"
   }
