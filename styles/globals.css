@@ -5,5 +5,24 @@
 @layer base {
   :root {
     --radius: 0.5rem;
+    --jp-background: #ffffff;
+    --jp-ink: #0f172a;
+    --jp-muted: #475569;
+    --jp-font-body: "DM Sans", "Inter", "Manrope", system-ui, sans-serif;
+    --jp-font-heading: "DM Sans", "Inter", "Manrope", system-ui, sans-serif;
+  }
+
+  html {
+    font-family: var(--jp-font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: var(--jp-background);
+    color: var(--jp-ink);
+  }
+
+  body {
+    min-height: 100%;
+    background-color: var(--jp-background);
+    color: var(--jp-ink);
   }
 }
