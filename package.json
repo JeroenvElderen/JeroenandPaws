@@ -51,7 +51,37 @@
   "eslintConfig": {
     "extends": [
       "next/core-web-vitals"
-    ]
+    ],
+    "rules": {
+      "curly": [
+        "error",
+        "all"
+      ],
+      "eqeqeq": [
+        "error",
+        "always"
+      ],
+      "no-console": [
+        "warn",
+        {
+          "allow": [
+            "warn",
+            "error"
+          ]
+        }
+      ],
+      "no-duplicate-imports": "error",
+      "no-implicit-coercion": "error",
+      "no-multi-spaces": "error",
+      "no-shadow": "error",
+      "no-unneeded-ternary": "error",
+      "no-useless-concat": "error",
+      "no-useless-return": "error",
+      "no-var": "error",
+      "object-shorthand": "error",
+      "prefer-const": "error",
+      "prefer-template": "error"
+    }
   },
   "browserslist": {
     "production": [
