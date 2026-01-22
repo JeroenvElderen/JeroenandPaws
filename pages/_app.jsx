@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Script from 'next/script';
 import { useRouter } from 'next/router';
 import Layout from '../src/components/layout/Layout';
+import ConsentBanner from '../src/components/ConsentBanner';
 import "../styles/globals.css";
 import '../src/assets/css/normalize.css';
 import '../src/assets/css/jeroenandpaws.css';
@@ -14,8 +15,29 @@ import { AuthProvider } from '../src/context/AuthContext';
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const gaTrackingId = process.env.NEXT_PUBLIC_GA4_ID;
+  const [analyticsConsent, setAnalyticsConsent] = useState(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storedConsent = window.localStorage.getItem('jp-analytics-consent');
+    if (storedConsent === 'granted' || storedConsent === 'denied') {
+      setAnalyticsConsent(storedConsent);
+    }
+  }, []);
+
+  const handleConsent = useCallback((value) => {
+    setAnalyticsConsent(value);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('jp-analytics-consent', value);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (analyticsConsent !== 'granted') {
+      return;
+    }
     const handleRouteChange = (url) => {
       if (typeof window.gtag === 'function' && gaTrackingId) {
         window.gtag('config', gaTrackingId, {
@@ -28,12 +50,12 @@ function MyApp({ Component, pageProps }) {
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange);
     };
-  }, [router.events]);
+  }, [analyticsConsent, gaTrackingId, router.events]);
 
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   return (
     <>
-      {gaTrackingId && (
+      {gaTrackingId && analyticsConsent === 'granted' && (
         <>
           <Script
             strategy="afterInteractive"
@@ -49,6 +71,12 @@ function MyApp({ Component, pageProps }) {
             `}
           </Script>
         </>
+      )}
+      {gaTrackingId && analyticsConsent === null && (
+        <ConsentBanner
+          onAccept={() => handleConsent('granted')}
+          onDecline={() => handleConsent('denied')}
+        />
       )}
       <AuthProvider>
         {getLayout(<Component {...pageProps} />)}
