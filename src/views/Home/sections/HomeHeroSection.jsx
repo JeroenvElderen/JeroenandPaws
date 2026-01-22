@@ -11,6 +11,8 @@ const HomeHeroSection = () => (
           alt="Clinic reception area for a veterinary clinic"
           fill
           priority
+          fetchPriority="high"
+          loading="eager"
           sizes="100vw"
           className="image_cover position_absolute radius_all-0"
         />
