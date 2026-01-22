@@ -15,6 +15,8 @@ import { AuthProvider } from '../src/context/AuthContext';
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
   const gaTrackingId = process.env.NEXT_PUBLIC_GA4_ID;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const shouldEnableAnalytics = isProduction && gaTrackingId;
   const [analyticsConsent, setAnalyticsConsent] = useState(null);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ function MyApp({ Component, pageProps }) {
   }, []);
 
   useEffect(() => {
-    if (analyticsConsent !== 'granted') {
+    if (!shouldEnableAnalytics || analyticsConsent !== 'granted') {
       return;
     }
     const handleRouteChange = (url) => {
@@ -50,12 +52,12 @@ function MyApp({ Component, pageProps }) {
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange);
     };
-  }, [analyticsConsent, gaTrackingId, router.events]);
+  }, [analyticsConsent, gaTrackingId, router.events, shouldEnableAnalytics]);
 
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   return (
     <>
-      {gaTrackingId && analyticsConsent === 'granted' && (
+      {shouldEnableAnalytics && analyticsConsent === 'granted' && (
         <>
           <Script
             strategy="afterInteractive"
@@ -72,7 +74,7 @@ function MyApp({ Component, pageProps }) {
           </Script>
         </>
       )}
-      {gaTrackingId && analyticsConsent === null && (
+      {shouldEnableAnalytics && analyticsConsent === null && (
         <ConsentBanner
           onAccept={() => handleConsent('granted')}
           onDecline={() => handleConsent('denied')}
