@@ -5,9 +5,17 @@
 @layer base {
   :root {
     --radius: 0.5rem;
-    --jp-background: #ffffff;
-    --jp-ink: #0f172a;
-    --jp-muted: #475569;
+    --jp-primary: #7c45f3;
+    --jp-secondary: #7c45f3;
+    --jp-tertiary: #7c45f3;
+    --jp-background: #0c081f;
+    --jp-surface: #120d23;
+    --jp-surface-strong: #1f1535;
+    --jp-ink: #f4f2ff;
+    --jp-muted: #c9c5d8;
+    --jp-border: rgba(255, 255, 255, 0.12);
+    --jp-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    --jp-shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.35);
     --jp-font-body: "DM Sans", "Inter", "Manrope", system-ui, sans-serif;
     --jp-font-heading: "DM Sans", "Inter", "Manrope", system-ui, sans-serif;
   }
