@@ -13,11 +13,12 @@ import { AuthProvider } from '../src/context/AuthContext';
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
+  const gaTrackingId = process.env.NEXT_PUBLIC_GA4_ID;
 
   useEffect(() => {
     const handleRouteChange = (url) => {
-      if (typeof window.gtag === 'function') {
-        window.gtag('config', 'G-YV9Z1KJNWW', {
+      if (typeof window.gtag === 'function' && gaTrackingId) {
+        window.gtag('config', gaTrackingId, {
           page_path: url,
         });
       }
@@ -32,19 +33,23 @@ function MyApp({ Component, pageProps }) {
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   return (
     <>
-      <Script
-        strategy="afterInteractive"
-        src="https://www.googletagmanager.com/gtag/js?id=G-YV9Z1KJNWW"
-      />
-      <Script id="ga4-init" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          window.gtag = gtag;
-          gtag('js', new Date());
-          gtag('config', 'G-YV9Z1KJNWW');
-        `}
-      </Script>
+      {gaTrackingId && (
+        <>
+          <Script
+            strategy="afterInteractive"
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`}
+          />
+          <Script id="ga4-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('js', new Date());
+              gtag('config', '${gaTrackingId}');
+            `}
+          </Script>
+        </>
+      )}
       <AuthProvider>
         {getLayout(<Component {...pageProps} />)}
       </AuthProvider>

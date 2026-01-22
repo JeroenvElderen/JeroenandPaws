@@ -25,4 +25,10 @@
     background-color: var(--jp-background);
     color: var(--jp-ink);
   }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 }
