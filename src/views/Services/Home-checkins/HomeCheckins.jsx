@@ -7,6 +7,7 @@ import AboutSection from "./sections/AboutSection";
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
 import book from "api/book";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const HomeCheckins = () => {
   const [services, setServices] = useState([]);
@@ -61,6 +62,7 @@ const HomeCheckins = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
+       <StickyBookingCta label="Book a home check-in" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

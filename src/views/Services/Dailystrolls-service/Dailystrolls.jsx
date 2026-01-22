@@ -5,6 +5,7 @@ import DailystrollsPricingSection from "./sections/DailystrollsPricingSection";
 import DailystrollsTestimonialsSection from "./sections/DailystrollsTestimonialsSection";
 import AboutSection from "./sections/AboutSection";
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
 
 const Dailystrolls = () => {
@@ -61,6 +62,7 @@ const Dailystrolls = () => {
       <DailystrollsPricingSection />
       <DailystrollsFaqSection />
       <DailystrollsTestimonialsSection />
+      <StickyBookingCta label="Book your first walk" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

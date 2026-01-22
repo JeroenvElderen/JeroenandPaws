@@ -6,6 +6,7 @@ import TestimonialsSection from './sections/TestimonialsSection';
 import AboutSection from "./sections/AboutSection";
 import useServiceBooking from "../../../components/Pricing/useServiceBooking.js";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const SoloJourneys = () => {
   const [services, setServices] = useState([]);
@@ -60,6 +61,7 @@ const SoloJourneys = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
+      <StickyBookingCta label="Book a solo journey" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

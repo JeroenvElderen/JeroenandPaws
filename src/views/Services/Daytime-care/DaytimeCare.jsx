@@ -6,6 +6,7 @@ import TestimonialsSection from './sections/TestimonialsSection';
 import AboutSection from "./sections/AboutSection";
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const DaytimeCare = () => {
   const [services, setServices] = useState([]);
@@ -59,6 +60,7 @@ const DaytimeCare = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
+      <StickyBookingCta label="Book a daytime care spot" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

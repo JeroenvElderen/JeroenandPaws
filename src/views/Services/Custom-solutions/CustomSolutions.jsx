@@ -5,6 +5,7 @@ import PricingSection from './sections/PricingSection';
 import TestimonialsSection from './sections/TestimonialsSection';
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const CustomSolutions = () => {
   const [services, setServices] = useState([]);
@@ -53,6 +54,7 @@ const CustomSolutions = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
+      <StickyBookingCta label="Book a Meet &amp; Greet" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

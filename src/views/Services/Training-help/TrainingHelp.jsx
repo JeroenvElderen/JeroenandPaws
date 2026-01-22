@@ -5,6 +5,7 @@ import PricingSection from './sections/PricingSection';
 import TestimonialsSection from './sections/TestimonialsSection';
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const TrainingHelp = () => {
   const [services, setServices] = useState([]);
@@ -58,6 +59,7 @@ const TrainingHelp = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
+      <StickyBookingCta label="Plan a training" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

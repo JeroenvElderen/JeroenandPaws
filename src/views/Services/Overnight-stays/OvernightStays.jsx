@@ -6,6 +6,7 @@ import TestimonialsSection from './sections/TestimonialsSection';
 import AboutSection from "./sections/AboutSection";
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
+import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const OvernightStays = () => {
   const [services, setServices] = useState([]);
@@ -56,6 +57,7 @@ const OvernightStays = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
+      <StickyBookingCta label="Book an overnight stay" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

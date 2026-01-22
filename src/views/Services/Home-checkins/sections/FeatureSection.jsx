@@ -2,7 +2,7 @@ import React from "react";
 
 const FeatureSection = ({ onBook }) => {
   return (
-    <header className="section">
+    <header className="section" data-sticky-anchor="true">
       <div className="container">
         <div className="w-layout-grid grid_2-col tablet-1-col gap-large">
           {/* Left text column */}
