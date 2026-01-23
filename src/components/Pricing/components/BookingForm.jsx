@@ -71,6 +71,12 @@ const BookingForm = ({
   const canAdvanceToPets = Boolean(
     clientName.trim() && clientEmail.trim() && clientPhone.trim()
   );
+  const hasCustomerDetails = Boolean(
+    clientName.trim() &&
+      clientEmail.trim() &&
+      clientPhone.trim() &&
+      clientAddress.trim()
+  );
   const recurrenceLabel =
     recurrence === "weekly"
       ? "Weekly"
@@ -349,6 +355,11 @@ const BookingForm = ({
                 </p>
               )}
             </label>
+            {hasCustomerDetails && (
+              <p className="success-banner subtle form-success-state" role="status">
+                Customer details saved. Continue when you're ready.
+              </p>
+            )}
           </>
         )}
 
@@ -555,6 +566,11 @@ const BookingForm = ({
                 })}
               </>
             )}
+            {hasAtLeastOneDog && (
+              <p className="success-banner subtle form-success-state" role="status">
+                Pet details saved. Continue when you're ready.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -702,6 +718,11 @@ const BookingForm = ({
               )}
             </div>
           )}
+          <p className="success-banner subtle form-success-state" role="status">
+            {additionals.length > 0
+              ? "Add-ons saved. Continue to summary when you're ready."
+              : "No add-ons selected — continue to summary when you're ready."}
+          </p>
         </>
       )}
 
@@ -771,6 +792,11 @@ const BookingForm = ({
                 </button>
               ) : (
                 <p className="muted subtle">Add at least one dog to continue.</p>
+              )}
+              {hasAtLeastOneDog && (
+                <p className="success-banner subtle form-success-state" role="status">
+                  All set — confirm your booking when you're ready.
+                </p>
               )}
               {isPopup && (
                 <button

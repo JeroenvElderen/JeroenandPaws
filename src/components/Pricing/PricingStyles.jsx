@@ -1669,6 +1669,10 @@ const PricingStyles = () => (
           border-radius: 10px;
           font-weight: 600;
         }
+        .form-success-state {
+          grid-column: 1 / -1;
+          margin-top: 6px;
+        }
         .error-banner {
           background: rgba(255, 99, 132, 0.15);
           color: #ff96a6;
