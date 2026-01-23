@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Script from 'next/script';
 import { useRouter } from 'next/router';
 import Layout from '../src/components/layout/Layout';
-import ConsentBanner from '../src/components/ConsentBanner';
+const ConsentBanner = dynamic(() => import('../src/components/ConsentBanner'), {
+  ssr: false,
+});
 import "../styles/globals.css";
 import '../src/assets/css/normalize.css';
 import '../src/assets/css/jeroenandpaws.css';
@@ -18,6 +21,7 @@ function MyApp({ Component, pageProps }) {
   const isProduction = process.env.NODE_ENV === 'production';
   const shouldEnableAnalytics = isProduction && gaTrackingId;
   const [analyticsConsent, setAnalyticsConsent] = useState(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -54,16 +58,54 @@ function MyApp({ Component, pageProps }) {
     };
   }, [analyticsConsent, gaTrackingId, router.events, shouldEnableAnalytics]);
 
+  useEffect(() => {
+    if (!shouldEnableAnalytics || analyticsConsent !== 'granted') {
+      return;
+    }
+
+    let timeoutId;
+
+    const markInteracted = () => {
+      setHasInteracted(true);
+      window.removeEventListener('pointerdown', markInteracted);
+      window.removeEventListener('keydown', markInteracted);
+      window.removeEventListener('scroll', markInteracted);
+      window.removeEventListener('touchstart', markInteracted);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+
+    window.addEventListener('pointerdown', markInteracted, { once: true });
+    window.addEventListener('keydown', markInteracted, { once: true });
+    window.addEventListener('scroll', markInteracted, { once: true });
+    window.addEventListener('touchstart', markInteracted, { once: true });
+
+    timeoutId = window.setTimeout(() => {
+      setHasInteracted(true);
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('pointerdown', markInteracted);
+      window.removeEventListener('keydown', markInteracted);
+      window.removeEventListener('scroll', markInteracted);
+      window.removeEventListener('touchstart', markInteracted);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [analyticsConsent, shouldEnableAnalytics]);
+
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   return (
     <>
-      {shouldEnableAnalytics && analyticsConsent === 'granted' && (
+      {shouldEnableAnalytics && analyticsConsent === 'granted' && hasInteracted && (
         <>
           <Script
-            strategy="afterInteractive"
+            strategy="lazyOnload"
             src={`https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`}
           />
-          <Script id="ga4-init" strategy="afterInteractive">
+          <Script id="ga4-init" strategy="lazyOnload">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
