@@ -43,6 +43,27 @@
   }
 }
 
+.sticky-cta {
+  position: fixed;
+  inset: auto 1.25rem 1.25rem 1.25rem;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sticky-cta__button {
+  width: min(100%, 420px);
+  pointer-events: auto;
+}
+
+.sticky-cta.is-hidden {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
 .consent-banner {
   position: fixed;
   inset: auto 1.5rem 1.5rem 1.5rem;
@@ -102,6 +123,15 @@
 }
 
 @media (min-width: 768px) {
+  .sticky-cta {
+    inset: auto 2rem 2rem 2rem;
+    justify-content: flex-end;
+  }
+
+  .sticky-cta__button {
+    width: auto;
+  }
+  
   .consent-banner {
     inset: auto 2rem 2rem 2rem;
     width: calc(100% - 4rem);
