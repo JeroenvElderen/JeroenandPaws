@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getWhatsappChatUrl } from "../utils/chatLinks";
 
 const StickyBookingCta = ({
   label,
@@ -6,7 +7,8 @@ const StickyBookingCta = ({
   anchorSelector = '[data-sticky-anchor="true"]',
 }) => {
   const [isVisible, setIsVisible] = useState(true);
-
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  
   useEffect(() => {
     const anchor = document.querySelector(anchorSelector);
     if (!anchor) {
@@ -26,6 +28,9 @@ const StickyBookingCta = ({
     return () => observer.disconnect();
   }, [anchorSelector]);
 
+  const whatsappUrl = getWhatsappChatUrl();
+  const handleClick = onClick || (() => window.open(whatsappUrl, "_blank"));
+
   return (
     <div
       className={`sticky-cta${isVisible ? "" : " is-hidden"}`}
@@ -34,7 +39,7 @@ const StickyBookingCta = ({
       <button
         type="button"
         className="button w-button sticky-cta__button"
-        onClick={onClick}
+        onClick={handleClick}
       >
         {label}
       </button>
