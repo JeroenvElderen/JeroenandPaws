@@ -114,6 +114,7 @@ const HomeIntroSection = () => (
                   alt="Kaiser laying in the grass"
                   width={347}
                   height={255}
+                  sizes="(max-width: 767px) 90vw, (max-width: 991px) 45vw, 347px"
                   className="image image_cover"
                   priority={false}
                 />
@@ -133,6 +134,7 @@ const HomeIntroSection = () => (
                   alt="Nola sitting on the pavement looking around"
                   width={347}
                   height={249}
+                  sizes="(max-width: 767px) 90vw, (max-width: 991px) 45vw, 347px"
                   className="image image_cover"
                   priority={false}
                 />
@@ -248,6 +250,7 @@ const HomeIntroSection = () => (
                 alt="Casper sitting in front of a fireplace"
                 width={299}
                 height={448}
+                sizes="(max-width: 767px) 80vw, (max-width: 991px) 45vw, 299px"
                 className="image image_cover"
                 priority={false}
               />

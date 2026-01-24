@@ -32,6 +32,7 @@ const HomeTestimonialsSection = () => (
                     alt="Headshot of a customer interacting with their pet"
                     src="/images/dogs/lola/lola1.jpeg"
                     className="image_cover"
+                    sizes="64px"
                   />
                 </div>
                   <div>
@@ -52,6 +53,7 @@ const HomeTestimonialsSection = () => (
                     alt="Headshot of a happy pet owner after training"
                     src="/images/Bonnie.jpeg"
                     className="image_cover"
+                    sizes="64px"
                   />
                 </div>
                   <div>
@@ -72,6 +74,7 @@ const HomeTestimonialsSection = () => (
                     alt="Headshot of a customer with their pet"
                     src="/images/dogs/kaiser/kaiser1.jpeg"
                     className="image_cover"
+                    sizes="64px"
                   />
                 </div>
                   <div>
@@ -92,6 +95,7 @@ const HomeTestimonialsSection = () => (
                     alt="Headshot of a customer"
                     src="/images/dogs/Nola/nola2.jpg"
                     className="image_cover"
+                    sizes="64px"
                   />
                 </div>
                   <div>

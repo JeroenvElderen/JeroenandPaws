@@ -14,6 +14,7 @@ const AboutHeroSection = () => (
                 alt="Jeroen's profile"
                 width={800}
                 height={533}
+                sizes="(max-width: 767px) 100vw, (max-width: 1200px) 50vw, 400px"
                 className="image_cover"
                 priority
               />
@@ -24,6 +25,7 @@ const AboutHeroSection = () => (
                 alt="Compass - Alaskan Husky"
                 width={800}
                 height={533}
+                sizes="(max-width: 767px) 100vw, (max-width: 1200px) 50vw, 400px"
                 className="image_cover"
                 priority
               />

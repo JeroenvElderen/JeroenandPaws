@@ -97,6 +97,7 @@ const Navbar = () => {
               className="nav_logo-image"
               width={50}
               height={50}
+              sizes="50px"
               priority
             />
           </div>

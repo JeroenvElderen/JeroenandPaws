@@ -9,7 +9,14 @@ const Footer = () => (
         <div id="w-node-_851d61a1-1dad-400a-5b6a-92b99f998536-b17c3d94" className="flex_vertical gap-small w-node-_8489c8c1-07dc-6ab4-cde4-f5c814a2d0ce-14a2d0cb">
           <Link href="/" className="logo w-inline-block">
             <div className="nav_logo-icon">
-              <Image src="/logo1.svg" alt="Jeroen & Paws logo" className="nav_logo-image" width={50} height={50} />
+              <Image
+                src="/logo1.svg"
+                alt="Jeroen & Paws logo"
+                className="nav_logo-image"
+                width={50}
+                height={50}
+                sizes="50px"
+              />
             </div>
             <div data-brand-name="true" className="paragraph_xlarge margin-bottom_none text_all-caps">Jeroen &amp; Paws</div>
           </Link>
