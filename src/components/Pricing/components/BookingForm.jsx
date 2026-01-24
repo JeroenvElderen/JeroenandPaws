@@ -412,6 +412,7 @@ const BookingForm = ({
                                     src={pet.photo_data_url || pet.photoDataUrl}
                                     alt={`${pet.name} avatar`}
                                     className="pet-option__avatar"
+                                    loading="lazy"
                                   />
                                 ) : (
                                   <div className="pet-option__avatar placeholder">
@@ -538,6 +539,7 @@ const BookingForm = ({
                             <img
                               src={dogProfile.photoDataUrl}
                               alt={`Dog ${index + 1} preview`}
+                              loading="lazy"
                             />
                             <button
                               type="button"

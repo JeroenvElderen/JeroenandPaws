@@ -44,6 +44,7 @@ const DailystrollsFeatureSection = ({ onBook }) => {
                     src="/images/background/bg2.jpg"
                     alt="dog walking"
                     className="image image_cover"
+                    loading="lazy"
                   />
                 </div>
                 {/* Bottom image */}
@@ -59,6 +60,7 @@ const DailystrollsFeatureSection = ({ onBook }) => {
                       objectFit: "cover",
                       objectPosition: "0% 45%",
                     }}
+                    loading="lazy"
                   />
                 </div>
               </div>

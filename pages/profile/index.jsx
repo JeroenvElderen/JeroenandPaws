@@ -1070,6 +1070,7 @@ const ProfilePage = () => {
               src="/logo192.png"
               alt="Jeroen & Paws"
               className="jp-login-logo"
+              loading="lazy"
             />
             <h1>Welcome back</h1>
             <p>
@@ -1171,6 +1172,7 @@ const ProfilePage = () => {
               alt={`${displayName} avatar`}
               className="jp-avatar"
               ref={avatarRef}
+              loading="lazy"
             />
           </div>
 
@@ -1584,6 +1586,7 @@ const ProfilePage = () => {
                                     objectFit: "cover",
                                     border: `1px solid ${brand.cardBorder}`,
                                   }}
+                                  loading="lazy"
                                 />
                               ) : (
                                 <div
@@ -1845,6 +1848,7 @@ const ProfilePage = () => {
                                           objectFit: "cover",
                                           border: `1px solid ${brand.cardBorder}`,
                                         }}
+                                        loading="lazy"
                                       />
                                       <button
                                         type="button"
@@ -2044,6 +2048,7 @@ const ProfilePage = () => {
                                 objectFit: "cover",
                                 border: `1px solid ${brand.cardBorder}`,
                               }}
+                              loading="lazy"
                             />
                             <button
                               type="button"

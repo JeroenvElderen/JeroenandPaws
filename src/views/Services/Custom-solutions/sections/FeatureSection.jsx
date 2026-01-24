@@ -37,6 +37,7 @@ const FeatureSection = ({ onBook }) => {
                     src="/images/background/bg2.jpg"
                     alt="dog training"
                     className="image image_cover"
+                    loading="lazy"
                   />
                 </div>
                 {/* Bottom image */}
@@ -49,6 +50,7 @@ const FeatureSection = ({ onBook }) => {
                     alt="animal adoption"
                     className="image image_cover shadow_xlarge"
                     style={{ objectPosition: "50% 60%" }}
+                    loading="lazy"
                   />
                 </div>
               </div>
