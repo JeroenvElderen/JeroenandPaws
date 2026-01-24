@@ -31,8 +31,8 @@ const buildSlots = (
   serviceDurationMinutes
 ) => {
   const slotsByDate = {};
-  const workingDayStart = 9;
-  const workingDayEnd = 17;
+  const workingDayStart = 8;
+  const workingDayEnd = 22;
   const durationMinutes = Number.isFinite(serviceDurationMinutes)
     ? serviceDurationMinutes
     : intervalMinutes;
