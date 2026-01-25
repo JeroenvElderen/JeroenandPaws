@@ -35,47 +35,70 @@ const formatDuration = (minutes) => {
 const Pricing = () => {
   const [services, setServices] = useState([]);
   const [addons, setAddons] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [isLoadingAddons, setIsLoadingAddons] = useState(true);
 
   useEffect(() => {
     let isActive = true;
+    const controller = new AbortController();
 
-    const load = async () => {
+    const loadServices = async () => {
       try {
-        const [servicesRes, addonsRes] = await Promise.all([
-          fetch("/api/services"),
-          fetch("/api/addons"),
-        ]);
-
-        if (!servicesRes.ok || !addonsRes.ok) {
-          throw new Error("Failed to load pricing data");
+        const servicesRes = await fetch("/api/services", {
+          signal: controller.signal,
+        });
+        if (!servicesRes.ok) {
+          throw new Error("Failed to load services");
         }
 
         const servicesData = await servicesRes.json();
-        const addonsData = await addonsRes.json();
-
         if (!isActive) return;
-
         const filteredServices = (servicesData.services || []).filter((service) =>
           hasNumericPrice(service.price)
         );
+
+        setServices(filteredServices);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+        }
+      } finally {
+        if (isActive) setIsLoadingServices(false);
+      }
+    };
+
+    const loadAddons = async () => {
+      try {
+        const addonsRes = await fetch("/api/addons", {
+          signal: controller.signal,
+        });
+        if (!addonsRes.ok) {
+          throw new Error("Failed to load add-ons");
+        }
+
+        const addonsData = await addonsRes.json();
+        if (!isActive) return;
+
         const filteredAddons = (addonsData.addons || []).filter((addon) =>
           hasNumericPrice(addon.price)
         );
 
-        setServices(filteredServices);
         setAddons(filteredAddons);
       } catch (error) {
-        console.error(error);
+        if (error.name !== "AbortError") {
+          console.error(error);
+        }
       } finally {
-        if (isActive) setIsLoading(false);
+        if (isActive) setIsLoadingAddons(false);
       }
     };
 
-    load();
+    loadServices();
+    loadAddons();
 
     return () => {
       isActive = false;
+      controller.abort();
     };
   }, []);
 
@@ -116,19 +139,19 @@ const Pricing = () => {
             </p>
           </div>
 
-          {isLoading && (
+          {isLoadingServices && (
             <div className="text-align_center">
-              <p>Loading pricing details…</p>
+              <p>Loading service pricing…</p>
             </div>
           )}
 
-          {!isLoading && groupedServices.length === 0 && (
+          {!isLoadingServices && groupedServices.length === 0 && (
             <div className="text-align_center">
               <p>No priced services are available right now.</p>
             </div>
           )}
 
-          {!isLoading &&
+          {!isLoadingServices &&
             groupedServices.map(([category, items]) => (
               <div key={category} className="margin-top_large">
                 <div className="header is-align-center">
@@ -170,7 +193,13 @@ const Pricing = () => {
             </p>
           </div>
 
-          {!isLoading && addons.length === 0 && (
+          {isLoadingAddons && (
+            <div className="text-align_center">
+              <p>Loading add-ons…</p>
+            </div>
+          )}
+
+          {!isLoadingAddons && addons.length === 0 && (
             <div className="text-align_center">
               <p>No priced add-ons are available right now.</p>
             </div>

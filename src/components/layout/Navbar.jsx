@@ -289,6 +289,16 @@ const Navbar = () => {
                 <div>Gallery</div>
               </Link>
             </li>
+            {/* <li className="nav_menu-list-item">
+              <Link
+                href="/pricing"
+                className="nav_link on-accent-primary w-inline-block"
+                onClick={closeAllMenus}
+                {...getLinkProps('/gallery')}
+              >
+                <div>Pricing</div>
+              </Link>
+            </li> */}
             <li className="nav_menu-list-item">
               <Link
                 href="/faq"

@@ -2295,15 +2295,6 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="detail-section">
-                    <p className="jp-type-caption">Description</p>
-                    <p>
-                      {contactForm.fullName
-                        ? `${contactForm.fullName} keeps their pups in the loop with Jeroen & Paws.`
-                        : "Manage your pets, appointments, and contact details in one place."}
-                    </p>
-                  </div>
-
-                  <div className="detail-section">
                     <p className="jp-type-caption">Contact</p>
                     <ul className="jp-detail-list">
                       <li>{contactForm.email || "hello@jeroenandpaws.com"}</li>

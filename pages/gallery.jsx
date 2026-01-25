@@ -20,29 +20,67 @@ async function buildPhoto(client, file) {
 export default function Gallery() {
   const [items, setItems] = useState([]);
   const [loadError, setLoadError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const containerRef = useRef(null);
 
   useEffect(() => {
+    let isActive = true;
+
     if (!supabase) {
       setLoadError(
         "Gallery is unavailable because Supabase credentials are missing."
       );
+      setIsLoading(false);
       return;
     }
 
     async function load() {
-      const { data, error } = await supabase.storage.from(BUCKET).list("");
-      if (!data || error) return;
+      let offset = 0;
+      const pageSize = 50;
+      const batchSize = 8;
 
-      const files = data.filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f.name));
+      try {
+        while (true) {
+          const { data, error } = await supabase.storage
+            .from(BUCKET)
+            .list("", { limit: pageSize, offset });
+          if (error) throw error;
+          if (!data || data.length === 0) break;
 
-      const photos = (
-        await Promise.all(files.map((file) => buildPhoto(supabase, file)))
-      ).filter(Boolean);
-      setItems(photos);
+          const files = data.filter((file) =>
+            /\.(png|jpe?g|webp|gif)$/i.test(file.name)
+          );
+
+          for (let i = 0; i < files.length; i += batchSize) {
+            const chunk = files.slice(i, i + batchSize);
+            const photos = (
+              await Promise.all(chunk.map((file) => buildPhoto(supabase, file)))
+            ).filter(Boolean);
+
+            if (!isActive) return;
+            setItems((prev) => [...prev, ...photos]);
+          }
+
+          if (data.length < pageSize) break;
+          offset += pageSize;
+        }
+      } catch (error) {
+        console.error(error);
+        if (isActive) {
+          setLoadError("We couldn't load the gallery right now.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
     }
 
     load();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const breakpointColumns = {
@@ -54,7 +92,7 @@ export default function Gallery() {
 
   // Align first row heights
   useEffect(() => {
-  if (!containerRef.current || items.length === 0) return;
+    if (!containerRef.current || items.length === 0) return;
 
     const columns = Object.values(breakpointColumns);
     const imgs = Array.from(containerRef.current.querySelectorAll("img"));
@@ -65,20 +103,19 @@ export default function Gallery() {
 
     async function alignAfterLoad() {
       await Promise.all(
-        imgs.map(
-          (img) =>
-            img.complete && img.naturalHeight > 0
-              ? Promise.resolve()
-              : new Promise((resolve) => {
-                  const onLoad = () => {
-                    img.removeEventListener("load", onLoad);
-                    handlers.delete(img);
-                    resolve();
-                  };
+        imgs.map((img) =>
+          img.complete && img.naturalHeight > 0
+            ? Promise.resolve()
+            : new Promise((resolve) => {
+                const onLoad = () => {
+                  img.removeEventListener("load", onLoad);
+                  handlers.delete(img);
+                  resolve();
+                };
 
-                  handlers.set(img, onLoad);
-                  img.addEventListener("load", onLoad);
-                })
+                handlers.set(img, onLoad);
+                img.addEventListener("load", onLoad);
+              })
         )
       );
 
@@ -115,7 +152,9 @@ export default function Gallery() {
 
     return () => {
       cancelled = true;
-      handlers.forEach((handler, img) => img.removeEventListener("load", handler));
+      handlers.forEach((handler, img) =>
+        img.removeEventListener("load", handler)
+      );
     };
   }, [items]);
 
@@ -183,27 +222,41 @@ export default function Gallery() {
             {loadError}
           </div>
         ) : (
-          <Masonry
-            breakpointCols={breakpointColumns}
-            className="masonry-grid"
-            columnClassName="masonry-column"
-          >
-            {items.map((item, idx) => (
-              <img
-                key={item.img + idx}
-                src={item.img}
-                alt={item.title}
-                loading="lazy"
+          <>
+            <Masonry
+              breakpointCols={breakpointColumns}
+              className="masonry-grid"
+              columnClassName="masonry-column"
+            >
+              {items.map((item, idx) => (
+                <img
+                  key={item.img + idx}
+                  src={item.img}
+                  alt={item.title}
+                  loading="lazy"
+                  style={{
+                    width: "100%",
+                    display: "block",
+                    height: "auto",
+                    objectFit: "contain", // keep full image, no cropping
+                    borderRadius: "14px", // rounded corners
+                  }}
+                />
+              ))}
+            </Masonry>
+            {isLoading && (
+              <div
                 style={{
-                  width: "100%",
-                  display: "block",
-                  height: "auto",
-                  objectFit: "contain", // keep full image, no cropping
-                  borderRadius: "14px", // rounded corners
+                  marginTop: "16px",
+                  textAlign: "center",
+                  color: "#b6c8ff",
+                  fontWeight: 600,
                 }}
-              />
-            ))}
-          </Masonry>
+              >
+                Loading more photos…
+              </div>
+            )}
+          </>
         )}
       </div>
 
