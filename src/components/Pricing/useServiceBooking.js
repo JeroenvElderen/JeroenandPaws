@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import BookingModal from "./BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import ServiceChooserModal from "./ServiceChooserModal";
-import { prefetchAvailability } from "./availabilityCache";
+import { prefetchAvailabilityBatch } from "./availabilityCache";
 
 const useServiceBooking = ({
   services = [],
@@ -34,11 +34,10 @@ const useServiceBooking = ({
   }, []);
 
   useEffect(() => {
-    services.forEach((service) => {
-      if (!service?.ctaHref) {
-        prefetchAvailability(service);
-      }
-    });
+    const batchTargets = services.filter((service) => !service?.ctaHref);
+    if (batchTargets.length) {
+      prefetchAvailabilityBatch(batchTargets);
+    }
   }, [services]);
 
   useEffect(() => {

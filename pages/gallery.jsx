@@ -6,15 +6,57 @@ import { supabase } from "../src/supabaseClient";
 
 const BUCKET = "pet-gallery";
 
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif)$/i;
+
+const isFile = (entry) => Boolean(entry?.id);
+
+const getTitleFromPath = (filePath) =>
+  filePath
+    .split("/")
+    .pop()
+    .replace(/\.[^.]+$/, "")
+    .replace(/[-_]/g, " ");
+
 // Fetch Supabase images
-async function buildPhoto(client, file) {
-  const { data } = client.storage.from(BUCKET).getPublicUrl(file.name);
+async function buildPhoto(client, filePath) {
+  const { data } = client.storage.from(BUCKET).getPublicUrl(filePath);
   if (!data?.publicUrl) return null;
 
   return {
     img: data.publicUrl.replace("/object/", "/render/image/"),
-    title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
+    title: getTitleFromPath(filePath),
   };
+}
+
+async function listAllFiles(client, path = "") {
+  const files = [];
+  let offset = 0;
+  const pageSize = 50;
+
+  while (true) {
+    const { data, error } = await client.storage
+      .from(BUCKET)
+      .list(path, { limit: pageSize, offset });
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    for (const entry of data) {
+      if (isFile(entry)) {
+        const filePath = path ? `${path}/${entry.name}` : entry.name;
+        files.push(filePath);
+      } else {
+        const nextPath = path ? `${path}/${entry.name}` : entry.name;
+        const nestedFiles = await listAllFiles(client, nextPath);
+        files.push(...nestedFiles);
+      }
+    }
+
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return files;
 }
 
 export default function Gallery() {
@@ -35,34 +77,24 @@ export default function Gallery() {
     }
 
     async function load() {
-      let offset = 0;
-      const pageSize = 50;
       const batchSize = 8;
 
       try {
-        while (true) {
-          const { data, error } = await supabase.storage
-            .from(BUCKET)
-            .list("", { limit: pageSize, offset });
-          if (error) throw error;
-          if (!data || data.length === 0) break;
+        const allFiles = await listAllFiles(supabase);
+        const imageFiles = allFiles.filter((filePath) =>
+          IMAGE_EXTENSIONS.test(filePath)
+        );
 
-          const files = data.filter((file) =>
-            /\.(png|jpe?g|webp|gif)$/i.test(file.name)
-          );
+        for (let i = 0; i < imageFiles.length; i += batchSize) {
+          const chunk = imageFiles.slice(i, i + batchSize);
+          const photos = (
+            await Promise.all(
+              chunk.map((filePath) => buildPhoto(supabase, filePath))
+            )
+          ).filter(Boolean);
 
-          for (let i = 0; i < files.length; i += batchSize) {
-            const chunk = files.slice(i, i + batchSize);
-            const photos = (
-              await Promise.all(chunk.map((file) => buildPhoto(supabase, file)))
-            ).filter(Boolean);
-
-            if (!isActive) return;
-            setItems((prev) => [...prev, ...photos]);
-          }
-
-          if (data.length < pageSize) break;
-          offset += pageSize;
+          if (!isActive) return;
+          setItems((prev) => [...prev, ...photos]);
         }
       } catch (error) {
         console.error(error);

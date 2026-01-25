@@ -4,7 +4,7 @@ import BookingModal from "./BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
 import AvailabilityPreview from "./AvailabilityPreview";
-import { prefetchAvailability } from "./availabilityCache";
+import { prefetchAvailability, prefetchAvailabilityBatch } from "./availabilityCache";
 
 const DynamicPricingSection = ({
   title = "Walking Plans for Every Pup",
@@ -16,11 +16,10 @@ const DynamicPricingSection = ({
   const [ctaChoiceService, setCtaChoiceService] = useState(null);
 
   useEffect(() => {
-    services.forEach((service) => {
-      if (!service?.ctaHref) {
-        prefetchAvailability(service);
-      }
-    });
+    const batchTargets = services.filter((service) => !service?.ctaHref);
+    if (batchTargets.length) {
+      prefetchAvailabilityBatch(batchTargets);
+    }
   }, [services]);
   
   const getCtaLabel = (service) => {

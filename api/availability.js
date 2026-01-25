@@ -261,7 +261,78 @@ const isMailboxConcurrencyError = (error) => {
   return /ApplicationThrottled|MailboxConcurrency/i.test(error.message || "");
 };
 
-module.exports = async (req, res) => {
+const resolveWindowDays = (windowDaysParam) => {
+  const configuredWindowDays = Number.parseInt(
+    process.env.WINDOW_DAYS ?? "365",
+    10
+  );
+  const defaultWindowDays = Number.isNaN(configuredWindowDays)
+    ? 21
+    : Math.max(configuredWindowDays, 1);
+  const requestedWindowDays = Number.parseInt(windowDaysParam, 10);
+  return Number.isNaN(requestedWindowDays)
+    ? defaultWindowDays
+    : Math.min(Math.max(requestedWindowDays, 1), defaultWindowDays);
+};
+
+const buildTimeWindow = (windowDays) => {
+  const startTime = DateTime.now().setZone("Europe/Dublin");
+  const endTime = startTime.plus({ days: windowDays });
+  return { startTime, endTime };
+};
+
+const fetchCalendarEventsSafe = async ({
+  accessToken,
+  calendarId,
+  startTime,
+  endTime,
+}) => {
+  try {
+    return await getCalendarEvents({
+      accessToken,
+      calendarId,
+      startTime,
+      endTime,
+    });
+  } catch (error) {
+    if (isMailboxConcurrencyError(error)) {
+      console.warn("Availability calendarView throttled, skipping events.");
+      return [];
+    }
+    throw error;
+  }
+};
+
+const buildAvailability = async ({
+  accessToken,
+  calendarId,
+  windowDays,
+  durationMinutes,
+  clientAddress,
+  events,
+}) => {
+  let availability = await getSchedule({
+    accessToken,
+    calendarId,
+    windowDays,
+    serviceDurationMinutes: Number.isNaN(durationMinutes)
+      ? undefined
+      : durationMinutes,
+  });
+
+  availability = await applyTravelBufferToAvailability({
+    availability,
+    clientAddress,
+    durationMinutes: Number.isNaN(durationMinutes)
+      ? undefined
+      : durationMinutes,
+    events,
+  });
+
+  return availability;
+};
+
+const availabilityHandler = async (req, res) => {
   if (req.method !== "GET") {
     res.statusCode = 405;
     res.setHeader("Allow", "GET");
@@ -281,52 +352,21 @@ module.exports = async (req, res) => {
     const serviceDurationMinutes = Number.parseInt(durationMinutes, 10);
 
     const accessToken = await getAppOnlyAccessToken();
-    const configuredWindowDays = Number.parseInt(
-      process.env.WINDOW_DAYS ?? "365",
-      10
-    );
-    const defaultWindowDays = Number.isNaN(configuredWindowDays)
-      ? 21
-      : Math.max(configuredWindowDays, 1);
-    const requestedWindowDays = Number.parseInt(windowDaysParam, 10);
-    const windowDays = Number.isNaN(requestedWindowDays)
-      ? defaultWindowDays
-      : Math.min(Math.max(requestedWindowDays, 1), defaultWindowDays);
+    const windowDays = resolveWindowDays(windowDaysParam);
+    const { startTime, endTime } = buildTimeWindow(windowDays);
+    const events = await fetchCalendarEventsSafe({
+      accessToken,
+      calendarId,
+      startTime,
+      endTime,
+    });
 
-    const startTime = DateTime.now().setZone("Europe/Dublin");
-    const endTime = startTime.plus({ days: windowDays });
-
-    let availability = await getSchedule({
+    const availability = await buildAvailability({
       accessToken,
       calendarId,
       windowDays,
-      serviceDurationMinutes: Number.isNaN(serviceDurationMinutes)
-        ? undefined
-        : serviceDurationMinutes,
-    });
-
-    let events = [];
-    try {
-      events = await getCalendarEvents({
-        accessToken,
-        calendarId,
-        startTime,
-        endTime,
-      });
-    } catch (error) {
-      if (isMailboxConcurrencyError(error)) {
-        console.warn("Availability calendarView throttled, skipping events.");
-      } else {
-        throw error;
-      }
-    }
-
-    availability = await applyTravelBufferToAvailability({
-      availability,
+      durationMinutes: serviceDurationMinutes,
       clientAddress,
-      durationMinutes: Number.isNaN(serviceDurationMinutes)
-        ? undefined
-        : serviceDurationMinutes,
       events,
     });
 
@@ -339,3 +379,10 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ message: "Failed to fetch availability" }));
   }
 };
+
+availabilityHandler.buildAvailability = buildAvailability;
+availabilityHandler.buildTimeWindow = buildTimeWindow;
+availabilityHandler.fetchCalendarEventsSafe = fetchCalendarEventsSafe;
+availabilityHandler.resolveWindowDays = resolveWindowDays;
+
+module.exports = availabilityHandler;
