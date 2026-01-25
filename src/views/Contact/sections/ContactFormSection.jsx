@@ -145,6 +145,28 @@ const ContactFormSection = () => {
             <p className="subheading">
               Considering training, walks, day care, or boarding? I’m here to help your dog feel understood, supported, and set up for success. Reach out and let’s explore the options that suit them best.
             </p>
+            <div className="margin-top_small">
+              <h3 className="heading_h4">Contact options</h3>
+              <p className="subheading">
+                Prefer a quick hello? Email or call any time, and I’ll respond within 24 hours.
+              </p>
+              <div className="margin-top_xsmall">
+                <p className="jp-type-caption">Email</p>
+                <a href="mailto:hello@jeroenandpaws.com" className="link">
+                  Jeroen@jeroenandpaws.com
+                </a>
+              </div>
+              <div className="margin-top_xsmall">
+                <p className="jp-type-caption">Phone</p>
+                <a href="tel:+353851234567" className="link">
+                  +353872473099
+                </a>
+              </div>
+              <div className="margin-top_xsmall">
+                <p className="jp-type-caption">Hours</p>
+                <p className="subheading">Mon–Sun, 8am–22pm</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
