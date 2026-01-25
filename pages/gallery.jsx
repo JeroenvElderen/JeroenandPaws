@@ -23,7 +23,7 @@ async function buildPhoto(client, filePath) {
   if (!data?.publicUrl) return null;
 
   return {
-    img: data.publicUrl.replace("/object/", "/render/image/"),
+    img: data.publicUrl,
     title: getTitleFromPath(filePath),
   };
 }
