@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePrefetchOnIntent } from '../../hooks/usePrefetchOnIntent';
 
 const Navbar = () => {
   const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
@@ -8,6 +9,14 @@ const Navbar = () => {
   const [isProfileNavOpen, setIsProfileNavOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navRef = useRef(null);
+  const { getLinkProps } = usePrefetchOnIntent([
+    '/about',
+    '/gallery',
+    '/faq',
+    '/pricing',
+    '/contact',
+    '/services',
+  ]);
 
   const closeMegaNav = useCallback(() => {
     setIsMegaNavOpen(false);
@@ -261,17 +270,32 @@ const Navbar = () => {
               </div>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/about" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+              <Link
+                href="/about"
+                className="nav_link on-accent-primary w-inline-block"
+                onClick={closeAllMenus}
+                {...getLinkProps('/about')}
+              >
                 <div>About me</div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/gallery" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+              <Link
+                href="/gallery"
+                className="nav_link on-accent-primary w-inline-block"
+                onClick={closeAllMenus}
+                {...getLinkProps('/gallery')}
+              >
                 <div>Gallery</div>
               </Link>
             </li>
             <li className="nav_menu-list-item">
-              <Link href="/faq" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+              <Link
+                href="/faq"
+                className="nav_link on-accent-primary w-inline-block"
+                onClick={closeAllMenus}
+                {...getLinkProps('/faq')}
+              >
                 <div>Questions</div>
               </Link>
             </li>
@@ -336,7 +360,12 @@ const Navbar = () => {
               </Link>
             </li> */}
             <li className="nav_menu-list-item">
-              <Link href="/contact" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
+              <Link
+                href="/contact"
+                className="nav_link on-accent-primary w-inline-block"
+                onClick={closeAllMenus}
+                {...getLinkProps('/contact')}
+              >
                 <div>Contact</div>
               </Link>
             </li>
