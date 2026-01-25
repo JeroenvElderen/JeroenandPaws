@@ -1023,7 +1023,11 @@ const ProfilePage = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    let isTicking = false;
+    let lastScrollY = window.scrollY;
+
     const handleScroll = () => {
+      isTicking = false;
       const scrollPos = window.scrollY;
       const landing = landingRef.current;
       const bg = landingBgRef.current;
@@ -1031,6 +1035,9 @@ const ProfilePage = () => {
       const avatar = avatarRef.current;
 
       if (!landing || !bg || !content || !avatar) return;
+
+      if (scrollPos === lastScrollY) return;
+      lastScrollY = scrollPos;
 
       if (scrollPos < 300) {
         bg.style.marginTop = `${scrollPos / 2}px`;
@@ -1051,11 +1058,15 @@ const ProfilePage = () => {
         (percentage * 50) * -1 + 50
       }%)`;
       avatar.style.marginTop = `${percentage * 10}px`;
-
     };
 
-    const onScroll = () => window.requestAnimationFrame(handleScroll);
-    window.addEventListener("scroll", onScroll);
+    const onScroll = () => {
+      if (isTicking) return;
+      isTicking = true;
+      window.requestAnimationFrame(handleScroll);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
     handleScroll();
 
     return () => window.removeEventListener("scroll", onScroll);
