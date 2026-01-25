@@ -101,9 +101,7 @@ const PricingResponsiveStyles = () => (
           top: calc(100% + 6px);
           left: 0;
           right: 0;
-          max-height: calc(5 * 44px);
           overflow-y: auto;
-          padding: 6px;
           margin: 0;
           list-style: none;
           background: #0f1330;
@@ -111,6 +109,12 @@ const PricingResponsiveStyles = () => (
           border-radius: 14px;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
           z-index: 10000;
+          max-height: calc(5 * 44px);
+        }
+        .searchable-select .options-list ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
         }
         .searchable-select .option {
           display: flex;

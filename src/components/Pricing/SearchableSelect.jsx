@@ -1,4 +1,5 @@
 import React from "react";
+import VirtualizedList from "../common/VirtualizedList";
 
 const SearchableSelect = ({
   label,
@@ -17,8 +18,11 @@ const SearchableSelect = ({
   const [highlight, setHighlight] = React.useState(0);
 
   const listRef = React.useRef(null);
+  const virtualizedListRef = React.useRef(null);
   const inputRef = React.useRef(null);
 
+  const rowHeight = 44;
+  const listMaxHeight = rowHeight * 5;
   const filtered = React.useMemo(() => {
     if (filteredOptions) return filteredOptions;
 
@@ -44,6 +48,13 @@ const SearchableSelect = ({
     if (!open) return;
     setHighlight((h) => Math.min(h, Math.max(filtered.length - 1, 0)));
   }, [filtered, open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    if (!virtualizedListRef.current) return;
+    if (!filtered.length) return;
+    virtualizedListRef.current.scrollToItem(highlight, "smart");
+  }, [highlight, filtered.length, open]);
 
   React.useEffect(() => {
     // Keep the visible value in sync when an option is selected externally
@@ -96,6 +107,40 @@ const SearchableSelect = ({
     }
   };
 
+  const handleOptionSelect = (choice) => {
+    if (!choice) return;
+    onChange(choice);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const Row = ({ index, style, data }) => {
+    const { items, currentValue, onSelect } = data;
+    const opt = items[index];
+    if (!opt) return null;
+    const itemStyle = {
+      ...style,
+      padding: "10px 12px",
+      margin: 0,
+    };
+    return (
+      <li
+        key={opt}
+        style={itemStyle}
+        className={`option ${index === highlight ? "highlight" : ""} ${
+          currentValue === opt ? "selected" : ""
+        }`}
+        onMouseEnter={() => setHighlight(index)}
+        onClick={() => onSelect(opt)}
+        role="option"
+        aria-selected={currentValue === opt}
+      >
+        <span className="option-label">{opt}</span>
+        {currentValue === opt && <span className="option-check">✓</span>}
+      </li>
+    );
+  };
+
   return (
     <div className={`searchable-select ${className}`}>
       <label className={labelClassName}>
@@ -134,31 +179,31 @@ const SearchableSelect = ({
           </div>
 
           {open && (
-            <ul className="options-list" ref={listRef} role="listbox">
-              {filtered.length === 0 && (
-                <li className="no-results">No breeds found</li>
-              )}
-
-              {filtered.map((opt, i) => (
-                <li
-                  key={opt}
-                  className={`option ${i === highlight ? "highlight" : ""} ${
-                    value === opt ? "selected" : ""
-                  }`}
-                  onMouseEnter={() => setHighlight(i)}
-                  onClick={() => {
-                    onChange(opt);
-                    setQuery("");
-                    setOpen(false);
+            <>
+              {filtered.length === 0 ? (
+                <ul className="options-list" ref={listRef} role="listbox">
+                  <li className="no-results">No breeds found</li>
+                </ul>
+              ) : (
+                <VirtualizedList
+                  ref={virtualizedListRef}
+                  outerRef={listRef}
+                  className="options-list"
+                  itemCount={filtered.length}
+                  itemSize={rowHeight}
+                  maxHeight={listMaxHeight}
+                  role="listbox"
+                  ariaLabel="Breed options"
+                  innerPadding={6}
+                  itemData={{
+                    items: filtered,
+                    currentValue: value,
+                    onSelect: handleOptionSelect,
                   }}
-                  role="option"
-                  aria-selected={value === opt}
-                >
-                  <span className="option-label">{opt}</span>
-                  {value === opt && <span className="option-check">✓</span>}
-                </li>
-              ))}
-            </ul>
+                  renderItem={Row}
+                />
+              )}
+            </>
           )}
         </div>
       </label>
