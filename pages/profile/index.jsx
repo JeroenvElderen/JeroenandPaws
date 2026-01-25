@@ -182,25 +182,34 @@ const ProfilePage = () => {
   const landingBgRef = useRef(null);
   const contentRef = useRef(null);
   const avatarRef = useRef(null);
-  const tabs = ["All", "Pets", "Bookings", "Details"];
-  const coverImage =
-    profile?.client?.cover_url ||
-    "/images/background/bg3.jpg";
-  const avatarImage =
-    profile?.client?.avatar_url ||
-    profile?.pets?.find((pet) => pet.photo_data_url)?.photo_data_url ||
-    "/images/Jeroen.jpg";
-  const displayName =
-    contactForm.fullName ||
-    profile?.client?.full_name ||
-    "Jeroen & Paws Client";
-  const subtitleParts = [
-    profile?.client?.email ? "Client" : "Guest",
-    profile?.pets?.length
-      ? `${profile.pets.length} pet${profile.pets.length > 1 ? "s" : ""}`
-      : "Pet parent",
-  ];
-  const subtitleText = subtitleParts.filter(Boolean).join(" · ");
+  const tabs = useMemo(() => ["All", "Pets", "Bookings", "Details"], []);
+  const coverImage = useMemo(
+    () => profile?.client?.cover_url || "/images/background/bg3.jpg",
+    [profile]
+  );
+  const avatarImage = useMemo(
+    () =>
+      profile?.client?.avatar_url ||
+      profile?.pets?.find((pet) => pet.photo_data_url)?.photo_data_url ||
+      "/images/Jeroen.jpg",
+    [profile]
+  );
+  const displayName = useMemo(
+    () =>
+      contactForm.fullName ||
+      profile?.client?.full_name ||
+      "Jeroen & Paws Client",
+    [contactForm.fullName, profile]
+  );
+  const subtitleText = useMemo(() => {
+    const subtitleParts = [
+      profile?.client?.email ? "Client" : "Guest",
+      profile?.pets?.length
+        ? `${profile.pets.length} pet${profile.pets.length > 1 ? "s" : ""}`
+        : "Pet parent",
+    ];
+    return subtitleParts.filter(Boolean).join(" · ");
+  }, [profile]);
   const [bookingAction, setBookingAction] = useState({
     cancelling: false,
     error: "",

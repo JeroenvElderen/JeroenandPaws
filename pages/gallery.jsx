@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import Masonry from "react-masonry-css";
 import { supabase } from "../src/supabaseClient";
 
@@ -83,12 +83,35 @@ export default function Gallery() {
     };
   }, []);
 
-  const breakpointColumns = {
-    default: 3,
-    1100: 3,
-    800: 2,
-    500: 1,
-  };
+  const breakpointColumns = useMemo(
+    () => ({
+      default: 3,
+      1100: 3,
+      800: 2,
+      500: 1,
+    }),
+    []
+  );
+
+  const masonryImages = useMemo(
+    () =>
+      items.map((item, idx) => (
+        <img
+          key={item.img + idx}
+          src={item.img}
+          alt={item.title}
+          loading="lazy"
+          style={{
+            width: "100%",
+            display: "block",
+            height: "auto",
+            objectFit: "contain", // keep full image, no cropping
+            borderRadius: "14px", // rounded corners
+          }}
+        />
+      )),
+    [items]
+  );
 
   // Align first row heights
   useEffect(() => {
@@ -228,21 +251,7 @@ export default function Gallery() {
               className="masonry-grid"
               columnClassName="masonry-column"
             >
-              {items.map((item, idx) => (
-                <img
-                  key={item.img + idx}
-                  src={item.img}
-                  alt={item.title}
-                  loading="lazy"
-                  style={{
-                    width: "100%",
-                    display: "block",
-                    height: "auto",
-                    objectFit: "contain", // keep full image, no cropping
-                    borderRadius: "14px", // rounded corners
-                  }}
-                />
-              ))}
+              {masonryImages}
             </Masonry>
             {isLoading && (
               <div

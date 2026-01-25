@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { memo, useRef } from "react";
 
 const CalendarSection = ({
   availabilityNotice,
@@ -129,4 +129,4 @@ const CalendarSection = ({
   );
 };
 
-export default CalendarSection;
+export default memo(CalendarSection);
