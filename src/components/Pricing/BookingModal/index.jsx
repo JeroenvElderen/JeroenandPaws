@@ -6,22 +6,27 @@ import React, {
   useRef,
 } from "react";
 import { DateTime } from "luxon";
-import { weekdayLabels, DOG_BREEDS } from "./constants";
+import { weekdayLabels, DOG_BREEDS } from "../constants";
 import {
   buildMonthMatrix,
   createEmptyDogProfile,
   generateDemoAvailability,
-} from "./utils";
-import { useAuth } from "../../context/AuthContext";
+} from "../utils";
+import { useAuth } from "../../../context/AuthContext";
 import {
   computeApiBaseUrl,
   getCachedAvailability,
   prefetchAvailability,
-} from "./availabilityCache";
-import ChatOrFormModal from "./ChatOrFormModal";
-import CalendarSection from "./components/CalendarSection";
-import TimesSection from "./components/TimesSection";
-import BookingForm from "./components/BookingForm";
+} from "../availabilityCache";
+import ChatOrFormModal from "../ChatOrFormModal";
+import BookingForm from "../components/BookingForm";
+import BookingErrorBanner from "./BookingErrorBanner";
+import BookingFormStage from "./BookingFormStage";
+import BookingHeader from "./BookingHeader";
+import BookingWayfinding from "./BookingWayfinding";
+import CalendarStepCard from "./CalendarStepCard";
+import PriceSummaryCard from "./PriceSummaryCard";
+import TimeStepCard from "./TimeStepCard";
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
 const HOME_EIRCODE = "A98H940";
@@ -402,14 +407,6 @@ const BookingModal = ({ service, onClose }) => {
   const canLoadPets = Boolean(trimmedName && trimmedEmail);
 
   const stepOrder = ["calendar", "time", "customer", "pet", "addons", "summary"];
-  const stepLabels = {
-    calendar: "Calendar",
-    time: "Choose time",
-    customer: "Customer",
-    pet: "Pets",
-    addons: "Additional care",
-    summary: "Summary",
-  };
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
@@ -1715,6 +1712,67 @@ const BookingModal = ({ service, onClose }) => {
     if (step === "summary") scrollToSection(summarySectionRef);
   };
 
+  const bookingFormProps = {
+    error,
+    success,
+    customerMode,
+    onSelectCustomerMode: handleCustomerModeChange,
+    service,
+    scheduleEntries,
+    formatTime,
+    clientName,
+    setClientName,
+    clientPhone,
+    setClientPhone,
+    clientEmail,
+    setClientEmail,
+    clientAddress,
+    setClientAddress,
+    clientAddressLocked: Boolean(normalizeEircode(clientEircode)),
+    canLoadPets,
+    fetchExistingPets,
+    isLoadingPets,
+    existingPets,
+    hasAttemptedPetLoad,
+    selectedPetIds,
+    setSelectedPetIds,
+    showDogDetails,
+    setShowDogDetails,
+    dogCount,
+    addAnotherDog,
+    removeDog,
+    dogs,
+    updateDogField,
+    handleDogPhotoChange,
+    MAX_DOGS,
+    breedSearch,
+    setBreedSearch,
+    notes,
+    setNotes,
+    additionals,
+    additionalsOpen,
+    setAdditionalsOpen,
+    toggleAdditional,
+    addons,
+    selectedAdditionalLabels,
+    formatCurrency,
+    parsePriceValue,
+    pricing,
+    hasAtLeastOneDog,
+    handleBookAndPay,
+    isBooking,
+    loading,
+    isPopup: false,
+    addOnDropdownRef,
+    filteredBreeds,
+    customerDetailsRef,
+    travelNote,
+    allowRecurring: allowWeeklyRecurring,
+    recurrence,
+    isMultiDay,
+    onRecurrenceChange: setRecurrence,
+  };
+
   return (
     <>
       <div
@@ -1724,30 +1782,11 @@ const BookingModal = ({ service, onClose }) => {
         ref={bookingModalRef}
       >
         <div className="booking-modal">
-          <header className="booking-hero">
-            <div>
-              <p className="eyebrow">{service.duration || "Premium care"}</p>
-              <h3>{service.title}</h3>
-              <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
-            </div>
-            <div className="hero-actions">
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={() => setSupportOpen(true)}
-              >
-                Need help?
-              </button>
-              <button
-                className="close-button"
-                type="button"
-                onClick={onClose}
-                aria-label="Close booking"
-              >
-                ×
-              </button>
-            </div>
-          </header>
+          <BookingHeader
+            service={service}
+            onSupport={() => setSupportOpen(true)}
+            onClose={onClose}
+          />
 
           {/* <div
             className="progress-track"
@@ -1763,175 +1802,73 @@ const BookingModal = ({ service, onClose }) => {
           </div> */}
 
           <div className="booking-body">
-            <div className="booking-wayfinding">
-              <div className="step-chip-row">
-                {stepOrder.map((step) => {
-                  const stepIndex = stepOrder.indexOf(step);
-                  const activeIndex = stepOrder.indexOf(currentStep);
-                  const isActive = currentStep === step;
-                  const isComplete = stepIndex < activeIndex;
-                  return (
-                    <button
-                      key={step}
-                      type="button"
-                      className={`step-chip ${isActive ? "active" : ""} ${
-                        isComplete ? "complete" : ""
-                      }`}
-                      onClick={() => goToStepAndScroll(step)}
-                    >
-                      <span className="step-icon">
-                        {isComplete ? "✓" : stepIndex + 1}
-                      </span>
-                      {/*<span className="step-label">{stepLabels[step]}</span>*/}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="wayfinding-summary">
-                {summaryChips.map((chip, index) => (
-                  <span key={index} className="summary-chip">
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <BookingWayfinding
+              stepOrder={stepOrder}
+              currentStep={currentStep}
+              onStepSelect={goToStepAndScroll}
+              summaryChips={summaryChips}
+            />
 
             <div className="booking-layout">
               <div className="booking-main">
                 {error && (
-                  <div className="error-banner actionable">
-                    <div>
-                      <p>{error}</p>
-                      <p className="muted subtle">
-                        Try another time or message us for concierge scheduling.
-                      </p>
-                    </div>
-                    <div className="actions-stack">
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => goToStepAndScroll("time")}
-                      >
-                        Pick another time
-                      </button>
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => setSupportOpen(true)}
-                      >
-                        Message us
-                      </button>
-                    </div>
-                  </div>
+                  <BookingErrorBanner
+                    message={error}
+                    onPickTime={() => goToStepAndScroll("time")}
+                    onSupport={() => setSupportOpen(true)}
+                  />
                 )}
 
                 {currentStep === "calendar" && (
-                  <div className="step-card" ref={calendarSectionRef}>
-                    <div className="selection-summary">
-                      <div>
-                        <h4>Visit schedule</h4>
-                        <p className="muted subtle">
-                          {allowMultiDay && allowWeeklyRecurring
-                            ? "Pick a date or toggle multi-day to select multiple days, don't forget to put your Eircode!"
-                            : "Pick a date to see which time slots are available."}
-                        </p>
-                      </div>
-                      <div className="selection-summary-actions">
-                        <label className="input-group">
-                          <span>Your Eircode</span>
-                          <input
-                            type="text"
-                            value={clientEircode}
-                            onChange={(event) =>
-                              setClientEircode(event.target.value)
-                            }
-                            placeholder="e.g. A98H940"
-                          />
-                        </label>
-                        {allowMultiDay && allowWeeklyRecurring && (
-                          <label
-                            className={`pill-toggle ${isMultiDay ? "is-active" : ""}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isMultiDay}
-                              onChange={() => setIsMultiDay((prev) => !prev)}
-                            />
-                            <div>
-                              <strong>Multi-day weekly</strong>
-                              <small>Select multiple days in the calendar</small>
-                            </div>
-                          </label>
-                        )}
-                      </div>
-                    </div>
-                    {travelAnchor === "previous" && (
-                      <div className="form-grid">
-                        <label className="input-group">
-                          <span>Previous booking ends at</span>
-                          <input
-                            type="time"
-                            value={previousBookingTime}
-                            onChange={(event) =>
-                              setPreviousBookingTime(event.target.value)
-                            }
-                          />
-                        </label>
-                      </div>
-                    )}
-                    <CalendarSection
-                      availabilityNotice={availabilityNotice}
-                      loading={loading}
-                      monthLabel={monthLabel}
-                      weekdayLabels={weekdayLabels}
-                      monthMatrix={monthMatrix}
-                      visibleMonth={visibleMonth}
-                      availabilityMap={availabilityMap}
-                      isDayAvailableForService={isDayAvailableForService}
-                      selectedDate={selectedDate}
-                      selectedSlots={selectedSlots}
-                      handleDaySelection={handleDaySelection}
-                      calendarSectionRef={calendarSectionRef}
-                      onPreviousMonth={handlePreviousMonth}
-                      onNextMonth={handleNextMonth}
-                    />
-                    {isMultiDay && (
-                      <div className="calendar-actions">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("time")}
-                          disabled={!canContinueFromCalendar}
-                        >
-                          Continue to times
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <CalendarStepCard
+                    allowMultiDay={allowMultiDay}
+                    allowWeeklyRecurring={allowWeeklyRecurring}
+                    clientEircode={clientEircode}
+                    onClientEircodeChange={setClientEircode}
+                    isMultiDay={isMultiDay}
+                    onToggleMultiDay={() => setIsMultiDay((prev) => !prev)}
+                    travelAnchor={travelAnchor}
+                    previousBookingTime={previousBookingTime}
+                    onPreviousBookingTimeChange={setPreviousBookingTime}
+                    availabilityNotice={availabilityNotice}
+                    loading={loading}
+                    monthLabel={monthLabel}
+                    weekdayLabels={weekdayLabels}
+                    monthMatrix={monthMatrix}
+                    visibleMonth={visibleMonth}
+                    availabilityMap={availabilityMap}
+                    isDayAvailableForService={isDayAvailableForService}
+                    selectedDate={selectedDate}
+                    selectedSlots={selectedSlots}
+                    handleDaySelection={handleDaySelection}
+                    calendarSectionRef={calendarSectionRef}
+                    onPreviousMonth={handlePreviousMonth}
+                    onNextMonth={handleNextMonth}
+                    canContinueFromCalendar={canContinueFromCalendar}
+                    onContinue={() => goToStepAndScroll("time")}
+                  />
                 )}
 
                 {currentStep === "time" && (
-                  <div className="step-card" ref={timesSectionRef}>
-                    <TimesSection
-                      selectedDay={selectedDayWithTravel.day}
-                      isDayAvailableForService={isDayAvailableForService}
-                      selectedTime={selectedTime}
-                      handleTimeSelection={handleTimeSelection}
-                      selectedSlotReachable={
-                        selectedDayWithTravel.selectedSlotReachable
-                      }
-                      formatTime={formatTime}
-                      onContinue={() => goToStepAndScroll("customer")}
-                      onBack={() => goToStepAndScroll("calendar")}
-                      canContinue={canProceedToCustomer}
-                      timesSectionRef={timesSectionRef}
-                      hiddenSlotCount={selectedDayWithTravel.hiddenCount}
-                      travelMinutes={travelMinutes}
-                      travelAnchor={travelAnchor}
-                      isTravelValidationPending={isTravelValidationPending}
-                      travelNote={travelNote}
-                    />
-                  </div>
+                  <TimeStepCard
+                    selectedDay={selectedDayWithTravel.day}
+                    isDayAvailableForService={isDayAvailableForService}
+                    selectedTime={selectedTime}
+                    onTimeSelection={handleTimeSelection}
+                    selectedSlotReachable={
+                      selectedDayWithTravel.selectedSlotReachable
+                    }
+                    formatTime={formatTime}
+                    onContinue={() => goToStepAndScroll("customer")}
+                    onBack={() => goToStepAndScroll("calendar")}
+                    canContinue={canProceedToCustomer}
+                    timesSectionRef={timesSectionRef}
+                    hiddenSlotCount={selectedDayWithTravel.hiddenCount}
+                    travelMinutes={travelMinutes}
+                    travelAnchor={travelAnchor}
+                    isTravelValidationPending={isTravelValidationPending}
+                    travelNote={travelNote}
+                  />
                 )}
 
                 {currentStep === "customer" && (
@@ -2143,66 +2080,7 @@ const BookingModal = ({ service, onClose }) => {
                     )}
                     {(customerMode === "new" || isAuthenticated) && (
                       <BookingForm
-                        error={error}
-                        success={success}
-                        customerMode={customerMode}
-                        onSelectCustomerMode={handleCustomerModeChange}
-                        service={service}
-                        scheduleEntries={scheduleEntries}
-                        formatTime={formatTime}
-                        clientName={clientName}
-                        setClientName={setClientName}
-                        clientPhone={clientPhone}
-                        setClientPhone={setClientPhone}
-                        clientEmail={clientEmail}
-                        setClientEmail={setClientEmail}
-                        clientAddress={clientAddress}
-                        setClientAddress={setClientAddress}
-                        clientAddressLocked={Boolean(
-                          normalizeEircode(clientEircode)
-                        )}
-                        canLoadPets={canLoadPets}
-                        fetchExistingPets={fetchExistingPets}
-                        isLoadingPets={isLoadingPets}
-                        existingPets={existingPets}
-                        hasAttemptedPetLoad={hasAttemptedPetLoad}
-                        selectedPetIds={selectedPetIds}
-                        setSelectedPetIds={setSelectedPetIds}
-                        showDogDetails={showDogDetails}
-                        setShowDogDetails={setShowDogDetails}
-                        dogCount={dogCount}
-                        addAnotherDog={addAnotherDog}
-                        removeDog={removeDog}
-                        dogs={dogs}
-                        updateDogField={updateDogField}
-                        handleDogPhotoChange={handleDogPhotoChange}
-                        MAX_DOGS={MAX_DOGS}
-                        breedSearch={breedSearch}
-                        setBreedSearch={setBreedSearch}
-                        notes={notes}
-                        setNotes={setNotes}
-                        additionals={additionals}
-                        additionalsOpen={additionalsOpen}
-                        setAdditionalsOpen={setAdditionalsOpen}
-                        toggleAdditional={toggleAdditional}
-                        addons={addons}
-                        selectedAdditionalLabels={selectedAdditionalLabels}
-                        formatCurrency={formatCurrency}
-                        parsePriceValue={parsePriceValue}
-                        pricing={pricing}
-                        hasAtLeastOneDog={hasAtLeastOneDog}
-                        handleBookAndPay={handleBookAndPay}
-                        isBooking={isBooking}
-                        loading={loading}
-                        isPopup={false}
-                        addOnDropdownRef={addOnDropdownRef}
-                        filteredBreeds={filteredBreeds}
-                        customerDetailsRef={customerDetailsRef}
-                        travelNote={travelNote}
-                        allowRecurring={allowWeeklyRecurring}
-                        recurrence={recurrence}
-                        isMultiDay={isMultiDay}
-                        onRecurrenceChange={setRecurrence}
+                        {...bookingFormProps}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />
@@ -2211,320 +2089,87 @@ const BookingModal = ({ service, onClose }) => {
                 )}
 
                 {currentStep === "pet" && (
-                  <div className="step-card">
-                    <div className="step-toolbar">
-                      <div className="actions-stack">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("customer")}
-                        >
-                          Back to customer
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("time")}
-                        >
-                          Change time
-                        </button>
+                  <BookingFormStage
+                    toolbar={(
+                      <div className="step-toolbar">
+                        <div className="actions-stack">
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => goToStepAndScroll("customer")}
+                          >
+                            Back to customer
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => goToStepAndScroll("time")}
+                          >
+                            Change time
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <BookingForm
-                      error={error}
-                      success={success}
-                      customerMode={customerMode}
-                      onSelectCustomerMode={handleCustomerModeChange}
-                      service={service}
-                      scheduleEntries={scheduleEntries}
-                      formatTime={formatTime}
-                      clientName={clientName}
-                      setClientName={setClientName}
-                      clientPhone={clientPhone}
-                      setClientPhone={setClientPhone}
-                      clientEmail={clientEmail}
-                      setClientEmail={setClientEmail}
-                      clientAddress={clientAddress}
-                      setClientAddress={setClientAddress}
-                      clientAddressLocked={Boolean(
-                        normalizeEircode(clientEircode)
-                      )}
-                      canLoadPets={canLoadPets}
-                      fetchExistingPets={fetchExistingPets}
-                      isLoadingPets={isLoadingPets}
-                      existingPets={existingPets}
-                      hasAttemptedPetLoad={hasAttemptedPetLoad}
-                      selectedPetIds={selectedPetIds}
-                      setSelectedPetIds={setSelectedPetIds}
-                      showDogDetails={showDogDetails}
-                      setShowDogDetails={setShowDogDetails}
-                      dogCount={dogCount}
-                      addAnotherDog={addAnotherDog}
-                      removeDog={removeDog}
-                      dogs={dogs}
-                      updateDogField={updateDogField}
-                      handleDogPhotoChange={handleDogPhotoChange}
-                      MAX_DOGS={MAX_DOGS}
-                      breedSearch={breedSearch}
-                      setBreedSearch={setBreedSearch}
-                      notes={notes}
-                      setNotes={setNotes}
-                      additionals={additionals}
-                      additionalsOpen={additionalsOpen}
-                      setAdditionalsOpen={setAdditionalsOpen}
-                      toggleAdditional={toggleAdditional}
-                      addons={addons}
-                      selectedAdditionalLabels={selectedAdditionalLabels}
-                      formatCurrency={formatCurrency}
-                      parsePriceValue={parsePriceValue}
-                      pricing={pricing}
-                      hasAtLeastOneDog={hasAtLeastOneDog}
-                      handleBookAndPay={handleBookAndPay}
-                      isBooking={isBooking}
-                      loading={loading}
-                      isPopup={false}
-                      addOnDropdownRef={addOnDropdownRef}
-                      filteredBreeds={filteredBreeds}
-                      customerDetailsRef={customerDetailsRef}
-                      travelNote={travelNote}
-                      allowRecurring={allowWeeklyRecurring}
-                      recurrence={recurrence}
-                      isMultiDay={isMultiDay}
-                      onRecurrenceChange={setRecurrence}
-                      visibleStage="pet"
-                      onContinue={() => goToStepAndScroll("addons")}
-                    />
-                  </div>
+                    )}
+                    bookingFormProps={bookingFormProps}
+                    visibleStage="pet"
+                    onContinue={() => goToStepAndScroll("addons")}
+                  />
                 )}
 
                 {currentStep === "addons" && (
-                  <div className="step-card" ref={addonsSectionRef}>
-                    <div className="step-toolbar">
-                      <div className="actions-stack">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("pet")}
-                        >
-                          Back to pets
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("time")}
-                        >
-                          Change time
-                        </button>
+                  <BookingFormStage
+                    containerRef={addonsSectionRef}
+                    toolbar={(
+                      <div className="step-toolbar">
+                        <div className="actions-stack">
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => goToStepAndScroll("pet")}
+                          >
+                            Back to pets
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => goToStepAndScroll("time")}
+                          >
+                            Change time
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <BookingForm
-                      error={error}
-                      success={success}
-                      customerMode={customerMode}
-                      onSelectCustomerMode={handleCustomerModeChange}
-                      service={service}
-                      scheduleEntries={scheduleEntries}
-                      formatTime={formatTime}
-                      clientName={clientName}
-                      setClientName={setClientName}
-                      clientPhone={clientPhone}
-                      setClientPhone={setClientPhone}
-                      clientEmail={clientEmail}
-                      setClientEmail={setClientEmail}
-                      clientAddress={clientAddress}
-                      setClientAddress={setClientAddress}
-                      clientAddressLocked={Boolean(
-                        normalizeEircode(clientEircode)
-                      )}
-                      canLoadPets={canLoadPets}
-                      fetchExistingPets={fetchExistingPets}
-                      isLoadingPets={isLoadingPets}
-                      existingPets={existingPets}
-                      hasAttemptedPetLoad={hasAttemptedPetLoad}
-                      selectedPetIds={selectedPetIds}
-                      setSelectedPetIds={setSelectedPetIds}
-                      showDogDetails={showDogDetails}
-                      setShowDogDetails={setShowDogDetails}
-                      dogCount={dogCount}
-                      addAnotherDog={addAnotherDog}
-                      removeDog={removeDog}
-                      dogs={dogs}
-                      updateDogField={updateDogField}
-                      handleDogPhotoChange={handleDogPhotoChange}
-                      MAX_DOGS={MAX_DOGS}
-                      breedSearch={breedSearch}
-                      setBreedSearch={setBreedSearch}
-                      notes={notes}
-                      setNotes={setNotes}
-                      additionals={additionals}
-                      additionalsOpen={additionalsOpen}
-                      setAdditionalsOpen={setAdditionalsOpen}
-                      toggleAdditional={toggleAdditional}
-                      addons={addons}
-                      selectedAdditionalLabels={selectedAdditionalLabels}
-                      formatCurrency={formatCurrency}
-                      parsePriceValue={parsePriceValue}
-                      pricing={pricing}
-                      hasAtLeastOneDog={hasAtLeastOneDog}
-                      handleBookAndPay={handleBookAndPay}
-                      isBooking={isBooking}
-                      loading={loading}
-                      isPopup={false}
-                      addOnDropdownRef={addOnDropdownRef}
-                      filteredBreeds={filteredBreeds}
-                      customerDetailsRef={customerDetailsRef}
-                      travelNote={travelNote}
-                      allowRecurring={allowWeeklyRecurring}
-                      recurrence={recurrence}
-                      isMultiDay={isMultiDay}
-                      onRecurrenceChange={setRecurrence}
-                      visibleStage="addons"
-                      onContinue={() => goToStepAndScroll("summary")}
-                    />
-                  </div>
+                    )}
+                    bookingFormProps={bookingFormProps}
+                    visibleStage="addons"
+                    onContinue={() => goToStepAndScroll("summary")}
+                  />
                 )}
 
                 {currentStep === "summary" && (
-                  <div className="step-card" ref={summarySectionRef}>
-                    <div className="step-toolbar">
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => goToStepAndScroll("addons")}
-                      >
-                        Back to additional care
-                      </button>
-                    </div>
-                    <BookingForm
-                      error={error}
-                      success={success}
-                      customerMode={customerMode}
-                      onSelectCustomerMode={handleCustomerModeChange}
-                      service={service}
-                      scheduleEntries={scheduleEntries}
-                      formatTime={formatTime}
-                      clientName={clientName}
-                      setClientName={setClientName}
-                      clientPhone={clientPhone}
-                      setClientPhone={setClientPhone}
-                      clientEmail={clientEmail}
-                      setClientEmail={setClientEmail}
-                      clientAddress={clientAddress}
-                      setClientAddress={setClientAddress}
-                      clientAddressLocked={Boolean(
-                        normalizeEircode(clientEircode)
-                      )}
-                      canLoadPets={canLoadPets}
-                      fetchExistingPets={fetchExistingPets}
-                      isLoadingPets={isLoadingPets}
-                      existingPets={existingPets}
-                      hasAttemptedPetLoad={hasAttemptedPetLoad}
-                      selectedPetIds={selectedPetIds}
-                      setSelectedPetIds={setSelectedPetIds}
-                      showDogDetails={showDogDetails}
-                      setShowDogDetails={setShowDogDetails}
-                      dogCount={dogCount}
-                      addAnotherDog={addAnotherDog}
-                      removeDog={removeDog}
-                      dogs={dogs}
-                      updateDogField={updateDogField}
-                      handleDogPhotoChange={handleDogPhotoChange}
-                      MAX_DOGS={MAX_DOGS}
-                      breedSearch={breedSearch}
-                      setBreedSearch={setBreedSearch}
-                      notes={notes}
-                      setNotes={setNotes}
-                      additionals={additionals}
-                      additionalsOpen={additionalsOpen}
-                      setAdditionalsOpen={setAdditionalsOpen}
-                      toggleAdditional={toggleAdditional}
-                      addons={addons}
-                      selectedAdditionalLabels={selectedAdditionalLabels}
-                      formatCurrency={formatCurrency}
-                      parsePriceValue={parsePriceValue}
-                      pricing={pricing}
-                      hasAtLeastOneDog={hasAtLeastOneDog}
-                      handleBookAndPay={handleBookAndPay}
-                      isBooking={isBooking}
-                      loading={loading}
-                      isPopup={false}
-                      addOnDropdownRef={addOnDropdownRef}
-                      filteredBreeds={filteredBreeds}
-                      customerDetailsRef={customerDetailsRef}
-                      travelNote={travelNote}
-                      allowRecurring={allowWeeklyRecurring}
-                      recurrence={recurrence}
-                      isMultiDay={isMultiDay}
-                      onRecurrenceChange={setRecurrence}
-                      visibleStage="summary"
-                      onContinue={() => goToStepAndScroll("summary")}
-                    />
-                  </div>
+                  <BookingFormStage
+                    containerRef={summarySectionRef}
+                    toolbar={(
+                      <div className="step-toolbar">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => goToStepAndScroll("addons")}
+                        >
+                          Back to additional care
+                        </button>
+                      </div>
+                    )}
+                    bookingFormProps={bookingFormProps}
+                    visibleStage="summary"
+                    onContinue={() => goToStepAndScroll("summary")}
+                  />
                 )}
 
-                <div className="price-summary-card inline-price-summary">
-                  <div className="price-summary__header">
-                    <div>
-                      <p className="muted small">Current total</p>
-                      <h4>{formatCurrency(pricing.totalPrice)}</h4>
-                    </div>
-                    <p className="muted subtle price-summary__meta">
-                      {pricing.dogCount && pricing.visitCount
-                        ? `${pricing.dogCount} dog${
-                            pricing.dogCount > 1 ? "s" : ""
-                          } × ${pricing.visitCount} visit${
-                            pricing.visitCount > 1 ? "s" : ""
-                          }`
-                        : "Add dogs and pick dates"}
-                    </p>
-                  </div>
-                  <ul className="price-summary__list">
-                    <li>
-                      Service: {formatCurrency(pricing.servicePrice)} per dog /
-                      visit
-                    </li>
-                    {pricing.dogCount >= 2 && (
-                      <li>
-                        Second dog: {formatCurrency(pricing.secondDogPrice)} (save{" "}
-                        {formatCurrency(pricing.secondDogDiscount)})
-                      </li>
-                    )}
-                    {pricing.dogCount >= 3 && (
-                      <li>
-                        Third dog: {formatCurrency(pricing.thirdDogPrice)} (save{" "}
-                        {formatCurrency(pricing.thirdDogDiscount)})
-                      </li>
-                    )}
-                    {pricing.selectedAddons.map((addon) => (
-                      <li key={addon.id || addon.value}>
-                        + {addon.label}:{" "}
-                        {formatCurrency(parsePriceValue(addon.price))}
-                      </li>
-                    ))}
-                    <li>
-                      Travel cost: {formatCurrency(pricing.travelSurcharge)}{" "}
-                      {pricing.travelSurcharge > 0 ? (
-                        <>
-                          ({pricing.travelSurchargeKm} km over{" "}
-                          {pricing.travelSurchargeThreshold} km
-                          {pricing.visitCount > 1
-                            ? ` × ${pricing.visitCount} visits`
-                            : ""}
-                          )
-                        </>
-                      ) : (
-                        <>({pricing.travelSurchargeThreshold} km included)</>
-                      )}
-                    </li>
-                    <li>
-                      Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
-                    </li>
-                    <li>
-                      Total per dog / visit:{" "}
-                      {formatCurrency(pricing.servicePrice)}
-                    </li>
-                  </ul>
-                </div>
+                <PriceSummaryCard
+                  pricing={pricing}
+                  formatCurrency={formatCurrency}
+                  parsePriceValue={parsePriceValue}
+                />
               </div>
             </div>
           </div>
