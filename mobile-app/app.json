@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Jeroen & Paws",
+    "slug": "jeroen-and-paws",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    
+    "splash": {
+      
+      "resizeMode": "contain",
+      "backgroundColor": "#0c081f"
+    },
+    "ios": {
+      "bundleIdentifier": "com.jeroenandpaws.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.jeroenandpaws.app"
+    },
+    "extra": {
+      "apiBaseUrl": "https://jeroenandpaws.com"
+    }
+  }
+}

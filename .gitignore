@@ -3,6 +3,8 @@
 /.pnp
 .pnp.js
 
+.expo/
+
 # next.js build output
 /.next
 /out
