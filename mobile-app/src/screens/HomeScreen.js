@@ -30,11 +30,6 @@ const formatTimeRange = (start, end) => {
   return `${formatTime(start)} – ${formatTime(end)}`;
 };
 
-const isSameDay = (a, b) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
-
 const HomeScreen = ({ navigation }) => {
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
@@ -65,18 +60,22 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [session?.email]);
 
-  const today = new Date();
-  const todaysBookings = bookings.filter((booking) => {
-    const start = booking?.start_at ? new Date(booking.start_at) : null;
-    return start ? isSameDay(start, today) : false;
-  });
-
-  const completedBookings = todaysBookings.filter((booking) =>
-    (booking.status || "").toLowerCase().includes("completed")
-  );
-  const hasRemainingBookings = todaysBookings.some(
-    (booking) => !(booking.status || "").toLowerCase().includes("completed")
-  );
+  const now = new Date();
+  const upcomingBookings = bookings
+    .filter((booking) => {
+      const start = booking?.start_at ? new Date(booking.start_at) : null;
+      const status = (booking?.status || "").toLowerCase();
+      if (!start) return false;
+      if (status.includes("cancelled") || status.includes("canceled")) {
+        return false;
+      }
+      return start >= now;
+    })
+    .sort(
+      (a, b) => new Date(a.start_at || 0) - new Date(b.start_at || 0)
+    );
+  const nextBooking = upcomingBookings[0] || null;
+  const upcomingPreview = upcomingBookings.slice(0, 3);
 
   const displayName = session?.name || "Jeroen";
   const initials = displayName
@@ -91,8 +90,8 @@ const HomeScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>{displayName}</Text>
-            <Text style={styles.subtitle}>{formatDateLabel(today)}</Text>
+            <Text style={styles.title}>Hi {displayName}</Text>
+            <Text style={styles.subtitle}>Your booking overview</Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.avatar}>
@@ -104,53 +103,109 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-      <Text style={styles.updateText}>
+        <Text style={styles.updateText}>
           Updated at {lastUpdated ? formatTime(lastUpdated) : "—"}
         </Text>
 
         <View style={styles.noticeCard}>
-          <Text style={styles.noticeIcon}>☀️</Text>
+          <Text style={styles.noticeIcon}>📆</Text>
           <Text style={styles.noticeText}>
-            {hasRemainingBookings
-              ? "You still have bookings today"
-              : "You have no more bookings today"}
+            {upcomingBookings.length
+              ? `${upcomingBookings.length} upcoming booking${
+                  upcomingBookings.length === 1 ? "" : "s"
+                }`
+              : "No upcoming bookings yet"}
           </Text>
         </View>
 
-      <Pressable
-          style={({ pressed }) => [
-            styles.quickCard,
-            pressed && styles.cardPressed,
-          ]}
-          onPress={() => navigation.navigate("Calendar")}
-        >
-          <View>
-            <Text style={styles.quickLabel}>
-              Manage weekly care for this week
-            </Text>
-            <Text style={styles.quickSubtext}>
-              Update availability & recurring visits
-            </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
+      <View style={styles.quickActions}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => navigation.navigate("Book")}
+          >
+            <View>
+              <Text style={styles.quickLabel}>Book a service</Text>
+              <Text style={styles.quickSubtext}>
+                Send a new request in seconds
+              </Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => navigation.navigate("Calendar")}
+          >
+            <View>
+              <Text style={styles.quickLabel}>View your calendar</Text>
+              <Text style={styles.quickSubtext}>
+                See upcoming visits by date
+              </Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+        </View>
 
-        <Text style={styles.sectionTitle}>Completed</Text>
-        {completedBookings.length === 0 ? (
+        <Text style={styles.sectionTitle}>Next visit</Text>
+        {nextBooking ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTime}>
+              {formatTimeRange(
+                nextBooking?.start_at ? new Date(nextBooking.start_at) : null,
+                nextBooking?.end_at ? new Date(nextBooking.end_at) : null
+              )}
+            </Text>
+            <Text style={styles.cardTitle}>
+              {nextBooking?.service_title ||
+                nextBooking?.services_catalog?.title ||
+                "Service"}
+            </Text>
+            <Text style={styles.cardMeta}>
+              {nextBooking?.start_at
+                ? formatDateLabel(new Date(nextBooking.start_at))
+                : "Date TBD"}
+            </Text>
+            {nextBooking?.notes ? (
+              <Text style={styles.cardMeta}>{nextBooking.notes}</Text>
+            ) : null}
+            <PrimaryButton
+              label="View booking details"
+              onPress={() => navigation.navigate("Calendar")}
+            />
+          </View>
+          ) : (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
-              Completed bookings will appear here once they finish.
+              Your next booking will appear here once you submit a request.
+            </Text>
+            <PrimaryButton
+              label="Request a booking"
+              onPress={() => navigation.navigate("Book")}
+            />
+          </View>
+        )}
+
+        <Text style={styles.sectionTitle}>Upcoming visits</Text>
+        {upcomingPreview.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              Upcoming bookings will show here once they are confirmed.
             </Text>
           </View>
         ) : (
-          completedBookings.map((booking) => {
+          upcomingPreview.map((booking) => {
             const start = booking?.start_at ? new Date(booking.start_at) : null;
             const end = booking?.end_at ? new Date(booking.end_at) : null;
             const serviceTitle =
               booking?.service_title || booking?.services_catalog?.title;
             const pets = booking?.pets?.join
               ? booking.pets.join(", ")
-              : booking?.pets || "Client pets";
+              : booking?.pets || "Your pets";
 
             return (
               <Pressable
@@ -159,7 +214,7 @@ const HomeScreen = ({ navigation }) => {
                   styles.card,
                   pressed && styles.cardPressed,
                 ]}
-                onPress={() => navigation.navigate("Book")}
+                onPress={() => navigation.navigate("Calendar")}
               >
                 <View style={styles.cardRow}>
                   <View>
@@ -173,18 +228,30 @@ const HomeScreen = ({ navigation }) => {
                   </View>
                   <View style={styles.statusBadge}>
                     <Text style={styles.statusBadgeText}>
-                      {booking.status || "Completed"}
+                      {booking.status || "Scheduled"}
                     </Text>
                   </View>
                 </View>
-                <PrimaryButton
-                  label="Start Care Card"
-                  onPress={() => navigation.navigate("Book")}
-                />
               </Pressable>
             );
           })
         )}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.quickCard,
+            pressed && styles.cardPressed,
+          ]}
+          onPress={() => navigation.navigate("Calendar")}
+        >
+          <View>
+            <Text style={styles.quickLabel}>Need to adjust a booking?</Text>
+            <Text style={styles.quickSubtext}>
+              Select a date to view the details
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -277,6 +344,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#3a2b55",
     fontWeight: "700",
+  },
+  quickActions: {
+    gap: 12,
+    marginBottom: 12,
   },
   quickCard: {
     backgroundColor: "#ffffff",

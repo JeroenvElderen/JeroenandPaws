@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { fetchJson } from "../api/client";
 import { useSession } from "../context/SessionContext";
 
@@ -17,9 +24,17 @@ const formatTime = (date) =>
     hour12: false,
   }).format(date);
 
+  const buildDateKey = (year, monthIndex, day) => {
+  const month = String(monthIndex + 1).padStart(2, "0");
+  const dayValue = String(day).padStart(2, "0");
+  return `${year}-${month}-${dayValue}`;
+};
+
 const CalendarScreen = () => {
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [selectedDateKey, setSelectedDateKey] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,7 +60,6 @@ const CalendarScreen = () => {
     };
   }, [session?.email]);
 
-  const currentMonth = new Date();
   const year = currentMonth.getFullYear();
   const monthIndex = currentMonth.getMonth();
   const monthLabel = new Intl.DateTimeFormat("en-GB", {
@@ -53,18 +67,44 @@ const CalendarScreen = () => {
     year: "numeric",
   }).format(currentMonth);
 
-  const bookedDays = useMemo(() => {
-    const days = bookings.reduce((acc, booking) => {
+  const bookingMap = useMemo(() => {
+    return bookings.reduce((acc, booking) => {
       if (!booking?.start_at) return acc;
       const date = new Date(booking.start_at);
-      if (date.getFullYear() === year && date.getMonth() === monthIndex) {
-        acc.add(date.getDate());
+      const dateKey = buildDateKey(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
       }
+      acc[dateKey].push(booking);
       return acc;
-    }, new Set());
+    }, {});
+  }, [bookings]);
 
-    return days;
-  }, [bookings, monthIndex, year]);
+  useEffect(() => {
+    const monthBookings = Object.keys(bookingMap)
+      .filter((key) => key.startsWith(`${year}-${String(monthIndex + 1).padStart(2, "0")}`))
+      .sort();
+
+    if (!monthBookings.length) {
+      setSelectedDateKey(null);
+      return;
+    }
+
+    const selectionInMonth =
+      selectedDateKey && selectedDateKey.startsWith(`${year}-${String(monthIndex + 1).padStart(2, "0")}`);
+
+    if (!selectionInMonth) {
+      setSelectedDateKey(monthBookings[0]);
+    }
+  }, [bookingMap, monthIndex, selectedDateKey, year]);
+
+  const selectedBookings = selectedDateKey
+    ? bookingMap[selectedDateKey] || []
+    : [];
 
   const firstDayOfMonth = new Date(year, monthIndex, 1).getDay();
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -76,12 +116,28 @@ const CalendarScreen = () => {
     weeks.push(calendarSlots.slice(i, i + 7));
   }
 
+  const goToPreviousMonth = () => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Calendar</Text>
         <View style={styles.calendarCard}>
-          <Text style={styles.monthLabel}>{monthLabel}</Text>
+          <View style={styles.monthHeader}>
+            <Pressable style={styles.monthButton} onPress={goToPreviousMonth}>
+              <Text style={styles.monthButtonText}>‹</Text>
+            </Pressable>
+            <Text style={styles.monthLabel}>{monthLabel}</Text>
+            <Pressable style={styles.monthButton} onPress={goToNextMonth}>
+              <Text style={styles.monthButtonText}>›</Text>
+            </Pressable>
+          </View>
           <View style={styles.weekHeader}>
             {"SMTWTFS".split("").map((day) => (
               <Text key={day} style={styles.weekHeaderText}>
@@ -93,63 +149,79 @@ const CalendarScreen = () => {
             <View key={`week-${index}`} style={styles.weekRow}>
               {week.map((day, dayIndex) => {
                 if (!day) {
-                  return <View key={`empty-${dayIndex}`} style={styles.dayCell} />;
+                  return (
+                    <View key={`empty-${dayIndex}`} style={styles.dayCell} />
+                  );
                 }
-                const isBooked = bookedDays.has(day);
+                const dateKey = buildDateKey(year, monthIndex, day);
+                const isBooked = Boolean(bookingMap[dateKey]?.length);
+                const isSelected = selectedDateKey === dateKey;
+                
                 return (
-                  <View
+                  <Pressable
                     key={`day-${day}`}
-                    style={[styles.dayCell, isBooked && styles.dayBooked]}
+                    style={({ pressed }) => [
+                      styles.dayCell,
+                      isBooked && styles.dayBooked,
+                      isSelected && styles.daySelected,
+                      pressed && styles.dayPressed,
+                    ]}
+                    onPress={() => setSelectedDateKey(dateKey)}
                   >
                     <Text
                       style={[
                         styles.dayText,
                         isBooked && styles.dayTextBooked,
+                        isSelected && styles.dayTextSelected,
                       ]}
                     >
                       {day}
                     </Text>
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>
           ))}
         </View>
         <View style={styles.listCard}>
-          <Text style={styles.listTitle}>Booked dates</Text>
-          {bookings.length === 0 ? (
+          <Text style={styles.listTitle}>
+            {selectedDateKey ? "Booking details" : "Select a date"}
+          </Text>
+          {selectedDateKey && selectedBookings.length === 0 ? (
+            <Text style={styles.emptyText}>No bookings on this date.</Text>
+          ) : null}
+          {!selectedDateKey && bookings.length === 0 ? (
             <Text style={styles.emptyText}>
               No bookings found for this account yet.
             </Text>
-          ) : (
-            bookings.map((booking) => {
-              const start = booking?.start_at ? new Date(booking.start_at) : null;
-              const end = booking?.end_at ? new Date(booking.end_at) : null;
-              const serviceTitle =
-                booking?.service_title || booking?.services_catalog?.title;
+          ) : null}
+          {selectedBookings.map((booking) => {
+            const start = booking?.start_at ? new Date(booking.start_at) : null;
+            const end = booking?.end_at ? new Date(booking.end_at) : null;
+            const serviceTitle =
+              booking?.service_title || booking?.services_catalog?.title;
 
               return (
-                <View key={booking.id} style={styles.bookingRow}>
-                  <View>
-                    <Text style={styles.bookingDate}>
-                      {start ? formatDateLabel(start) : "Date TBD"}
-                    </Text>
-                    <Text style={styles.bookingService}>
-                      {serviceTitle || "Service"}
-                    </Text>
-                    <Text style={styles.bookingTime}>
-                      {start && end
-                        ? `${formatTime(start)} – ${formatTime(end)}`
-                        : "Time TBD"}
-                    </Text>
-                  </View>
-                  <Text style={styles.bookingStatus}>
-                    {booking.status || "Scheduled"}
+              <View key={booking.id} style={styles.bookingRow}>
+                <View>
+                  <Text style={styles.bookingDate}>
+                    {start ? formatDateLabel(start) : "Date TBD"}
+                  </Text>
+                  <Text style={styles.bookingService}>
+                    {serviceTitle || "Service"}
+                  </Text>
+                  <Text style={styles.bookingTime}>
+                    {start && end
+                      ? `${formatTime(start)} – ${formatTime(end)}`
+                      : "Time TBD"}
                   </Text>
                 </View>
-              );
-            })
-          )}
+              <Text style={styles.bookingStatus}>
+                  {booking.status || "Scheduled"}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -182,11 +254,28 @@ const styles = StyleSheet.create({
     borderColor: "#ebe4f7",
     marginBottom: 20,
   },
+  monthHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  monthButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f1ecfb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  monthButtonText: {
+    fontSize: 18,
+    color: "#5d2fc5",
+  },
   monthLabel: {
     fontSize: 16,
     fontWeight: "700",
     color: "#2b1a4b",
-    marginBottom: 12,
     textAlign: "center",
   },
   weekHeader: {
@@ -214,7 +303,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayBooked: {
+    backgroundColor: "#efe9fb",
+  },
+  daySelected: {
     backgroundColor: "#6c3ad6",
+  },
+  dayPressed: {
+    opacity: 0.85,
   },
   dayText: {
     fontSize: 12,
@@ -222,6 +317,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   dayTextBooked: {
+    color: "#5d2fc5",
+  },
+  dayTextSelected: {
     color: "#ffffff",
   },
   listCard: {
