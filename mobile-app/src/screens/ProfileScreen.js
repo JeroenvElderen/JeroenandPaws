@@ -8,30 +8,46 @@ import {
 } from "react-native";
 
 const userItems = [
-  { label: "Profile", icon: "🪪", description: "View your profile details" },
-  { label: "Your pets", icon: "🐶", description: "Manage pet profiles" },
+  {
+    label: "Profile",
+    icon: "🪪",
+    description: "View your profile details",
+    route: "ProfileDetails",
+  },
+  {
+    label: "Your pets",
+    icon: "🐶",
+    description: "Manage pet profiles",
+    route: "PetsProfile",
+  },
   {
     label: "Settings",
     icon: "🛠️",
     description: "Notifications and preferences",
+    route: "Settings",
   },
   {
     label: "Payment methods",
     icon: "💳",
     description: "Update cards and billing",
+    route: "PaymentMethods",
   },
   {
     label: "Help Centre & Support",
     icon: "🛟",
     description: "Email, call, or WhatsApp",
+    route: "HelpSupport",
   },
 ];
 
-const ProfileScreen = () => (
+const ProfileScreen = ({ navigation }) => (
   <SafeAreaView style={styles.safeArea}>
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>More</Text>
-      <Pressable style={styles.searchRow}>
+      <Pressable
+        style={styles.searchRow}
+        onPress={() => navigation.navigate("Book")}
+      >
         <Text style={styles.searchIcon}>✨</Text>
         <Text style={styles.searchText}>Book a new service</Text>
         <Text style={styles.chevron}>›</Text>
@@ -46,6 +62,7 @@ const ProfileScreen = () => (
               styles.menuItem,
               index === userItems.length - 1 && styles.menuItemLast,
             ]}
+            onPress={() => navigation.navigate(item.route)}
           >
             <View style={styles.menuLeft}>
               <Text style={styles.menuIcon}>{item.icon}</Text>

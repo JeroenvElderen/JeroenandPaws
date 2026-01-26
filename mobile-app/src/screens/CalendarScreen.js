@@ -145,12 +145,15 @@ const CalendarScreen = () => {
               </Text>
             ))}
           </View>
-          {weeks.map((week, index) => (
-            <View key={`week-${index}`} style={styles.weekRow}>
+          {weeks.map((week, weekIndex) => (
+            <View key={`week-${weekIndex}`} style={styles.weekRow}>
               {week.map((day, dayIndex) => {
                 if (!day) {
                   return (
-                    <View key={`empty-${dayIndex}`} style={styles.dayCell} />
+                    <View
+                      key={`empty-${weekIndex}-${dayIndex}`}
+                      style={styles.dayCell}
+                    />
                   );
                 }
                 const dateKey = buildDateKey(year, monthIndex, day);
@@ -159,7 +162,7 @@ const CalendarScreen = () => {
                 
                 return (
                   <Pressable
-                    key={`day-${day}`}
+                    key={dateKey}
                     style={({ pressed }) => [
                       styles.dayCell,
                       isBooked && styles.dayBooked,

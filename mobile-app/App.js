@@ -1,5 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Text } from "react-native";
 import HomeScreen from "./src/screens/HomeScreen";
@@ -7,9 +8,16 @@ import BookScreen from "./src/screens/BookScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import CalendarScreen from "./src/screens/CalendarScreen";
 import AuthScreen from "./src/screens/AuthScreen";
+import MessagesScreen from "./src/screens/MessagesScreen";
+import ProfileDetailsScreen from "./src/screens/ProfileDetailsScreen";
+import PetsProfileScreen from "./src/screens/PetsProfileScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
+import PaymentMethodsScreen from "./src/screens/PaymentMethodsScreen";
+import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 
 const Tab = createBottomTabNavigator();
+const RootStack = createNativeStackNavigator();
 
 const TabLabel = ({ label, color }) => (
   <Text style={{ color, fontSize: 12, marginBottom: 4 }}>{label}</Text>
@@ -19,8 +27,99 @@ const tabIcons = {
   Home: "🏠",
   Book: "📖",
   Calendar: "📅",
+  Messages: "💬",
   Profile: "⋯",
 };
+
+const MainTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: false,
+      tabBarStyle: {
+        backgroundColor: "#ffffff",
+        borderTopColor: "#efe7dd",
+        borderTopWidth: 0,
+        borderRadius: 32,
+        marginHorizontal: 16,
+        marginBottom: 12,
+        height: 70,
+        position: "absolute",
+        shadowColor: "#2b1a4b",
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 10 },
+        shadowRadius: 18,
+        elevation: 6,
+        alignItems: "center",
+        justifyContent: "center",
+      },
+      tabBarActiveTintColor: "#5d2fc5",
+      tabBarInactiveTintColor: "#a093b9",
+      tabBarIconStyle: {
+        marginTop: 8,
+      },
+      tabBarItemStyle: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+      },
+    }}
+  >
+    <Tab.Screen
+      name="Home"
+      component={HomeScreen}
+      options={{
+        tabBarIcon: ({ color }) => (
+          <Text style={{ color, fontSize: 18 }}>{tabIcons.Home}</Text>
+        ),
+        tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
+      }}
+    />
+    <Tab.Screen
+      name="Book"
+      component={BookScreen}
+      options={{
+        tabBarIcon: ({ color }) => (
+          <Text style={{ color, fontSize: 18 }}>{tabIcons.Book}</Text>
+        ),
+        tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
+      }}
+    />
+    <Tab.Screen
+      name="Calendar"
+      component={CalendarScreen}
+      options={{
+        tabBarIcon: ({ color }) => (
+          <Text style={{ color, fontSize: 18 }}>{tabIcons.Calendar}</Text>
+        ),
+        tabBarLabel: ({ color }) => (
+          <TabLabel label="Calendar" color={color} />
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Messages"
+      component={MessagesScreen}
+      options={{
+        tabBarIcon: ({ color }) => (
+          <Text style={{ color, fontSize: 18 }}>{tabIcons.Messages}</Text>
+        ),
+        tabBarLabel: ({ color }) => (
+          <TabLabel label="Messages" color={color} />
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Profile"
+      component={ProfileScreen}
+      options={{
+        tabBarIcon: ({ color }) => (
+          <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
+        ),
+        tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
+      }}
+    />
+  </Tab.Navigator>
+);
 
 const AppShell = () => {
   const { session, setSession } = useSession();
@@ -37,47 +136,11 @@ const AppShell = () => {
   return (
     <NavigationContainer>
       <StatusBar style="dark" />
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: "#ffffff",
-            borderTopColor: "#efe7dd",
-            borderTopWidth: 0,
-            borderRadius: 32,
-            marginHorizontal: 16,
-            marginBottom: 12,
-            height: 70,
-            position: "absolute",
-            shadowColor: "#2b1a4b",
-            shadowOpacity: 0.08,
-            shadowOffset: { width: 0, height: 10 },
-            shadowRadius: 18,
-            elevation: 6,
-            alignItems: "center",
-            justifyContent: "center",
-          },
-          tabBarActiveTintColor: "#5d2fc5",
-          tabBarInactiveTintColor: "#a093b9",
-          tabBarIconStyle: {
-            marginTop: 8,
-          },
-          tabBarItemStyle: {
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-          },
-        }}
-      >
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 18 }}>{tabIcons.Home}</Text>
-            ),
-            tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
-          }}
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="MainTabs" component={MainTabs} />
+        <RootStack.Screen
+          name="ProfileDetails"
+          component={ProfileDetailsScreen}
         />
         <Tab.Screen
           name="Book"
@@ -89,17 +152,11 @@ const AppShell = () => {
             tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
           }}
         />
-        <Tab.Screen
-          name="Calendar"
-          component={CalendarScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 18 }}>{tabIcons.Calendar}</Text>
-            ),
-            tabBarLabel: ({ color }) => (
-              <TabLabel label="Calendar" color={color} />
-            ),
-          }}
+        <RootStack.Screen name="PetsProfile" component={PetsProfileScreen} />
+        <RootStack.Screen name="Settings" component={SettingsScreen} />
+        <RootStack.Screen
+          name="PaymentMethods"
+          component={PaymentMethodsScreen}
         />
         <Tab.Screen
           name="Profile"
@@ -113,7 +170,8 @@ const AppShell = () => {
             ),
           }}
         />
-      </Tab.Navigator>
+      <RootStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 };

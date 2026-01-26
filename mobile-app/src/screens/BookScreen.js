@@ -15,14 +15,14 @@ import PrimaryButton from "../components/PrimaryButton";
 import { useSession } from "../context/SessionContext";
 
 const CATEGORY_ORDER = [
+  "Daily strolls",
+  "Home visits",
   "Training",
+  "Solo Journeys",
   "Overnight Support",
   "Daytime Care",
-  "Custom Care",
   "Group Adventures",
-  "Home visits",
-  "Solo Journeys",
-  "Daily strolls",
+  "Custom Care",
 ];
 
 const CATEGORY_ICONS = {
@@ -37,12 +37,24 @@ const CATEGORY_ICONS = {
   Services: "🐾",
 };
 
-const ADDITIONAL_OPTIONS = [
-  { id: "pickup", label: "Pickup & drop-off", price: 10 },
-  { id: "medication", label: "Medication support", price: 8 },
-  { id: "training", label: "Training add-on", price: 12 },
-  { id: "photo", label: "Photo updates", price: 5 },
-];
+const normalizeAddons = (addons = []) =>
+  addons
+    .map((addon, index) => {
+      const label =
+        addon.label ||
+        addon.name ||
+        addon.title ||
+        addon.description ||
+        "Add-on";
+      const rawPrice = addon.price ?? addon.amount ?? addon.cost ?? 0;
+
+      return {
+        id: String(addon.id ?? addon.value ?? addon.slug ?? index),
+        label,
+        price: Number(rawPrice) || 0,
+      };
+    })
+    .filter((addon) => addon.label);
 
 const createDog = () => ({
   name: "",
@@ -136,6 +148,7 @@ const BookScreen = ({ navigation }) => {
   const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [showNewDogForm, setShowNewDogForm] = useState(false);
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
+  const [availableAddons, setAvailableAddons] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
 
@@ -153,6 +166,28 @@ const BookScreen = ({ navigation }) => {
     };
 
     loadServices();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAddons = async () => {
+      try {
+        const data = await fetchJson("/api/addons");
+        if (!isMounted) return;
+        setAvailableAddons(normalizeAddons(data?.addons || []));
+      } catch (error) {
+        console.error("Failed to load add-ons", error);
+        if (!isMounted) return;
+        setAvailableAddons([]);
+      }
+    };
+
+    loadAddons();
 
     return () => {
       isMounted = false;
@@ -221,9 +256,14 @@ const BookScreen = ({ navigation }) => {
       return acc;
     }, {});
 
-    const orderedCategories = CATEGORY_ORDER.filter(
-      (category) => grouped[category]?.length
-    );
+    const normalizedLookup = Object.keys(grouped).reduce((acc, category) => {
+      acc[category.toLowerCase()] = category;
+      return acc;
+    }, {});
+
+    const orderedCategories = CATEGORY_ORDER.map(
+      (category) => normalizedLookup[category.toLowerCase()]
+    ).filter(Boolean);
 
     const remainingCategories = Object.keys(grouped).filter(
       (category) => !orderedCategories.includes(category)
@@ -243,7 +283,7 @@ const BookScreen = ({ navigation }) => {
   const selectedPets = existingPets.filter((pet) =>
     selectedPetIds.includes(pet.id)
   );
-  const selectedOptions = ADDITIONAL_OPTIONS.filter((option) =>
+  const selectedOptions = availableAddons.filter((option) =>
     selectedOptionIds.includes(option.id)
   );
   const basePrice = Number(selectedService?.price) || 0;
@@ -656,30 +696,36 @@ const BookScreen = ({ navigation }) => {
                     </Text>
 
                     <Text style={styles.formSectionTitle}>Additional options</Text>
-                    <View style={styles.chipRow}>
-                      {ADDITIONAL_OPTIONS.map((option) => (
-                        <Pressable
-                          key={option.id}
-                          style={({ pressed }) => [
-                            styles.optionChip,
-                            selectedOptionIds.includes(option.id) &&
-                              styles.optionChipActive,
-                            pressed && styles.cardPressed,
-                          ]}
-                          onPress={() => toggleOption(option.id)}
-                        >
-                          <Text
-                            style={[
-                              styles.optionChipText,
+                    {availableAddons.length ? (
+                      <View style={styles.chipRow}>
+                        {availableAddons.map((option) => (
+                          <Pressable
+                            key={option.id}
+                            style={({ pressed }) => [
+                              styles.optionChip,
                               selectedOptionIds.includes(option.id) &&
-                                styles.optionChipTextActive,
+                                styles.optionChipActive,
+                              pressed && styles.cardPressed,
                             ]}
+                            onPress={() => toggleOption(option.id)}
                           >
-                            {option.label} · {formatCurrency(option.price)}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                            <Text
+                              style={[
+                                styles.optionChipText,
+                                selectedOptionIds.includes(option.id) &&
+                                  styles.optionChipTextActive,
+                              ]}
+                            >
+                              {option.label} · {formatCurrency(option.price)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={styles.helperText}>
+                        No add-ons available right now.
+                      </Text>
+                    )}
 
                     <Text style={styles.formSectionTitle}>Care details</Text>
                     <Text style={styles.label}>Pickup/visit location</Text>
@@ -937,7 +983,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f6f3fb",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "92%",
+    height: "92%",
   },
   modalBody: {
     flex: 1,

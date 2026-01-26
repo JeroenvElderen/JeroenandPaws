@@ -92,12 +92,16 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.subtitle}>Your booking overview</Text>
           </View>
           <View style={styles.headerRight}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            <View style={styles.iconBadge}>
-              <Text style={styles.iconBadgeText}>🔔</Text>
-            </View>
+            <Pressable onPress={() => navigation.navigate("ProfileDetails")}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initials}</Text>
+              </View>
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate("Messages")}>
+              <View style={styles.iconBadge}>
+                <Text style={styles.iconBadgeText}>💬</Text>
+              </View>
+            </Pressable>
           </View>
         </View>
 
@@ -180,7 +184,7 @@ const HomeScreen = ({ navigation }) => {
             );
           })
         )}
-        
+
       </ScrollView>
     </SafeAreaView>
   );
