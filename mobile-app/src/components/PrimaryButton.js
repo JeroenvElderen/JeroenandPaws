@@ -2,12 +2,14 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 const PrimaryButton = ({ label, onPress, variant = "primary" }) => (
   <Pressable
-    style={[styles.button, variant === "outline" && styles.buttonOutline]}
+    style={({ pressed }) => [
+      styles.button,
+      variant === "outline" && styles.buttonOutline,
+      pressed && styles.buttonPressed,
+    ]}
     onPress={onPress}
   >
-    <Text
-      style={[styles.text, variant === "outline" && styles.textOutline]}
-    >
+    <Text style={[styles.text, variant === "outline" && styles.textOutline]}>
       {label}
     </Text>
   </Pressable>
@@ -21,11 +23,22 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     marginVertical: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 4,
   },
   buttonOutline: {
     backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: "#7c45f3",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  buttonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   text: {
     color: "#fff",
