@@ -12,6 +12,12 @@ const TabLabel = ({ label, color }) => (
   <Text style={{ color, fontSize: 12, marginBottom: 4 }}>{label}</Text>
 );
 
+const tabIcons = {
+  Home: "🏠",
+  Book: "📅",
+  Profile: "⋯",
+};
+
 const App = () => (
   <NavigationContainer>
     <StatusBar style="dark" />
@@ -21,15 +27,32 @@ const App = () => (
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopColor: "#efe7dd",
+          borderTopWidth: 0,
+          borderRadius: 32,
+          marginHorizontal: 16,
+          marginBottom: 12,
+          height: 70,
+          position: "absolute",
+          shadowColor: "#2b1a4b",
+          shadowOpacity: 0.08,
+          shadowOffset: { width: 0, height: 10 },
+          shadowRadius: 18,
+          elevation: 6,
         },
-        tabBarActiveTintColor: "#1f4b3f",
-        tabBarInactiveTintColor: "#8d887f",
+        tabBarActiveTintColor: "#5d2fc5",
+        tabBarInactiveTintColor: "#a093b9",
+        tabBarIconStyle: {
+          marginTop: 8,
+        },
       }}
     >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
         options={{
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 18 }}>{tabIcons.Home}</Text>
+          ),
           tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
         }}
       />
@@ -37,6 +60,9 @@ const App = () => (
         name="Book"
         component={BookScreen}
         options={{
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 18 }}>{tabIcons.Book}</Text>
+          ),
           tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
         }}
       />
@@ -44,8 +70,11 @@ const App = () => (
         name="Profile"
         component={ProfileScreen}
         options={{
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
+          ),
           tabBarLabel: ({ color }) => (
-            <TabLabel label="Profile" color={color} />
+            <TabLabel label="More" color={color} />
           ),
         }}
       />

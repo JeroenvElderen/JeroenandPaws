@@ -17,23 +17,23 @@ const PrimaryButton = ({ label, onPress, variant = "primary" }) => (
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#7c45f3",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 14,
+    backgroundColor: "#6c3ad6",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 20,
     alignItems: "center",
     marginVertical: 6,
-    shadowColor: "#7c45f3",
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
+    shadowColor: "#6c3ad6",
+    shadowOpacity: 0.16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 14,
     elevation: 3,
   },
   buttonOutline: {
-    backgroundColor: "transparent",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#7c45f3",
-    shadowOpacity: 0,
+    borderColor: "#c9b8ee",
+    shadowOpacity: 0.04,
     elevation: 0,
   },
   buttonPressed: {
@@ -41,12 +41,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   text: {
-    color: "#f4f2ff",
+    color: "#ffffff",
     fontWeight: "600",
     letterSpacing: 0.2,
   },
   textOutline: {
-    color: "#7c45f3",
+    color: "#5d2fc5",
   },
 });
 

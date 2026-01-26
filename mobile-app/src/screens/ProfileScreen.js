@@ -1,143 +1,173 @@
-import { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import PrimaryButton from "../components/PrimaryButton";
-import { API_BASE_URL } from "../api/config";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const ProfileScreen = () => {
-  const [email, setEmail] = useState("");
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const serviceItems = [
+  { label: "Service settings", icon: "✏️", badge: "NEW RATES" },
+  { label: "Payments", icon: "💳" },
+  { label: "Insights", icon: "📊" },
+  { label: "Promote Your Profile", icon: "📣" },
+  { label: "Jeroen & Paws Cards", icon: "🗂️" },
+];
 
-  const loadBookings = async () => {
-    if (!email) {
-      setError("Please enter the email you used for booking.");
-      return;
-    }
+const userItems = [
+  { label: "Profile", icon: "👤" },
+  { label: "Your pets", icon: "🐾" },
+  { label: "Settings", icon: "⚙️" },
+  { label: "Help Centre & Support", icon: "❓" },
+];
 
-    try {
-      setLoading(true);
-      setError("");
-      const res = await fetch(
-        `${API_BASE_URL}/api/client-bookings?email=${encodeURIComponent(email)}`
-      );
-      if (!res.ok) {
-        throw new Error("Unable to load bookings.");
-      }
-      const data = await res.json();
-      setBookings(data.bookings || []);
-    } catch (fetchError) {
-      setError(fetchError.message || "Unable to load bookings.");
-    } finally {
-      setLoading(false);
-    }
-  };
+const ProfileScreen = () => (
+  <SafeAreaView style={styles.safeArea}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>More</Text>
+      <View style={styles.searchRow}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <Text style={styles.searchText}>Book a new service</Text>
+        <Text style={styles.chevron}>›</Text>
+      </View>
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your profile</Text>
-      <Text style={styles.subtitle}>
-        Log in with the email you used for booking to see your upcoming visits.
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="you@email.com"
-        placeholderTextColor="#6f6a87"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <PrimaryButton label="Load my bookings" onPress={loadBookings} />
-
-      {loading && <ActivityIndicator color="#7c45f3" />}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <FlatList
-        data={bookings}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          !loading && (
-            <Text style={styles.empty}>No bookings yet. Book a visit to start.</Text>
-          )
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.service_title || "Service"}</Text>
-            <Text style={styles.cardMeta}>{item.status || "Scheduled"}</Text>
-            <Text style={styles.cardMeta}>
-              {item.start_at ? new Date(item.start_at).toLocaleString() : "Time pending"}
-            </Text>
+  <Text style={styles.sectionTitle}>Your pet sitting services</Text>
+      <View style={styles.sectionCard}>
+        {serviceItems.map((item, index) => (
+          <View
+            key={item.label}
+            style={[
+              styles.menuItem,
+              index === serviceItems.length - 1 && styles.menuItemLast,
+            ]}
+          >
+            <View style={styles.menuLeft}>
+              <Text style={styles.menuIcon}>{item.icon}</Text>
+              <Text style={styles.menuLabel}>{item.label}</Text>
+            </View>
+            <View style={styles.menuRight}>
+              {item.badge ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{item.badge}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.chevron}>›</Text>
+            </View>
           </View>
-        )}
-      />
-    </View>
-  );
-};
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>You</Text>
+      <View style={styles.sectionCard}>
+        {userItems.map((item, index) => (
+          <View
+            key={item.label}
+            style={[
+              styles.menuItem,
+              index === userItems.length - 1 && styles.menuItemLast,
+            ]}
+          >
+            <View style={styles.menuLeft}>
+              <Text style={styles.menuIcon}>{item.icon}</Text>
+              <Text style={styles.menuLabel}>{item.label}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  </SafeAreaView>
+);
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: "#f6f3fb",
+  },
+  container: {
+    flexGrow: 1,
+    backgroundColor: "#f6f3fb",
     padding: 20,
+    paddingBottom: 32,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#c9c5d8",
+    color: "#2b1a4b",
     marginBottom: 16,
   },
-  input: {
-    backgroundColor: "#120d23",
-    borderRadius: 12,
-    padding: 12,
-    color: "#f4f2ff",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    marginBottom: 10,
-  },
-  error: {
-    color: "#f97316",
-    marginTop: 8,
-  },
-  list: {
-    paddingTop: 12,
-    paddingBottom: 40,
-  },
-  empty: {
-    color: "#c9c5d8",
-    marginTop: 12,
-  },
-  card: {
-    backgroundColor: "#120d23",
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    padding: 14,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: "#ebe4f7",
+    marginBottom: 20,
   },
-  cardTitle: {
-    color: "#f4f2ff",
-    fontSize: 16,
+  searchIcon: {
+    marginRight: 10,
+    fontSize: 18,
+  },
+  searchText: {
+    flex: 1,
+    fontSize: 15,
+    color: "#3a2b55",
     fontWeight: "600",
   },
-  cardMeta: {
-    color: "#c9c5d8",
-    marginTop: 4,
+  chevron: {
+    fontSize: 20,
+    color: "#a194bb",
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#2b1a4b",
+    marginBottom: 12,
+  },
+  sectionCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    marginBottom: 20,
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f2ecfb",
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
+  },
+  menuLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  menuIcon: {
+    fontSize: 18,
+    marginRight: 10,
+  },
+  menuLabel: {
+    fontSize: 15,
+    color: "#3a2b55",
+    fontWeight: "600",
+  },
+  menuRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  badge: {
+    backgroundColor: "#f2d7ff",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 8,
+  },
+  badgeText: {
+    color: "#6c3ad6",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
 

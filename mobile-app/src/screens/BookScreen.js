@@ -1,85 +1,154 @@
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { WebView } from "react-native-webview";
-import { API_BASE_URL } from "../api/config";
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-const BookScreen = () => (
-  <View style={styles.container}>
-    <View style={styles.header}>
-        <View style={styles.badgeRow}>
-            <Text style={styles.badge}>Secure checkout</Text>
-            <Text style={styles.badgeDot}>•</Text>
-            <Text style={styles.badgeText}>Trusted by local pet parents</Text>
+const services = [
+  {
+    title: "Boarding",
+    description: "in the sitter's home",
+    icon: "🏠",
+  },
+  {
+    title: "House Sitting",
+    description: "in your home",
+    icon: "🛋️",
+  },
+  {
+    title: "Drop-In Visits",
+    description: "visits in your home",
+    icon: "🐾",
+  },
+  {
+    title: "Doggy Day Care",
+    description: "in the sitter's home",
+    icon: "☀️",
+  },
+  {
+    title: "Dog Walking",
+    description: "in your neighbourhood",
+    icon: "🚶‍♂️",
+  },
+];
+
+const BookScreen = ({ navigation }) => (
+  <SafeAreaView style={styles.safeArea}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.navigate("Home")}
+        >
+          <Text style={styles.backIcon}>←</Text>
+        </Pressable>
+        <Text style={styles.title}>Select a Service</Text>
       </View>
-      <Text style={styles.title}>Book a visit</Text>
-      <Text style={styles.subtitle}>
-        Complete booking, payments, and scheduling in the secure flow below.
-      </Text>
-    </View>
-    <View style={styles.webviewCard}>
-      <WebView
-        source={{ uri: `${API_BASE_URL}/services?booking=1` }}
-        style={styles.webview}
-        startInLoadingState
-      />
-    </View>
-  </View>
+      <View style={styles.list}>
+        {services.map((service) => (
+          <View key={service.title} style={styles.serviceCard}>
+            <View style={styles.serviceIcon}>
+              <Text style={styles.serviceIconText}>{service.icon}</Text>
+            </View>
+            <View style={styles.serviceCopy}>
+              <Text style={styles.serviceTitle}>{service.title}</Text>
+              <Text style={styles.serviceDescription}>{service.description}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  </SafeAreaView>
 );
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: "#f6f3fb",
+  },
+  container: {
+    flexGrow: 1,
+    backgroundColor: "#f6f3fb",
+    padding: 20,
+    paddingBottom: 32,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+    minHeight: 44,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e7def7",
+    position: "absolute",
+    left: 0,
+  },
+  backIcon: {
+    fontSize: 18,
+    color: "#46315f",
   },
   title: {
-    color: "#f4f2ff",
-    fontSize: 22,
+    color: "#2b1a4b",
+    fontSize: 20,
     fontWeight: "700",
-    marginBottom: 4,
   },
-  subtitle: {
-    color: "#c9c5d8",
-    fontSize: 14,
+  list: {
+    paddingBottom: 8,
   },
-  badgeRow: {
+  serviceCard: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-  },
-  badge: {
-    backgroundColor: "rgba(124,69,243,0.18)",
-    color: "#bda7ff",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  badgeDot: {
-    color: "#6f6a87",
-    marginHorizontal: 6,
-  },
-  badgeText: {
-    color: "#9f9ab8",
-    fontSize: 12,
-  },
-  webviewCard: {
-    flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 20,
-    overflow: "hidden",
+    backgroundColor: "#ffffff",
+    padding: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "#120d23",
+    borderColor: "#ebe4f7",
+    shadowColor: "#2b1a4b",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 2,
+    marginBottom: 12,
   },
-  webview: {
+  serviceIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#efe9fb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  serviceCopy: {
     flex: 1,
-    backgroundColor: "#120d23",
+    },
+  serviceIconText: {
+    fontSize: 20,
+  },
+  serviceTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2b1a4b",
+  },
+  serviceDescription: {
+    fontSize: 14,
+    color: "#7b6a9f",
+    marginTop: 4,
+  },
+  chevron: {
+    fontSize: 22,
+    color: "#b2a6c9",
   },
 });
 

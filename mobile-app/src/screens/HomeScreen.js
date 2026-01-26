@@ -1,151 +1,243 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import PrimaryButton from "../components/PrimaryButton";
 
 const HomeScreen = ({ navigation }) => (
-  <ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.hero}>
-      <Text style={styles.kicker}>Jeroen & Paws</Text>
-      <Text style={styles.title}>Your pet care, beautifully organized.</Text>
-      <Text style={styles.subtitle}>
-        Plan visits, share updates, and keep every tail wagging from one calm,
-        friendly space.
-      </Text>
-    </View>
+  <SafeAreaView style={styles.safeArea}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Jeroen</Text>
+          <Text style={styles.subtitle}>Monday, 26 Jan</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>JP</Text>
+          </View>
+          <View style={styles.iconBadge}>
+            <Text style={styles.iconBadgeText}>🔔</Text>
+          </View>
+        </View>
+      </View>
 
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Quick actions</Text>
-      <Text style={styles.cardBody}>
-        Jump straight into a new booking or check your upcoming care plan.
-      </Text>
-      <View style={styles.actions}>
-        <PrimaryButton
-          label="Request a booking"
-          onPress={() => navigation.navigate("Book")}
-        />
+    <Text style={styles.updateText}>Updated at 16:41</Text>
+
+      <View style={styles.noticeCard}>
+        <Text style={styles.noticeIcon}>☀️</Text>
+        <Text style={styles.noticeText}>You have no more bookings today</Text>
+      </View>
+
+      <View style={styles.promoCard}>
+        <Text style={styles.promoTitle}>
+          Give new Jeroen & Paws families €10 off their first booking.
+        </Text>
         <PrimaryButton
           label="View my profile"
           variant="outline"
           onPress={() => navigation.navigate("Profile")}
         />
       </View>
+
+    <View style={styles.quickCard}>
+        <View>
+          <Text style={styles.quickLabel}>Manage weekly care for this week</Text>
+          <Text style={styles.quickSubtext}>Update availability & recurring visits</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
       </View>
 
-    <View style={styles.metricsCard}>
-      <Text style={styles.cardTitle}>Today at a glance</Text>
-      <View style={styles.metricsRow}>
-        <View style={styles.metricBlock}>
-          <Text style={styles.metricValue}>5</Text>
-          <Text style={styles.metricLabel}>Walks</Text>
+      <Text style={styles.sectionTitle}>Completed</Text>
+      <View style={styles.card}>
+        <View style={styles.cardRow}>
+          <View>
+            <Text style={styles.cardTime}>10:52 – 11:24</Text>
+            <Text style={styles.cardTitle}>Dog Walking</Text>
+            <Text style={styles.cardMeta}>Meala, Lola</Text>
+          </View>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusBadgeText}>Completed</Text>
+          </View>
         </View>
-        <View style={styles.metricBlock}>
-          <Text style={styles.metricValue}>2</Text>
-          <Text style={styles.metricLabel}>Drop-ins</Text>
-        </View>
-        <View style={styles.metricBlock}>
-          <Text style={styles.metricValue}>24h</Text>
-          <Text style={styles.metricLabel}>Response</Text>
-        </View>
+        <PrimaryButton
+          label="Open Care Card"
+          onPress={() => navigation.navigate("Book")}
+        />
       </View>
-    </View>
-    <Text style={styles.metricNote}>
-        We keep availability tight so every visit feels personal and calm.
-      </Text>
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Why families choose us</Text>
-      <Text style={styles.listItem}>• Friendly, insured local carers</Text>
-      <Text style={styles.listItem}>• Photo updates after every visit</Text>
-      <Text style={styles.listItem}>• Flexible schedules with clear pricing</Text>
-    </View>
     </ScrollView>
+  </SafeAreaView>
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f6f3fb",
+  },
   container: {
     flexGrow: 1,
-    padding: 24,
-    backgroundColor: "#0c081f",
+    padding: 20,
+    paddingBottom: 32,
+    backgroundColor: "#f6f3fb",
   },
-  hero: {
-    paddingBottom: 18,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
   },
-  kicker: {
-    fontSize: 12,
-    color: "#a99fe5",
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
-    marginBottom: 8,
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 6,
+    color: "#2b1a4b",
   },
   subtitle: {
     fontSize: 16,
-    color: "#c9c5d8",
-    lineHeight: 22,
+    color: "#6c5a92",
+    marginTop: 2,
   },
-  card: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  cardTitle: {
-    fontSize: 16,
-    color: "#f4f2ff",
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  cardBody: {
-    color: "#c9c5d8",
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  actions: {
-    marginTop: 4,
-  },
-  metricsCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  metricsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  metricBlock: {
-    flex: 1,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    marginHorizontal: 4,
-    paddingVertical: 12,
-    borderRadius: 14,
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#efe9fb",
     alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "#d8ccef",
   },
-  metricValue: {
+  avatarText: {
+    fontWeight: "700",
+    color: "#5d2fc5",
+  },
+  iconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e6def6",
+  },
+  iconBadgeText: {
     fontSize: 18,
-    color: "#f4f2ff",
+  },
+  updateText: {
+    fontSize: 14,
+    color: "#7b6a9f",
+    marginBottom: 14,
+  },
+  noticeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    shadowColor: "#2b1a4b",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 2,
+    marginBottom: 14,
+  },
+  noticeIcon: {
+    fontSize: 18,
+    marginRight: 10,
+  },
+  noticeText: {
+    fontSize: 14,
+    color: "#3a2b55",
     fontWeight: "700",
   },
-  metricLabel: {
-    fontSize: 12,
-    color: "#c9c5d8",
+  promoCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    marginBottom: 14,
+  },
+  promoTitle: {
+    fontSize: 15,
+    color: "#3a2b55",
+    marginBottom: 12,
+    fontWeight: "600",
+  },
+  quickCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  quickLabel: {
+    fontSize: 15,
+    color: "#2f2149",
+    fontWeight: "600",
+  },
+  quickSubtext: {
+    fontSize: 13,
+    color: "#7b6a9f",
     marginTop: 4,
   },
-  metricNote: {
-    fontSize: 13,
-    color: "#c9c5d8",
+  chevron: {
+    fontSize: 24,
+    color: "#a194bb",
   },
-  listItem: {
-    color: "#c9c5d8",
-    marginTop: 6,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2b1a4b",
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+  },
+  CardRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  cardTime: {
+    fontSize: 16,
+    color: "#2b1a4b",
+    fontWeight: "700",
+  },
+  cardTitle: {
+    fontSize: 15,
+    color: "#4a3a68",
+    marginTop: 4,
+    fontWeight: "600",
+  },
+  cardMeta: {
+    fontSize: 14,
+    color: "#7b6a9f",
+    marginTop: 4,
+  },
+  statusBadge: {
+    backgroundColor: "#efe9fb",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  statusBadgeText: {
+    color: "#5d2fc5",
+    fontWeight: "600",
+    fontSize: 12,
   },
 });
 
