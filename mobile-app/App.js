@@ -14,16 +14,16 @@ const TabLabel = ({ label, color }) => (
 
 const App = () => (
   <NavigationContainer>
-    <StatusBar style="light" />
+    <StatusBar style="dark" />
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#120d23",
-          borderTopColor: "rgba(255,255,255,0.12)",
+          backgroundColor: "#ffffff",
+          borderTopColor: "#efe7dd",
         },
-        tabBarActiveTintColor: "#7c45f3",
-        tabBarInactiveTintColor: "#c9c5d8",
+        tabBarActiveTintColor: "#1f4b3f",
+        tabBarInactiveTintColor: "#8d887f",
       }}
     >
       <Tab.Screen
