@@ -1,13 +1,5 @@
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const serviceItems = [
-  { label: "Service settings", icon: "✏️", badge: "NEW RATES" },
-  { label: "Payments", icon: "💳" },
-  { label: "Insights", icon: "📊" },
-  { label: "Promote Your Profile", icon: "📣" },
-  { label: "Jeroen & Paws Cards", icon: "🗂️" },
-];
-
 const userItems = [
   { label: "Profile", icon: "👤" },
   { label: "Your pets", icon: "🐾" },
@@ -23,32 +15,6 @@ const ProfileScreen = () => (
         <Text style={styles.searchIcon}>🔍</Text>
         <Text style={styles.searchText}>Book a new service</Text>
         <Text style={styles.chevron}>›</Text>
-      </View>
-
-  <Text style={styles.sectionTitle}>Your pet sitting services</Text>
-      <View style={styles.sectionCard}>
-        {serviceItems.map((item, index) => (
-          <View
-            key={item.label}
-            style={[
-              styles.menuItem,
-              index === serviceItems.length - 1 && styles.menuItemLast,
-            ]}
-          >
-            <View style={styles.menuLeft}>
-              <Text style={styles.menuIcon}>{item.icon}</Text>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-            </View>
-            <View style={styles.menuRight}>
-              {item.badge ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
-                </View>
-              ) : null}
-              <Text style={styles.chevron}>›</Text>
-            </View>
-          </View>
-        ))}
       </View>
 
       <Text style={styles.sectionTitle}>You</Text>
@@ -89,6 +55,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2b1a4b",
     marginBottom: 16,
+    textAlign: "center",
   },
   searchRow: {
     flexDirection: "row",
@@ -152,22 +119,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#3a2b55",
     fontWeight: "600",
-  },
-  menuRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  badge: {
-    backgroundColor: "#f2d7ff",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginRight: 8,
-  },
-  badgeText: {
-    color: "#6c3ad6",
-    fontSize: 12,
-    fontWeight: "700",
   },
 });
 

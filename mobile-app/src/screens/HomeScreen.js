@@ -1,70 +1,194 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import PrimaryButton from "../components/PrimaryButton";
+import { fetchJson } from "../api/client";
+import { useSession } from "../context/SessionContext";
 
-const HomeScreen = ({ navigation }) => (
-  <SafeAreaView style={styles.safeArea}>
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Jeroen</Text>
-          <Text style={styles.subtitle}>Monday, 26 Jan</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JP</Text>
-          </View>
-          <View style={styles.iconBadge}>
-            <Text style={styles.iconBadgeText}>🔔</Text>
-          </View>
-        </View>
-      </View>
+const formatDateLabel = (date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "2-digit",
+    month: "short",
+  }).format(date);
 
-    <Text style={styles.updateText}>Updated at 16:41</Text>
+const formatTime = (date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 
-      <View style={styles.noticeCard}>
-        <Text style={styles.noticeIcon}>☀️</Text>
-        <Text style={styles.noticeText}>You have no more bookings today</Text>
-      </View>
+const formatTimeRange = (start, end) => {
+  if (!start || !end) return "Time TBD";
+  return `${formatTime(start)} – ${formatTime(end)}`;
+};
 
-      <View style={styles.promoCard}>
-        <Text style={styles.promoTitle}>
-          Give new Jeroen & Paws families €10 off their first booking.
-        </Text>
-        <PrimaryButton
-          label="View my profile"
-          variant="outline"
-          onPress={() => navigation.navigate("Profile")}
-        />
-      </View>
+const isSameDay = (a, b) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
-    <View style={styles.quickCard}>
-        <View>
-          <Text style={styles.quickLabel}>Manage weekly care for this week</Text>
-          <Text style={styles.quickSubtext}>Update availability & recurring visits</Text>
-        </View>
-        <Text style={styles.chevron}>›</Text>
-      </View>
+const HomeScreen = ({ navigation }) => {
+  const { session } = useSession();
+  const [bookings, setBookings] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-      <Text style={styles.sectionTitle}>Completed</Text>
-      <View style={styles.card}>
-        <View style={styles.cardRow}>
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBookings = async () => {
+      try {
+        const data = await fetchJson(
+          `/api/client-bookings?email=${encodeURIComponent(session.email)}`
+        );
+        if (!isMounted) return;
+        setBookings(data.bookings || []);
+        setLastUpdated(new Date());
+      } catch (error) {
+        console.error("Failed to load bookings", error);
+      }
+    };
+
+    if (session?.email) {
+      loadBookings();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.email]);
+
+  const today = new Date();
+  const todaysBookings = bookings.filter((booking) => {
+    const start = booking?.start_at ? new Date(booking.start_at) : null;
+    return start ? isSameDay(start, today) : false;
+  });
+
+  const completedBookings = todaysBookings.filter((booking) =>
+    (booking.status || "").toLowerCase().includes("completed")
+  );
+  const hasRemainingBookings = todaysBookings.some(
+    (booking) => !(booking.status || "").toLowerCase().includes("completed")
+  );
+
+  const displayName = session?.name || "Jeroen";
+  const initials = displayName
+    .split(" ")
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.header}>
           <View>
-            <Text style={styles.cardTime}>10:52 – 11:24</Text>
-            <Text style={styles.cardTitle}>Dog Walking</Text>
-            <Text style={styles.cardMeta}>Meala, Lola</Text>
+            <Text style={styles.title}>{displayName}</Text>
+            <Text style={styles.subtitle}>{formatDateLabel(today)}</Text>
           </View>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Completed</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <View style={styles.iconBadge}>
+              <Text style={styles.iconBadgeText}>🔔</Text>
+            </View>
           </View>
         </View>
-        <PrimaryButton
-          label="Open Care Card"
-          onPress={() => navigation.navigate("Book")}
-        />
-      </View>
-    </ScrollView>
-  </SafeAreaView>
-);
+
+      <Text style={styles.updateText}>
+          Updated at {lastUpdated ? formatTime(lastUpdated) : "—"}
+        </Text>
+
+        <View style={styles.noticeCard}>
+          <Text style={styles.noticeIcon}>☀️</Text>
+          <Text style={styles.noticeText}>
+            {hasRemainingBookings
+              ? "You still have bookings today"
+              : "You have no more bookings today"}
+          </Text>
+        </View>
+
+      <Pressable
+          style={({ pressed }) => [
+            styles.quickCard,
+            pressed && styles.cardPressed,
+          ]}
+          onPress={() => navigation.navigate("Calendar")}
+        >
+          <View>
+            <Text style={styles.quickLabel}>
+              Manage weekly care for this week
+            </Text>
+            <Text style={styles.quickSubtext}>
+              Update availability & recurring visits
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>Completed</Text>
+        {completedBookings.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              Completed bookings will appear here once they finish.
+            </Text>
+          </View>
+        ) : (
+          completedBookings.map((booking) => {
+            const start = booking?.start_at ? new Date(booking.start_at) : null;
+            const end = booking?.end_at ? new Date(booking.end_at) : null;
+            const serviceTitle =
+              booking?.service_title || booking?.services_catalog?.title;
+            const pets = booking?.pets?.join
+              ? booking.pets.join(", ")
+              : booking?.pets || "Client pets";
+
+            return (
+              <Pressable
+                key={booking.id}
+                style={({ pressed }) => [
+                  styles.card,
+                  pressed && styles.cardPressed,
+                ]}
+                onPress={() => navigation.navigate("Book")}
+              >
+                <View style={styles.cardRow}>
+                  <View>
+                    <Text style={styles.cardTime}>
+                      {formatTimeRange(start, end)}
+                    </Text>
+                    <Text style={styles.cardTitle}>
+                      {serviceTitle || "Service"}
+                    </Text>
+                    <Text style={styles.cardMeta}>{pets}</Text>
+                  </View>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusBadgeText}>
+                      {booking.status || "Completed"}
+                    </Text>
+                  </View>
+                </View>
+                <PrimaryButton
+                  label="Start Care Card"
+                  onPress={() => navigation.navigate("Book")}
+                />
+              </Pressable>
+            );
+          })
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -154,20 +278,6 @@ const styles = StyleSheet.create({
     color: "#3a2b55",
     fontWeight: "700",
   },
-  promoCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#ebe4f7",
-    marginBottom: 14,
-  },
-  promoTitle: {
-    fontSize: 15,
-    color: "#3a2b55",
-    marginBottom: 12,
-    fontWeight: "600",
-  },
   quickCard: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
@@ -178,6 +288,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  cardPressed: {
+    transform: [{ scale: 0.99 }],
+    opacity: 0.96,
   },
   quickLabel: {
     fontSize: 15,
@@ -199,14 +313,26 @@ const styles = StyleSheet.create({
     color: "#2b1a4b",
     marginBottom: 12,
   },
+  emptyCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#7b6a9f",
+  },
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     borderColor: "#ebe4f7",
+    marginBottom: 16,
   },
-  CardRow: {
+  cardRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
