@@ -7,7 +7,6 @@ import {
   Text,
   View,
 } from "react-native";
-import PrimaryButton from "../components/PrimaryButton";
 import { fetchJson } from "../api/client";
 import { useSession } from "../context/SessionContext";
 
@@ -74,7 +73,6 @@ const HomeScreen = ({ navigation }) => {
     .sort(
       (a, b) => new Date(a.start_at || 0) - new Date(b.start_at || 0)
     );
-  const nextBooking = upcomingBookings[0] || null;
   const upcomingPreview = upcomingBookings.slice(0, 3);
 
   const displayName = session?.name || "Jeroen";
@@ -108,7 +106,7 @@ const HomeScreen = ({ navigation }) => {
         </Text>
 
         <View style={styles.noticeCard}>
-          <Text style={styles.noticeIcon}>📆</Text>
+          <Text style={styles.noticeIcon}>🗓️</Text>
           <Text style={styles.noticeText}>
             {upcomingBookings.length
               ? `${upcomingBookings.length} upcoming booking${
@@ -118,7 +116,7 @@ const HomeScreen = ({ navigation }) => {
           </Text>
         </View>
 
-      <View style={styles.quickActions}>
+        <View style={styles.quickActions}>
           <Pressable
             style={({ pressed }) => [
               styles.quickCard,
@@ -134,61 +132,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => navigation.navigate("Calendar")}
-          >
-            <View>
-              <Text style={styles.quickLabel}>View your calendar</Text>
-              <Text style={styles.quickSubtext}>
-                See upcoming visits by date
-              </Text>
-            </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
         </View>
-
-        <Text style={styles.sectionTitle}>Next visit</Text>
-        {nextBooking ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTime}>
-              {formatTimeRange(
-                nextBooking?.start_at ? new Date(nextBooking.start_at) : null,
-                nextBooking?.end_at ? new Date(nextBooking.end_at) : null
-              )}
-            </Text>
-            <Text style={styles.cardTitle}>
-              {nextBooking?.service_title ||
-                nextBooking?.services_catalog?.title ||
-                "Service"}
-            </Text>
-            <Text style={styles.cardMeta}>
-              {nextBooking?.start_at
-                ? formatDateLabel(new Date(nextBooking.start_at))
-                : "Date TBD"}
-            </Text>
-            {nextBooking?.notes ? (
-              <Text style={styles.cardMeta}>{nextBooking.notes}</Text>
-            ) : null}
-            <PrimaryButton
-              label="View booking details"
-              onPress={() => navigation.navigate("Calendar")}
-            />
-          </View>
-          ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Your next booking will appear here once you submit a request.
-            </Text>
-            <PrimaryButton
-              label="Request a booking"
-              onPress={() => navigation.navigate("Book")}
-            />
-          </View>
-        )}
 
         <Text style={styles.sectionTitle}>Upcoming visits</Text>
         {upcomingPreview.length === 0 ? (
@@ -236,22 +180,7 @@ const HomeScreen = ({ navigation }) => {
             );
           })
         )}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.quickCard,
-            pressed && styles.cardPressed,
-          ]}
-          onPress={() => navigation.navigate("Calendar")}
-        >
-          <View>
-            <Text style={styles.quickLabel}>Need to adjust a booking?</Text>
-            <Text style={styles.quickSubtext}>
-              Select a date to view the details
-            </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
+        
       </ScrollView>
     </SafeAreaView>
   );

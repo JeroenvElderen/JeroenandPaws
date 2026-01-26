@@ -9,15 +9,15 @@ import {
 import PrimaryButton from "../components/PrimaryButton";
 
 const AuthScreen = ({ onAuthenticate }) => {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleAuthenticate = () => {
-    if (!email.trim()) {
+  const handleAuthenticate = (requirePassword = true) => {
+    if (!email.trim() || (requirePassword && !password.trim())) {
       return;
     }
     onAuthenticate({
-      name: name.trim() || email.split("@")[0],
+      name: email.split("@")[0],
       email: email.trim(),
     });
   };
@@ -30,14 +30,6 @@ const AuthScreen = ({ onAuthenticate }) => {
           Log in or register to load your bookings from Outlook.
         </Text>
         <View style={styles.form}>
-          <Text style={styles.label}>Your name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Jeroen"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
           <Text style={styles.label}>Email address</Text>
           <TextInput
             style={styles.input}
@@ -47,9 +39,22 @@ const AuthScreen = ({ onAuthenticate }) => {
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
         </View>
         <View style={styles.buttonStack}>
-          <PrimaryButton label="Login" onPress={handleAuthenticate} />
+          <PrimaryButton label="Login" onPress={() => handleAuthenticate()} />
+          <PrimaryButton
+            label="Continue with Apple"
+            variant="outline"
+            onPress={() => handleAuthenticate(false)}
+          />
           <PrimaryButton
             label="Register"
             variant="outline"

@@ -1,26 +1,46 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 const userItems = [
-  { label: "Profile", icon: "👤" },
-  { label: "Your pets", icon: "🐾" },
-  { label: "Settings", icon: "⚙️" },
-  { label: "Help Centre & Support", icon: "❓" },
+  { label: "Profile", icon: "🪪", description: "View your profile details" },
+  { label: "Your pets", icon: "🐶", description: "Manage pet profiles" },
+  {
+    label: "Settings",
+    icon: "🛠️",
+    description: "Notifications and preferences",
+  },
+  {
+    label: "Payment methods",
+    icon: "💳",
+    description: "Update cards and billing",
+  },
+  {
+    label: "Help Centre & Support",
+    icon: "🛟",
+    description: "Email, call, or WhatsApp",
+  },
 ];
 
 const ProfileScreen = () => (
   <SafeAreaView style={styles.safeArea}>
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>More</Text>
-      <View style={styles.searchRow}>
-        <Text style={styles.searchIcon}>🔍</Text>
+      <Pressable style={styles.searchRow}>
+        <Text style={styles.searchIcon}>✨</Text>
         <Text style={styles.searchText}>Book a new service</Text>
         <Text style={styles.chevron}>›</Text>
-      </View>
+      </Pressable>
 
       <Text style={styles.sectionTitle}>You</Text>
       <View style={styles.sectionCard}>
         {userItems.map((item, index) => (
-          <View
+          <Pressable
             key={item.label}
             style={[
               styles.menuItem,
@@ -29,10 +49,13 @@ const ProfileScreen = () => (
           >
             <View style={styles.menuLeft}>
               <Text style={styles.menuIcon}>{item.icon}</Text>
-              <Text style={styles.menuLabel}>{item.label}</Text>
+              <View>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Text style={styles.menuDescription}>{item.description}</Text>
+              </View>
             </View>
             <Text style={styles.chevron}>›</Text>
-          </View>
+          </Pressable>
         ))}
       </View>
     </ScrollView>
@@ -119,6 +142,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#3a2b55",
     fontWeight: "600",
+  },
+  menuDescription: {
+    fontSize: 12,
+    color: "#7b6a9f",
+    marginTop: 2,
   },
 });
 

@@ -14,6 +14,36 @@ import { fetchJson } from "../api/client";
 import PrimaryButton from "../components/PrimaryButton";
 import { useSession } from "../context/SessionContext";
 
+const CATEGORY_ORDER = [
+  "Training",
+  "Overnight Support",
+  "Daytime Care",
+  "Custom Care",
+  "Group Adventures",
+  "Home visits",
+  "Solo Journeys",
+  "Daily strolls",
+];
+
+const CATEGORY_ICONS = {
+  Training: "🎓",
+  "Overnight Support": "🌙",
+  "Daytime Care": "☀️",
+  "Custom Care": "🧩",
+  "Group Adventures": "🧭",
+  "Home visits": "🏡",
+  "Solo Journeys": "🦮",
+  "Daily strolls": "🚶",
+  Services: "🐾",
+};
+
+const ADDITIONAL_OPTIONS = [
+  { id: "pickup", label: "Pickup & drop-off", price: 10 },
+  { id: "medication", label: "Medication support", price: 8 },
+  { id: "training", label: "Training add-on", price: 12 },
+  { id: "photo", label: "Photo updates", price: 5 },
+];
+
 const createDog = () => ({
   name: "",
   breed: "",
@@ -25,44 +55,69 @@ const createInitialState = (serviceLabel, session) => ({
   name: session?.name || "",
   email: session?.email || "",
   phone: "",
-  serviceType: serviceLabel || "Custom booking",
+  serviceType: serviceLabel || "Service request",
   dogCount: "1",
   dogs: [createDog(), createDog(), createDog(), createDog()],
-  careTiming: "",
+  bookingDate: "",
+  startTime: "",
+  endTime: "",
   pickupLocation: "",
   preferences: "",
   specialNotes: "",
   message: "",
 });
 
-const buildBookingMessage = (state, serviceLabel) => {
-  const dogCount = Number(state.dogCount) || 1;
-  const dogDetails = (state.dogs || [])
-    .slice(0, dogCount)
-    .map((dog, index) => {
-      const parts = [
-        dog?.name && `Name: ${dog.name}`,
-        dog?.breed && `Breed: ${dog.breed}`,
-        dog?.age && `Age: ${dog.age}`,
-        dog?.size && `Size/weight: ${dog.size}`,
-      ].filter(Boolean);
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(amount);
 
-      return parts.length
-        ? [`Dog ${index + 1}:`, ...parts.map((detail) => `  - ${detail}`)].join(
-            "\n"
-          )
-        : "";
-    })
-    .filter(Boolean);
+const buildBookingMessage = (
+  state,
+  { serviceLabel, selectedPets, selectedOptions, includeNewDogs }
+) => {
+  const dogCount = Number(state.dogCount) || 1;
+  const dogDetails = includeNewDogs
+    ? (state.dogs || [])
+        .slice(0, dogCount)
+        .map((dog, index) => {
+          const parts = [
+            dog?.name && `Name: ${dog.name}`,
+            dog?.breed && `Breed: ${dog.breed}`,
+            dog?.age && `Age: ${dog.age}`,
+            dog?.size && `Size/weight: ${dog.size}`,
+          ].filter(Boolean);
+
+          return parts.length
+            ? [
+                `Dog ${index + 1}:`,
+                ...parts.map((detail) => `  - ${detail}`),
+              ].join("\n")
+            : "";
+        })
+        .filter(Boolean)
+    : [];
 
   const lines = [
-    `Service: ${state.serviceType || serviceLabel || "Custom booking"}`,
-    state.dogCount && `Number of dogs: ${state.dogCount}`,
+    `Service: ${state.serviceType || serviceLabel || "Service request"}`,
+    selectedPets.length
+      ? `Existing pets: ${selectedPets.map((pet) => pet.name).join(", ")}`
+      : null,
+    includeNewDogs && state.dogCount
+      ? `Number of new dogs: ${state.dogCount}`
+      : null,
     ...dogDetails,
-    state.careTiming && `Preferred timing: ${state.careTiming}`,
+    state.bookingDate && `Visit date: ${state.bookingDate}`,
+    state.startTime && `Start time: ${state.startTime}`,
+    state.endTime && `End time: ${state.endTime}`,
     state.pickupLocation && `Pickup/visit location: ${state.pickupLocation}`,
     state.preferences && `Routine & preferences: ${state.preferences}`,
     state.specialNotes && `Notes or medications: ${state.specialNotes}`,
+    selectedOptions.length
+      ? `Add-ons: ${selectedOptions.map((option) => option.label).join(", ")}`
+      : null,
     state.message && `Extra details: ${state.message}`,
   ].filter(Boolean);
 
@@ -76,6 +131,11 @@ const BookScreen = ({ navigation }) => {
   const [formState, setFormState] = useState(() =>
     createInitialState("", session)
   );
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [existingPets, setExistingPets] = useState([]);
+  const [selectedPetIds, setSelectedPetIds] = useState([]);
+  const [showNewDogForm, setShowNewDogForm] = useState(false);
+  const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
 
@@ -99,8 +159,60 @@ const BookScreen = ({ navigation }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!categories.length) {
+      return;
+    }
+
+    setExpandedCategories((current) => {
+      if (Object.keys(current).length) {
+        return current;
+      }
+
+      return { [categories[0].category]: true };
+    });
+  }, [categories]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPets = async () => {
+      if (!session?.email) {
+        return;
+      }
+
+      try {
+        const data = await fetchJson(
+          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+        );
+        if (!isMounted) return;
+        setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
+      } catch (error) {
+        console.error("Failed to load pets", error);
+      }
+    };
+
+    loadPets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.email]);
+
   const categories = useMemo(() => {
-    const grouped = services.reduce((acc, service) => {
+    const filteredServices = services.filter((service) => {
+      const title = (service.title || "").toLowerCase();
+      const category = (service.category || "").toLowerCase();
+      if (title.includes("tailored") || title.includes("custom solution")) {
+        return false;
+      }
+      if (category.includes("tailored")) {
+        return false;
+      }
+      return true;
+    });
+
+    const grouped = filteredServices.reduce((acc, service) => {
       const category = service.category || "Services";
       if (!acc[category]) {
         acc[category] = [];
@@ -109,17 +221,37 @@ const BookScreen = ({ navigation }) => {
       return acc;
     }, {});
 
-    return Object.entries(grouped).map(([category, items]) => ({
+    const orderedCategories = CATEGORY_ORDER.filter(
+      (category) => grouped[category]?.length
+    );
+
+    const remainingCategories = Object.keys(grouped).filter(
+      (category) => !orderedCategories.includes(category)
+    );
+
+    return [...orderedCategories, ...remainingCategories].map((category) => ({
       category,
-      services: items,
+      services: grouped[category],
     }));
   }, [services]);
 
   const serviceLabel =
-    selectedService?.title || selectedService?.category || "Custom booking";
+    selectedService?.title || selectedService?.category || "Service request";
 
   const visibleDogCount = Math.min(Number(formState.dogCount) || 1, 4);
   const visibleDogs = (formState.dogs || []).slice(0, visibleDogCount);
+  const selectedPets = existingPets.filter((pet) =>
+    selectedPetIds.includes(pet.id)
+  );
+  const selectedOptions = ADDITIONAL_OPTIONS.filter((option) =>
+    selectedOptionIds.includes(option.id)
+  );
+  const basePrice = Number(selectedService?.price) || 0;
+  const optionsTotal = selectedOptions.reduce(
+    (sum, option) => sum + option.price,
+    0
+  );
+  const totalPrice = basePrice + optionsTotal;
 
   const handleChange = (field, value) => {
     setFormState((current) => ({ ...current, [field]: value }));
@@ -139,7 +271,12 @@ const BookScreen = ({ navigation }) => {
 
   const openService = (service) => {
     setSelectedService(service);
-    setFormState(createInitialState(service?.title || "Custom booking", session));
+    setFormState(
+      createInitialState(service?.title || "Service request", session)
+    );
+    setSelectedOptionIds([]);
+    setSelectedPetIds([]);
+    setShowNewDogForm(false);
     setStatus("idle");
     setError("");
   };
@@ -150,21 +287,59 @@ const BookScreen = ({ navigation }) => {
     setError("");
   };
 
+  const toggleCategory = (category) => {
+    setExpandedCategories((current) => ({
+      ...current,
+      [category]: !current[category],
+    }));
+  };
+
+  const togglePet = (petId) => {
+    setSelectedPetIds((current) =>
+      current.includes(petId)
+        ? current.filter((id) => id !== petId)
+        : [...current, petId]
+    );
+  };
+
+  const toggleOption = (optionId) => {
+    setSelectedOptionIds((current) =>
+      current.includes(optionId)
+        ? current.filter((id) => id !== optionId)
+        : [...current, optionId]
+    );
+  };
+
   const handleSubmit = async () => {
-    if (!formState.name || !formState.email || !formState.careTiming) {
-      setError("Please complete the required fields before submitting.");
+    if (
+      !formState.name ||
+      !formState.email ||
+      !formState.bookingDate ||
+      !formState.startTime
+    ) {
+      setError("Please complete the required fields before booking.");
       return;
     }
 
     setStatus("submitting");
     setError("");
-    const composedMessage = buildBookingMessage(formState, serviceLabel);
+    const composedMessage = buildBookingMessage(formState, {
+      serviceLabel,
+      selectedPets,
+      selectedOptions,
+      includeNewDogs: showNewDogForm,
+    });
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formState, message: composedMessage }),
+        body: JSON.stringify({
+          ...formState,
+          existingPets: selectedPets,
+          addOns: selectedOptions,
+          message: composedMessage,
+        }),
       });
 
       if (!response.ok) {
@@ -174,6 +349,9 @@ const BookScreen = ({ navigation }) => {
 
       setStatus("success");
       setFormState(createInitialState(serviceLabel, session));
+      setSelectedPetIds([]);
+      setSelectedOptionIds([]);
+      setShowNewDogForm(false);
     } catch (submissionError) {
       setError(
         submissionError.message ||
@@ -196,35 +374,64 @@ const BookScreen = ({ navigation }) => {
           <Text style={styles.title}>Select a Service</Text>
         </View>
         
-        <Text style={styles.subtitle}>Tap a service to open the booking form.</Text>
+        <Text style={styles.subtitle}>
+          Tap a category to explore services and book instantly.
+        </Text>
 
-        {categories.map((group) => (
-          <View key={group.category} style={styles.categorySection}>
-            <Text style={styles.sectionTitle}>{group.category}</Text>
-            {group.services.map((service) => (
+        {categories.map((group) => {
+          const isExpanded = expandedCategories[group.category];
+          const icon = CATEGORY_ICONS[group.category] || CATEGORY_ICONS.Services;
+
+        return (
+            <View key={group.category} style={styles.categorySection}>
               <Pressable
-                key={service.id}
                 style={({ pressed }) => [
-                  styles.serviceCard,
+                  styles.categoryCard,
                   pressed && styles.cardPressed,
                 ]}
-                onPress={() => openService(service)}
+                onPress={() => toggleCategory(group.category)}
               >
-                <View style={styles.serviceIcon}>
-                  <Text style={styles.serviceIconText}>🐾</Text>
+                <View style={styles.categoryLeft}>
+                  <View style={styles.categoryIcon}>
+                    <Text style={styles.categoryIconText}>{icon}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.categoryTitle}>{group.category}</Text>
+                    <Text style={styles.categoryHint}>
+                      {isExpanded ? "Hide services" : "View services"}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.serviceCopy}>
-                  <Text style={styles.serviceTitle}>{service.title}</Text>
-                  <Text style={styles.serviceDescription}>
-                    {service.description ||
-                      "Tap to share your booking details."}
-                  </Text>
-                </View>
-                <Text style={styles.chevron}>›</Text>
+                <Text style={styles.chevron}>{isExpanded ? "⌃" : "⌄"}</Text>
               </Pressable>
-            ))}
-          </View>
-        ))}
+            {isExpanded &&
+                group.services.map((service) => (
+                  <Pressable
+                    key={service.id}
+                    style={({ pressed }) => [
+                      styles.serviceCard,
+                      pressed && styles.cardPressed,
+                    ]}
+                    onPress={() => openService(service)}
+                  >
+                    <View style={styles.serviceIcon}>
+                      <Text style={styles.serviceIconText}>
+                        {icon}
+                      </Text>
+                    </View>
+                    <View style={styles.serviceCopy}>
+                      <Text style={styles.serviceTitle}>{service.title}</Text>
+                      <Text style={styles.serviceDescription}>
+                        {service.description ||
+                          "Tap to share your booking details."}
+                      </Text>
+                    </View>
+                    <Text style={styles.chevron}>›</Text>
+                  </Pressable>
+                ))}
+            </View>
+          );
+        })}
       </ScrollView>
 
       <Modal
@@ -244,185 +451,338 @@ const BookScreen = ({ navigation }) => {
                 <Text style={styles.closeButtonText}>✕</Text>
               </Pressable>
             </View>
-
-            <ScrollView contentContainerStyle={styles.formContent}>
-              {status === "success" ? (
-                <View style={styles.successCard}>
-                  <Text style={styles.successTitle}>Request sent!</Text>
-                  <Text style={styles.successText}>
-                    Thank you! We’ll review your booking and follow up shortly.
-                  </Text>
-                  <PrimaryButton label="Close" onPress={closeService} />
-                </View>
-              ) : (
-                <View>
-                  <Text style={styles.formSectionTitle}>Your details</Text>
-                  <Text style={styles.label}>Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Your name"
-                    value={formState.name}
-                    onChangeText={(value) => handleChange("name", value)}
-                  />
-                  <Text style={styles.label}>Email *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="you@example.com"
-                    value={formState.email}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    onChangeText={(value) => handleChange("email", value)}
-                  />
-                  <Text style={styles.label}>Phone (optional)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="WhatsApp or phone number"
-                    value={formState.phone}
-                    keyboardType="phone-pad"
-                    onChangeText={(value) => handleChange("phone", value)}
-                  />
-                  <Text style={styles.label}>Service type</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Service"
-                    value={formState.serviceType}
-                    onChangeText={(value) =>
-                      handleChange("serviceType", value)
-                    }
-                  />
-
-        <Text style={styles.formSectionTitle}>About your dog(s)</Text>
-                  <Text style={styles.label}>How many dogs?</Text>
-                  <View style={styles.optionRow}>
-                    {[1, 2, 3, 4].map((count) => (
-                      <Pressable
-                        key={count}
-                        style={({ pressed }) => [
-                          styles.countChip,
-                          Number(formState.dogCount) === count &&
-                            styles.countChipActive,
-                          pressed && styles.cardPressed,
-                        ]}
-                        onPress={() =>
-                          handleChange("dogCount", String(count))
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.countChipText,
-                            Number(formState.dogCount) === count &&
-                              styles.countChipTextActive,
-                          ]}
-                        >
-                          {count}
-                        </Text>
-                      </Pressable>
-                    ))}
+            <View style={styles.modalBody}>
+              <ScrollView contentContainerStyle={styles.formContent}>
+                {status === "success" ? (
+                  <View style={styles.successCard}>
+                    <Text style={styles.successTitle}>Booking confirmed!</Text>
+                    <Text style={styles.successText}>
+                      Your booking is reserved and ready for payment. We’ll send
+                      a confirmation shortly.
+                    </Text>
+                    <PrimaryButton label="Close" onPress={closeService} />
                   </View>
-                  {visibleDogs.map((dog, index) => (
-                    <View key={`dog-${index}`} style={styles.dogCard}>
-                      <Text style={styles.dogTitle}>Dog {index + 1}</Text>
-                      <Text style={styles.label}>Name *</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="e.g., Luna"
-                        value={dog.name}
-                        onChangeText={(value) =>
-                          handleDogChange(index, "name", value)
-                        }
-                      />
-                      <Text style={styles.label}>Breed *</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="e.g., Border Collie mix"
-                        value={dog.breed}
-                        onChangeText={(value) =>
-                          handleDogChange(index, "breed", value)
-                        }
-                      />
-                      <View style={styles.inlineInputs}>
-                        <View style={styles.inlineInput}>
-                          <Text style={styles.label}>Age *</Text>
-                          <TextInput
-                            style={styles.input}
-                            placeholder="2 years"
-                            value={dog.age}
-                            onChangeText={(value) =>
-                              handleDogChange(index, "age", value)
-                            }
-                          />
+                  ) : (
+                  <View>
+                    <Text style={styles.formSectionTitle}>Your details</Text>
+                    <Text style={styles.label}>Name</Text>
+                    <TextInput
+                      style={[styles.input, styles.readOnlyInput]}
+                      value={formState.name}
+                      editable={false}
+                    />
+                    <Text style={styles.label}>Email</Text>
+                    <TextInput
+                      style={[styles.input, styles.readOnlyInput]}
+                      value={formState.email}
+                      editable={false}
+                    />
+                    <Text style={styles.label}>Phone (optional)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="WhatsApp or phone number"
+                      value={formState.phone}
+                      keyboardType="phone-pad"
+                      onChangeText={(value) => handleChange("phone", value)}
+                    />
+                    <Text style={styles.label}>Service type</Text>
+                    <TextInput
+                      style={[styles.input, styles.readOnlyInput]}
+                      value={formState.serviceType}
+                      editable={false}
+                    />
+
+                    <Text style={styles.formSectionTitle}>Your pets</Text>
+                    <Text style={styles.label}>Select existing pets</Text>
+                    {existingPets.length ? (
+                      <View style={styles.chipRow}>
+                        {existingPets.map((pet) => (
+                          <Pressable
+                            key={pet.id}
+                            style={({ pressed }) => [
+                              styles.petChip,
+                              selectedPetIds.includes(pet.id) &&
+                                styles.petChipActive,
+                              pressed && styles.cardPressed,
+                            ]}
+                            onPress={() => togglePet(pet.id)}
+                          >
+                            <Text
+                              style={[
+                                styles.petChipText,
+                                selectedPetIds.includes(pet.id) &&
+                                  styles.petChipTextActive,
+                              ]}
+                            >
+                              {pet.name || "Pet"}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={styles.helperText}>
+                        No pets saved yet — add a new dog below.
+                      </Text>
+                    )}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.addPetButton,
+                        pressed && styles.cardPressed,
+                      ]}
+                      onPress={() => setShowNewDogForm((current) => !current)}
+                    >
+                      <Text style={styles.addPetButtonText}>
+                        {showNewDogForm ? "Hide new dog form" : "Add a new dog"}
+                      </Text>
+                    </Pressable>
+
+                    {showNewDogForm ? (
+                      <View>
+                        <Text style={styles.label}>How many new dogs?</Text>
+                        <View style={styles.optionRow}>
+                          {[1, 2, 3, 4].map((count) => (
+                            <Pressable
+                              key={count}
+                              style={({ pressed }) => [
+                                styles.countChip,
+                                Number(formState.dogCount) === count &&
+                                  styles.countChipActive,
+                                pressed && styles.cardPressed,
+                              ]}
+                              onPress={() =>
+                                handleChange("dogCount", String(count))
+                              }
+                            >
+                              <Text
+                                style={[
+                                  styles.countChipText,
+                                  Number(formState.dogCount) === count &&
+                                    styles.countChipTextActive,
+                                ]}
+                              >
+                                {count}
+                              </Text>
+                            </Pressable>
+                          ))}
                         </View>
-                        <View style={styles.inlineInput}>
-                          <Text style={styles.label}>Size *</Text>
-                          <TextInput
-                            style={styles.input}
-                            placeholder="12 kg"
-                            value={dog.size}
-                            onChangeText={(value) =>
-                              handleDogChange(index, "size", value)
-                            }
-                          />
-                        </View>
+                        {visibleDogs.map((dog, index) => (
+                          <View key={`dog-${index}`} style={styles.dogCard}>
+                            <Text style={styles.dogTitle}>
+                              New dog {index + 1}
+                            </Text>
+                            <Text style={styles.label}>Name *</Text>
+                            <TextInput
+                              style={styles.input}
+                              placeholder="e.g., Luna"
+                              value={dog.name}
+                              onChangeText={(value) =>
+                                handleDogChange(index, "name", value)
+                              }
+                            />
+                            <Text style={styles.label}>Breed *</Text>
+                            <TextInput
+                              style={styles.input}
+                              placeholder="e.g., Border Collie mix"
+                              value={dog.breed}
+                              onChangeText={(value) =>
+                                handleDogChange(index, "breed", value)
+                              }
+                            />
+                            <View style={styles.inlineInputs}>
+                              <View style={styles.inlineInput}>
+                                <Text style={styles.label}>Age *</Text>
+                                <TextInput
+                                  style={styles.input}
+                                  placeholder="2 years"
+                                  value={dog.age}
+                                  onChangeText={(value) =>
+                                    handleDogChange(index, "age", value)
+                                  }
+                                />
+                              </View>
+                              <View style={styles.inlineInput}>
+                                <Text style={styles.label}>Size *</Text>
+                                <TextInput
+                                  style={styles.input}
+                                  placeholder="12 kg"
+                                  value={dog.size}
+                                  onChangeText={(value) =>
+                                    handleDogChange(index, "size", value)
+                                  }
+                                />
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    <Text style={styles.formSectionTitle}>Schedule</Text>
+                    <Text style={styles.label}>Visit date *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="YYYY-MM-DD"
+                      value={formState.bookingDate}
+                      onChangeText={(value) =>
+                        handleChange("bookingDate", value)
+                      }
+                    />
+                    <View style={styles.inlineInputs}>
+                      <View style={styles.inlineInput}>
+                        <Text style={styles.label}>Start time *</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="09:00"
+                          value={formState.startTime}
+                          onChangeText={(value) =>
+                            handleChange("startTime", value)
+                          }
+                        />
+                      </View>
+                      <View style={styles.inlineInput}>
+                        <Text style={styles.label}>End time</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="11:00"
+                          value={formState.endTime}
+                          onChangeText={(value) =>
+                            handleChange("endTime", value)
+                          }
+                        />
                       </View>
                     </View>
-                  ))}
+                  <Text style={styles.helperText}>
+                      This schedule syncs with your Outlook calendar.
+                    </Text>
 
-                  <Text style={styles.formSectionTitle}>Care details</Text>
-                  <Text style={styles.label}>Preferred dates or cadence *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Weekdays at 11:00 or March 10–12"
-                    value={formState.careTiming}
-                    onChangeText={(value) => handleChange("careTiming", value)}
-                  />
-                <Text style={styles.label}>Pickup/visit location</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Address or neighborhood"
-                    value={formState.pickupLocation}
-                    onChangeText={(value) =>
-                      handleChange("pickupLocation", value)
-                    }
-                  />
-                  <Text style={styles.label}>Routine & preferences</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Feeding times, leash style, play style"
-                    value={formState.preferences}
-                    multiline
-                    onChangeText={(value) => handleChange("preferences", value)}
-                  />
-                  <Text style={styles.label}>Medications or special notes</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Allergies, reactivity, medical needs"
-                    value={formState.specialNotes}
-                    multiline
-                    onChangeText={(value) =>
-                      handleChange("specialNotes", value)
-                    }
-                  />
-                  <Text style={styles.label}>Anything else?</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Share preferences, goals, or questions"
-                    value={formState.message}
-                    multiline
-                    onChangeText={(value) => handleChange("message", value)}
-                  />
+                    <Text style={styles.formSectionTitle}>Additional options</Text>
+                    <View style={styles.chipRow}>
+                      {ADDITIONAL_OPTIONS.map((option) => (
+                        <Pressable
+                          key={option.id}
+                          style={({ pressed }) => [
+                            styles.optionChip,
+                            selectedOptionIds.includes(option.id) &&
+                              styles.optionChipActive,
+                            pressed && styles.cardPressed,
+                          ]}
+                          onPress={() => toggleOption(option.id)}
+                        >
+                          <Text
+                            style={[
+                              styles.optionChipText,
+                              selectedOptionIds.includes(option.id) &&
+                                styles.optionChipTextActive,
+                            ]}
+                          >
+                            {option.label} · {formatCurrency(option.price)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
 
-                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                  <PrimaryButton
-                    label={
-                      status === "submitting" ? "Sending..." : "Submit request"
-                    }
-                    onPress={handleSubmit}
-                    disabled={status === "submitting"}
-                  />
+                    <Text style={styles.formSectionTitle}>Care details</Text>
+                    <Text style={styles.label}>Pickup/visit location</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Address or neighborhood"
+                      value={formState.pickupLocation}
+                      onChangeText={(value) =>
+                        handleChange("pickupLocation", value)
+                      }
+                    />
+                    <Text style={styles.label}>Routine & preferences</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder="Feeding times, leash style, play style"
+                      value={formState.preferences}
+                      multiline
+                      onChangeText={(value) =>
+                        handleChange("preferences", value)
+                      }
+                    />
+                    <Text style={styles.label}>Medications or special notes</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder="Allergies, reactivity, medical needs"
+                      value={formState.specialNotes}
+                      multiline
+                      onChangeText={(value) =>
+                        handleChange("specialNotes", value)
+                      }
+                    />
+                    <Text style={styles.label}>Anything else?</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder="Share preferences, goals, or questions"
+                      value={formState.message}
+                      multiline
+                      onChangeText={(value) => handleChange("message", value)}
+                    />
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+            {status !== "success" ? (
+              <View style={styles.summaryBar}>
+                <View style={styles.summaryHeader}>
+                  <Text style={styles.summaryTitle}>Booking summary</Text>
+                  <Text style={styles.summaryTotal}>
+                    {basePrice
+                      ? formatCurrency(totalPrice)
+                      : "Quote required"}
+                  </Text>
                 </View>
-              )}
-            </ScrollView>
+              <Text style={styles.summaryLine}>Service: {serviceLabel}</Text>
+                <Text style={styles.summaryLine}>
+                  Pets:{" "}
+                  {selectedPets.length
+                    ? selectedPets.map((pet) => pet.name).join(", ")
+                    : showNewDogForm
+                    ? `New dog x${formState.dogCount}`
+                    : "Select pets"}
+                </Text>
+                <Text style={styles.summaryLine}>
+                  Date:{" "}
+                  {formState.bookingDate || "Select date"}
+                  {formState.startTime
+                    ? ` · ${formState.startTime}${
+                        formState.endTime ? `–${formState.endTime}` : ""
+                      }`
+                    : ""}
+                </Text>
+                {selectedOptions.length ? (
+                  <Text style={styles.summaryLine}>
+                    Add-ons:{" "}
+                    {selectedOptions.map((option) => option.label).join(", ")}
+                  </Text>
+                ) : null}
+                {basePrice ? (
+                  <View style={styles.summaryTotals}>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Service</Text>
+                      <Text style={styles.summaryValue}>
+                        {formatCurrency(basePrice)}
+                      </Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Add-ons</Text>
+                      <Text style={styles.summaryValue}>
+                        {formatCurrency(optionsTotal)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                <PrimaryButton
+                  label={
+                    status === "submitting" ? "Booking..." : "Book & pay"
+                  }
+                  onPress={handleSubmit}
+                  disabled={status === "submitting"}
+                />
+              </View>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -477,11 +837,47 @@ const styles = StyleSheet.create({
   categorySection: {
     marginBottom: 12,
   },
-  sectionTitle: {
+  categoryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#ffffff",
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    shadowColor: "#2b1a4b",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 2,
+    marginBottom: 12,
+  },
+  categoryLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  categoryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#efe9fb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  categoryIconText: {
+    fontSize: 20,
+  },
+  categoryTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: "#2b1a4b",
-    marginBottom: 8,
+  },
+  categoryHint: {
+    fontSize: 13,
+    color: "#7b6a9f",
+    marginTop: 4,
   },
   serviceCard: {
     flexDirection: "row",
@@ -497,6 +893,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
     marginBottom: 12,
+    marginLeft: 8,
   },
   cardPressed: {
     opacity: 0.95,
@@ -542,6 +939,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: "92%",
   },
+  modalBody: {
+    flex: 1,
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -576,7 +976,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 180,
   },
   formSectionTitle: {
     fontSize: 16,
@@ -602,6 +1002,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: "#ffffff",
   },
+  readOnlyInput: {
+    backgroundColor: "#f2ecfb",
+    color: "#5b4a7c",
+  },
   textArea: {
     minHeight: 90,
     textAlignVertical: "top",
@@ -610,6 +1014,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 12,
     gap: 8,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
   },
   countChip: {
     paddingVertical: 8,
@@ -629,6 +1039,45 @@ const styles = StyleSheet.create({
   },
   countChipTextActive: {
     color: "#ffffff",
+  },
+  petChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#ffffff",
+  },
+  petChipActive: {
+    backgroundColor: "#6c3ad6",
+    borderColor: "#6c3ad6",
+  },
+  petChipText: {
+    color: "#5d2fc5",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  petChipTextActive: {
+    color: "#ffffff",
+  },
+  addPetButton: {
+    alignSelf: "flex-start",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "#efe9fb",
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    marginBottom: 16,
+  },
+  addPetButtonText: {
+    color: "#4a3a68",
+    fontWeight: "600",
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#7b6a9f",
+    marginBottom: 10,
   },
   dogCard: {
     backgroundColor: "#ffffff",
@@ -650,6 +1099,73 @@ const styles = StyleSheet.create({
   },
   inlineInput: {
     flex: 1,
+  },
+  optionChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#ffffff",
+  },
+  optionChipActive: {
+    backgroundColor: "#6c3ad6",
+    borderColor: "#6c3ad6",
+  },
+  optionChipText: {
+    color: "#5d2fc5",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  optionChipTextActive: {
+    color: "#ffffff",
+  },
+  summaryBar: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#e8def7",
+    backgroundColor: "#f6f3fb",
+  },
+  summaryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2b1a4b",
+  },
+  summaryTotal: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2b1a4b",
+  },
+  summaryLine: {
+    fontSize: 13,
+    color: "#6c5a92",
+    marginBottom: 4,
+  },
+  summaryTotals: {
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: "#6c5a92",
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2b1a4b",
   },
   errorText: {
     color: "#b42318",
