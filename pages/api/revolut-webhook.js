@@ -4,26 +4,26 @@ import path from "path";
 import { DateTime } from "luxon";
 
 // Correct shared lib imports
-import { supabase } from "../../api/_lib/supabase";
-import { getAppOnlyAccessToken } from "../../api/_lib/auth";
-import { createEvent, sendMail, updateEvent } from "../../api/_lib/graph";
-import { saveBookingCalendarEventId } from "../../api/_lib/supabase";
+import { supabase } from "./_lib/supabase";
+import { getAppOnlyAccessToken } from "./_lib/auth";
+import { createEvent, sendMail, updateEvent } from "./_lib/graph";
+import { saveBookingCalendarEventId } from "./_lib/supabase";
 import {
   buildConfirmationBody,
   buildNotificationBody,
   buildConfirmationSubject,
-} from "../../api/_lib/confirmation-email";
+} from "./_lib/confirmation-email";
 import {
   buildCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
   resolveCalendarLocationDisplayName,
-} from "../../api/_lib/calendar-events";
+} from "./_lib/calendar-events";
 
 // Invoice + OneDrive
-import { generateInvoiceNumber } from "../../api/_lib/invoices";
-import { createInvoicePdf } from "../../api/_lib/invoicePdf";
-import { uploadToOneDrive } from "../../api/_lib/onedrive";
+import { generateInvoiceNumber } from "./_lib/invoices";
+import { createInvoicePdf } from "./_lib/invoicePdf";
+import { uploadToOneDrive } from "./_lib/onedrive";
 
 export const config = { api: { bodyParser: false } };
 

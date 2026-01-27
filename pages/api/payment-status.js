@@ -1,5 +1,5 @@
 // pages/api/payment-status.js
-import { supabase } from "../../api/_lib/supabase";
+import { supabase } from "./_lib/supabase";
 
 
 export default async function handler(req, res) {

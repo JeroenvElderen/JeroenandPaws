@@ -1,12 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
-import { getAppOnlyAccessToken } from "../../api/_lib/auth";
-import { updateEvent } from "../../api/_lib/graph";
+import { getAppOnlyAccessToken } from "./_lib/auth";
+import { updateEvent } from "./_lib/graph";
 import {
   buildCalendarBody,
   buildCalendarSubject,
   buildCalendarCategories,
   resolveCalendarLocationDisplayName,
-} from "../../api/_lib/calendar-events";
+} from "./_lib/calendar-events";
 
 export const config = {
   api: {

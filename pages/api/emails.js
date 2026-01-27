@@ -2,7 +2,7 @@ const {
   buildConfirmationBody,
   buildNotificationBody,
   buildConfirmationSubject,
-} = require("../../api/_lib/confirmation-email");
+} = require("./_lib/confirmation-email");
 
 module.exports = {
   buildConfirmationBody,
