@@ -92,7 +92,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.subtitle}>Your booking overview</Text>
           </View>
           <View style={styles.headerRight}>
-            <Pressable onPress={() => navigation.navigate("ProfileDetails")}>
+            <Pressable onPress={() => navigation.navigate("ProfileOverview")}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials}</Text>
               </View>

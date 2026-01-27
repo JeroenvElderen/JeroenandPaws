@@ -5,11 +5,11 @@ import { StatusBar } from "expo-status-bar";
 import { Text } from "react-native";
 import HomeScreen from "./src/screens/HomeScreen";
 import BookScreen from "./src/screens/BookScreen";
-import ProfileScreen from "./src/screens/ProfileScreen";
+import MoreScreen from "./src/screens/MoreScreen";
 import CalendarScreen from "./src/screens/CalendarScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import MessagesScreen from "./src/screens/MessagesScreen";
-import ProfileDetailsScreen from "./src/screens/ProfileDetailsScreen";
+import ProfileOverviewScreen from "./src/screens/ProfileOverviewScreen";
 import PetsProfileScreen from "./src/screens/PetsProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import PaymentMethodsScreen from "./src/screens/PaymentMethodsScreen";
@@ -112,7 +112,7 @@ const MainTabs = () => (
     />
     <Tab.Screen
       name="Profile"
-      component={ProfileScreen}
+      component={MoreScreen}
       options={{
         tabBarIcon: ({ color }) => (
           <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
@@ -141,8 +141,8 @@ const AppShell = () => {
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="MainTabs" component={MainTabs} />
         <RootStack.Screen
-          name="ProfileDetails"
-          component={ProfileDetailsScreen}
+          name="ProfileOverview"
+          component={ProfileOverviewScreen}
         />
         <Tab.Screen
           name="Book"
@@ -162,7 +162,7 @@ const AppShell = () => {
         />
         <Tab.Screen
           name="Profile"
-          component={ProfileScreen}
+          component={MoreScreen}
           options={{
             tabBarIcon: ({ color }) => (
               <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
