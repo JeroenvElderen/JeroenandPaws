@@ -4,6 +4,7 @@ const { DateTime } = require("luxon");
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
 const DEFAULT_OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const DEFAULT_OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
 
 const PET_PHOTO_BUCKET =
   process.env.SUPABASE_PET_PHOTO_BUCKET || "pet-photos";
@@ -171,6 +172,12 @@ const buildBookingAccessEmails = (clientEmail) => {
 
 const getOwnerClientId = async () => {
   requireSupabase();
+
+  const envOwnerId = process.env.OWNER_CLIENT_ID || DEFAULT_OWNER_CLIENT_ID;
+
+  if (envOwnerId && looksLikeUuid(envOwnerId)) {
+    return envOwnerId;
+  }
 
   const ownerEmail = normalizeEmail(
     process.env.ADMIN_EMAIL || DEFAULT_OWNER_EMAIL
@@ -627,6 +634,11 @@ const createBookingRecord = async ({
 }) => {
   requireSupabase();
 
+  const ownerClientId = await getOwnerClientId();
+  const combinedAccessClientIds = [clientId, ...accessClientIds, ownerClientId]
+    .filter(Boolean)
+    .filter((id, index, all) => all.indexOf(id) === index);
+
   const insertResult = await supabaseAdmin
     .from("bookings")
     .insert({
@@ -642,7 +654,9 @@ const createBookingRecord = async ({
       payment_order_id: paymentOrderId || null,
       payment_link: paymentLink || null,
       access_emails: accessEmails.length ? accessEmails : null,
-      access_client_ids: accessClientIds.length ? accessClientIds : null,
+      access_client_ids: combinedAccessClientIds.length
+        ? combinedAccessClientIds
+        : null,
     })
     .select("*")
     .single();
