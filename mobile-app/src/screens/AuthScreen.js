@@ -53,6 +53,44 @@ const AuthScreen = ({ onAuthenticate }) => {
     };
   };
 
+  const resolveSignedUpUser = async (signUpResult) => {
+    const signUpUser =
+      signUpResult.data?.user || signUpResult.data?.session?.user || null;
+
+    if (signUpUser?.id) {
+      return signUpUser;
+    }
+
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      throw error;
+    }
+
+    return data?.user || null;
+  };
+
+  const upsertClientProfile = async ({ user, fallback }) => {
+    const clientPayload = {
+      id: user?.id,
+      email: (user?.email || fallback.email || "").trim().toLowerCase(),
+      full_name: user?.user_metadata?.full_name || fallback.fullName || "",
+      phone_number: user?.user_metadata?.phone || fallback.phone || "",
+      address: user?.user_metadata?.address || fallback.address || "",
+    };
+
+    const upsertResult = await supabase
+      .from("clients")
+      .upsert(clientPayload, { onConflict: "id" })
+      .select("*")
+      .maybeSingle();
+
+    if (upsertResult.error) {
+      throw upsertResult.error;
+    }
+
+    return upsertResult.data || null;
+  };
+
   const handleAuthenticate = async () => {
     if (!canSubmit) {
       setError("Please complete all required fields.");
@@ -91,28 +129,25 @@ const AuthScreen = ({ onAuthenticate }) => {
           throw signUpResult.error;
         }
 
-        const user = signUpResult.data?.user;
+        const user = await resolveSignedUpUser(signUpResult);
 
-        const upsertResult = await supabase
-          .from("clients")
-          .upsert(
-            {
-              id: user?.id,
-              email: email.trim().toLowerCase(),
-              full_name: fullName.trim(),
-              phone_number: phone.trim(),
-              address: eircode.trim(),
-            },
-            { onConflict: "id" }
-          )
-          .select("*")
-          .maybeSingle();
-
-        if (upsertResult.error) {
-          throw upsertResult.error;
+        if (!user?.id) {
+          throw new Error(
+            "Account created, but we could not finish your profile setup. Please log in again."
+          );
         }
 
-        onAuthenticate(buildSessionPayload({ user, client: upsertResult.data }));
+        const clientProfile = await upsertClientProfile({
+          user,
+          fallback: {
+            email: email.trim(),
+            fullName: fullName.trim(),
+            phone: phone.trim(),
+            address: eircode.trim(),
+          },
+        });
+
+        onAuthenticate(buildSessionPayload({ user, client: clientProfile }));
         setStatus("idle");
         return;
       }
@@ -137,7 +172,19 @@ const AuthScreen = ({ onAuthenticate }) => {
         throw clientResult.error;
       }
 
-      onAuthenticate(buildSessionPayload({ user, client: clientResult.data }));
+      const clientProfile =
+        clientResult.data ||
+        (await upsertClientProfile({
+          user,
+          fallback: {
+            email: email.trim(),
+            fullName: "",
+            phone: "",
+            address: "",
+          },
+        }));
+
+      onAuthenticate(buildSessionPayload({ user, client: clientProfile }));
       setStatus("idle");
     } catch (authError) {
       setError(authError.message || "Unable to authenticate.");

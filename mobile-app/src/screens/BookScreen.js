@@ -283,8 +283,9 @@ const BookScreen = ({ navigation }) => {
             selectedService.durationMinutes ||
             60
         );
+        const windowDays = 21;
         const data = await fetchJson(
-          `/api/availability?durationMinutes=${durationMinutes}&clientAddress=${encodeURIComponent(
+          `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
             clientAddress
           )}`
         );

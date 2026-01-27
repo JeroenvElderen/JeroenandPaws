@@ -24,7 +24,7 @@ const formatTime = (date) =>
     hour12: false,
   }).format(date);
 
-  const buildDateKey = (year, monthIndex, day) => {
+const buildDateKey = (year, monthIndex, day) => {
   const month = String(monthIndex + 1).padStart(2, "0");
   const dayValue = String(day).padStart(2, "0");
   return `${year}-${month}-${dayValue}`;
@@ -139,8 +139,8 @@ const CalendarScreen = () => {
             </Pressable>
           </View>
           <View style={styles.weekHeader}>
-            {"SMTWTFS".split("").map((day) => (
-              <Text key={day} style={styles.weekHeaderText}>
+            {"SMTWTFS".split("").map((day, index) => (
+              <Text key={`${day}-${index}`} style={styles.weekHeaderText}>
                 {day}
               </Text>
             ))}
