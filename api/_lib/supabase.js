@@ -151,7 +151,15 @@ const hashPassword = (value) =>
     .update(value || "")
     .digest("hex");
 
-const normalizeEmail = (email = "") => email.trim().toLowerCase();
+const normalizeEmail = (email = "") => {
+  const trimmed = email.trim();
+  const unquoted =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+  return unquoted.trim().toLowerCase();
+};
 
 const buildBookingAccessEmails = (clientEmail) => {
   const normalizedClientEmail = normalizeEmail(clientEmail);
