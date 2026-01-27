@@ -9,6 +9,14 @@ import {
 import { fetchJson } from "../api/client";
 import { useSession } from "../context/SessionContext";
 
+const getInitials = (name) => {
+  if (!name) return "🐾";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "🐾";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+};
+
 const PetsProfileScreen = () => {
   const { session } = useSession();
   const [pets, setPets] = useState([]);
@@ -42,7 +50,12 @@ const PetsProfileScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Your pets</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Your pets</Text>
+          <Text style={styles.subtitle}>
+            {pets.length} {pets.length === 1 ? "pet" : "pets"} in your profile
+          </Text>
+        </View>
         {pets.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
@@ -51,10 +64,20 @@ const PetsProfileScreen = () => {
           </View>
         ) : (
           pets.map((pet) => (
-            <View key={pet.id || pet.name} style={styles.card}>
-              <Text style={styles.petName}>{pet.name || "Pet"}</Text>
-              <Text style={styles.petMeta}>{pet.breed || "Breed TBD"}</Text>
-              <Text style={styles.petMeta}>{pet.age || "Age TBD"}</Text>
+            <View key={pet.id || pet.name} style={styles.petCard}>
+              <View style={styles.petAvatar}>
+                <Text style={styles.petAvatarText}>
+                  {getInitials(pet.name || "Pet")}
+                </Text>
+              </View>
+              <View style={styles.petInfo}>
+                <Text style={styles.petName}>{pet.name || "Pet"}</Text>
+                <Text style={styles.petMeta}>
+                  {pet.breed || "Breed TBD"}
+                </Text>
+                <Text style={styles.petMeta}>{pet.age || "Age TBD"}</Text>
+              </View>
+              <Text style={styles.petChevron}>›</Text>
             </View>
           ))
         )}
@@ -70,45 +93,75 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#f6f3fb",
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    backgroundColor: "#ffffff",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#2b1a4b",
-    marginBottom: 16,
-    textAlign: "center",
+    color: "#1f1f1f",
+  },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#6f6f6f",
   },
   emptyCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#e6e6e6",
   },
   emptyText: {
     fontSize: 14,
-    color: "#7b6a9f",
+    color: "#6f6f6f",
   },
-  card: {
+  petCard: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#ffffff",
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#e6e6e6",
     marginBottom: 12,
+  },
+  petAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#f2f2f2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  petAvatarText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2b2b2b",
+  },
+  petInfo: {
+    flex: 1,
   },
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#1f1f1f",
   },
   petMeta: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#6f6f6f",
     marginTop: 4,
+  },
+  petChevron: {
+    fontSize: 22,
+    color: "#b0b0b0",
   },
 });
 
