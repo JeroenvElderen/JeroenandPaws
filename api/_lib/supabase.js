@@ -169,6 +169,28 @@ const buildBookingAccessEmails = (clientEmail) => {
   return Array.from(accessEmails);
 };
 
+const getOwnerClientId = async () => {
+  requireSupabase();
+
+  const ownerEmail = normalizeEmail(
+    process.env.ADMIN_EMAIL || DEFAULT_OWNER_EMAIL
+  );
+
+  if (!ownerEmail) return null;
+
+  const ownerResult = await supabaseAdmin
+    .from("clients")
+    .select("id")
+    .eq("email", ownerEmail)
+    .maybeSingle();
+
+  if (ownerResult.error) {
+    throw ownerResult.error;
+  }
+
+  return ownerResult.data?.id || null;
+};
+
 const resolveBookingTimes = ({
   date,
   time,
@@ -601,6 +623,7 @@ const createBookingRecord = async ({
   paymentOrderId,
   paymentLink,
   accessEmails = [],
+  accessClientIds = [],
 }) => {
   requireSupabase();
 
@@ -619,6 +642,7 @@ const createBookingRecord = async ({
       payment_order_id: paymentOrderId || null,
       payment_link: paymentLink || null,
       access_emails: accessEmails.length ? accessEmails : null,
+      access_client_ids: accessClientIds.length ? accessClientIds : null,
     })
     .select("*")
     .single();
@@ -717,6 +741,10 @@ const createBookingWithProfiles = async ({
   });
 
   const accessEmails = buildBookingAccessEmails(clientEmail);
+  const ownerClientId = await getOwnerClientId();
+  const accessClientIds = [client.id, ownerClientId]
+    .filter(Boolean)
+    .filter((id, index, all) => all.indexOf(id) === index);
 
   const booking = await createBookingRecord({
     clientId: client.id,
@@ -730,6 +758,7 @@ const createBookingWithProfiles = async ({
     paymentOrderId,
     paymentLink,
     accessEmails,
+    accessClientIds,
   });
 
   await linkBookingPets(booking.id, ensuredPets);

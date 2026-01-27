@@ -47,7 +47,8 @@ module.exports = async (req, res) => {
     try {
       requireSupabase();
 
-      const clientEmail = normalizeEmail(req.query.email || '');
+      const rawEmail = req.query.email || '';
+      const clientEmail = normalizeEmail(rawEmail);
 
       if (!clientEmail) {
         res.statusCode = 400;
@@ -62,14 +63,6 @@ module.exports = async (req, res) => {
         .ilike('email', clientEmail)
         .maybeSingle();
 
-      if (clientResult.error || !clientResult.data) {
-        if (clientEmail !== ownerEmail) {
-          res.statusCode = 404;
-          res.end(JSON.stringify({ message: 'Client not found' }));
-          return;
-        }
-      }
-
       const buildBookingsQuery = () =>
         supabaseAdmin
           .from('bookings')
@@ -79,21 +72,48 @@ module.exports = async (req, res) => {
       const bookingsResult = clientResult.data
         ? await buildBookingsQuery().eq('client_id', clientResult.data.id)
         : { data: [] };
-      let accessResult = { data: [] };
+      const accessEmailCandidates = [clientEmail, rawEmail.trim()]
+        .filter(Boolean)
+        .filter((email, index, all) => all.indexOf(email) === index);
+      const accessResult = await buildBookingsQuery().overlaps(
+        'access_emails',
+        accessEmailCandidates
+      );
+      const accessClientResult = clientResult.data
+        ? await buildBookingsQuery().contains('access_client_ids', [
+            clientResult.data.id,
+          ])
+        : { data: [] };
+      const ownerResult =
+        clientEmail === ownerEmail ? await buildBookingsQuery() : { data: [] };
 
-      if (clientEmail === ownerEmail) {
-        accessResult = await buildBookingsQuery();
-      }
-
-      if (bookingsResult.error || accessResult.error) {
+      if (
+        bookingsResult.error ||
+        accessResult.error ||
+        accessClientResult.error ||
+        ownerResult.error
+      ) {
         res.statusCode = 500;
         res.end(JSON.stringify({ message: 'Failed to load bookings' }));
+        return;
+      }
+
+      if (
+        !clientResult.data &&
+        clientEmail !== ownerEmail &&
+        !accessResult.data?.length &&
+        !accessClientResult.data?.length
+      ) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ message: 'Client not found' }));
         return;
       }
 
       const combinedBookings = [
         ...(bookingsResult.data || []),
         ...(accessResult.data || []),
+        ...(accessClientResult.data || []),
+        ...(ownerResult.data || []),
       ];
       const uniqueBookings = combinedBookings.filter(
         (booking, index, all) =>
