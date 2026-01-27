@@ -17,13 +17,19 @@ const RESCHEDULE_MIN_NOTICE_HOURS = Number.parseInt(
   process.env.RESCHEDULE_MIN_NOTICE_HOURS || '24',
   10
 );
+const DEFAULT_OWNER_EMAIL = 'jeroen@jeroenandpaws.com';
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+
+const resolveOwnerEmail = () =>
+  normalizeEmail(process.env.ADMIN_EMAIL || DEFAULT_OWNER_EMAIL);
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     try {
       requireSupabase();
 
-      const clientEmail = (req.query.email || '').toLowerCase();
+      const clientEmail = normalizeEmail(req.query.email || '');
 
       if (!clientEmail) {
         res.statusCode = 400;
@@ -43,20 +49,41 @@ module.exports = async (req, res) => {
         return;
       }
 
-      const bookingsResult = await supabaseAdmin
-        .from('bookings')
-        .select('*, services_catalog(*), booking_pets(pet_id)')
-        .eq('client_id', clientResult.data.id)
-        .order('start_at', { ascending: false });
+      const buildBookingsQuery = () =>
+        supabaseAdmin
+          .from('bookings')
+          .select('*, services_catalog(*), booking_pets(pet_id)')
+          .order('start_at', { ascending: false });
 
-      if (bookingsResult.error) {
+      const bookingsResult = await buildBookingsQuery().eq(
+        'client_id',
+        clientResult.data.id
+      );
+      let accessResult = { data: [] };
+
+      if (clientEmail === resolveOwnerEmail()) {
+        accessResult = await buildBookingsQuery().contains('access_emails', [
+          clientEmail,
+        ]);
+      }
+
+      if (bookingsResult.error || accessResult.error) {
         res.statusCode = 500;
         res.end(JSON.stringify({ message: 'Failed to load bookings' }));
         return;
       }
 
+      const combinedBookings = [
+        ...(bookingsResult.data || []),
+        ...(accessResult.data || []),
+      ];
+      const uniqueBookings = combinedBookings.filter(
+        (booking, index, all) =>
+          all.findIndex((item) => item.id === booking.id) === index
+      );
+
       const reconciledBookings = await reconcileBookingsWithCalendar(
-        bookingsResult.data || []
+        uniqueBookings
       );
 
       res.setHeader('Content-Type', 'application/json');
@@ -75,7 +102,7 @@ module.exports = async (req, res) => {
       requireSupabase();
 
       const { bookingId, clientEmail, action } = req.body || {};
-      const normalizedEmail = (clientEmail || '').toLowerCase();
+      const normalizedEmail = normalizeEmail(clientEmail || '');
       const calendarId = process.env.OUTLOOK_CALENDAR_ID;
       let calendarAccessToken = null;
 
@@ -110,7 +137,7 @@ module.exports = async (req, res) => {
 
       const bookingResult = await supabaseAdmin
         .from('bookings')
-        .select('id, client_id, status, calendar_event_id, start_at, end_at, time_zone, client_address, service_title, services_catalog(duration_minutes)')
+        .select('id, client_id, status, calendar_event_id, start_at, end_at, time_zone, client_address, service_title, access_emails, services_catalog(duration_minutes)')
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -120,7 +147,11 @@ module.exports = async (req, res) => {
         return;
       }
 
-      if (!bookingResult.data || bookingResult.data.client_id !== clientResult.data.id) {
+      const hasAccess =
+        bookingResult.data?.client_id === clientResult.data.id ||
+        (bookingResult.data?.access_emails || []).includes(normalizedEmail);
+
+      if (!bookingResult.data || !hasAccess) {
         res.statusCode = 403;
         res.end(JSON.stringify({ message: 'Booking not found for this client' }));
         return;

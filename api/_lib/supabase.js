@@ -3,6 +3,8 @@ const crypto = require("crypto");
 const { DateTime } = require("luxon");
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
+const STAFF_EMAIL_DOMAIN = "@jeroenandpaws.com";
+const DEFAULT_OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const PET_PHOTO_BUCKET =
   process.env.SUPABASE_PET_PHOTO_BUCKET || "pet-photos";
@@ -148,6 +150,27 @@ const hashPassword = (value) =>
     .createHash("sha256")
     .update(value || "")
     .digest("hex");
+
+const normalizeEmail = (email = "") => email.trim().toLowerCase();
+
+const buildBookingAccessEmails = (clientEmail) => {
+  const normalizedClientEmail = normalizeEmail(clientEmail);
+  if (!normalizedClientEmail) return [];
+
+  const ownerEmail = normalizeEmail(
+    process.env.ADMIN_EMAIL || DEFAULT_OWNER_EMAIL
+  );
+
+  const accessEmails = new Set([normalizedClientEmail]);
+  if (
+    normalizedClientEmail.includes(STAFF_EMAIL_DOMAIN) &&
+    ownerEmail
+  ) {
+    accessEmails.add(ownerEmail);
+  }
+
+  return Array.from(accessEmails);
+};
 
 const resolveBookingTimes = ({
   date,
@@ -580,6 +603,7 @@ const createBookingRecord = async ({
   notes,
   paymentOrderId,
   paymentLink,
+  accessEmails = [],
 }) => {
   requireSupabase();
 
@@ -597,6 +621,7 @@ const createBookingRecord = async ({
       status: "pending",
       payment_order_id: paymentOrderId || null,
       payment_link: paymentLink || null,
+      access_emails: accessEmails.length ? accessEmails : null,
     })
     .select("*")
     .single();
@@ -694,6 +719,8 @@ const createBookingWithProfiles = async ({
     allowNewPetCreation: created,
   });
 
+  const accessEmails = buildBookingAccessEmails(clientEmail);
+
   const booking = await createBookingRecord({
     clientId: client.id,
     serviceId: service?.id || null,
@@ -705,6 +732,7 @@ const createBookingWithProfiles = async ({
     notes,
     paymentOrderId,
     paymentLink,
+    accessEmails,
   });
 
   await linkBookingPets(booking.id, ensuredPets);
