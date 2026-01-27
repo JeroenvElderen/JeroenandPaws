@@ -1,49 +1,181 @@
+import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import { supabase } from "../api/supabaseClient";
+import ScreenHeader from "../components/ScreenHeader";
+import { useSession } from "../context/SessionContext";
 
-const mockThreads = [
-  {
-    id: "support",
-    title: "Support",
-    preview: "Hi Jeroen! Let us know how we can help with your booking.",
-    timestamp: "Just now",
-  },
-  {
-    id: "walker",
-    title: "Your walker",
-    preview: "See you tomorrow at 09:00 for the stroll.",
-    timestamp: "2h ago",
-  },
-];
+const MessagesScreen = () => {
+  const { session } = useSession();
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
 
-const MessagesScreen = () => (
-  <SafeAreaView style={styles.safeArea}>
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Messages</Text>
-      {mockThreads.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No messages yet.</Text>
-        </View>
-      ) : (
-        mockThreads.map((thread) => (
-          <Pressable key={thread.id} style={styles.threadCard}>
-            <View style={styles.threadHeader}>
-              <Text style={styles.threadTitle}>{thread.title}</Text>
-              <Text style={styles.threadTime}>{thread.timestamp}</Text>
+  const clientId = session?.id;
+
+  const formattedMessages = useMemo(
+    () =>
+      messages.map((message) => ({
+        ...message,
+        direction: message.sender === "client" ? "outgoing" : "incoming",
+      })),
+    [messages]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMessages = async () => {
+      if (!clientId || !supabase) {
+        setMessages([]);
+        return;
+      }
+
+      try {
+        const { data, error: loadError } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: true });
+
+        if (!isMounted) return;
+        if (loadError) {
+          throw loadError;
+        }
+        setMessages(data || []);
+      } catch (loadError) {
+        if (!isMounted) return;
+        setError(loadError.message || "Unable to load messages.");
+      }
+    };
+
+    loadMessages();
+
+    if (!clientId || !supabase) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const channel = supabase
+      .channel(`client-messages-${clientId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `client_id=eq.${clientId}`,
+        },
+        (payload) => {
+          setMessages((current) => [...current, payload.new]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [clientId]);
+
+  const handleSend = async () => {
+    const trimmed = messageText.trim();
+    if (!trimmed || !clientId || !supabase) {
+      return;
+    }
+
+    setStatus("sending");
+    setError("");
+
+    try {
+      const { error: insertError } = await supabase.from("messages").insert({
+        client_id: clientId,
+        sender: "client",
+        body: trimmed,
+      });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      setMessageText("");
+      setStatus("idle");
+    } catch (sendError) {
+      setError(sendError.message || "Unable to send your message.");
+      setStatus("error");
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ScreenHeader title="Messages" />
+        <ScrollView contentContainerStyle={styles.messages}>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {formattedMessages.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                No messages yet. Start a conversation below.
+              </Text>
             </View>
-            <Text style={styles.threadPreview}>{thread.preview}</Text>
+            ) : (
+            formattedMessages.map((message) => (
+              <View
+                key={message.id || message.created_at}
+                style={[
+                  styles.messageBubble,
+                  message.direction === "outgoing"
+                    ? styles.messageOutgoing
+                    : styles.messageIncoming,
+                ]}
+              >
+                <Text style={styles.messageText}>
+                  {message.body || message.message}
+                </Text>
+                <Text style={styles.messageTime}>
+                  {message.created_at
+                    ? new Date(message.created_at).toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </Text>
+              </View>
+            ))
+          )}
+        </ScrollView>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Write a message"
+            value={messageText}
+            onChangeText={setMessageText}
+            multiline
+          />
+          <Pressable
+            style={[
+              styles.sendButton,
+              status === "sending" && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={status === "sending"}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
           </Pressable>
-        ))
-      )}
-    </ScrollView>
-  </SafeAreaView>
-);
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -51,17 +183,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#f6f3fb",
   },
   container: {
-    flexGrow: 1,
+    flex: 1,
     padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 16,
     backgroundColor: "#f6f3fb",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#2b1a4b",
-    marginBottom: 16,
-    textAlign: "center",
   },
   emptyCard: {
     backgroundColor: "#ffffff",
@@ -74,32 +199,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#7b6a9f",
   },
-  threadCard: {
+  messages: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
+  messageBubble: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: "#ebe4f7",
     marginBottom: 12,
+    maxWidth: "80%",
   },
-  threadHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  messageIncoming: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ffffff",
+  },
+  messageOutgoing: {
+    alignSelf: "flex-end",
+    backgroundColor: "#efe9fb",
+  },
+  messageText: {
+    fontSize: 14,
+    color: "#2b1a4b",
     marginBottom: 6,
   },
-  threadTitle: {
-    fontSize: 15,
-    fontWeight: "700",
+  messageTime: {
+    fontSize: 11,
+    color: "#6c5a92",
+    textAlign: "right",
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    padding: 10,
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
+    fontSize: 14,
     color: "#2b1a4b",
   },
-  threadTime: {
-    fontSize: 12,
-    color: "#7b6a9f",
+  sendButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: "#6c3ad6",
   },
-  threadPreview: {
+  sendButtonDisabled: {
+    opacity: 0.6,
+  },
+  sendButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
     fontSize: 13,
-    color: "#6c5a92",
+  },
+  errorText: {
+    color: "#b42318",
+    fontSize: 13,
+    marginBottom: 12,
   },
 });
 

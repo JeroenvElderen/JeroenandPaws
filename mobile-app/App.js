@@ -51,6 +51,8 @@ const MainTabs = () => (
         elevation: 6,
         alignItems: "center",
         justifyContent: "center",
+        alignSelf: "center",
+        width: "90%",
       },
       tabBarActiveTintColor: "#5d2fc5",
       tabBarInactiveTintColor: "#a093b9",

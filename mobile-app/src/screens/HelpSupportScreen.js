@@ -1,4 +1,5 @@
 import {
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -6,43 +7,61 @@ import {
   Text,
   View,
 } from "react-native";
+import ScreenHeader from "../components/ScreenHeader";
 
-const supportOptions = [
-  {
-    id: "email",
-    title: "Email us",
-    description: "support@jeroenandpaws.com",
-  },
-  {
-    id: "call",
-    title: "Call",
-    description: "+31 20 123 4567",
-  },
-  {
-    id: "chat",
-    title: "Live chat",
-    description: "We reply in under 5 minutes",
-  },
-];
+const SUPPORT_EMAIL = "jeroen@jeroenandpaws.com";
+const SUPPORT_PHONE = "+353872473099";
 
-const HelpSupportScreen = () => (
-  <SafeAreaView style={styles.safeArea}>
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Help & support</Text>
-      {supportOptions.map((option) => (
-        <Pressable key={option.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{option.title}</Text>
-          <Text style={styles.cardDescription}>{option.description}</Text>
+const HelpSupportScreen = ({ navigation }) => {
+  const handleEmailPress = async () => {
+    const outlookUrl = `ms-outlook://compose?to=${SUPPORT_EMAIL}`;
+    const mailUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+      "Jeroen & Paws app support"
+    )}`;
+
+    const canOpenOutlook = await Linking.canOpenURL(outlookUrl);
+    if (canOpenOutlook) {
+      await Linking.openURL(outlookUrl);
+      return;
+    }
+
+    await Linking.openURL(mailUrl);
+  };
+
+  const handleCallPress = async () => {
+    await Linking.openURL(`tel:${SUPPORT_PHONE}`);
+  };
+
+return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <ScreenHeader title="Help & Support" onBack={() => navigation.goBack()} />
+        <Pressable style={styles.card} onPress={handleEmailPress}>
+          <Text style={styles.cardTitle}>Email us</Text>
+          <Text style={styles.cardDescription}>{SUPPORT_EMAIL}</Text>
         </Pressable>
-      ))}
-      <View style={styles.noteCard}>
-        <Text style={styles.noteText}>
-          We are available Monday to Saturday, 08:00–18:00.
-        </Text>
-      </View>
-    </ScrollView>
-  </SafeAreaView>
-);
+        <Pressable style={styles.card} onPress={handleCallPress}>
+          <Text style={styles.cardTitle}>Call</Text>
+          <Text style={styles.cardDescription}>{SUPPORT_PHONE}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.card}
+          onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
+        >
+          <Text style={styles.cardTitle}>Live chat</Text>
+          <Text style={styles.cardDescription}>
+            Chat with us directly inside the app.
+          </Text>
+        </Pressable>
+        <View style={styles.noteCard}>
+          <Text style={styles.noteText}>
+            We are available Monday to Saturday, 08:00–18:00.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -54,13 +73,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 32,
     backgroundColor: "#f6f3fb",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#2b1a4b",
-    marginBottom: 16,
-    textAlign: "center",
   },
   card: {
     backgroundColor: "#ffffff",

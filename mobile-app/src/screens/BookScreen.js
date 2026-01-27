@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { API_BASE_URL } from "../api/config";
 import { fetchJson } from "../api/client";
+import { supabase } from "../api/supabaseClient";
 import PrimaryButton from "../components/PrimaryButton";
 import { useSession } from "../context/SessionContext";
 
@@ -66,14 +67,14 @@ const createDog = () => ({
 const createInitialState = (serviceLabel, session) => ({
   name: session?.name || "",
   email: session?.email || "",
-  phone: "",
+  phone: session?.phone || "",
+  address: session?.address || "",
   serviceType: serviceLabel || "Service request",
   dogCount: "1",
   dogs: [createDog(), createDog(), createDog(), createDog()],
   bookingDate: "",
   startTime: "",
   endTime: "",
-  pickupLocation: "",
   preferences: "",
   specialNotes: "",
   message: "",
@@ -85,6 +86,20 @@ const formatCurrency = (amount) =>
     currency: "EUR",
     maximumFractionDigits: 0,
   }).format(amount);
+
+const addMinutesToTime = (time, minutes) => {
+  const [hours, mins] = (time || "").split(":").map((val) => Number(val));
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) {
+    return "";
+  }
+  const total = hours * 60 + mins + minutes;
+  const nextHours = Math.floor((total % (24 * 60)) / 60);
+  const nextMins = total % 60;
+  return `${String(nextHours).padStart(2, "0")}:${String(nextMins).padStart(
+    2,
+    "0"
+  )}`;
+};
 
 const buildBookingMessage = (
   state,
@@ -124,7 +139,7 @@ const buildBookingMessage = (
     state.bookingDate && `Visit date: ${state.bookingDate}`,
     state.startTime && `Start time: ${state.startTime}`,
     state.endTime && `End time: ${state.endTime}`,
-    state.pickupLocation && `Pickup/visit location: ${state.pickupLocation}`,
+    state.address && `Eircode: ${state.address}`,
     state.preferences && `Routine & preferences: ${state.preferences}`,
     state.specialNotes && `Notes or medications: ${state.specialNotes}`,
     selectedOptions.length
@@ -151,6 +166,11 @@ const BookScreen = ({ navigation }) => {
   const [availableAddons, setAvailableAddons] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [availability, setAvailability] = useState(null);
+  const [availabilityStatus, setAvailabilityStatus] = useState("idle");
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -234,6 +254,120 @@ const BookScreen = ({ navigation }) => {
     };
   }, [session?.email]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAvailability = async () => {
+      if (!selectedService) {
+        setAvailability(null);
+        setAvailabilityStatus("idle");
+        setAvailabilityError("");
+        setSelectedDay(null);
+        setSelectedSlot(null);
+        return;
+      }
+
+      const clientAddress = (formState.address || "").trim();
+      if (!clientAddress) {
+        setAvailability(null);
+        setAvailabilityStatus("idle");
+        setAvailabilityError("Add your Eircode to load availability.");
+        return;
+      }
+
+      try {
+        setAvailabilityStatus("loading");
+        setAvailabilityError("");
+        const durationMinutes = Number(
+          selectedService.duration_minutes ||
+            selectedService.durationMinutes ||
+            60
+        );
+        const data = await fetchJson(
+          `/api/availability?durationMinutes=${durationMinutes}&clientAddress=${encodeURIComponent(
+            clientAddress
+          )}`
+        );
+        if (!isMounted) return;
+        setAvailability(data);
+        const firstDate = data?.dates?.[0]?.date || null;
+        setSelectedDay(firstDate);
+        setSelectedSlot(null);
+        setAvailabilityStatus("success");
+      } catch (availabilityLoadError) {
+        console.error("Failed to load availability", availabilityLoadError);
+        if (!isMounted) return;
+        setAvailability(null);
+        setAvailabilityStatus("error");
+        setAvailabilityError(
+          availabilityLoadError.message ||
+            "Unable to load availability right now."
+        );
+      }
+    };
+
+    loadAvailability();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedService, formState.address]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadClientProfile = async () => {
+      if (!session?.id || !supabase) {
+        return;
+      }
+
+      try {
+        const clientResult = await supabase
+          .from("clients")
+          .select("*")
+          .eq("id", session.id)
+          .maybeSingle();
+
+        if (!isMounted) return;
+        if (clientResult.error) {
+          throw clientResult.error;
+        }
+
+        if (clientResult.data) {
+          setFormState((current) => ({
+            ...current,
+            name: clientResult.data.full_name || current.name,
+            email: clientResult.data.email || current.email,
+            phone: clientResult.data.phone_number || current.phone,
+            address: clientResult.data.address || current.address,
+          }));
+        }
+      } catch (profileError) {
+        console.error("Failed to load client profile", profileError);
+      }
+    };
+
+    loadClientProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.id]);
+
+  useEffect(() => {
+    if (!session?.email) {
+      return;
+    }
+
+    setFormState((current) => ({
+      ...current,
+      name: session.name || current.name,
+      email: session.email || current.email,
+      phone: session.phone || current.phone,
+      address: session.address || current.address,
+    }));
+  }, [session?.email, session?.name, session?.phone, session?.address]);
+
   const categories = useMemo(() => {
     const filteredServices = services.filter((service) => {
       const title = (service.title || "").toLowerCase();
@@ -277,6 +411,11 @@ const BookScreen = ({ navigation }) => {
 
   const serviceLabel =
     selectedService?.title || selectedService?.category || "Service request";
+  const durationMinutes = Number(
+    selectedService?.duration_minutes ||
+      selectedService?.durationMinutes ||
+      60
+  );
 
   const visibleDogCount = Math.min(Number(formState.dogCount) || 1, 4);
   const visibleDogs = (formState.dogs || []).slice(0, visibleDogCount);
@@ -292,6 +431,12 @@ const BookScreen = ({ navigation }) => {
     0
   );
   const totalPrice = basePrice + optionsTotal;
+  const availableDates = availability?.dates || [];
+  const selectedDateEntry =
+    availableDates.find((day) => day.date === selectedDay) ||
+    availableDates[0] ||
+    null;
+  const availableSlots = selectedDateEntry?.slots || [];
 
   const handleChange = (field, value) => {
     setFormState((current) => ({ ...current, [field]: value }));
@@ -317,6 +462,11 @@ const BookScreen = ({ navigation }) => {
     setSelectedOptionIds([]);
     setSelectedPetIds([]);
     setShowNewDogForm(false);
+    setAvailability(null);
+    setAvailabilityStatus("idle");
+    setAvailabilityError("");
+    setSelectedDay(null);
+    setSelectedSlot(null);
     setStatus("idle");
     setError("");
   };
@@ -354,6 +504,8 @@ const BookScreen = ({ navigation }) => {
     if (
       !formState.name ||
       !formState.email ||
+      !formState.phone ||
+      !formState.address ||
       !formState.bookingDate ||
       !formState.startTime
     ) {
@@ -369,22 +521,49 @@ const BookScreen = ({ navigation }) => {
       selectedOptions,
       includeNewDogs: showNewDogForm,
     });
+    const notesToStore = [
+      formState.preferences,
+      formState.specialNotes,
+      formState.message,
+      selectedOptions.length
+        ? `Add-ons: ${selectedOptions.map((option) => option.label).join(", ")}`
+        : "",
+    ]
+      .map((entry) => entry?.trim())
+      .filter(Boolean)
+      .join("\n\n");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/contact`, {
+      const response = await fetch(`${API_BASE_URL}/api/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formState,
-          existingPets: selectedPets,
-          addOns: selectedOptions,
-          message: composedMessage,
+          date: formState.bookingDate,
+          time: formState.startTime,
+          durationMinutes,
+          serviceId: selectedService?.id || selectedService?.slug,
+          serviceTitle: serviceLabel,
+          clientName: formState.name,
+          clientPhone: formState.phone,
+          clientAddress: formState.address,
+          clientEmail: formState.email,
+          notes: notesToStore || composedMessage,
+          pets: selectedPets,
+          dogs: showNewDogForm ? visibleDogs : [],
+          dogCount: showNewDogForm ? Number(formState.dogCount) : undefined,
         }),
       });
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload?.message || "Failed to send request");
+      }
+
+      if (supabase && session?.id && notesToStore) {
+        await supabase
+          .from("clients")
+          .update({ notes: notesToStore })
+          .eq("id", session.id);
       }
 
       setStatus("success");
@@ -505,25 +684,35 @@ const BookScreen = ({ navigation }) => {
                   ) : (
                   <View>
                     <Text style={styles.formSectionTitle}>Your details</Text>
-                    <Text style={styles.label}>Name</Text>
+                    <Text style={styles.label}>Name *</Text>
                     <TextInput
-                      style={[styles.input, styles.readOnlyInput]}
+                      style={styles.input}
                       value={formState.name}
-                      editable={false}
+                      onChangeText={(value) => handleChange("name", value)}
                     />
-                    <Text style={styles.label}>Email</Text>
+                    <Text style={styles.label}>Email *</Text>
                     <TextInput
-                      style={[styles.input, styles.readOnlyInput]}
+                      style={styles.input}
                       value={formState.email}
-                      editable={false}
+                      onChangeText={(value) => handleChange("email", value)}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
                     />
-                    <Text style={styles.label}>Phone (optional)</Text>
+                    <Text style={styles.label}>Phone *</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="WhatsApp or phone number"
                       value={formState.phone}
                       keyboardType="phone-pad"
                       onChangeText={(value) => handleChange("phone", value)}
+                    />
+                    <Text style={styles.label}>Eircode *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="D02..."
+                      value={formState.address}
+                      onChangeText={(value) => handleChange("address", value)}
+                      autoCapitalize="characters"
                     />
                     <Text style={styles.label}>Service type</Text>
                     <TextInput
@@ -658,42 +847,104 @@ const BookScreen = ({ navigation }) => {
                     ) : null}
 
                     <Text style={styles.formSectionTitle}>Schedule</Text>
-                    <Text style={styles.label}>Visit date *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="YYYY-MM-DD"
-                      value={formState.bookingDate}
-                      onChangeText={(value) =>
-                        handleChange("bookingDate", value)
-                      }
-                    />
-                    <View style={styles.inlineInputs}>
-                      <View style={styles.inlineInput}>
-                        <Text style={styles.label}>Start time *</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="09:00"
-                          value={formState.startTime}
-                          onChangeText={(value) =>
-                            handleChange("startTime", value)
-                          }
-                        />
-                      </View>
-                      <View style={styles.inlineInput}>
-                        <Text style={styles.label}>End time</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="11:00"
-                          value={formState.endTime}
-                          onChangeText={(value) =>
-                            handleChange("endTime", value)
-                          }
-                        />
-                      </View>
-                    </View>
-                  <Text style={styles.helperText}>
-                      This schedule syncs with your Outlook calendar.
+                    <Text style={styles.helperText}>
+                      Choose a date and time from the live Outlook calendar.
                     </Text>
+                    {availabilityStatus === "loading" ? (
+                      <Text style={styles.helperText}>
+                        Loading availability...
+                      </Text>
+                    ) : availabilityError ? (
+                      <Text style={styles.errorText}>{availabilityError}</Text>
+                    ) : (
+                      <>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.dateRow}
+                        >
+                          {availableDates.map((day) => (
+                            <Pressable
+                              key={day.date}
+                              style={({ pressed }) => [
+                                styles.dateChip,
+                                selectedDay === day.date &&
+                                  styles.dateChipActive,
+                                pressed && styles.cardPressed,
+                              ]}
+                              onPress={() => {
+                                setSelectedDay(day.date);
+                                setSelectedSlot(null);
+                                handleChange("bookingDate", day.date);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  styles.dateChipText,
+                                  selectedDay === day.date &&
+                                    styles.dateChipTextActive,
+                                ]}
+                              >
+                                {day.date}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </ScrollView>
+                        {selectedDateEntry ? (
+                          <View>
+                            <Text style={styles.label}>Available times</Text>
+                            <View style={styles.slotRow}>
+                              {availableSlots.map((slot) => {
+                                const isAvailable =
+                                  slot.available && slot.reachable !== false;
+                                const isSelected =
+                                  selectedSlot === slot.time &&
+                                  selectedDateEntry.date ===
+                                    formState.bookingDate;
+                                return (
+                                  <Pressable
+                                    key={`${selectedDateEntry.date}-${slot.time}`}
+                                    style={({ pressed }) => [
+                                      styles.timeChip,
+                                      isSelected && styles.timeChipActive,
+                                      !isAvailable && styles.timeChipDisabled,
+                                      pressed && styles.cardPressed,
+                                    ]}
+                                    disabled={!isAvailable}
+                                    onPress={() => {
+                                      setSelectedSlot(slot.time);
+                                      handleChange(
+                                        "bookingDate",
+                                        selectedDateEntry.date
+                                      );
+                                      handleChange("startTime", slot.time);
+                                      handleChange(
+                                        "endTime",
+                                        addMinutesToTime(
+                                          slot.time,
+                                          durationMinutes
+                                        )
+                                      );
+                                    }}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.timeChipText,
+                                        isSelected && styles.timeChipTextActive,
+                                        !isAvailable &&
+                                          styles.timeChipTextDisabled,
+                                      ]}
+                                    >
+                                      {slot.time}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          </View>
+                        ) : null}
+                      </>
+                    )}
 
                     <Text style={styles.formSectionTitle}>Additional options</Text>
                     {availableAddons.length ? (
@@ -728,15 +979,6 @@ const BookScreen = ({ navigation }) => {
                     )}
 
                     <Text style={styles.formSectionTitle}>Care details</Text>
-                    <Text style={styles.label}>Pickup/visit location</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Address or neighborhood"
-                      value={formState.pickupLocation}
-                      onChangeText={(value) =>
-                        handleChange("pickupLocation", value)
-                      }
-                    />
                     <Text style={styles.label}>Routine & preferences</Text>
                     <TextInput
                       style={[styles.input, styles.textArea]}
@@ -1060,6 +1302,64 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 12,
     gap: 8,
+  },
+  dateRow: {
+    gap: 8,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  dateChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#ffffff",
+  },
+  dateChipActive: {
+    backgroundColor: "#6c3ad6",
+    borderColor: "#6c3ad6",
+  },
+  dateChipText: {
+    color: "#5d2fc5",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  dateChipTextActive: {
+    color: "#ffffff",
+  },
+  slotRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  timeChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#ffffff",
+  },
+  timeChipActive: {
+    backgroundColor: "#2b1a4b",
+    borderColor: "#2b1a4b",
+  },
+  timeChipDisabled: {
+    backgroundColor: "#f2ecfb",
+    borderColor: "#e6def6",
+  },
+  timeChipText: {
+    color: "#5d2fc5",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  timeChipTextActive: {
+    color: "#ffffff",
+  },
+  timeChipTextDisabled: {
+    color: "#a093b9",
   },
   chipRow: {
     flexDirection: "row",

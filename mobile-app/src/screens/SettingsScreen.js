@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -7,16 +8,52 @@ import {
   Text,
   View,
 } from "react-native";
+import { supabase } from "../api/supabaseClient";
+import ScreenHeader from "../components/ScreenHeader";
+import { useSession } from "../context/SessionContext";
 
-const SettingsScreen = () => {
+const SettingsScreen = ({ navigation }) => {
+  const { session } = useSession();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [smsAlerts, setSmsAlerts] = useState(true);
+  const [status, setStatus] = useState("idle");
+
+  useEffect(() => {
+    const preferences = session?.user?.user_metadata?.notification_preferences;
+    if (!preferences) {
+      return;
+    }
+    setNotificationsEnabled(Boolean(preferences.push));
+    setEmailUpdates(Boolean(preferences.email));
+    setSmsAlerts(Boolean(preferences.sms));
+  }, [session?.user?.user_metadata]);
+
+  const updatePreferences = async (next) => {
+    if (!supabase || !session?.user) {
+      return;
+    }
+    setStatus("saving");
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          notification_preferences: next,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+      setStatus("idle");
+    } catch (updateError) {
+      console.error("Failed to update preferences", updateError);
+      setStatus("error");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Settings</Text>
+        <ScreenHeader title="Settings" onBack={() => navigation.goBack()} />
         <View style={styles.card}>
           <View style={styles.row}>
             <View>
@@ -25,7 +62,14 @@ const SettingsScreen = () => {
             </View>
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={(value) => {
+                setNotificationsEnabled(value);
+                updatePreferences({
+                  push: value,
+                  email: emailUpdates,
+                  sms: smsAlerts,
+                });
+              }}
               trackColor={{ false: "#e6def6", true: "#bda8f0" }}
               thumbColor={notificationsEnabled ? "#6c3ad6" : "#f2ecfb"}
             />
@@ -37,7 +81,14 @@ const SettingsScreen = () => {
             </View>
             <Switch
               value={emailUpdates}
-              onValueChange={setEmailUpdates}
+              onValueChange={(value) => {
+                setEmailUpdates(value);
+                updatePreferences({
+                  push: notificationsEnabled,
+                  email: value,
+                  sms: smsAlerts,
+                });
+              }}
               trackColor={{ false: "#e6def6", true: "#bda8f0" }}
               thumbColor={emailUpdates ? "#6c3ad6" : "#f2ecfb"}
             />
@@ -49,11 +100,36 @@ const SettingsScreen = () => {
             </View>
             <Switch
               value={smsAlerts}
-              onValueChange={setSmsAlerts}
+              onValueChange={(value) => {
+                setSmsAlerts(value);
+                updatePreferences({
+                  push: notificationsEnabled,
+                  email: emailUpdates,
+                  sms: value,
+                });
+              }}
               trackColor={{ false: "#e6def6", true: "#bda8f0" }}
               thumbColor={smsAlerts ? "#6c3ad6" : "#f2ecfb"}
             />
           </View>
+          {status === "saving" ? (
+            <Text style={styles.helperText}>Saving preferences…</Text>
+          ) : null}
+        </View>
+
+        <Text style={styles.sectionTitle}>Payment methods</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Primary card</Text>
+          <Text style={styles.value}>Manage your card on your next invoice.</Text>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>Update payment method</Text>
+          </Pressable>
+          <View style={styles.divider} />
+          <Text style={styles.label}>Billing settings</Text>
+          <Text style={styles.value}>Invoices go to {session?.email || "your email"}.</Text>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>Update billing details</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -71,19 +147,13 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     backgroundColor: "#f6f3fb",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#2b1a4b",
-    marginBottom: 16,
-    textAlign: "center",
-  },
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
     borderColor: "#ebe4f7",
+    marginBottom: 16,
   },
   row: {
     flexDirection: "row",
@@ -102,6 +172,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#7b6a9f",
     marginTop: 4,
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#6c5a92",
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#2b1a4b",
+    marginBottom: 12,
+  },
+  value: {
+    fontSize: 13,
+    color: "#6c5a92",
+    marginBottom: 12,
+  },
+  button: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "#efe9fb",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    marginBottom: 6,
+  },
+  buttonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4a3a68",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#f2ecfb",
+    marginVertical: 12,
   },
 });
 
