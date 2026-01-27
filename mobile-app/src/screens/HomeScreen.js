@@ -33,6 +33,8 @@ const HomeScreen = ({ navigation }) => {
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [bookingCount, setBookingCount] = useState(null);
+  const [bookingError, setBookingError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -45,8 +47,13 @@ const HomeScreen = ({ navigation }) => {
         if (!isMounted) return;
         setBookings(data.bookings || []);
         setLastUpdated(new Date());
+        setBookingCount(Array.isArray(data.bookings) ? data.bookings.length : 0);
+        setBookingError("");
       } catch (error) {
         console.error("Failed to load bookings", error);
+        if (!isMounted) return;
+        setBookingError(error?.message || "Unable to load bookings.");
+        setBookingCount(0);
       }
     };
 
@@ -86,6 +93,18 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.debugBanner}>
+          <Text style={styles.debugTitle}>Debug</Text>
+          <Text style={styles.debugLine}>
+            Email: {session?.email || "—"}
+          </Text>
+          <Text style={styles.debugLine}>
+            Bookings returned: {bookingCount ?? "—"}
+          </Text>
+          {bookingError ? (
+            <Text style={styles.debugError}>Error: {bookingError}</Text>
+          ) : null}
+        </View>
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Hi {displayName}</Text>
@@ -194,6 +213,30 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f6f3fb",
+  },
+  debugBanner: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#efe7dd",
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2b1a4b",
+    marginBottom: 4,
+  },
+  debugLine: {
+    fontSize: 13,
+    color: "#4a3b63",
+    marginBottom: 2,
+  },
+  debugError: {
+    fontSize: 13,
+    color: "#b42318",
+    marginTop: 4,
   },
   container: {
     flexGrow: 1,
