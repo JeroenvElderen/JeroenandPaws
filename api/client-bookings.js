@@ -24,6 +24,24 @@ const normalizeEmail = (email = '') => email.trim().toLowerCase();
 const resolveOwnerEmail = () =>
   normalizeEmail(process.env.ADMIN_EMAIL || DEFAULT_OWNER_EMAIL);
 
+const normalizeTimestamp = (value) => {
+  if (!value) return value;
+  if (typeof value !== 'string') return value;
+
+  const hasTimeSeparator = value.includes('T');
+  const parsed = hasTimeSeparator
+    ? DateTime.fromISO(value, { zone: 'utc' })
+    : DateTime.fromSQL(value, { zone: 'utc' });
+
+  return parsed.isValid ? parsed.toISO() : value;
+};
+
+const normalizeBookingTimestamps = (booking) => ({
+  ...booking,
+  start_at: normalizeTimestamp(booking?.start_at),
+  end_at: normalizeTimestamp(booking?.end_at),
+});
+
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     try {
@@ -64,9 +82,7 @@ module.exports = async (req, res) => {
       let accessResult = { data: [] };
 
       if (clientEmail === ownerEmail) {
-        accessResult = await buildBookingsQuery().contains('access_emails', [
-          clientEmail,
-        ]);
+        accessResult = await buildBookingsQuery();
       }
 
       if (bookingsResult.error || accessResult.error) {
@@ -87,9 +103,12 @@ module.exports = async (req, res) => {
       const reconciledBookings = await reconcileBookingsWithCalendar(
         uniqueBookings
       );
+      const normalizedBookings = reconciledBookings.map(
+        normalizeBookingTimestamps
+      );
 
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ bookings: reconciledBookings }));
+      res.end(JSON.stringify({ bookings: normalizedBookings }));
       return;
     } catch (error) {
       console.error('Client bookings fetch error', error);
