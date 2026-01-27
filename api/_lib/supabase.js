@@ -3,7 +3,6 @@ const crypto = require("crypto");
 const { DateTime } = require("luxon");
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
-const STAFF_EMAIL_DOMAIN = "@jeroenandpaws.com";
 const DEFAULT_OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const PET_PHOTO_BUCKET =
@@ -155,17 +154,15 @@ const normalizeEmail = (email = "") => email.trim().toLowerCase();
 
 const buildBookingAccessEmails = (clientEmail) => {
   const normalizedClientEmail = normalizeEmail(clientEmail);
-  if (!normalizedClientEmail) return [];
-
   const ownerEmail = normalizeEmail(
     process.env.ADMIN_EMAIL || DEFAULT_OWNER_EMAIL
   );
 
-  const accessEmails = new Set([normalizedClientEmail]);
-  if (
-    normalizedClientEmail.includes(STAFF_EMAIL_DOMAIN) &&
-    ownerEmail
-  ) {
+  const accessEmails = new Set();
+  if (normalizedClientEmail) {
+    accessEmails.add(normalizedClientEmail);
+  }
+  if (ownerEmail) {
     accessEmails.add(ownerEmail);
   }
 

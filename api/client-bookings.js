@@ -37,6 +37,7 @@ module.exports = async (req, res) => {
         return;
       }
 
+      const ownerEmail = resolveOwnerEmail();
       const clientResult = await supabaseAdmin
         .from('clients')
         .select('id')
@@ -44,9 +45,11 @@ module.exports = async (req, res) => {
         .maybeSingle();
 
       if (clientResult.error || !clientResult.data) {
-        res.statusCode = 404;
-        res.end(JSON.stringify({ message: 'Client not found' }));
-        return;
+        if (clientEmail !== ownerEmail) {
+          res.statusCode = 404;
+          res.end(JSON.stringify({ message: 'Client not found' }));
+          return;
+        }
       }
 
       const buildBookingsQuery = () =>
@@ -55,13 +58,12 @@ module.exports = async (req, res) => {
           .select('*, services_catalog(*), booking_pets(pet_id)')
           .order('start_at', { ascending: false });
 
-      const bookingsResult = await buildBookingsQuery().eq(
-        'client_id',
-        clientResult.data.id
-      );
+      const bookingsResult = clientResult.data
+        ? await buildBookingsQuery().eq('client_id', clientResult.data.id)
+        : { data: [] };
       let accessResult = { data: [] };
 
-      if (clientEmail === resolveOwnerEmail()) {
+      if (clientEmail === ownerEmail) {
         accessResult = await buildBookingsQuery().contains('access_emails', [
           clientEmail,
         ]);

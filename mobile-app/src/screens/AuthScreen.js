@@ -40,10 +40,17 @@ const AuthScreen = ({ onAuthenticate }) => {
       user?.user_metadata?.full_name ||
       user?.email?.split("@")[0] ||
       "";
+    const normalizedEmail = (
+      user?.email ||
+      client?.email ||
+      email.trim()
+    )
+      .trim()
+      .toLowerCase();
 
     return {
       id: user?.id || client?.id,
-      email: user?.email || client?.email || email.trim(),
+      email: normalizedEmail,
       name,
       phone: client?.phone_number || user?.user_metadata?.phone || phone.trim(),
       address:
@@ -99,11 +106,12 @@ const AuthScreen = ({ onAuthenticate }) => {
     
     setStatus("loading");
     setError("");
+    const normalizedEmail = email.trim().toLowerCase();
 
     if (!supabase) {
       onAuthenticate({
-        name: fullName || email.split("@")[0],
-        email: email.trim(),
+        name: fullName || normalizedEmail.split("@")[0],
+        email: normalizedEmail,
         phone: phone.trim(),
         address: eircode.trim(),
       });
@@ -114,7 +122,7 @@ const AuthScreen = ({ onAuthenticate }) => {
     try {
       if (isRegistering) {
         const signUpResult = await supabase.auth.signUp({
-          email: email.trim(),
+          email: normalizedEmail,
           password: password.trim(),
           options: {
             data: {
@@ -140,7 +148,7 @@ const AuthScreen = ({ onAuthenticate }) => {
         const clientProfile = await upsertClientProfile({
           user,
           fallback: {
-            email: email.trim(),
+            email: normalizedEmail,
             fullName: fullName.trim(),
             phone: phone.trim(),
             address: eircode.trim(),
@@ -153,7 +161,7 @@ const AuthScreen = ({ onAuthenticate }) => {
       }
 
       const signInResult = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: normalizedEmail,
         password: password.trim(),
       });
 
@@ -177,7 +185,7 @@ const AuthScreen = ({ onAuthenticate }) => {
         (await upsertClientProfile({
           user,
           fallback: {
-            email: email.trim(),
+            email: normalizedEmail,
             fullName: "",
             phone: "",
             address: "",
