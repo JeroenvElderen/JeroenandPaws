@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const supabaseUrl =
   Constants.expoConfig?.extra?.supabaseUrl ||
@@ -13,9 +14,10 @@ const missingConfigMessage =
 const createSupabaseClient = () =>
   createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+      persistSession: true,
+      autoRefreshToken: true,
       detectSessionInUrl: false,
+      storage: AsyncStorage,
     },
   });
 

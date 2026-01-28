@@ -9,8 +9,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { API_BASE_URL } from "../api/config";
 import { fetchJson } from "../api/client";
+import {
+  DEFAULT_AVAILABILITY_WINDOW_DAYS,
+  fetchAvailability,
+} from "../api/availability";
 import {
   AVAILABILITY_TIMEOUT_MS,
   getCachedAvailability,
@@ -288,7 +291,7 @@ const BookScreen = ({ navigation }) => {
             selectedService.durationMinutes ||
             60
         );
-        const windowDays = 21;
+        const windowDays = DEFAULT_AVAILABILITY_WINDOW_DAYS;
         const cachedAvailability = getCachedAvailability({
           durationMinutes,
           windowDays,
@@ -302,12 +305,12 @@ const BookScreen = ({ navigation }) => {
           setAvailabilityStatus("success");
           return;
         }
-        const data = await fetchJson(
-          `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
-            clientAddress
-          )}`,
-          { timeoutMs: AVAILABILITY_TIMEOUT_MS }
-        );
+        const data = await fetchAvailability({
+          durationMinutes,
+          windowDays,
+          clientAddress,
+          timeoutMs: AVAILABILITY_TIMEOUT_MS,
+        });
         if (!isMounted) return;
         setCachedAvailability({
           durationMinutes,

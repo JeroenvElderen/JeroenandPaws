@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Text } from "react-native";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import HomeScreen from "./src/screens/HomeScreen";
 import BookScreen from "./src/screens/BookScreen";
 import MoreScreen from "./src/screens/MoreScreen";
@@ -18,6 +18,8 @@ import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 import { fetchJson } from "./src/api/client";
+import { supabase } from "./src/api/supabaseClient";
+import { buildSessionPayload, resolveClientProfile } from "./src/utils/session";
 import {
   AVAILABILITY_TIMEOUT_MS,
   prefetchAvailability,
@@ -132,6 +134,90 @@ const MainTabs = () => (
 
 const AppShell = () => {
   const { session, setSession } = useSession();
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    let subscription;
+
+    const restoreSession = async () => {
+      if (!supabase) {
+        if (isMounted) {
+          setAuthReady(true);
+        }
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          throw error;
+        }
+
+        const authSession = data?.session;
+        if (authSession?.user) {
+          const clientProfile = await resolveClientProfile({
+            supabase,
+            user: authSession.user,
+            fallback: { email: authSession.user.email || "" },
+          });
+
+          if (isMounted) {
+            setSession(
+              buildSessionPayload({
+                user: authSession.user,
+                client: clientProfile,
+                fallback: { email: authSession.user.email || "" },
+              })
+            );
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to restore session", error);
+      } finally {
+        if (isMounted) {
+          setAuthReady(true);
+        }
+      }
+    };
+
+    restoreSession();
+
+    if (supabase) {
+      const authListener = supabase.auth.onAuthStateChange(
+        async (_event, authSession) => {
+          if (!isMounted) return;
+          if (!authSession?.user) {
+            setSession(null);
+            return;
+          }
+
+          try {
+            const clientProfile = await resolveClientProfile({
+              supabase,
+              user: authSession.user,
+              fallback: { email: authSession.user.email || "" },
+            });
+            setSession(
+              buildSessionPayload({
+                user: authSession.user,
+                client: clientProfile,
+                fallback: { email: authSession.user.email || "" },
+              })
+            );
+          } catch (error) {
+            console.warn("Failed to hydrate session", error);
+          }
+        }
+      );
+      subscription = authListener.data?.subscription;
+    }
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, [setSession]);
 
   useEffect(() => {
     let isMounted = true;
@@ -175,6 +261,10 @@ const AppShell = () => {
     };
   }, [session?.email, session?.address]);
 
+  if (!authReady) {
+    return null;
+  }
+  
   if (!session?.email) {
     return (
       <NavigationContainer>

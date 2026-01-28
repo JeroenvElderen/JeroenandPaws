@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -7,7 +7,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { fetchJson } from "../api/client";
+import { DEFAULT_AVAILABILITY_WINDOW_DAYS } from "../api/availability";
 import {
   AVAILABILITY_TIMEOUT_MS,
   getCachedAvailability,
@@ -34,10 +36,17 @@ const formatTimeRange = (start, end) => {
   return `${formatTime(start)} – ${formatTime(end)}`;
 };
 
-const formatCountdownMinutes = (totalMs) => {
-  if (!Number.isFinite(totalMs) || totalMs <= 0) return "0m";
-  const totalMinutes = Math.ceil(totalMs / 60000);
-  return `${totalMinutes}m`;
+const formatElapsedTime = (totalMs) => {
+  if (!Number.isFinite(totalMs) || totalMs < 0) return "00:00:00";
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [
+    String(hours).padStart(2, "0"),
+    String(minutes).padStart(2, "0"),
+    String(seconds).padStart(2, "0"),
+  ].join(":");
 };
 
 const formatPetsLabel = (pets) => {
@@ -86,15 +95,19 @@ const HomeScreen = ({ navigation }) => {
   const [activeRoverCards, setActiveRoverCards] = useState({});
   const [timeTick, setTimeTick] = useState(Date.now());
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadBookings = useCallback(
+    async (options = {}) => {
+      const { silent = false } = options;
+      if (!session?.email) return;
+      if (!silent) {
+        setBookingError("");
+      }
 
-    const loadBookings = async () => {
       try {
         const data = await fetchJson(
-          `/api/client-bookings?email=${encodeURIComponent(session.email)}`
+          `/api/client-bookings?email=${encodeURIComponent(session.email)}`,
+          { timeoutMs: 10000 }
         );
-        if (!isMounted) return;
         setBookings(data.bookings || []);
         setLastUpdated(new Date());
         setBookingCount(Array.isArray(data.bookings) ? data.bookings.length : 0);
@@ -105,16 +118,23 @@ const HomeScreen = ({ navigation }) => {
         setBookingError(error?.message || "Unable to load bookings.");
         setBookingCount(0);
       }
-    };
+    },
+    [session?.email]
+  );
 
+  useEffect(() => {
     if (session?.email) {
       loadBookings();
     }
+  }, [session?.email, loadBookings]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [session?.email]);
+  useFocusEffect(
+    useCallback(() => {
+      if (session?.email) {
+        loadBookings({ silent: true });
+      }
+    }, [loadBookings, session?.email])
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -128,7 +148,7 @@ const HomeScreen = ({ navigation }) => {
         const defaultDurationMinutes = 60;
         const cached = getCachedAvailability({
           durationMinutes: defaultDurationMinutes,
-          windowDays: 21,
+          windowDays: DEFAULT_AVAILABILITY_WINDOW_DAYS,
           clientAddress,
         });
         if (cached) return;
@@ -143,7 +163,7 @@ const HomeScreen = ({ navigation }) => {
         );
         await prefetchAvailability({
           durationMinutes,
-          windowDays: 21,
+          windowDays: DEFAULT_AVAILABILITY_WINDOW_DAYS,
           clientAddress,
           timeoutMs: AVAILABILITY_TIMEOUT_MS,
         });
@@ -283,9 +303,10 @@ const HomeScreen = ({ navigation }) => {
             const petsLabel = formatPetsLabel(petList);
             const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
             const hasActiveCard = Boolean(activeRoverCards[bookingId]);
-            const remainingMs =
-              hasActiveCard && end
-                ? Math.max(end.getTime() - timeTick, 0)
+            const activeStart = activeRoverCards[bookingId];
+            const elapsedMs =
+              hasActiveCard && activeStart
+                ? Math.max(timeTick - activeStart, 0)
                 : 0;
 
             return (
@@ -317,7 +338,7 @@ const HomeScreen = ({ navigation }) => {
                   <View style={styles.cardFooter}>
                     {hasActiveCard ? (
                       <Text style={styles.cardTimerText}>
-                        {formatCountdownMinutes(remainingMs)}
+                        Active time {formatElapsedTime(elapsedMs)}
                       </Text>
                     ) : null}
                     <Pressable
@@ -332,17 +353,26 @@ const HomeScreen = ({ navigation }) => {
                             bookingId,
                             serviceTitle,
                             pets: petList,
+                            clientId: booking?.client_id,
+                            startedAt: activeStart,
+                            bookingStart: booking?.start_at,
+                            bookingEnd: booking?.end_at,
                           });
                           return;
                         }
+                        const startTimestamp = Date.now();
                         setActiveRoverCards((prev) => ({
                           ...prev,
-                          [bookingId]: Date.now(),
+                          [bookingId]: startTimestamp,
                         }));
                         navigation.navigate("JeroenPawsCard", {
                           bookingId,
                           serviceTitle,
                           pets: petList,
+                          clientId: booking?.client_id,
+                          startedAt: startTimestamp,
+                          bookingStart: booking?.start_at,
+                          bookingEnd: booking?.end_at,
                         });
                       }}
                     >

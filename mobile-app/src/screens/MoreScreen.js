@@ -1,5 +1,14 @@
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import ScreenHeader from "../components/ScreenHeader";
+import { supabase } from "../api/supabaseClient";
+import { useSession } from "../context/SessionContext";
 
 const userItems = [
   {
@@ -29,6 +38,20 @@ const userItems = [
 ];
 
 const MoreScreen = ({ navigation }) => {
+  const { setSession } = useSession();
+
+  const handleLogout = async () => {
+    try {
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (error) {
+      console.warn("Failed to sign out", error);
+    } finally {
+      setSession(null);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -56,6 +79,20 @@ const MoreScreen = ({ navigation }) => {
               <Text style={styles.chevron}>›</Text>
             </Pressable>
           ))}
+        </View>
+        <View style={styles.sectionCard}>
+          <Pressable style={styles.menuItem} onPress={handleLogout}>
+            <View style={styles.menuLeft}>
+              <Text style={styles.menuIcon}>🚪</Text>
+              <View>
+                <Text style={styles.menuLabel}>Log out</Text>
+                <Text style={styles.menuDescription}>
+                  Sign out of your account
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

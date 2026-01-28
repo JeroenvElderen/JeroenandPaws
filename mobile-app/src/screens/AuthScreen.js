@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import PrimaryButton from "../components/PrimaryButton";
 import { supabase } from "../api/supabaseClient";
+import { buildSessionPayload, resolveClientProfile } from "../utils/session";
 
 const AuthScreen = ({ onAuthenticate }) => {
   const [mode, setMode] = useState("login");
@@ -34,32 +35,6 @@ const AuthScreen = ({ onAuthenticate }) => {
     return Boolean(password.trim());
   }, [email, password, fullName, phone, eircode, isRegistering]);
 
-  const buildSessionPayload = ({ user, client }) => {
-    const name =
-      client?.full_name ||
-      user?.user_metadata?.full_name ||
-      user?.email?.split("@")[0] ||
-      "";
-    const normalizedEmail = (
-      user?.email ||
-      client?.email ||
-      email.trim()
-    )
-      .trim()
-      .toLowerCase();
-
-    return {
-      id: user?.id || client?.id,
-      email: normalizedEmail,
-      name,
-      phone: client?.phone_number || user?.user_metadata?.phone || phone.trim(),
-      address:
-        client?.address || user?.user_metadata?.address || eircode.trim(),
-      user,
-      client,
-    };
-  };
-
   const resolveSignedUpUser = async (signUpResult) => {
     const signUpUser =
       signUpResult.data?.user || signUpResult.data?.session?.user || null;
@@ -74,28 +49,6 @@ const AuthScreen = ({ onAuthenticate }) => {
     }
 
     return data?.user || null;
-  };
-
-  const upsertClientProfile = async ({ user, fallback }) => {
-    const clientPayload = {
-      id: user?.id,
-      email: (user?.email || fallback.email || "").trim().toLowerCase(),
-      full_name: user?.user_metadata?.full_name || fallback.fullName || "",
-      phone_number: user?.user_metadata?.phone || fallback.phone || "",
-      address: user?.user_metadata?.address || fallback.address || "",
-    };
-
-    const upsertResult = await supabase
-      .from("clients")
-      .upsert(clientPayload, { onConflict: "id" })
-      .select("*")
-      .maybeSingle();
-
-    if (upsertResult.error) {
-      throw upsertResult.error;
-    }
-
-    return upsertResult.data || null;
   };
 
   const handleAuthenticate = async () => {
@@ -145,7 +98,8 @@ const AuthScreen = ({ onAuthenticate }) => {
           );
         }
 
-        const clientProfile = await upsertClientProfile({
+        const clientProfile = await resolveClientProfile({
+          supabase,
           user,
           fallback: {
             email: normalizedEmail,
@@ -155,7 +109,17 @@ const AuthScreen = ({ onAuthenticate }) => {
           },
         });
 
-        onAuthenticate(buildSessionPayload({ user, client: clientProfile }));
+        onAuthenticate(
+          buildSessionPayload({
+            user,
+            client: clientProfile,
+            fallback: {
+              email: normalizedEmail,
+              phone: phone.trim(),
+              address: eircode.trim(),
+            },
+          })
+        );
         setStatus("idle");
         return;
       }
@@ -182,7 +146,8 @@ const AuthScreen = ({ onAuthenticate }) => {
 
       const clientProfile =
         clientResult.data ||
-        (await upsertClientProfile({
+        (await resolveClientProfile({
+          supabase,
           user,
           fallback: {
             email: normalizedEmail,
@@ -192,7 +157,13 @@ const AuthScreen = ({ onAuthenticate }) => {
           },
         }));
 
-      onAuthenticate(buildSessionPayload({ user, client: clientProfile }));
+      onAuthenticate(
+        buildSessionPayload({
+          user,
+          client: clientProfile,
+          fallback: { email: normalizedEmail },
+        })
+      );
       setStatus("idle");
     } catch (authError) {
       setError(authError.message || "Unable to authenticate.");
