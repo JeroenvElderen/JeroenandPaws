@@ -18,8 +18,23 @@ const defaultActivities = [
   { key: "training", label: "Training", icon: "🎯" },
 ];
 
+const formatPetsLabel = (pets) => {
+  if (!pets) return "Pets";
+  if (Array.isArray(pets)) {
+    const names = pets
+      .map((pet) => (typeof pet === "string" ? pet : pet?.name))
+      .filter(Boolean);
+    return names.length ? names.join(", ") : "Pets";
+  }
+  if (typeof pets === "string") return pets;
+  if (typeof pets === "object") return pets.name || "Pets";
+  return "Pets";
+};
+
 const JeroenPawsCardScreen = ({ navigation, route }) => {
-  const petsLabel = route?.params?.pets || "Kaiser";
+  const petsLabel = route?.params?.pets
+    ? formatPetsLabel(route?.params?.pets)
+    : "Your pets";
   const serviceTitle = route?.params?.serviceTitle || "Drop-In Visits";
   const [note, setNote] = useState("");
   const [photoCount, setPhotoCount] = useState(1);

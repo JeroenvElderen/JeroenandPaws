@@ -35,6 +35,19 @@ const formatCountdownMinutes = (totalMs) => {
   return `${totalMinutes}m`;
 };
 
+const formatPetsLabel = (pets) => {
+  if (!pets) return "Pets";
+  if (Array.isArray(pets)) {
+    const names = pets
+      .map((pet) => (typeof pet === "string" ? pet : pet?.name))
+      .filter(Boolean);
+    return names.length ? names.join(", ") : "Pets";
+  }
+  if (typeof pets === "string") return pets;
+  if (typeof pets === "object") return pets.name || "Pets";
+  return "Pets";
+};
+
 const HomeScreen = ({ navigation }) => {
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
@@ -189,9 +202,7 @@ const HomeScreen = ({ navigation }) => {
             const end = booking?.end_at ? new Date(booking.end_at) : null;
             const serviceTitle =
               booking?.service_title || booking?.services_catalog?.title;
-            const pets = booking?.pets?.join
-              ? booking.pets.join(", ")
-              : booking?.pets || "Your pets";
+            const pets = formatPetsLabel(booking?.pets || booking?.pet);
             const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
             const hasActiveCard = Boolean(activeRoverCards[bookingId]);
             const remainingMs =
