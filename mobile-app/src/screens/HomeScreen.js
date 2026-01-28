@@ -29,18 +29,10 @@ const formatTimeRange = (start, end) => {
   return `${formatTime(start)} – ${formatTime(end)}`;
 };
 
-const formatCountdown = (totalMs) => {
-  if (!Number.isFinite(totalMs) || totalMs <= 0) return "0s";
-  const totalSeconds = Math.floor(totalMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
-  }
-
-  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+const formatCountdownMinutes = (totalMs) => {
+  if (!Number.isFinite(totalMs) || totalMs <= 0) return "0m";
+  const totalMinutes = Math.ceil(totalMs / 60000);
+  return `${totalMinutes}m`;
 };
 
 const HomeScreen = ({ navigation }) => {
@@ -202,17 +194,18 @@ const HomeScreen = ({ navigation }) => {
               : booking?.pets || "Your pets";
             const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
             const hasActiveCard = Boolean(activeRoverCards[bookingId]);
-            const durationMs =
-              start && end ? Math.max(end.getTime() - start.getTime(), 0) : 0;
-            const remainingMs = hasActiveCard
-              ? Math.max(durationMs - (timeTick - activeRoverCards[bookingId]), 0)
-              : durationMs;
+            const remainingMs =
+              hasActiveCard && end
+                ? Math.max(end.getTime() - timeTick, 0)
+                : 0;
 
             return (
               <Pressable
                 key={bookingId}
                 style={({ pressed }) => [
                   styles.card,
+                  isJeroenAccount && styles.cardJeroen,
+                  hasActiveCard && styles.cardJeroenActive,
                   pressed && styles.cardPressed,
                 ]}
                 onPress={() => navigation.navigate("Calendar")}
@@ -237,7 +230,7 @@ const HomeScreen = ({ navigation }) => {
                   <View style={styles.cardFooter}>
                     {hasActiveCard ? (
                       <Text style={styles.cardTimerText}>
-                        {formatCountdown(remainingMs)}
+                        {formatCountdownMinutes(remainingMs)}
                       </Text>
                     ) : null}
                     <Pressable
@@ -264,8 +257,8 @@ const HomeScreen = ({ navigation }) => {
                         ]}
                       >
                         {hasActiveCard
-                          ? "Open Jeroen & Paws Card"
-                          : "Start Jeroen & Paws Card"}
+                          ? "Open (Rover) Jeroen & Paws Card"
+                          : "Start (Rover) Jeroen & Paws Card"}
                       </Text>
                     </Pressable>
                   </View>
@@ -449,6 +442,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ebe4f7",
     marginBottom: 16,
+  },
+  cardJeroen: {
+    borderColor: "#c8b8a4",
+  },
+  cardJeroenActive: {
+    borderWidth: 2,
+    borderColor: "#9a6b2d",
+    shadowColor: "#5b3a0f",
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 14,
+    elevation: 4,
   },
   cardRow: {
     flexDirection: "row",
