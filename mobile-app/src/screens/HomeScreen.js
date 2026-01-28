@@ -29,12 +29,28 @@ const formatTimeRange = (start, end) => {
   return `${formatTime(start)} – ${formatTime(end)}`;
 };
 
+const formatCountdown = (totalMs) => {
+  if (!Number.isFinite(totalMs) || totalMs <= 0) return "0s";
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  }
+
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+};
+
 const HomeScreen = ({ navigation }) => {
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [bookingCount, setBookingCount] = useState(null);
   const [bookingError, setBookingError] = useState("");
+  const [activeRoverCards, setActiveRoverCards] = useState({});
+  const [timeTick, setTimeTick] = useState(Date.now());
 
   useEffect(() => {
     let isMounted = true;
@@ -66,6 +82,15 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [session?.email]);
 
+  useEffect(() => {
+    const activeCount = Object.keys(activeRoverCards).length;
+    if (!activeCount) {
+      return undefined;
+    }
+    const interval = setInterval(() => setTimeTick(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [activeRoverCards]);
+
   const now = new Date();
   const upcomingBookings = bookings
     .filter((booking) => {
@@ -83,6 +108,8 @@ const HomeScreen = ({ navigation }) => {
   const upcomingPreview = upcomingBookings.slice(0, 3);
 
   const displayName = session?.name || "Jeroen";
+  const isJeroenAccount =
+    session?.email?.toLowerCase() === "jeroen@jeroenandpaws.com";
   const initials = displayName
     .split(" ")
     .slice(0, 2)
@@ -173,10 +200,17 @@ const HomeScreen = ({ navigation }) => {
             const pets = booking?.pets?.join
               ? booking.pets.join(", ")
               : booking?.pets || "Your pets";
+            const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
+            const hasActiveCard = Boolean(activeRoverCards[bookingId]);
+            const durationMs =
+              start && end ? Math.max(end.getTime() - start.getTime(), 0) : 0;
+            const remainingMs = hasActiveCard
+              ? Math.max(durationMs - (timeTick - activeRoverCards[bookingId]), 0)
+              : durationMs;
 
             return (
               <Pressable
-                key={booking.id}
+                key={bookingId}
                 style={({ pressed }) => [
                   styles.card,
                   pressed && styles.cardPressed,
@@ -199,6 +233,43 @@ const HomeScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
+                {isJeroenAccount ? (
+                  <View style={styles.cardFooter}>
+                    {hasActiveCard ? (
+                      <Text style={styles.cardTimerText}>
+                        {formatCountdown(remainingMs)}
+                      </Text>
+                    ) : null}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.cardButton,
+                        hasActiveCard && styles.cardButtonActive,
+                        pressed && styles.cardPressed,
+                      ]}
+                      onPress={() => {
+                        if (hasActiveCard) {
+                          navigation.navigate("Calendar");
+                          return;
+                        }
+                        setActiveRoverCards((prev) => ({
+                          ...prev,
+                          [bookingId]: Date.now(),
+                        }));
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.cardButtonText,
+                          hasActiveCard && styles.cardButtonTextActive,
+                        ]}
+                      >
+                        {hasActiveCard
+                          ? "Open Jeroen & Paws Card"
+                          : "Start Jeroen & Paws Card"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
               </Pressable>
             );
           })
@@ -411,6 +482,41 @@ const styles = StyleSheet.create({
     color: "#5d2fc5",
     fontWeight: "600",
     fontSize: 12,
+  },
+  cardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#efe4d6",
+    paddingTop: 12,
+    marginTop: 4,
+  },
+  cardTimerText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2f63d6",
+    marginBottom: 10,
+  },
+  cardButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#d9d2c7",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+  cardButtonActive: {
+    backgroundColor: "#2f63d6",
+    borderColor: "#2f63d6",
+  },
+  cardButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#554e44",
+    textAlign: "center",
+  },
+  cardButtonTextActive: {
+    color: "#ffffff",
   },
 });
 
