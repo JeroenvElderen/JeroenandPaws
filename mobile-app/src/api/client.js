@@ -1,7 +1,22 @@
 import { API_BASE_URL } from "./config";
 
-export const fetchJson = async (path) => {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+export const fetchJson = async (path, { timeoutMs = 15000 } = {}) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const body = await response.text();

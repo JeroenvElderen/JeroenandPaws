@@ -304,7 +304,8 @@ const BookScreen = ({ navigation }) => {
         const data = await fetchJson(
           `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
             clientAddress
-          )}`
+          )}`,
+          { timeoutMs: 30000 }
         );
         if (!isMounted) return;
         setCachedAvailability({

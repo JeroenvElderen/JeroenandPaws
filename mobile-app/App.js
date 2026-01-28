@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Text } from "react-native";
+import { useEffect } from "react";
 import HomeScreen from "./src/screens/HomeScreen";
 import BookScreen from "./src/screens/BookScreen";
 import MoreScreen from "./src/screens/MoreScreen";
@@ -16,6 +17,8 @@ import PaymentMethodsScreen from "./src/screens/PaymentMethodsScreen";
 import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
+import { fetchJson } from "./src/api/client";
+import { prefetchAvailability } from "./src/api/availabilityCache";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -127,6 +130,48 @@ const MainTabs = () => (
 const AppShell = () => {
   const { session, setSession } = useSession();
 
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId;
+
+    const prefetchBookingAvailability = async () => {
+      const clientAddress = (session?.address || "").trim();
+      if (!clientAddress) return;
+
+      try {
+        const defaultDurationMinutes = 60;
+        const data = await fetchJson("/api/services", { timeoutMs: 30000 });
+        if (!isMounted) return;
+        const firstService = (data?.services || []).find(Boolean);
+        if (!firstService) return;
+        const durationMinutes = Number(
+          firstService.duration_minutes ||
+            firstService.durationMinutes ||
+            defaultDurationMinutes
+        );
+        await prefetchAvailability({
+          durationMinutes,
+          windowDays: 21,
+          clientAddress,
+          timeoutMs: 30000,
+        });
+      } catch (error) {
+        console.error("Failed to prefetch availability after auth", error);
+      }
+    };
+
+    if (session?.email) {
+      timeoutId = setTimeout(prefetchBookingAvailability, 500);
+    }
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [session?.email, session?.address]);
+  
   if (!session?.email) {
     return (
       <NavigationContainer>

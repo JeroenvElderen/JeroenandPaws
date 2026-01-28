@@ -42,21 +42,47 @@ const normalizeBookingTimestamps = (booking) => ({
   end_at: normalizeTimestamp(booking?.end_at),
 });
 
-const normalizeBookingPets = (booking) => {
-  const petsFromBooking = (booking?.booking_pets || [])
-    .map((bookingPet) => bookingPet?.pets?.name)
+const normalizeBookingPets = (booking, petsById = new Map()) => {
+  const bookingPets = Array.isArray(booking?.booking_pets)
+    ? booking.booking_pets
+    : [];
+  const enrichedBookingPets = bookingPets.map((bookingPet) => {
+    const petRecord =
+      bookingPet?.pets ||
+      bookingPet?.pet ||
+      petsById.get(bookingPet?.pet_id) ||
+      null;
+    if (!petRecord) return bookingPet;
+    return {
+      ...bookingPet,
+      pet: petRecord,
+      pets: bookingPet?.pets || petRecord,
+    };
+  });
+  const petsFromBooking = enrichedBookingPets
+    .map((bookingPet) => bookingPet?.pets?.name || bookingPet?.pet?.name)
     .filter(Boolean);
   const existingPets = booking?.pets;
 
   if (petsFromBooking.length > 0) {
-    return { ...booking, pets: petsFromBooking };
+    return {
+      ...booking,
+      booking_pets: enrichedBookingPets,
+      pets: petsFromBooking,
+    };
   }
 
   if (existingPets) {
-    return booking;
+    return {
+      ...booking,
+      booking_pets: enrichedBookingPets.length ? enrichedBookingPets : bookingPets,
+    };
   }
 
-  return booking;
+  return {
+    ...booking,
+    booking_pets: enrichedBookingPets.length ? enrichedBookingPets : bookingPets,
+  };
 };
 
 module.exports = async (req, res) => {
@@ -83,7 +109,9 @@ module.exports = async (req, res) => {
       const buildBookingsQuery = () =>
         supabaseAdmin
           .from('bookings')
-          .select('*, services_catalog(*), booking_pets(pet_id, pets(id, name))')
+          .select(
+            '*, services_catalog(*), booking_pets(pet_id, pet:pet_id(id, name), pets(id, name))'
+          )
           .order('start_at', { ascending: false });
 
       const bookingsResult = clientResult.data
@@ -143,7 +171,31 @@ module.exports = async (req, res) => {
       const normalizedBookings = reconciledBookings.map(
         normalizeBookingTimestamps
       );
-      const enrichedBookings = normalizedBookings.map(normalizeBookingPets);
+      const petIds = normalizedBookings.flatMap((booking) =>
+        Array.isArray(booking?.booking_pets)
+          ? booking.booking_pets.map((bookingPet) => bookingPet?.pet_id).filter(Boolean)
+          : []
+      );
+      const uniquePetIds = [...new Set(petIds)];
+      let petsById = new Map();
+
+      if (uniquePetIds.length > 0) {
+        const petsResult = await supabaseAdmin
+          .from('pets')
+          .select('id, name')
+          .in('id', uniquePetIds);
+        if (petsResult.error) {
+          console.error('Failed to load pets for bookings', petsResult.error);
+        } else {
+          petsById = new Map(
+            (petsResult.data || []).map((pet) => [pet.id, pet])
+          );
+        }
+      }
+
+      const enrichedBookings = normalizedBookings.map((booking) =>
+        normalizeBookingPets(booking, petsById)
+      );
 
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ bookings: enrichedBookings }));

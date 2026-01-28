@@ -39,6 +39,7 @@ export const prefetchAvailability = async ({
   durationMinutes = 60,
   windowDays = 21,
   clientAddress,
+  timeoutMs,
 }) => {
   const trimmedAddress = (clientAddress || "").trim();
   if (!trimmedAddress) return null;
@@ -51,7 +52,8 @@ export const prefetchAvailability = async ({
   const data = await fetchJson(
     `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
       trimmedAddress
-    )}`
+    )}`,
+    timeoutMs ? { timeoutMs } : undefined
   );
   setCachedAvailability({
     durationMinutes,

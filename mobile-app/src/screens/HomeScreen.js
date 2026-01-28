@@ -131,7 +131,7 @@ const HomeScreen = ({ navigation }) => {
           clientAddress,
         });
         if (cached) return;
-        const data = await fetchJson("/api/services");
+        const data = await fetchJson("/api/services", { timeoutMs: 30000 });
         if (!isMounted) return;
         const firstService = (data?.services || []).find(Boolean);
         if (!firstService) return;
@@ -144,6 +144,7 @@ const HomeScreen = ({ navigation }) => {
           durationMinutes,
           windowDays: 21,
           clientAddress,
+          timeoutMs: 30000,
         });
       } catch (error) {
         console.error("Failed to prefetch availability", error);
@@ -161,7 +162,7 @@ const HomeScreen = ({ navigation }) => {
       }
     };
   }, [session?.email, session?.address]);
-  
+
   useEffect(() => {
     const activeCount = Object.keys(activeRoverCards).length;
     if (!activeCount) {
