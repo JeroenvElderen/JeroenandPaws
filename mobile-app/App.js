@@ -18,7 +18,10 @@ import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 import { fetchJson } from "./src/api/client";
-import { prefetchAvailability } from "./src/api/availabilityCache";
+import {
+  AVAILABILITY_TIMEOUT_MS,
+  prefetchAvailability,
+} from "./src/api/availabilityCache";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -153,7 +156,7 @@ const AppShell = () => {
           durationMinutes,
           windowDays: 21,
           clientAddress,
-          timeoutMs: 30000,
+          timeoutMs: AVAILABILITY_TIMEOUT_MS,
         });
       } catch (error) {
         console.error("Failed to prefetch availability after auth", error);
@@ -171,7 +174,7 @@ const AppShell = () => {
       }
     };
   }, [session?.email, session?.address]);
-  
+
   if (!session?.email) {
     return (
       <NavigationContainer>

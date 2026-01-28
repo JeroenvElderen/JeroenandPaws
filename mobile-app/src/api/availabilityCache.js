@@ -1,6 +1,7 @@
 import { fetchJson } from "./client";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+export const AVAILABILITY_TIMEOUT_MS = 60 * 1000;
 const availabilityCache = new Map();
 
 const buildCacheKey = ({ durationMinutes, windowDays, clientAddress }) => {
@@ -39,7 +40,7 @@ export const prefetchAvailability = async ({
   durationMinutes = 60,
   windowDays = 21,
   clientAddress,
-  timeoutMs,
+  timeoutMs = AVAILABILITY_TIMEOUT_MS,
 }) => {
   const trimmedAddress = (clientAddress || "").trim();
   if (!trimmedAddress) return null;
@@ -53,7 +54,7 @@ export const prefetchAvailability = async ({
     `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
       trimmedAddress
     )}`,
-    timeoutMs ? { timeoutMs } : undefined
+    { timeoutMs }
   );
   setCachedAvailability({
     durationMinutes,

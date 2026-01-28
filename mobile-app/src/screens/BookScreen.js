@@ -12,6 +12,7 @@ import {
 import { API_BASE_URL } from "../api/config";
 import { fetchJson } from "../api/client";
 import {
+  AVAILABILITY_TIMEOUT_MS,
   getCachedAvailability,
   setCachedAvailability,
 } from "../api/availabilityCache";
@@ -305,7 +306,7 @@ const BookScreen = ({ navigation }) => {
           `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
             clientAddress
           )}`,
-          { timeoutMs: 30000 }
+          { timeoutMs: AVAILABILITY_TIMEOUT_MS }
         );
         if (!isMounted) return;
         setCachedAvailability({

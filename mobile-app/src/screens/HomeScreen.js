@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { fetchJson } from "../api/client";
 import {
+  AVAILABILITY_TIMEOUT_MS,
   getCachedAvailability,
   prefetchAvailability,
 } from "../api/availabilityCache";
@@ -144,7 +145,7 @@ const HomeScreen = ({ navigation }) => {
           durationMinutes,
           windowDays: 21,
           clientAddress,
-          timeoutMs: 30000,
+          timeoutMs: AVAILABILITY_TIMEOUT_MS,
         });
       } catch (error) {
         console.error("Failed to prefetch availability", error);
