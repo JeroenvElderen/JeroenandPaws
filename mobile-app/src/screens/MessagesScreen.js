@@ -10,11 +10,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
 
 const formatMessageTime = (value) => {
   if (!value) return "";
@@ -67,6 +69,9 @@ const MessagesScreen = ({ navigation, route }) => {
 
   const clientId = session?.id;
   const chatClientId = isOwner ? activeClientId : clientId;
+  const lastReadStorageKey = isOwner
+    ? `messages:lastRead:${OWNER_CLIENT_ID}`
+    : `messages:lastRead:${clientId || "unknown"}`;
 
   const formattedMessages = useMemo(
     () =>
@@ -218,6 +223,28 @@ const MessagesScreen = ({ navigation, route }) => {
       supabase.removeChannel(channel);
     };
   }, [chatClientId]);
+
+  useEffect(() => {
+    const updateLastRead = async () => {
+      if (!chatClientId || !lastReadStorageKey) return;
+      const latestMessage = messages[messages.length - 1];
+      if (!latestMessage?.created_at) return;
+
+      try {
+        const raw = await AsyncStorage.getItem(lastReadStorageKey);
+        const lastReadMap = raw ? JSON.parse(raw) : {};
+        lastReadMap[chatClientId] = latestMessage.created_at;
+        await AsyncStorage.setItem(
+          lastReadStorageKey,
+          JSON.stringify(lastReadMap)
+        );
+      } catch (error) {
+        // Ignore last-read update errors.
+      }
+    };
+
+    updateLastRead();
+  }, [chatClientId, lastReadStorageKey, messages]);
 
   useEffect(() => {
     const newClientId = route?.params?.clientId || null;
@@ -426,11 +453,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingBottom: 90,
+    paddingBottom: 0,
     backgroundColor: "#f6f3fb",
   },
   threads: {
-    paddingBottom: 24,
+    paddingBottom: 0,
   },
   threadCard: {
     flexDirection: "row",
@@ -498,7 +525,7 @@ const styles = StyleSheet.create({
   },
   messages: {
     flexGrow: 1,
-    paddingBottom: 32,
+    paddingBottom: 0,
   },
   messageBubble: {
     backgroundColor: "#ffffff",
@@ -559,7 +586,7 @@ const styles = StyleSheet.create({
     borderColor: "#ebe4f7",
     padding: 10,
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 55,
   },
   input: {
     flex: 1,

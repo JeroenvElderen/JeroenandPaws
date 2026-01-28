@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { fetchJson } from "../api/client";
 import { DEFAULT_AVAILABILITY_WINDOW_DAYS } from "../api/availability";
@@ -15,7 +16,11 @@ import {
   getCachedAvailability,
   prefetchAvailability,
 } from "../api/availabilityCache";
+import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+
+const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
 
 const formatDateLabel = (date) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -90,18 +95,14 @@ const HomeScreen = ({ navigation }) => {
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [bookingCount, setBookingCount] = useState(null);
-  const [bookingError, setBookingError] = useState("");
   const [activeRoverCards, setActiveRoverCards] = useState({});
   const [timeTick, setTimeTick] = useState(Date.now());
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const loadBookings = useCallback(
     async (options = {}) => {
       const { silent = false } = options;
       if (!session?.email) return;
-      if (!silent) {
-        setBookingError("");
-      }
 
       try {
         const data = await fetchJson(
@@ -110,13 +111,8 @@ const HomeScreen = ({ navigation }) => {
         );
         setBookings(data.bookings || []);
         setLastUpdated(new Date());
-        setBookingCount(Array.isArray(data.bookings) ? data.bookings.length : 0);
-        setBookingError("");
       } catch (error) {
         console.error("Failed to load bookings", error);
-        if (!isMounted) return;
-        setBookingError(error?.message || "Unable to load bookings.");
-        setBookingCount(0);
       }
     },
     [session?.email]
@@ -211,7 +207,12 @@ const HomeScreen = ({ navigation }) => {
 
   const displayName = session?.name || "Jeroen";
   const isJeroenAccount =
-    session?.email?.toLowerCase() === "jeroen@jeroenandpaws.com";
+    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const unreadBadgeCount = useMemo(() => {
+    if (!unreadCount) return 0;
+    if (isJeroenAccount) return unreadCount;
+    return 1;
+  }, [isJeroenAccount, unreadCount]);
   const initials = displayName
     .split(" ")
     .slice(0, 2)
@@ -219,21 +220,71 @@ const HomeScreen = ({ navigation }) => {
     .join("")
     .toUpperCase();
 
+  const loadUnreadMessages = useCallback(async () => {
+    if (!session?.id || !supabase) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const isOwner = isJeroenAccount;
+    const storageKey = `messages:lastRead:${
+      isOwner ? OWNER_CLIENT_ID : session.id
+    }`;
+
+    try {
+      const raw = await AsyncStorage.getItem(storageKey);
+      const lastReadMap = raw ? JSON.parse(raw) : {};
+      const lastReadValues = Object.values(lastReadMap)
+        .map((value) => new Date(value).getTime())
+        .filter((value) => Number.isFinite(value));
+      const minLastRead =
+        lastReadValues.length > 0 ? Math.min(...lastReadValues) : null;
+
+      let query = supabase
+        .from("messages")
+        .select("client_id, created_at, sender")
+        .order("created_at", { ascending: false });
+
+      if (isOwner) {
+        query = query.eq("sender", "client");
+      } else {
+        query = query.eq("sender", "owner").eq("client_id", session.id);
+      }
+
+      if (minLastRead) {
+        query = query.gt("created_at", new Date(minLastRead).toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        throw error;
+      }
+
+      const count = (data || []).reduce((total, message) => {
+        const lastRead = lastReadMap[message.client_id];
+        if (!lastRead) {
+          return total + 1;
+        }
+        return new Date(message.created_at) > new Date(lastRead)
+          ? total + 1
+          : total;
+      }, 0);
+
+      setUnreadCount(count);
+    } catch (error) {
+      console.error("Failed to load unread messages", error);
+    }
+  }, [isJeroenAccount, session?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUnreadMessages();
+    }, [loadUnreadMessages])
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.debugBanner}>
-          <Text style={styles.debugTitle}>Debug</Text>
-          <Text style={styles.debugLine}>
-            Email: {session?.email || "—"}
-          </Text>
-          <Text style={styles.debugLine}>
-            Bookings returned: {bookingCount ?? "—"}
-          </Text>
-          {bookingError ? (
-            <Text style={styles.debugError}>Error: {bookingError}</Text>
-          ) : null}
-        </View>
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Hi {displayName}</Text>
@@ -246,8 +297,17 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </Pressable>
             <Pressable onPress={() => navigation.navigate("Messages")}>
-              <View style={styles.iconBadge}>
-                <Text style={styles.iconBadgeText}>💬</Text>
+              <View style={styles.iconBadgeWrapper}>
+                <View style={styles.iconBadge}>
+                  <Text style={styles.iconBadgeText}>💬</Text>
+                </View>
+                {unreadBadgeCount > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>
+                      {unreadBadgeCount}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </Pressable>
           </View>
@@ -268,23 +328,25 @@ const HomeScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        <View style={styles.quickActions}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => navigation.navigate("Book")}
-          >
-            <View>
-              <Text style={styles.quickLabel}>Book a service</Text>
-              <Text style={styles.quickSubtext}>
-                Send a new request in seconds
-              </Text>
-            </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-        </View>
+        {!isJeroenAccount ? (
+          <View style={styles.quickActions}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.quickCard,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => navigation.navigate("Book")}
+            >
+              <View>
+                <Text style={styles.quickLabel}>Book a service</Text>
+                <Text style={styles.quickSubtext}>
+                  Send a new request in seconds
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <Text style={styles.sectionTitle}>Upcoming visits</Text>
         {upcomingPreview.length === 0 ? (
@@ -404,30 +466,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f6f3fb",
   },
-  debugBanner: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#efe7dd",
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#2b1a4b",
-    marginBottom: 4,
-  },
-  debugLine: {
-    fontSize: 13,
-    color: "#4a3b63",
-    marginBottom: 2,
-  },
-  debugError: {
-    fontSize: 13,
-    color: "#b42318",
-    marginTop: 4,
-  },
   container: {
     flexGrow: 1,
     padding: 20,
@@ -479,8 +517,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e6def6",
   },
+  iconBadgeWrapper: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   iconBadgeText: {
     fontSize: 18,
+  },
+  unreadBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: "#d92c2c",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ffffff",
+  },
+  unreadBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#ffffff",
   },
   updateText: {
     fontSize: 14,

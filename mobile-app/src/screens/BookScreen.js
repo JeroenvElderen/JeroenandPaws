@@ -179,6 +179,23 @@ const BookScreen = ({ navigation }) => {
   const [availabilityError, setAvailabilityError] = useState("");
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [debouncedAddress, setDebouncedAddress] = useState(
+    (session?.address || "").trim()
+  );
+
+  useEffect(() => {
+    const trimmedAddress = (formState.address || "").trim();
+    if (!trimmedAddress) {
+      setDebouncedAddress("");
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setDebouncedAddress(trimmedAddress);
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [formState.address]);
 
   useEffect(() => {
     let isMounted = true;
@@ -275,7 +292,7 @@ const BookScreen = ({ navigation }) => {
         return;
       }
 
-      const clientAddress = (formState.address || "").trim();
+      const clientAddress = (debouncedAddress || "").trim();
       if (!clientAddress) {
         setAvailability(null);
         setAvailabilityStatus("idle");
@@ -340,7 +357,7 @@ const BookScreen = ({ navigation }) => {
     return () => {
       isMounted = false;
     };
-  }, [selectedService, formState.address]);
+  }, [selectedService, debouncedAddress]);
 
   useEffect(() => {
     let isMounted = true;

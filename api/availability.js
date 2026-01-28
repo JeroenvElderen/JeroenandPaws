@@ -193,6 +193,23 @@ const applyTravelBufferToAvailability = async ({
         zone: timeZone,
       });
       const slotEnd = slotStart.plus({ minutes: slotDuration });
+      const slotStartUtc = slotStart.toUTC();
+      const slotEndUtc = slotEnd.toUTC();
+
+      if (normalizedEvents.length) {
+        const slotStartMs = slotStartUtc.toMillis();
+        const slotEndMs = slotEndUtc.toMillis();
+        const overlapsEvent = normalizedEvents.some((event) => {
+          const eventStartMs = event.start.toMillis();
+          const eventEndMs = event.end.toMillis();
+          return slotEndMs > eventStartMs && slotStartMs < eventEndMs;
+        });
+
+        if (overlapsEvent) {
+          updatedSlots.push({ ...slot, available: false, reachable: false });
+          continue;
+        }
+      }
 
       const startMinutes = slotStart.hour * 60 + slotStart.minute;
       const endMinutes = startMinutes + slotDuration;
@@ -208,8 +225,6 @@ const applyTravelBufferToAvailability = async ({
       }
 
       if (normalizedEvents.length) {
-        const slotStartUtc = slotStart.toUTC();
-        const slotEndUtc = slotEnd.toUTC();
         const { previous, next } = findAdjacentEvents(
           normalizedEvents,
           slotStartUtc,
