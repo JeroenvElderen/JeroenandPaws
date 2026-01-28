@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -89,24 +89,61 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   const petsLabel = petList.length
     ? formatPetsLabel(petList)
     : "Your pets";
+  const resolvedPets = useMemo(
+    () =>
+      petList.length
+        ? petList
+        : [
+            {
+              name: petsLabel,
+              id: "default",
+            },
+          ],
+    [petList, petsLabel]
+  );
   const serviceTitle = route?.params?.serviceTitle || "Drop-In Visits";
   const [note, setNote] = useState("");
   const [photoCount, setPhotoCount] = useState(1);
-  const initialCounts = useMemo(
-    () =>
-      defaultActivities.reduce((acc, activity) => {
-        acc[activity.key] = 0;
-        return acc;
-      }, {}),
-    []
-  );
-  const [counts, setCounts] = useState(initialCounts);
+  const [walkCompleted, setWalkCompleted] = useState(false);
 
-  const updateCount = (key, delta) => {
+  const getPetKey = (pet, index) => pet?.id || pet?.name || `pet-${index}`;
+
+  const buildActivityCounts = (pets) =>
+    pets.reduce((acc, pet, index) => {
+      const petKey = getPetKey(pet, index);
+      acc[petKey] = defaultActivities.reduce((activityAcc, activity) => {
+        activityAcc[activity.key] = 0;
+        return activityAcc;
+      }, {});
+      return acc;
+    }, {});
+
+  const [counts, setCounts] = useState(() =>
+    buildActivityCounts(resolvedPets)
+  );
+
+  useEffect(() => {
+    setCounts(buildActivityCounts(resolvedPets));
+  }, [resolvedPets]);
+
+  const updateCount = (petKey, key, delta) => {
     setCounts((prev) => ({
       ...prev,
-      [key]: Math.max(0, (prev[key] || 0) + delta),
+      [petKey]: {
+        ...prev[petKey],
+        [key]: Math.max(0, (prev[petKey]?.[key] || 0) + delta),
+      },
     }));
+  };
+
+  const handleFinishVisit = () => {
+    const totalWalks = Object.values(counts).reduce(
+      (sum, petCounts) => sum + (petCounts?.walk || 0),
+      0
+    );
+    if (totalWalks > 0) {
+      setWalkCompleted(true);
+    }
   };
 
   return (
@@ -126,9 +163,16 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.photoCard}>
-          <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoPlaceholderText}>Photo Preview</Text>
+        <View style={styles.mapCard}>
+          <View style={styles.mapPlaceholder}>
+            <Text style={styles.mapPlaceholderText}>Walk Map Preview</Text>
+            {walkCompleted ? (
+              <View style={styles.routeBadge}>
+                <Text style={styles.routeBadgeText}>
+                  Walking route tracked
+                </Text>
+              </View>
+            ) : null}
           </View>
           <Pressable
             style={styles.addPhotoButton}
@@ -151,16 +195,14 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Activities</Text>
-          {petList.length ? (
-            petList.map((pet, index) => {
-              const petName = pet?.name || petsLabel;
-              const avatarText = petName.slice(0, 1).toUpperCase();
-              const meta = buildPetMeta(pet);
-              return (
-                <View
-                  key={pet?.id || `${petName}-${index}`}
-                  style={styles.petRow}
-                >
+          {resolvedPets.map((pet, index) => {
+            const petName = pet?.name || petsLabel;
+            const avatarText = petName.slice(0, 1).toUpperCase();
+            const meta = buildPetMeta(pet);
+            const petKey = getPetKey(pet, index);
+            return (
+              <View key={petKey} style={styles.petSection}>
+                <View style={styles.petRow}>
                   <View style={styles.petAvatar}>
                     <Text style={styles.petAvatarText}>{avatarText}</Text>
                   </View>
@@ -169,47 +211,37 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                     <Text style={styles.petBreed}>{meta}</Text>
                   </View>
                 </View>
+              
+              {defaultActivities.map((activity) => (
+                  <View key={activity.key} style={styles.activityRow}>
+                    <View style={styles.activityLabel}>
+                      <Text style={styles.activityIcon}>{activity.icon}</Text>
+                      <Text style={styles.activityText}>
+                        {activity.label}
+                      </Text>
+                    </View>
+                    <View style={styles.counter}>
+                      <Pressable
+                        style={[styles.counterButton, styles.counterButtonPrimary]}
+                        onPress={() => updateCount(petKey, activity.key, -1)}
+                      >
+                        <Text style={styles.counterButtonText}>−</Text>
+                      </Pressable>
+                      <Text style={styles.counterValue}>
+                        {counts[petKey]?.[activity.key] ?? 0}
+                      </Text>
+                      <Pressable
+                        style={[styles.counterButton, styles.counterButtonPrimary]}
+                        onPress={() => updateCount(petKey, activity.key, 1)}
+                      >
+                        <Text style={styles.counterButtonText}>+</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
               );
-            })
-          ) : (
-            <View style={styles.petRow}>
-              <View style={styles.petAvatar}>
-                <Text style={styles.petAvatarText}>
-                  {petsLabel.slice(0, 1).toUpperCase()}
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.petName}>{petsLabel}</Text>
-                <Text style={styles.petBreed}>Pet details</Text>
-              </View>
-            </View>
-          )}
-
-          {defaultActivities.map((activity) => (
-            <View key={activity.key} style={styles.activityRow}>
-              <View style={styles.activityLabel}>
-                <Text style={styles.activityIcon}>{activity.icon}</Text>
-                <Text style={styles.activityText}>{activity.label}</Text>
-              </View>
-              <View style={styles.counter}>
-                <Pressable
-                  style={styles.counterButton}
-                  onPress={() => updateCount(activity.key, -1)}
-                >
-                  <Text style={styles.counterButtonText}>−</Text>
-                </Pressable>
-                <Text style={styles.counterValue}>
-                  {counts[activity.key]}
-                </Text>
-                <Pressable
-                  style={[styles.counterButton, styles.counterButtonPrimary]}
-                  onPress={() => updateCount(activity.key, 1)}
-                >
-                  <Text style={styles.counterButtonText}>+</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
+          })}
         </View>
 
         <View style={styles.actionRow}>
@@ -221,7 +253,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
           </Pressable>
         </View>
 
-        <Pressable style={styles.finishButton}>
+        <Pressable style={styles.finishButton} onPress={handleFinishVisit}>
           <Text style={styles.finishButtonText}>Finish Visit</Text>
         </Pressable>
         <Text style={styles.photoCountText}>
@@ -277,7 +309,7 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 42,
   },
-  photoCard: {
+  mapCard: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
     borderWidth: 1,
@@ -285,17 +317,29 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  photoPlaceholder: {
-    height: 120,
+  mapPlaceholder: {
+    height: 160,
     borderRadius: 16,
     backgroundColor: "#f0ecf6",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
   },
-  photoPlaceholderText: {
+  mapPlaceholderText: {
     color: "#8c7bb0",
     fontSize: 13,
+    marginBottom: 8,
+  },
+  routeBadge: {
+    backgroundColor: "#2f63d6",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  routeBadgeText: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 12,
   },
   addPhotoButton: {
     borderRadius: 999,
@@ -341,6 +385,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2b1a4b",
     marginBottom: 16,
+  },
+  petSection: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#efe4f7",
+    paddingBottom: 12,
   },
   petRow: {
     flexDirection: "row",

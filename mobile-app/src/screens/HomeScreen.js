@@ -288,15 +288,13 @@ const HomeScreen = ({ navigation }) => {
                 : 0;
 
             return (
-              <Pressable
+              <View
                 key={bookingId}
-                style={({ pressed }) => [
+                style={[
                   styles.card,
                   isJeroenAccount && styles.cardJeroen,
                   hasActiveCard && styles.cardJeroenActive,
-                  pressed && styles.cardPressed,
                 ]}
-                onPress={() => navigation.navigate("Calendar")}
               >
                 <View style={styles.cardRow}>
                   <View>
@@ -360,7 +358,7 @@ const HomeScreen = ({ navigation }) => {
                     </Pressable>
                   </View>
                 ) : null}
-              </Pressable>
+              </View>
             );
           })
         )}
