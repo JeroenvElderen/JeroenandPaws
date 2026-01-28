@@ -112,7 +112,9 @@ const BackendDashboard = () => {
       const payload = await res.json();
       if (!res.ok) throw new Error();
       setBookings((cur) =>
-        cur.map((b) => (b.id === id ? payload.booking || b : b))
+        payload?.deleted
+          ? cur.filter((b) => b.id !== id)
+          : cur.map((b) => (b.id === id ? payload.booking || b : b))
       );
     } catch {
       setError("Could not update booking status");

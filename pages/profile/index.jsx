@@ -950,9 +950,12 @@ const ProfilePage = () => {
       }
 
       persistProfileState((currentProfile) => {
-        const nextBookings = (currentProfile?.bookings || []).map((booking) =>
-          booking.id === selectedBooking.id ? payload.booking : booking
-        );
+        const currentBookings = currentProfile?.bookings || [];
+        const nextBookings = payload?.deleted
+          ? currentBookings.filter((booking) => booking.id !== selectedBooking.id)
+          : currentBookings.map((booking) =>
+              booking.id === selectedBooking.id ? payload.booking : booking
+            );
         return { ...currentProfile, bookings: nextBookings };
       });
       setSelectedBooking(null);

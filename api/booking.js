@@ -50,27 +50,47 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const updatePayload = { status: normalizedStatus };
+    const isCancelledStatus = ['cancelled', 'canceled'].includes(normalizedStatus);
+    let updatedBooking = null;
 
-    if (['cancelled', 'canceled'].includes(normalizedStatus)) {
-      updatePayload.calendar_event_id = null;
-    }
+    if (isCancelledStatus) {
+      const deleteResult = await supabaseAdmin
+        .from('bookings')
+        .delete()
+        .eq('id', id)
+        .select('*, clients(full_name,email), services_catalog(*), booking_pets(pet_id)')
+        .maybeSingle();
 
-    const updateResult = await supabaseAdmin
-      .from('bookings')
-      .update(updatePayload)
-      .eq('id', id)
-      .select('*, clients(full_name,email), services_catalog(*), booking_pets(pet_id)')
-      .maybeSingle();
+      if (deleteResult.error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: 'Failed to delete cancelled booking' }));
+        return;
+      }
 
-    if (updateResult.error || !updateResult.data) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ message: 'Failed to update booking status' }));
-      return;
+      updatedBooking = deleteResult.data
+        ? { ...deleteResult.data, status: 'cancelled', deleted: true }
+        : { id, status: 'cancelled', deleted: true };
+    } else {
+      const updatePayload = { status: normalizedStatus };
+
+      const updateResult = await supabaseAdmin
+        .from('bookings')
+        .update(updatePayload)
+        .eq('id', id)
+        .select('*, clients(full_name,email), services_catalog(*), booking_pets(pet_id)')
+        .maybeSingle();
+
+      if (updateResult.error || !updateResult.data) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: 'Failed to update booking status' }));
+        return;
+      }
+
+      updatedBooking = updateResult.data;
     }
 
     if (
-      ['cancelled', 'canceled'].includes(normalizedStatus) &&
+      isCancelledStatus &&
       calendarAccessToken &&
       calendarId &&
       existingBookingResult.data?.calendar_event_id
@@ -87,7 +107,13 @@ module.exports = async (req, res) => {
     }
     
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ booking: updateResult.data }));
+    res.end(
+      JSON.stringify({
+        booking: updatedBooking,
+        bookingId: id,
+        deleted: Boolean(updatedBooking?.deleted),
+      })
+    );
     return;
   }
 

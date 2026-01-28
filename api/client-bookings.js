@@ -42,6 +42,23 @@ const normalizeBookingTimestamps = (booking) => ({
   end_at: normalizeTimestamp(booking?.end_at),
 });
 
+const normalizeBookingPets = (booking) => {
+  const petsFromBooking = (booking?.booking_pets || [])
+    .map((bookingPet) => bookingPet?.pets?.name)
+    .filter(Boolean);
+  const existingPets = booking?.pets;
+
+  if (petsFromBooking.length > 0) {
+    return { ...booking, pets: petsFromBooking };
+  }
+
+  if (existingPets) {
+    return booking;
+  }
+
+  return booking;
+};
+
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     try {
@@ -66,7 +83,7 @@ module.exports = async (req, res) => {
       const buildBookingsQuery = () =>
         supabaseAdmin
           .from('bookings')
-          .select('*, services_catalog(*), booking_pets(pet_id)')
+          .select('*, services_catalog(*), booking_pets(pet_id, pets(id, name))')
           .order('start_at', { ascending: false });
 
       const bookingsResult = clientResult.data
@@ -126,9 +143,10 @@ module.exports = async (req, res) => {
       const normalizedBookings = reconciledBookings.map(
         normalizeBookingTimestamps
       );
+      const enrichedBookings = normalizedBookings.map(normalizeBookingPets);
 
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ bookings: normalizedBookings }));
+      res.end(JSON.stringify({ bookings: enrichedBookings }));
       return;
     } catch (error) {
       console.error('Client bookings fetch error', error);
@@ -304,7 +322,7 @@ module.exports = async (req, res) => {
             time_zone: resolvedTimeZone,
           })
           .eq('id', bookingId)
-          .select('*, services_catalog(*), booking_pets(pet_id)')
+          .select('*, services_catalog(*), booking_pets(pet_id, pets(id, name))')
           .maybeSingle();
 
         if (updateResult.error || !updateResult.data) {
@@ -356,7 +374,7 @@ module.exports = async (req, res) => {
         }
 
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ booking: updateResult.data }));
+        res.end(JSON.stringify({ booking: normalizeBookingPets(updateResult.data) }));
         return;
       }
 
@@ -364,7 +382,7 @@ module.exports = async (req, res) => {
       try {
         updatedBooking = await cancelBookingInSupabase(bookingId, {
           clientId: clientResult.data.id,
-          select: '*, services_catalog(*), booking_pets(pet_id)',
+          select: '*, services_catalog(*), booking_pets(pet_id, pets(id, name))',
         });
       } catch (updateError) {
         console.error('Failed to cancel booking for client', updateError);
@@ -386,7 +404,7 @@ module.exports = async (req, res) => {
       }
 
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ booking: updatedBooking }));
+      res.end(JSON.stringify({ booking: normalizeBookingPets(updatedBooking) }));
       return;
     } catch (error) {
       console.error('Client booking update error', error);

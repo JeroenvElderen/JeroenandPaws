@@ -13,20 +13,24 @@ const cancelBookingInSupabase = async (
 
   let query = supabaseAdmin
     .from('bookings')
-    .update({ status: 'cancelled', calendar_event_id: null })
+    .delete()
     .eq('id', bookingId);
 
   if (clientId) {
     query = query.eq('client_id', clientId);
   }
 
-  const updateResult = await query.select(select).maybeSingle();
+  const deleteResult = await query.select(select).maybeSingle();
 
-  if (updateResult.error) {
-    throw updateResult.error;
+  if (deleteResult.error) {
+    throw deleteResult.error;
   }
 
-  return updateResult.data;
+  if (!deleteResult.data) {
+    return { id: bookingId, deleted: true };
+  }
+
+  return { ...deleteResult.data, status: 'cancelled', deleted: true };
 };
 
 const reconcileBookingsWithCalendar = async (bookings = []) => {
@@ -61,7 +65,9 @@ const reconcileBookingsWithCalendar = async (bookings = []) => {
       if (!event?.exists || event?.event?.isCancelled) {
         try {
           const updatedBooking = await cancelBookingInSupabase(booking.id);
-          hydratedBookings.push(updatedBooking || booking);
+          if (!updatedBooking?.deleted) {
+            hydratedBookings.push(updatedBooking || booking);
+          }
           continue;
         } catch (cancelError) {
           console.error('Booking cancel failed during calendar reconciliation', {

@@ -136,13 +136,13 @@ module.exports = async (req, res) => {
     }
 
     if (cancellableIds.length) {
-      const cancelUpdate = await supabaseAdmin
+      const cancelDelete = await supabaseAdmin
         .from("bookings")
-        .update({ status: "cancelled" })
+        .delete()
         .in("id", cancellableIds);
 
-      if (cancelUpdate.error) {
-        throw cancelUpdate.error;
+      if (cancelDelete.error) {
+        throw cancelDelete.error;
       }
     }
 
@@ -151,7 +151,7 @@ module.exports = async (req, res) => {
       JSON.stringify({
         resent: resentIds.length,
         resendFailures,
-        cancelled: cancellableIds.length,
+        deleted: cancellableIds.length,
         cancelFailures,
       })
     );
