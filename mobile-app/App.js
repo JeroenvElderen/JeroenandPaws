@@ -14,6 +14,7 @@ import PetsProfileScreen from "./src/screens/PetsProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import PaymentMethodsScreen from "./src/screens/PaymentMethodsScreen";
 import HelpSupportScreen from "./src/screens/HelpSupportScreen";
+import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 
 const Tab = createBottomTabNavigator();
@@ -160,6 +161,10 @@ const AppShell = () => {
           name="PaymentMethods"
           component={PaymentMethodsScreen}
         />
+        <RootStack.Screen
+          name="JeroenPawsCard"
+          component={JeroenPawsCardScreen}
+        />
         <Tab.Screen
           name="Profile"
           component={MoreScreen}
@@ -172,7 +177,7 @@ const AppShell = () => {
             ),
           }}
         />
-      <RootStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+        <RootStack.Screen name="HelpSupport" component={HelpSupportScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

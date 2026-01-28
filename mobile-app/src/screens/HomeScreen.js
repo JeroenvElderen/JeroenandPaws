@@ -241,13 +241,22 @@ const HomeScreen = ({ navigation }) => {
                       ]}
                       onPress={() => {
                         if (hasActiveCard) {
-                          navigation.navigate("Calendar");
+                          navigation.navigate("JeroenPawsCard", {
+                            bookingId,
+                            serviceTitle,
+                            pets,
+                          });
                           return;
                         }
                         setActiveRoverCards((prev) => ({
                           ...prev,
                           [bookingId]: Date.now(),
                         }));
+                        navigation.navigate("JeroenPawsCard", {
+                          bookingId,
+                          serviceTitle,
+                          pets,
+                        });
                       }}
                     >
                       <Text
@@ -257,8 +266,8 @@ const HomeScreen = ({ navigation }) => {
                         ]}
                       >
                         {hasActiveCard
-                          ? "Open (Rover) Jeroen & Paws Card"
-                          : "Start (Rover) Jeroen & Paws Card"}
+                          ? "Open Jeroen & Paws Card"
+                          : "Start Jeroen & Paws Card"}
                       </Text>
                     </Pressable>
                   </View>
