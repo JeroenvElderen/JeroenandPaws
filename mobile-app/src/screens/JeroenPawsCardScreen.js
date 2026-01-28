@@ -31,9 +31,63 @@ const formatPetsLabel = (pets) => {
   return "Pets";
 };
 
+const normalizePets = (pets) => {
+  if (!pets) return [];
+  if (Array.isArray(pets)) {
+    return pets
+      .map((pet) => {
+        if (!pet) return null;
+        if (typeof pet === "string") return { name: pet };
+        return pet;
+      })
+      .filter(Boolean);
+  }
+  if (typeof pets === "string") {
+    return [{ name: pets }];
+  }
+  if (typeof pets === "object") {
+    return [pets];
+  }
+  return [];
+};
+
+const buildPetMeta = (pet) => {
+  if (!pet) return "Pet details";
+  const resolveAge = () => {
+    if (pet.age) {
+      return typeof pet.age === "number" ? `${pet.age} yrs` : pet.age;
+    }
+    if (Number.isFinite(pet.age_years)) {
+      return `${pet.age_years} yrs`;
+    }
+    if (Number.isFinite(pet.ageYears)) {
+      return `${pet.ageYears} yrs`;
+    }
+    if (Number.isFinite(pet.age_months)) {
+      return `${pet.age_months} mos`;
+    }
+    if (Number.isFinite(pet.ageMonths)) {
+      return `${pet.ageMonths} mos`;
+    }
+    return null;
+  };
+  const age = resolveAge();
+  const weight = pet.weight_kg
+    ? `${pet.weight_kg} kg`
+    : pet.weight
+    ? `${pet.weight}`
+    : null;
+  const details = [pet.breed, age, weight].filter(Boolean);
+  return details.length ? details.join(" · ") : "Pet details";
+};
+
 const JeroenPawsCardScreen = ({ navigation, route }) => {
-  const petsLabel = route?.params?.pets
-    ? formatPetsLabel(route?.params?.pets)
+  const petList = useMemo(
+    () => normalizePets(route?.params?.pets || route?.params?.pet),
+    [route?.params?.pet, route?.params?.pets]
+  );
+  const petsLabel = petList.length
+    ? formatPetsLabel(petList)
     : "Your pets";
   const serviceTitle = route?.params?.serviceTitle || "Drop-In Visits";
   const [note, setNote] = useState("");
@@ -89,7 +143,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
           <TextInput
             style={styles.noteInput}
             multiline
-            placeholder="Add a note for Katherine"
+            placeholder={`Add a note for ${petsLabel}`}
             value={note}
             onChangeText={setNote}
           />
@@ -97,17 +151,39 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Activities</Text>
-          <View style={styles.petRow}>
-            <View style={styles.petAvatar}>
-              <Text style={styles.petAvatarText}>
-                {petsLabel.slice(0, 1).toUpperCase()}
-              </Text>
+          {petList.length ? (
+            petList.map((pet, index) => {
+              const petName = pet?.name || petsLabel;
+              const avatarText = petName.slice(0, 1).toUpperCase();
+              const meta = buildPetMeta(pet);
+              return (
+                <View
+                  key={pet?.id || `${petName}-${index}`}
+                  style={styles.petRow}
+                >
+                  <View style={styles.petAvatar}>
+                    <Text style={styles.petAvatarText}>{avatarText}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.petName}>{petName}</Text>
+                    <Text style={styles.petBreed}>{meta}</Text>
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <View style={styles.petRow}>
+              <View style={styles.petAvatar}>
+                <Text style={styles.petAvatarText}>
+                  {petsLabel.slice(0, 1).toUpperCase()}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.petName}>{petsLabel}</Text>
+                <Text style={styles.petBreed}>Pet details</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.petName}>{petsLabel}</Text>
-              <Text style={styles.petBreed}>Rottweiler</Text>
-            </View>
-          </View>
+          )}
 
           {defaultActivities.map((activity) => (
             <View key={activity.key} style={styles.activityRow}>

@@ -11,6 +11,10 @@ import {
 } from "react-native";
 import { API_BASE_URL } from "../api/config";
 import { fetchJson } from "../api/client";
+import {
+  getCachedAvailability,
+  setCachedAvailability,
+} from "../api/availabilityCache";
 import { supabase } from "../api/supabaseClient";
 import PrimaryButton from "../components/PrimaryButton";
 import { useSession } from "../context/SessionContext";
@@ -284,12 +288,31 @@ const BookScreen = ({ navigation }) => {
             60
         );
         const windowDays = 21;
+        const cachedAvailability = getCachedAvailability({
+          durationMinutes,
+          windowDays,
+          clientAddress,
+        });
+        if (cachedAvailability) {
+          setAvailability(cachedAvailability);
+          const firstDate = cachedAvailability?.dates?.[0]?.date || null;
+          setSelectedDay(firstDate);
+          setSelectedSlot(null);
+          setAvailabilityStatus("success");
+          return;
+        }
         const data = await fetchJson(
           `/api/availability?durationMinutes=${durationMinutes}&windowDays=${windowDays}&clientAddress=${encodeURIComponent(
             clientAddress
           )}`
         );
         if (!isMounted) return;
+        setCachedAvailability({
+          durationMinutes,
+          windowDays,
+          clientAddress,
+          data,
+        });
         setAvailability(data);
         const firstDate = data?.dates?.[0]?.date || null;
         setSelectedDay(firstDate);

@@ -8,6 +8,10 @@ import {
   View,
 } from "react-native";
 import { fetchJson } from "../api/client";
+import {
+  getCachedAvailability,
+  prefetchAvailability,
+} from "../api/availabilityCache";
 import { useSession } from "../context/SessionContext";
 
 const formatDateLabel = (date) =>
@@ -46,6 +50,30 @@ const formatPetsLabel = (pets) => {
   if (typeof pets === "string") return pets;
   if (typeof pets === "object") return pets.name || "Pets";
   return "Pets";
+};
+
+const resolveBookingPets = (booking) => {
+  const directPets = booking?.pets;
+
+  if (Array.isArray(directPets)) {
+    return directPets.filter(Boolean);
+  }
+
+  if (directPets && typeof directPets === "object") {
+    return [directPets];
+  }
+
+  if (typeof directPets === "string") {
+    return [directPets];
+  }
+
+  const bookingPets = Array.isArray(booking?.booking_pets)
+    ? booking.booking_pets
+        .map((bookingPet) => bookingPet?.pets || bookingPet?.pet)
+        .filter(Boolean)
+    : [];
+
+  return bookingPets;
 };
 
 const HomeScreen = ({ navigation }) => {
@@ -87,6 +115,53 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [session?.email]);
 
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId;
+
+    const loadInitialAvailability = async () => {
+      const clientAddress = (session?.address || "").trim();
+      if (!clientAddress) return;
+
+      try {
+        const defaultDurationMinutes = 60;
+        const cached = getCachedAvailability({
+          durationMinutes: defaultDurationMinutes,
+          windowDays: 21,
+          clientAddress,
+        });
+        if (cached) return;
+        const data = await fetchJson("/api/services");
+        if (!isMounted) return;
+        const firstService = (data?.services || []).find(Boolean);
+        if (!firstService) return;
+        const durationMinutes = Number(
+          firstService.duration_minutes ||
+            firstService.durationMinutes ||
+            defaultDurationMinutes
+        );
+        await prefetchAvailability({
+          durationMinutes,
+          windowDays: 21,
+          clientAddress,
+        });
+      } catch (error) {
+        console.error("Failed to prefetch availability", error);
+      }
+    };
+
+    if (session?.email) {
+      timeoutId = setTimeout(loadInitialAvailability, 500);
+    }
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [session?.email, session?.address]);
+  
   useEffect(() => {
     const activeCount = Object.keys(activeRoverCards).length;
     if (!activeCount) {
@@ -202,7 +277,8 @@ const HomeScreen = ({ navigation }) => {
             const end = booking?.end_at ? new Date(booking.end_at) : null;
             const serviceTitle =
               booking?.service_title || booking?.services_catalog?.title;
-            const pets = formatPetsLabel(booking?.pets || booking?.pet);
+            const petList = resolveBookingPets(booking);
+            const petsLabel = formatPetsLabel(petList);
             const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
             const hasActiveCard = Boolean(activeRoverCards[bookingId]);
             const remainingMs =
@@ -229,7 +305,7 @@ const HomeScreen = ({ navigation }) => {
                     <Text style={styles.cardTitle}>
                       {serviceTitle || "Service"}
                     </Text>
-                    <Text style={styles.cardMeta}>{pets}</Text>
+                    <Text style={styles.cardMeta}>{petsLabel}</Text>
                   </View>
                   <View style={styles.statusBadge}>
                     <Text style={styles.statusBadgeText}>
@@ -255,7 +331,7 @@ const HomeScreen = ({ navigation }) => {
                           navigation.navigate("JeroenPawsCard", {
                             bookingId,
                             serviceTitle,
-                            pets,
+                            pets: petList,
                           });
                           return;
                         }
@@ -266,7 +342,7 @@ const HomeScreen = ({ navigation }) => {
                         navigation.navigate("JeroenPawsCard", {
                           bookingId,
                           serviceTitle,
-                          pets,
+                          pets: petList,
                         });
                       }}
                     >
