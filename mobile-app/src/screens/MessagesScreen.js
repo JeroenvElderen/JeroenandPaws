@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
@@ -50,6 +51,13 @@ const parseMessagePayload = (message) => {
   return { type: "text", text: raw };
 };
 
+const sortMessagesByTime = (messages) =>
+  [...messages].sort(
+    (a, b) =>
+      new Date(a.created_at || 0).getTime() -
+      new Date(b.created_at || 0).getTime()
+  );
+
 const MessagesScreen = ({ navigation, route }) => {
   const { session } = useSession();
   const [messages, setMessages] = useState([]);
@@ -57,6 +65,7 @@ const MessagesScreen = ({ navigation, route }) => {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [threads, setThreads] = useState([]);
+  const [lastReadAt, setLastReadAt] = useState(null);
 
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -86,120 +95,135 @@ const MessagesScreen = ({ navigation, route }) => {
     [messages, isOwner]
   );
 
-  useEffect(() => {
-    let isMounted = true;
-
-    if (isOwner) {
-      const loadThreads = async () => {
-        if (!supabase) {
-          setThreads([]);
-          return;
-        }
-
-        try {
-          const { data: clientData, error: clientError } = await supabase
-            .from("clients")
-            .select("id, full_name, email")
-            .order("full_name", { ascending: true });
-
-          if (clientError) {
-            throw clientError;
-          }
-
-          const { data: messageData, error: messageError } = await supabase
-            .from("messages")
-            .select("client_id, body, sender, created_at")
-            .order("created_at", { ascending: false });
-
-          if (messageError) {
-            throw messageError;
-          }
-
-          const latestByClient = new Map();
-          (messageData || []).forEach((message) => {
-            if (!message?.client_id) return;
-            if (!latestByClient.has(message.client_id)) {
-              latestByClient.set(message.client_id, message);
-            }
-          });
-
-          const threadList = (clientData || [])
-            .map((client) => {
-              const message = latestByClient.get(client.id) || null;
-              return {
-                clientId: client.id,
-                clientName:
-                  client.full_name || client.email || "Client conversation",
-                email: client.email || "",
-                lastMessage: message
-                  ? parseMessagePayload(message)
-                  : { type: "text", text: "Start a conversation" },
-                lastMessageTime: message?.created_at || null,
-              };
-            })
-            .sort((a, b) => {
-              const timeA = a.lastMessageTime
-                ? new Date(a.lastMessageTime).getTime()
-                : 0;
-              const timeB = b.lastMessageTime
-                ? new Date(b.lastMessageTime).getTime()
-                : 0;
-              if (timeA !== timeB) {
-                return timeB - timeA;
-              }
-              return a.clientName.localeCompare(b.clientName);
-            });
-
-          if (isMounted) {
-            setThreads(threadList);
-          }
-        } catch (loadError) {
-          if (!isMounted) return;
-          setError(loadError.message || "Unable to load conversations.");
-        }
-      };
-
-      loadThreads();
+  const loadThreads = useCallback(async () => {
+    if (!isOwner) return;
+    if (!supabase) {
+      setThreads([]);
+      return;
     }
 
-    return () => {
-      isMounted = false;
-    };
+    try {
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id, full_name, email")
+        .order("full_name", { ascending: true });
+
+        if (clientError) {
+        throw clientError;
+      }
+
+      const { data: messageData, error: messageError } = await supabase
+        .from("messages")
+        .select("client_id, body, sender, created_at")
+        .order("created_at", { ascending: false });
+
+        if (messageError) {
+          throw messageError;
+        }
+
+      const latestByClient = new Map();
+      (messageData || []).forEach((message) => {
+        if (!message?.client_id) return;
+        if (!latestByClient.has(message.client_id)) {
+          latestByClient.set(message.client_id, message);
+        }
+      });
+
+          const threadList = (clientData || [])
+        .map((client) => {
+          const message = latestByClient.get(client.id) || null;
+          return {
+            clientId: client.id,
+            clientName:
+              client.full_name || client.email || "Client conversation",
+            email: client.email || "",
+            lastMessage: message
+              ? parseMessagePayload(message)
+              : { type: "text", text: "Start a conversation" },
+            lastMessageTime: message?.created_at || null,
+          };
+        })
+        .sort((a, b) => {
+          const timeA = a.lastMessageTime
+            ? new Date(a.lastMessageTime).getTime()
+            : 0;
+          const timeB = b.lastMessageTime
+            ? new Date(b.lastMessageTime).getTime()
+            : 0;
+          if (timeA !== timeB) {
+            return timeB - timeA;
+          }
+        return a.clientName.localeCompare(b.clientName);
+        });
+
+      setThreads(threadList);
+    } catch (loadError) {
+      setError(loadError.message || "Unable to load conversations.");
+    }
   }, [isOwner]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadMessages = async () => {
-      if (!chatClientId || !supabase) {
-        setMessages([]);
-        return;
-      }
-
-      try {
-        const { data, error: loadError } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("client_id", chatClientId)
-          .order("created_at", { ascending: true });
-
-        if (!isMounted) return;
-        if (loadError) {
-          throw loadError;
-        }
-        setMessages(data || []);
-      } catch (loadError) {
-        if (!isMounted) return;
-        setError(loadError.message || "Unable to load messages.");
-      }
-    };
-
-    loadMessages();
-
+  const loadMessages = useCallback(async () => {
     if (!chatClientId || !supabase) {
-      return () => {
-        isMounted = false;
-      };
+      setMessages([]);
+      return;
+    }
+
+    try {
+      const { data, error: loadError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("client_id", chatClientId)
+        .order("created_at", { ascending: true });
+
+      if (loadError) {
+        throw loadError;
+      }
+      setMessages(data || []);
+    } catch (loadError) {
+      setError(loadError.message || "Unable to load messages.");
+    }
+  }, [chatClientId]);
+
+      const loadLastReadAt = useCallback(async () => {
+    if (!chatClientId || !lastReadStorageKey) {
+      setLastReadAt(null);
+      return;
+    }
+
+    try {
+      const raw = await AsyncStorage.getItem(lastReadStorageKey);
+      const lastReadMap = raw ? JSON.parse(raw) : {};
+      setLastReadAt(lastReadMap[chatClientId] || null);
+    } catch (error) {
+      setLastReadAt(null);
+    }
+  }, [chatClientId, lastReadStorageKey]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadThreads();
+    }, [loadThreads])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMessages();
+      loadLastReadAt();
+    }, [loadMessages, loadLastReadAt])
+  );
+
+  useEffect(() => {
+    loadThreads();
+  }, [loadThreads]);
+
+  useEffect(() => {
+    loadMessages();
+    loadLastReadAt();
+  }, [loadMessages, loadLastReadAt]);
+
+  useEffect(() => {
+    if (!chatClientId || !supabase) {
+      return undefined;
     }
 
     const channel = supabase
@@ -213,16 +237,32 @@ const MessagesScreen = ({ navigation, route }) => {
           filter: `client_id=eq.${chatClientId}`,
         },
         (payload) => {
-          setMessages((current) => [...current, payload.new]);
+          setMessages((current) => {
+            const exists = current.some(
+              (message) => message.id === payload.new.id
+            );
+            if (exists) return current;
+            return sortMessagesByTime([...current, payload.new]);
+          });
+          if (isOwner) {
+            loadThreads();
+          }
         }
       )
       .subscribe();
 
+      const interval = setInterval(() => {
+      loadMessages();
+      if (isOwner) {
+        loadThreads();
+      }
+    }, 10000);
+
     return () => {
-      isMounted = false;
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [chatClientId]);
+  }, [chatClientId, isOwner, loadMessages, loadThreads]);
 
   useEffect(() => {
     const updateLastRead = async () => {
@@ -238,6 +278,7 @@ const MessagesScreen = ({ navigation, route }) => {
           lastReadStorageKey,
           JSON.stringify(lastReadMap)
         );
+        setLastReadAt(latestMessage.created_at);
       } catch (error) {
         // Ignore last-read update errors.
       }
@@ -263,14 +304,28 @@ const MessagesScreen = ({ navigation, route }) => {
     setError("");
 
     try {
-      const { error: insertError } = await supabase.from("messages").insert({
-        client_id: chatClientId,
-        sender: isOwner ? "owner" : "client",
-        body: trimmed,
-      });
+      const { data: newMessage, error: insertError } = await supabase
+        .from("messages")
+        .insert({
+          client_id: chatClientId,
+          sender: isOwner ? "owner" : "client",
+          body: trimmed,
+        })
+        .select("*")
+        .single();
 
       if (insertError) {
         throw insertError;
+      }
+
+      if (newMessage) {
+        setMessages((current) => {
+          const exists = current.some(
+            (message) => message.id === newMessage.id
+          );
+          if (exists) return current;
+          return sortMessagesByTime([...current, newMessage]);
+        });
       }
 
       setMessageText("");
@@ -414,9 +469,19 @@ const MessagesScreen = ({ navigation, route }) => {
                     {message.payload.text}
                   </Text>
                 )}
-                <Text style={styles.messageTime}>
-                  {formatMessageTime(message.created_at)}
-                </Text>
+                <View style={styles.messageMeta}>
+                  <Text style={styles.messageTime}>
+                    {formatMessageTime(message.created_at)}
+                  </Text>
+                  {message.direction === "outgoing" ? (
+                    <Text style={styles.messageReadIcon}>
+                      {lastReadAt &&
+                      new Date(message.created_at) <= new Date(lastReadAt)
+                        ? "✓✓"
+                        : "✓"}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             ))
           )}
@@ -533,7 +598,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#ebe4f7",
-    marginBottom: 12,
+    marginBottom: 0,
     maxWidth: "80%",
   },
   messageIncoming: {
@@ -576,6 +641,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#6c5a92",
     textAlign: "right",
+  },
+  messageMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  messageReadIcon: {
+    fontSize: 11,
+    color: "#6c5a92",
   },
   inputRow: {
     flexDirection: "row",
