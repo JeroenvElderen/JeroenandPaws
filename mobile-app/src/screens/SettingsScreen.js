@@ -17,6 +17,7 @@ const SettingsScreen = ({ navigation }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [smsAlerts, setSmsAlerts] = useState(true);
+  const [keepMessages, setKeepMessages] = useState(false);
   const [status, setStatus] = useState("idle");
 
   useEffect(() => {
@@ -28,6 +29,14 @@ const SettingsScreen = ({ navigation }) => {
     setEmailUpdates(Boolean(preferences.email));
     setSmsAlerts(Boolean(preferences.sms));
   }, [session?.user?.user_metadata]);
+
+  useEffect(() => {
+    const keepPreference =
+      session?.client?.keep_messages ||
+      session?.user?.user_metadata?.keep_messages ||
+      false;
+    setKeepMessages(Boolean(keepPreference));
+  }, [session?.client?.keep_messages, session?.user?.user_metadata]);
 
   const updatePreferences = async (next) => {
     if (!supabase || !session?.user) {
@@ -46,6 +55,34 @@ const SettingsScreen = ({ navigation }) => {
       setStatus("idle");
     } catch (updateError) {
       console.error("Failed to update preferences", updateError);
+      setStatus("error");
+    }
+  };
+
+  const updateMessageRetention = async (value) => {
+    if (!supabase || !session?.user) {
+      return;
+    }
+    setStatus("saving");
+    try {
+      const [{ error: authError }, { error: clientError }] =
+        await Promise.all([
+          supabase.auth.updateUser({
+            data: {
+              keep_messages: value,
+            },
+          }),
+          supabase
+            .from("clients")
+            .update({ keep_messages: value })
+            .eq("id", session.user.id),
+        ]);
+      if (authError || clientError) {
+        throw authError || clientError;
+      }
+      setStatus("idle");
+    } catch (updateError) {
+      console.error("Failed to update message retention", updateError);
       setStatus("error");
     }
   };
@@ -117,6 +154,27 @@ const SettingsScreen = ({ navigation }) => {
           ) : null}
         </View>
 
+        <Text style={styles.sectionTitle}>Messages</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.rowCopy}>
+              <Text style={styles.label}>Never delete messages</Text>
+              <Text style={styles.helper}>
+                Keep your chat history instead of auto-deleting after a week.
+              </Text>
+            </View>
+            <Switch
+              value={keepMessages}
+              onValueChange={(value) => {
+                setKeepMessages(value);
+                updateMessageRetention(value);
+              }}
+              trackColor={{ false: "#e6def6", true: "#bda8f0" }}
+              thumbColor={keepMessages ? "#6c3ad6" : "#f2ecfb"}
+            />
+          </View>
+        </View>
+
         <Text style={styles.sectionTitle}>Payment methods</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Primary card</Text>
@@ -162,6 +220,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#f2ecfb",
+  },
+  rowCopy: {
+    flex: 1,
+    paddingRight: 12,
   },
   label: {
     fontSize: 15,

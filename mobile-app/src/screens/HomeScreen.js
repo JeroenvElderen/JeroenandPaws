@@ -261,15 +261,19 @@ const HomeScreen = ({ navigation }) => {
         throw error;
       }
 
-      const count = (data || []).reduce((total, message) => {
+      const unreadClients = (data || []).reduce((acc, message) => {
         const lastRead = lastReadMap[message.client_id];
         if (!lastRead) {
-          return total + 1;
+          acc.add(message.client_id);
+          return acc;
         }
-        return new Date(message.created_at) > new Date(lastRead)
-          ? total + 1
-          : total;
-      }, 0);
+        if (new Date(message.created_at) > new Date(lastRead)) {
+          acc.add(message.client_id);
+        }
+        return acc;
+      }, new Set());
+
+      const count = unreadClients.size;
 
       setUnreadCount(count);
     } catch (error) {
