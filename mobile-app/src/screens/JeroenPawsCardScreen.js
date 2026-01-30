@@ -223,11 +223,15 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   }, [route?.params?.cardId]);
 
   useEffect(() => {
-    if (isReadOnly && finishedAt) {
+    if (finishedAt) {
       const endTime = new Date(finishedAt).getTime();
       setElapsedMs(
         Math.max(endTime - new Date(cardStartedAt).getTime(), 0)
       );
+      return undefined;
+    }
+
+    if (isReadOnly) {
       return undefined;
     }
 
@@ -287,6 +291,16 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 
       setLoadedCardId(data?.id || null);
       setFinishedAt(finishTimestamp);
+
+      if (route?.params?.bookingId) {
+        const { error: bookingError } = await supabase
+          .from("bookings")
+          .update({ status: "finished" })
+          .eq("id", route.params.bookingId);
+        if (bookingError) {
+          throw bookingError;
+        }
+      }
 
       if (route?.params?.clientId) {
         const messageBody = JSON.stringify({
@@ -443,11 +457,19 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         {!isReadOnly ? (
           <Pressable
             style={styles.finishButton}
-            onPress={handleFinishVisit}
+            onPress={
+              finishedAt
+                ? () => navigation.goBack()
+                : handleFinishVisit
+            }
             disabled={finishStatus === "saving"}
           >
             <Text style={styles.finishButtonText}>
-              {finishStatus === "saving" ? "Saving..." : "Finish Visit"}
+              {finishStatus === "saving"
+                ? "Saving..."
+                : finishedAt
+                ? "Close card"
+                : "Finish Visit"}
             </Text>
           </Pressable>
         ) : (

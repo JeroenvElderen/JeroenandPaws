@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -17,6 +24,7 @@ import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+import { TAB_BAR_STYLE } from "../utils/tabBar";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
@@ -344,7 +352,21 @@ const MessagesScreen = ({ navigation }) => {
     }
     return clientMeta?.[activeClientId] || { id: activeClientId };
   }, [activeClientId, clientMeta, isOwner, session]);
+  const isChatView = Boolean(activeClientId);
 
+  useLayoutEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return undefined;
+
+    parent.setOptions({
+      tabBarStyle: isChatView ? { display: "none" } : TAB_BAR_STYLE,
+    });
+
+    return () => {
+      parent.setOptions({ tabBarStyle: TAB_BAR_STYLE });
+    };
+  }, [navigation, isChatView]);
+  
   const messageItems = useMemo(() => {
     let lastDayKey = null;
     const items = [];

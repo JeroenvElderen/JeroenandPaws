@@ -2,8 +2,10 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { Text } from "react-native";
+import { Platform, Text } from "react-native";
 import { useEffect, useState } from "react";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
 import HomeScreen from "./src/screens/HomeScreen";
 import BookScreen from "./src/screens/BookScreen";
 import MoreScreen from "./src/screens/MoreScreen";
@@ -24,9 +26,11 @@ import {
   AVAILABILITY_TIMEOUT_MS,
   prefetchAvailability,
 } from "./src/api/availabilityCache";
+import { TAB_BAR_STYLE } from "./src/utils/tabBar";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator();
 
 const TabLabel = ({ label, color }) => (
   <Text style={{ color, fontSize: 12, marginBottom: 4 }}>{label}</Text>
@@ -40,29 +44,66 @@ const tabIcons = {
   Profile: "⋯",
 };
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+
+const registerForPushNotifications = async () => {
+  if (!Device.isDevice) {
+    return null;
+  }
+
+  const { status: existingStatus } =
+    await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") {
+    return null;
+  }
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#5d2fc5",
+    });
+  }
+
+  const tokenResponse = await Notifications.getExpoPushTokenAsync();
+  return tokenResponse.data || null;
+};
+
+const ProfileStackScreen = () => (
+  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
+    <ProfileStack.Screen
+      name="ProfileOverview"
+      component={ProfileOverviewScreen}
+    />
+    <ProfileStack.Screen name="PetsProfile" component={PetsProfileScreen} />
+    <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+    <ProfileStack.Screen
+      name="PaymentMethods"
+      component={PaymentMethodsScreen}
+    />
+    <ProfileStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+  </ProfileStack.Navigator>
+);
+
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
-      tabBarStyle: {
-        backgroundColor: "#ffffff",
-        borderTopColor: "#efe7dd",
-        borderTopWidth: 0,
-        borderRadius: 32,
-        marginHorizontal: 16,
-        marginBottom: 12,
-        height: 70,
-        position: "absolute",
-        shadowColor: "#2b1a4b",
-        shadowOpacity: 0.08,
-        shadowOffset: { width: 0, height: 10 },
-        shadowRadius: 18,
-        elevation: 6,
-        alignItems: "center",
-        justifyContent: "center",
-        alignSelf: "center",
-        width: "90%",
-      },
+      tabBarStyle: TAB_BAR_STYLE,
       tabBarActiveTintColor: "#5d2fc5",
       tabBarInactiveTintColor: "#a093b9",
       tabBarIconStyle: {
@@ -121,7 +162,7 @@ const MainTabs = () => (
     />
     <Tab.Screen
       name="Profile"
-      component={MoreScreen}
+      component={ProfileStackScreen}
       options={{
         tabBarIcon: ({ color }) => (
           <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
@@ -218,6 +259,81 @@ const AppShell = () => {
       subscription?.unsubscribe();
     };
   }, [setSession]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncPushToken = async () => {
+      if (!supabase || !session?.user) {
+        return;
+      }
+
+      const preferences =
+        session?.user?.user_metadata?.notification_preferences || {};
+      const pushEnabled =
+        typeof preferences.push === "boolean" ? preferences.push : true;
+
+      if (!pushEnabled) {
+        if (session?.user?.user_metadata?.expo_push_token) {
+          await supabase.auth.updateUser({
+            data: { expo_push_token: null },
+          });
+          if (!isMounted) return;
+          setSession((current) =>
+            current
+              ? {
+                  ...current,
+                  user: {
+                    ...current.user,
+                    user_metadata: {
+                      ...current.user.user_metadata,
+                      expo_push_token: null,
+                    },
+                  },
+                }
+              : current
+          );
+        }
+        return;
+      }
+
+      try {
+        const token = await registerForPushNotifications();
+        if (!token || !isMounted) return;
+        if (token !== session?.user?.user_metadata?.expo_push_token) {
+          const { error } = await supabase.auth.updateUser({
+            data: { expo_push_token: token },
+          });
+          if (error) {
+            console.warn("Failed to store push token", error);
+            return;
+          }
+          setSession((current) =>
+            current
+              ? {
+                  ...current,
+                  user: {
+                    ...current.user,
+                    user_metadata: {
+                      ...current.user.user_metadata,
+                      expo_push_token: token,
+                    },
+                  },
+                }
+              : current
+          );
+        }
+      } catch (error) {
+        console.warn("Failed to register for push notifications", error);
+      }
+    };
+
+    syncPushToken();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user, setSession]);
 
   useEffect(() => {
     let isMounted = true;
@@ -335,42 +451,9 @@ const AppShell = () => {
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="MainTabs" component={MainTabs} />
         <RootStack.Screen
-          name="ProfileOverview"
-          component={ProfileOverviewScreen}
-        />
-        <Tab.Screen
-          name="Book"
-          component={BookScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 18 }}>{tabIcons.Book}</Text>
-            ),
-            tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
-          }}
-        />
-        <RootStack.Screen name="PetsProfile" component={PetsProfileScreen} />
-        <RootStack.Screen name="Settings" component={SettingsScreen} />
-        <RootStack.Screen
-          name="PaymentMethods"
-          component={PaymentMethodsScreen}
-        />
-        <RootStack.Screen
           name="JeroenPawsCard"
           component={JeroenPawsCardScreen}
         />
-        <Tab.Screen
-          name="Profile"
-          component={MoreScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
-            ),
-            tabBarLabel: ({ color }) => (
-              <TabLabel label="More" color={color} />
-            ),
-          }}
-        />
-        <RootStack.Screen name="HelpSupport" component={HelpSupportScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

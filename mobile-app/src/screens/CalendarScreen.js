@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -8,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { fetchJson } from "../api/client";
+import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 
 const formatDateLabel = (date) =>
@@ -35,30 +37,47 @@ const CalendarScreen = () => {
   const [bookings, setBookings] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedDateKey, setSelectedDateKey] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadBookings = useCallback(async () => {
+    if (!session?.email) return;
+    try {
+      const data = await fetchJson(
+        `/api/client-bookings?email=${encodeURIComponent(session.email)}`
+      );
+      setBookings(data.bookings || []);
+    } catch (error) {
+      console.error("Failed to load bookings", error);
+    }
+  }, [session?.email]);
 
   useEffect(() => {
-    let isMounted = true;
+    loadBookings();
+  }, [loadBookings]);
 
-    const loadBookings = async () => {
-      try {
-        const data = await fetchJson(
-          `/api/client-bookings?email=${encodeURIComponent(session.email)}`
-        );
-        if (!isMounted) return;
-        setBookings(data.bookings || []);
-      } catch (error) {
-        console.error("Failed to load bookings", error);
-      }
-    };
-
-    if (session?.email) {
-      loadBookings();
+  useEffect(() => {
+    if (!supabase || !session?.id) {
+      return undefined;
     }
 
+    const bookingFilter = session?.id
+      ? `client_id=eq.${session.id}`
+      : undefined;
+    const channel = supabase
+      .channel("calendar-bookings")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings", filter: bookingFilter },
+        () => {
+          loadBookings();
+        }
+      )
+      .subscribe();
+
     return () => {
-      isMounted = false;
+      supabase.removeChannel(channel);
     };
-  }, [session?.email]);
+  }, [loadBookings, session?.id]);
 
   const year = currentMonth.getFullYear();
   const monthIndex = currentMonth.getMonth();
@@ -126,7 +145,20 @@ const CalendarScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await loadBookings();
+              setRefreshing(false);
+            }}
+            tintColor="#5d2fc5"
+          />
+        }
+      >
         <Text style={styles.title}>Calendar</Text>
         <View style={styles.calendarCard}>
           <View style={styles.monthHeader}>

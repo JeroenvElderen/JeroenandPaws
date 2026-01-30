@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Modal,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -72,17 +73,49 @@ const createDog = () => ({
   size: "",
 });
 
-const createInitialState = (serviceLabel, session) => ({
+const BOARDING_EIRCODE = "A98H940";
+const SCHEDULE_OPTIONS = [
+  { value: "one_time", label: "One time", icon: "📅" },
+  { value: "repeat_weekly", label: "Repeat weekly", icon: "↻" },
+];
+const WEEKDAY_OPTIONS = [
+  { value: 0, label: "S", name: "Sunday" },
+  { value: 1, label: "M", name: "Monday" },
+  { value: 2, label: "T", name: "Tuesday" },
+  { value: 3, label: "W", name: "Wednesday" },
+  { value: 4, label: "T", name: "Thursday" },
+  { value: 5, label: "F", name: "Friday" },
+  { value: 6, label: "S", name: "Saturday" },
+];
+const TIME_WINDOWS = [
+  { id: "morning", label: "6am–11am", startHour: 6, endHour: 11 },
+  { id: "midday", label: "11am–3pm", startHour: 11, endHour: 15 },
+  { id: "evening", label: "3pm–10pm", startHour: 15, endHour: 22 },
+];
+
+const resolveServiceEircode = (service, session) => {
+  const text = `${service?.title || ""} ${service?.category || ""}`.toLowerCase();
+  if (text.includes("boarding")) {
+    return BOARDING_EIRCODE;
+  }
+  return (session?.address || session?.client?.address || "").trim();
+};
+
+const createInitialState = (service, session) => ({
   name: session?.name || "",
   email: session?.email || "",
   phone: session?.phone || "",
-  address: session?.address || "",
-  serviceType: serviceLabel || "Service request",
+  address: resolveServiceEircode(service, session),
+  serviceType:
+    service?.title || service?.category || "Service request",
   dogCount: "1",
   dogs: [createDog(), createDog(), createDog(), createDog()],
   bookingDate: "",
   startTime: "",
   endTime: "",
+  scheduleType: "one_time",
+  repeatDays: [],
+  timeWindow: "",
   preferences: "",
   specialNotes: "",
   message: "",
@@ -107,6 +140,37 @@ const addMinutesToTime = (time, minutes) => {
     2,
     "0"
   )}`;
+};
+
+const buildDateKey = (year, monthIndex, day) => {
+  const month = String(monthIndex + 1).padStart(2, "0");
+  const dayValue = String(day).padStart(2, "0");
+  return `${year}-${month}-${dayValue}`;
+};
+
+const formatDateLabel = (dateKey) => {
+  if (!dateKey) return "Select date";
+  const date = new Date(dateKey);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+  }).format(date);
+};
+
+const parseTimeToMinutes = (time) => {
+  const [hours, minutes] = (time || "").split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return hours * 60 + minutes;
+};
+
+const slotMatchesWindow = (slotTime, window) => {
+  if (!window || !slotTime) return true;
+  const minutes = parseTimeToMinutes(slotTime);
+  if (minutes === null) return false;
+  return (
+    minutes >= window.startHour * 60 && minutes < window.endHour * 60
+  );
 };
 
 const buildBookingMessage = (
@@ -137,6 +201,20 @@ const buildBookingMessage = (
 
   const lines = [
     `Service: ${state.serviceType || serviceLabel || "Service request"}`,
+    state.scheduleType === "repeat_weekly"
+      ? `Schedule: Repeat weekly`
+      : `Schedule: One time`,
+    state.repeatDays && state.repeatDays.length
+      ? `Days of the week: ${state.repeatDays
+          .map((dayIndex) => WEEKDAY_OPTIONS.find((d) => d.value === dayIndex)?.name)
+          .filter(Boolean)
+          .join(", ")}`
+      : null,
+    state.timeWindow && TIME_WINDOWS.find((window) => window.id === state.timeWindow)
+      ? `Preferred window: ${
+          TIME_WINDOWS.find((window) => window.id === state.timeWindow)?.label
+        }`
+      : null,
     selectedPets.length
       ? `Existing pets: ${selectedPets.map((pet) => pet.name).join(", ")}`
       : null,
@@ -164,7 +242,7 @@ const BookScreen = ({ navigation }) => {
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [formState, setFormState] = useState(() =>
-    createInitialState("", session)
+    createInitialState(null, session)
   );
   const [expandedCategories, setExpandedCategories] = useState({});
   const [existingPets, setExistingPets] = useState([]);
@@ -179,6 +257,11 @@ const BookScreen = ({ navigation }) => {
   const [availabilityError, setAvailabilityError] = useState("");
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [showAvailability, setShowAvailability] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const [calendarDateDraft, setCalendarDateDraft] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [debouncedAddress, setDebouncedAddress] = useState(
     (session?.address || "").trim()
   );
@@ -197,47 +280,32 @@ const BookScreen = ({ navigation }) => {
     return () => clearTimeout(timeoutId);
   }, [formState.address]);
 
+  const loadServices = useCallback(async () => {
+    try {
+      const data = await fetchJson("/api/services");
+      setServices(data.services || []);
+    } catch (error) {
+      console.error("Failed to load services", error);
+    }
+  }, []);
+
+  const loadAddons = useCallback(async () => {
+    try {
+      const data = await fetchJson("/api/addons");
+      setAvailableAddons(normalizeAddons(data?.addons || []));
+    } catch (error) {
+      console.error("Failed to load add-ons", error);
+      setAvailableAddons([]);
+    }
+  }, []);
+
   useEffect(() => {
-    let isMounted = true;
-
-    const loadServices = async () => {
-      try {
-        const data = await fetchJson("/api/services");
-        if (!isMounted) return;
-        setServices(data.services || []);
-      } catch (error) {
-        console.error("Failed to load services", error);
-      }
-    };
-
     loadServices();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  }, [loadServices]);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadAddons = async () => {
-      try {
-        const data = await fetchJson("/api/addons");
-        if (!isMounted) return;
-        setAvailableAddons(normalizeAddons(data?.addons || []));
-      } catch (error) {
-        console.error("Failed to load add-ons", error);
-        if (!isMounted) return;
-        setAvailableAddons([]);
-      }
-    };
-
     loadAddons();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  }, [loadAddons]);
 
   useEffect(() => {
     if (!categories.length) {
@@ -253,37 +321,30 @@ const BookScreen = ({ navigation }) => {
     });
   }, [categories]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadPets = useCallback(async () => {
+    if (!session?.email) {
+      return;
+    }
 
-    const loadPets = async () => {
-      if (!session?.email) {
-        return;
-      }
-
-      try {
-        const data = await fetchJson(
-          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
-        );
-        if (!isMounted) return;
-        setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
-      } catch (error) {
-        console.error("Failed to load pets", error);
-      }
-    };
-
-    loadPets();
-
-    return () => {
-      isMounted = false;
-    };
+    try {
+      const data = await fetchJson(
+        `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+      );
+      setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
+    } catch (error) {
+      console.error("Failed to load pets", error);
+    }
   }, [session?.email]);
+
+  useEffect(() => {
+    loadPets();
+    }, [loadPets]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadAvailability = async () => {
-      if (!selectedService) {
+      if (!selectedService || !showAvailability) {
         setAvailability(null);
         setAvailabilityStatus("idle");
         setAvailabilityError("");
@@ -316,7 +377,10 @@ const BookScreen = ({ navigation }) => {
         });
         if (cachedAvailability) {
           setAvailability(cachedAvailability);
-          const firstDate = cachedAvailability?.dates?.[0]?.date || null;
+          const firstDate =
+            formState.bookingDate ||
+            cachedAvailability?.dates?.[0]?.date ||
+            null;
           setSelectedDay(firstDate);
           setSelectedSlot(null);
           setAvailabilityStatus("success");
@@ -336,7 +400,8 @@ const BookScreen = ({ navigation }) => {
           data,
         });
         setAvailability(data);
-        const firstDate = data?.dates?.[0]?.date || null;
+        const firstDate =
+          formState.bookingDate || data?.dates?.[0]?.date || null;
         setSelectedDay(firstDate);
         setSelectedSlot(null);
         setAvailabilityStatus("success");
@@ -357,7 +422,7 @@ const BookScreen = ({ navigation }) => {
     return () => {
       isMounted = false;
     };
-  }, [selectedService, debouncedAddress]);
+  }, [selectedService, debouncedAddress, formState.bookingDate, showAvailability]);
 
   useEffect(() => {
     let isMounted = true;
@@ -380,12 +445,16 @@ const BookScreen = ({ navigation }) => {
         }
 
         if (clientResult.data) {
+          const resolvedAddress = resolveServiceEircode(
+            selectedService,
+            session
+          );
           setFormState((current) => ({
             ...current,
             name: clientResult.data.full_name || current.name,
             email: clientResult.data.email || current.email,
             phone: clientResult.data.phone_number || current.phone,
-            address: clientResult.data.address || current.address,
+            address: resolvedAddress || clientResult.data.address || current.address,
           }));
         }
       } catch (profileError) {
@@ -398,7 +467,7 @@ const BookScreen = ({ navigation }) => {
     return () => {
       isMounted = false;
     };
-  }, [session?.id]);
+  }, [session?.id, selectedService, session]);
 
   useEffect(() => {
     if (!session?.email) {
@@ -410,9 +479,16 @@ const BookScreen = ({ navigation }) => {
       name: session.name || current.name,
       email: session.email || current.email,
       phone: session.phone || current.phone,
-      address: session.address || current.address,
+      address:
+        resolveServiceEircode(selectedService, session) || current.address,
     }));
-  }, [session?.email, session?.name, session?.phone, session?.address]);
+  }, [
+    session?.email,
+    session?.name,
+    session?.phone,
+    session?.address,
+    selectedService,
+  ]);
 
   const categories = useMemo(() => {
     const filteredServices = services.filter((service) => {
@@ -483,9 +559,73 @@ const BookScreen = ({ navigation }) => {
     availableDates[0] ||
     null;
   const availableSlots = selectedDateEntry?.slots || [];
+  const selectedWindow = TIME_WINDOWS.find(
+    (window) => window.id === formState.timeWindow
+  );
+  const filteredSlots = availableSlots.filter((slot) =>
+    slotMatchesWindow(slot.time, selectedWindow)
+  );
+  const calendarYear = calendarMonth.getFullYear();
+  const calendarMonthIndex = calendarMonth.getMonth();
+  const calendarLabel = new Intl.DateTimeFormat("en-GB", {
+    month: "long",
+    year: "numeric",
+  }).format(calendarMonth);
+  const calendarFirstDay = new Date(calendarYear, calendarMonthIndex, 1).getDay();
+  const calendarDaysInMonth = new Date(
+    calendarYear,
+    calendarMonthIndex + 1,
+    0
+  ).getDate();
+  const calendarSlots = Array.from({ length: calendarFirstDay }, () => null).concat(
+    Array.from({ length: calendarDaysInMonth }, (_, index) => index + 1)
+  );
+  const calendarWeeks = [];
+  for (let i = 0; i < calendarSlots.length; i += 7) {
+    calendarWeeks.push(calendarSlots.slice(i, i + 7));
+  }
 
   const handleChange = (field, value) => {
     setFormState((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleScheduleTypeChange = (value) => {
+    setFormState((current) => ({
+      ...current,
+      scheduleType: value,
+      repeatDays: value === "repeat_weekly" ? current.repeatDays : [],
+    }));
+  };
+
+  const toggleRepeatDay = (value) => {
+    setFormState((current) => {
+      const exists = current.repeatDays.includes(value);
+      return {
+        ...current,
+        repeatDays: exists
+          ? current.repeatDays.filter((day) => day !== value)
+          : [...current.repeatDays, value],
+      };
+    });
+  };
+
+  const handleOpenCalendar = () => {
+    const today = new Date();
+    const initialDateKey =
+      formState.bookingDate ||
+      buildDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    setCalendarDateDraft(initialDateKey);
+    setCalendarMonth(new Date(initialDateKey));
+    setShowCalendar(true);
+  };
+
+  const handleConfirmCalendar = () => {
+    if (calendarDateDraft) {
+      handleChange("bookingDate", calendarDateDraft);
+      setSelectedDay(calendarDateDraft);
+      setSelectedSlot(null);
+    }
+    setShowCalendar(false);
   };
 
   const handleDogChange = (index, field, value) => {
@@ -502,9 +642,7 @@ const BookScreen = ({ navigation }) => {
 
   const openService = (service) => {
     setSelectedService(service);
-    setFormState(
-      createInitialState(service?.title || "Service request", session)
-    );
+    setFormState(createInitialState(service, session));
     setSelectedOptionIds([]);
     setSelectedPetIds([]);
     setShowNewDogForm(false);
@@ -513,12 +651,14 @@ const BookScreen = ({ navigation }) => {
     setAvailabilityError("");
     setSelectedDay(null);
     setSelectedSlot(null);
+    setShowAvailability(false);
     setStatus("idle");
     setError("");
   };
 
   const closeService = () => {
     setSelectedService(null);
+    setShowAvailability(false);
     setStatus("idle");
     setError("");
   };
@@ -548,12 +688,11 @@ const BookScreen = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (
-      !formState.name ||
-      !formState.email ||
-      !formState.phone ||
       !formState.address ||
       !formState.bookingDate ||
-      !formState.startTime
+      !formState.startTime ||
+      (formState.scheduleType === "repeat_weekly" &&
+        formState.repeatDays.length === 0)
     ) {
       setError("Please complete the required fields before booking.");
       return;
@@ -613,7 +752,7 @@ const BookScreen = ({ navigation }) => {
       }
 
       setStatus("success");
-      setFormState(createInitialState(serviceLabel, session));
+      setFormState(createInitialState(selectedService, session));
       setSelectedPetIds([]);
       setSelectedOptionIds([]);
       setShowNewDogForm(false);
@@ -628,7 +767,20 @@ const BookScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await Promise.all([loadServices(), loadAddons(), loadPets()]);
+              setRefreshing(false);
+            }}
+            tintColor="#5d2fc5"
+          />
+        }
+      >
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
@@ -729,37 +881,7 @@ const BookScreen = ({ navigation }) => {
                   </View>
                   ) : (
                   <View>
-                    <Text style={styles.formSectionTitle}>Your details</Text>
-                    <Text style={styles.label}>Name *</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={formState.name}
-                      onChangeText={(value) => handleChange("name", value)}
-                    />
-                    <Text style={styles.label}>Email *</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={formState.email}
-                      onChangeText={(value) => handleChange("email", value)}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                    />
-                    <Text style={styles.label}>Phone *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="WhatsApp or phone number"
-                      value={formState.phone}
-                      keyboardType="phone-pad"
-                      onChangeText={(value) => handleChange("phone", value)}
-                    />
-                    <Text style={styles.label}>Eircode *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="D02..."
-                      value={formState.address}
-                      onChangeText={(value) => handleChange("address", value)}
-                      autoCapitalize="characters"
-                    />
+                    <Text style={styles.formSectionTitle}>Service</Text>
                     <Text style={styles.label}>Service type</Text>
                     <TextInput
                       style={[styles.input, styles.readOnlyInput]}
@@ -893,104 +1015,243 @@ const BookScreen = ({ navigation }) => {
                     ) : null}
 
                     <Text style={styles.formSectionTitle}>Schedule</Text>
-                    <Text style={styles.helperText}>
-                      Choose a date and time from the live Outlook calendar.
-                    </Text>
-                    {availabilityStatus === "loading" ? (
-                      <Text style={styles.helperText}>
-                        Loading availability...
-                      </Text>
-                    ) : availabilityError ? (
-                      <Text style={styles.errorText}>{availabilityError}</Text>
-                    ) : (
-                      <>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={styles.dateRow}
-                        >
-                          {availableDates.map((day) => (
-                            <Pressable
-                              key={day.date}
-                              style={({ pressed }) => [
-                                styles.dateChip,
-                                selectedDay === day.date &&
-                                  styles.dateChipActive,
-                                pressed && styles.cardPressed,
+                    <Text style={styles.label}>Schedule type</Text>
+                    <View style={styles.scheduleTypeRow}>
+                      {SCHEDULE_OPTIONS.map((option) => {
+                        const isActive =
+                          formState.scheduleType === option.value;
+                        return (
+                          <Pressable
+                            key={option.value}
+                            style={({ pressed }) => [
+                              styles.scheduleTypeCard,
+                              isActive && styles.scheduleTypeCardActive,
+                              pressed && styles.cardPressed,
+                            ]}
+                            onPress={() =>
+                              handleScheduleTypeChange(option.value)
+                            }
+                          >
+                            <Text style={styles.scheduleTypeIcon}>
+                              {option.icon}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.scheduleTypeLabel,
+                                isActive && styles.scheduleTypeLabelActive,
                               ]}
-                              onPress={() => {
-                                setSelectedDay(day.date);
-                                setSelectedSlot(null);
-                                handleChange("bookingDate", day.date);
-                              }}
                             >
-                              <Text
-                                style={[
-                                  styles.dateChipText,
-                                  selectedDay === day.date &&
-                                    styles.dateChipTextActive,
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    {formState.scheduleType === "repeat_weekly" ? (
+                      <>
+                        <Text style={styles.label}>Days of the week *</Text>
+                        <View style={styles.weekdayRow}>
+                          {WEEKDAY_OPTIONS.map((day) => {
+                            const isSelected = formState.repeatDays.includes(
+                              day.value
+                            );
+                            return (
+                              <Pressable
+                                key={day.value}
+                                style={({ pressed }) => [
+                                  styles.weekdayChip,
+                                  isSelected && styles.weekdayChipActive,
+                                  pressed && styles.cardPressed,
                                 ]}
+                                onPress={() => toggleRepeatDay(day.value)}
                               >
-                                {day.date}
-                              </Text>
-                            </Pressable>
-                          ))}
-                        </ScrollView>
-                        {selectedDateEntry ? (
-                          <View>
-                            <Text style={styles.label}>Available times</Text>
-                            <View style={styles.slotRow}>
-                              {availableSlots.map((slot) => {
-                                const isAvailable =
-                                  slot.available && slot.reachable !== false;
-                                const isSelected =
-                                  selectedSlot === slot.time &&
-                                  selectedDateEntry.date ===
-                                    formState.bookingDate;
-                                return (
-                                  <Pressable
-                                    key={`${selectedDateEntry.date}-${slot.time}`}
-                                    style={({ pressed }) => [
-                                      styles.timeChip,
-                                      isSelected && styles.timeChipActive,
-                                      !isAvailable && styles.timeChipDisabled,
-                                      pressed && styles.cardPressed,
-                                    ]}
-                                    disabled={!isAvailable}
-                                    onPress={() => {
-                                      setSelectedSlot(slot.time);
-                                      handleChange(
-                                        "bookingDate",
-                                        selectedDateEntry.date
-                                      );
-                                      handleChange("startTime", slot.time);
-                                      handleChange(
-                                        "endTime",
-                                        addMinutesToTime(
-                                          slot.time,
-                                          durationMinutes
-                                        )
-                                      );
-                                    }}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.timeChipText,
-                                        isSelected && styles.timeChipTextActive,
-                                        !isAvailable &&
-                                          styles.timeChipTextDisabled,
-                                      ]}
-                                    >
-                                      {slot.time}
-                                    </Text>
-                                  </Pressable>
-                                );
-                              })}
-                            </View>
-                          </View>
-                        ) : null}
+                                <Text
+                                  style={[
+                                    styles.weekdayChipText,
+                                    isSelected &&
+                                      styles.weekdayChipTextActive,
+                                  ]}
+                                >
+                                  {day.label}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
                       </>
-                    )}
+                    ) : null}
+                    <Pressable
+                      style={styles.datePickerRow}
+                      onPress={handleOpenCalendar}
+                    >
+                      <View>
+                        <Text style={styles.label}>
+                          {formState.scheduleType === "repeat_weekly"
+                            ? "Start date *"
+                            : "Date *"}
+                        </Text>
+                        <Text style={styles.datePickerValue}>
+                          {formatDateLabel(formState.bookingDate)}
+                        </Text>
+                      </View>
+                      <Text style={styles.chevron}>›</Text>
+                    </Pressable>
+                    <Text style={styles.label}>Times</Text>
+                    <View style={styles.timeWindowRow}>
+                      {TIME_WINDOWS.map((window) => {
+                        const isSelected =
+                          formState.timeWindow === window.id;
+                        return (
+                          <Pressable
+                            key={window.id}
+                            style={({ pressed }) => [
+                              styles.timeWindowChip,
+                              isSelected && styles.timeWindowChipActive,
+                              pressed && styles.cardPressed,
+                            ]}
+                            onPress={() =>
+                              handleChange("timeWindow", window.id)
+                            }
+                          >
+                            <Text
+                              style={[
+                                styles.timeWindowText,
+                                isSelected && styles.timeWindowTextActive,
+                              ]}
+                            >
+                              {window.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <Pressable
+                      style={styles.searchButton}
+                      onPress={() => {
+                        if (!formState.bookingDate) {
+                          handleOpenCalendar();
+                          return;
+                        }
+                        setShowAvailability(true);
+                      }}
+                    >
+                      <Text style={styles.searchButtonText}>Search now</Text>
+                    </Pressable>
+                    {showAvailability ? (
+                      <View style={styles.availabilityCard}>
+                        {availabilityStatus === "loading" ? (
+                          <Text style={styles.helperText}>
+                            Loading availability...
+                          </Text>
+                        ) : availabilityError ? (
+                          <Text style={styles.errorText}>
+                            {availabilityError}
+                          </Text>
+                        ) : (
+                          <>
+                            <ScrollView
+                              horizontal
+                              showsHorizontalScrollIndicator={false}
+                              contentContainerStyle={styles.dateRow}
+                            >
+                              {availableDates.map((day) => (
+                                <Pressable
+                                  key={day.date}
+                                  style={({ pressed }) => [
+                                    styles.dateChip,
+                                    selectedDay === day.date &&
+                                      styles.dateChipActive,
+                                    pressed && styles.cardPressed,
+                                  ]}
+                                  onPress={() => {
+                                    setSelectedDay(day.date);
+                                    setSelectedSlot(null);
+                                    handleChange("bookingDate", day.date);
+                                  }}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.dateChipText,
+                                      selectedDay === day.date &&
+                                        styles.dateChipTextActive,
+                                    ]}
+                                  >
+                                    {day.date}
+                                  </Text>
+                                </Pressable>
+                              ))}
+                            </ScrollView>
+                            {selectedDateEntry ? (
+                              <View>
+                                <Text style={styles.label}>
+                                  Select a timeslot
+                                </Text>
+                                <View style={styles.slotRow}>
+                                  {filteredSlots.length === 0 ? (
+                                    <Text style={styles.helperText}>
+                                      No timeslots match this window yet.
+                                    </Text>
+                                  ) : (
+                                    filteredSlots.map((slot) => {
+                                      const isAvailable =
+                                        slot.available &&
+                                        slot.reachable !== false;
+                                      const isSelected =
+                                        selectedSlot === slot.time &&
+                                        selectedDateEntry.date ===
+                                          formState.bookingDate;
+                                      return (
+                                        <Pressable
+                                          key={`${selectedDateEntry.date}-${slot.time}`}
+                                          style={({ pressed }) => [
+                                            styles.timeChip,
+                                            isSelected && styles.timeChipActive,
+                                            !isAvailable &&
+                                              styles.timeChipDisabled,
+                                            pressed && styles.cardPressed,
+                                          ]}
+                                          disabled={!isAvailable}
+                                          onPress={() => {
+                                            setSelectedSlot(slot.time);
+                                            handleChange(
+                                              "bookingDate",
+                                              selectedDateEntry.date
+                                            );
+                                            handleChange(
+                                              "startTime",
+                                              slot.time
+                                            );
+                                            handleChange(
+                                              "endTime",
+                                              addMinutesToTime(
+                                                slot.time,
+                                                durationMinutes
+                                              )
+                                            );
+                                          }}
+                                        >
+                                          <Text
+                                            style={[
+                                              styles.timeChipText,
+                                              isSelected &&
+                                                styles.timeChipTextActive,
+                                              !isAvailable &&
+                                                styles.timeChipTextDisabled,
+                                            ]}
+                                          >
+                                            {slot.time}
+                                          </Text>
+                                        </Pressable>
+                                      );
+                                    })
+                                  )}
+                                </View>
+                              </View>
+                            ) : null}
+                          </>
+                        )}
+                      </View>
+                    ) : null}
 
                     <Text style={styles.formSectionTitle}>Additional options</Text>
                     {availableAddons.length ? (
@@ -1119,6 +1380,110 @@ const BookScreen = ({ navigation }) => {
             ) : null}
           </View>
         </View>
+        <Modal
+          visible={showCalendar}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowCalendar(false)}
+        >
+          <View style={styles.calendarBackdrop}>
+            <View style={styles.calendarCard}>
+              <View style={styles.calendarHeader}>
+                <Pressable
+                  style={styles.calendarHeaderButton}
+                  onPress={() => setShowCalendar(false)}
+                >
+                  <Text style={styles.calendarHeaderText}>Cancel</Text>
+                </Pressable>
+                <Text style={styles.calendarHeaderTitle}>Select Date</Text>
+                <Pressable
+                  style={styles.calendarHeaderButton}
+                  onPress={handleConfirmCalendar}
+                >
+                  <Text style={styles.calendarHeaderText}>Done</Text>
+                </Pressable>
+              </View>
+              <View style={styles.calendarMonthRow}>
+                <Pressable
+                  style={styles.calendarNavButton}
+                  onPress={() =>
+                    setCalendarMonth(
+                      new Date(
+                        calendarYear,
+                        calendarMonthIndex - 1,
+                        1
+                      )
+                    )
+                  }
+                >
+                  <Text style={styles.calendarNavText}>‹</Text>
+                </Pressable>
+                <Text style={styles.calendarMonthLabel}>{calendarLabel}</Text>
+                <Pressable
+                  style={styles.calendarNavButton}
+                  onPress={() =>
+                    setCalendarMonth(
+                      new Date(
+                        calendarYear,
+                        calendarMonthIndex + 1,
+                        1
+                      )
+                    )
+                  }
+                >
+                  <Text style={styles.calendarNavText}>›</Text>
+                </Pressable>
+              </View>
+              <View style={styles.weekHeader}>
+                {"SMTWTFS".split("").map((day) => (
+                  <Text key={day} style={styles.weekHeaderText}>
+                    {day}
+                  </Text>
+                ))}
+              </View>
+              {calendarWeeks.map((week, weekIndex) => (
+                <View key={`week-${weekIndex}`} style={styles.weekRow}>
+                  {week.map((day, dayIndex) => {
+                    if (!day) {
+                      return (
+                        <View
+                          key={`empty-${weekIndex}-${dayIndex}`}
+                          style={styles.dayCell}
+                        />
+                      );
+                    }
+                    const dateKey = buildDateKey(
+                      calendarYear,
+                      calendarMonthIndex,
+                      day
+                    );
+                    const isSelected = calendarDateDraft === dateKey;
+                    return (
+                      <Pressable
+                        key={dateKey}
+                        style={({ pressed }) => [
+                          styles.dayCell,
+                          isSelected && styles.daySelected,
+                          pressed && styles.dayPressed,
+                        ]}
+                        onPress={() => setCalendarDateDraft(dateKey)}
+                      >
+                        <Text
+                          style={[
+                            styles.dayText,
+                            isSelected && styles.dayTextSelected,
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+        </Modal>
       </Modal>
     </SafeAreaView>
   );
@@ -1471,6 +1836,127 @@ const styles = StyleSheet.create({
     color: "#7b6a9f",
     marginBottom: 10,
   },
+  scheduleTypeRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  scheduleTypeCard: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  scheduleTypeCardActive: {
+    borderColor: "#2b1a4b",
+    backgroundColor: "#f4f1fb",
+  },
+  scheduleTypeIcon: {
+    fontSize: 18,
+  },
+  scheduleTypeLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6c5a92",
+  },
+  scheduleTypeLabelActive: {
+    color: "#2b1a4b",
+  },
+  weekdayRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: "wrap",
+  },
+  weekdayChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+  weekdayChipActive: {
+    backgroundColor: "#2b1a4b",
+    borderColor: "#2b1a4b",
+  },
+  weekdayChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6c5a92",
+  },
+  weekdayChipTextActive: {
+    color: "#ffffff",
+  },
+  datePickerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    backgroundColor: "#ffffff",
+  },
+  datePickerValue: {
+    fontSize: 14,
+    color: "#2b1a4b",
+    fontWeight: "600",
+  },
+  timeWindowRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 12,
+  },
+  timeWindowChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#ffffff",
+  },
+  timeWindowChipActive: {
+    backgroundColor: "#2b1a4b",
+    borderColor: "#2b1a4b",
+  },
+  timeWindowText: {
+    color: "#6c5a92",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  timeWindowTextActive: {
+    color: "#ffffff",
+  },
+  searchButton: {
+    borderRadius: 20,
+    backgroundColor: "#2f63d6",
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  searchButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+  },
+  availabilityCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    padding: 12,
+    backgroundColor: "#ffffff",
+    marginBottom: 12,
+  },
   dogCard: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
@@ -1558,6 +2044,98 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#2b1a4b",
+  },
+  calendarBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(43, 26, 75, 0.35)",
+  },
+  calendarCard: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 16,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  calendarHeaderButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  calendarHeaderText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2b1a4b",
+  },
+  calendarHeaderTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#2b1a4b",
+  },
+  calendarMonthRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  calendarMonthLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2b1a4b",
+  },
+  calendarNavButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f1ecfb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarNavText: {
+    fontSize: 18,
+    color: "#5d2fc5",
+  },
+  weekHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  weekHeaderText: {
+    width: 32,
+    textAlign: "center",
+    color: "#7b6a9f",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  dayCell: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  daySelected: {
+    backgroundColor: "#2b1a4b",
+  },
+  dayPressed: {
+    opacity: 0.85,
+  },
+  dayText: {
+    fontSize: 12,
+    color: "#2b1a4b",
+    fontWeight: "600",
+  },
+  dayTextSelected: {
+    color: "#ffffff",
   },
   errorText: {
     color: "#b42318",

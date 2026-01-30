@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -67,6 +68,23 @@ const formatPetsLabel = (pets) => {
   return "Pets";
 };
 
+const startOfDay = (value = new Date()) => {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const endOfDay = (value = new Date()) => {
+  const date = startOfDay(value);
+  date.setDate(date.getDate() + 1);
+  return date;
+};
+
+const isSameDay = (value, reference) =>
+  value &&
+  reference &&
+  startOfDay(value).getTime() === startOfDay(reference).getTime();
+
 const resolveBookingPets = (booking) => {
   const directPets = booking?.pets;
 
@@ -98,6 +116,10 @@ const HomeScreen = ({ navigation }) => {
   const [activeRoverCards, setActiveRoverCards] = useState({});
   const [timeTick, setTimeTick] = useState(Date.now());
   const [unreadCount, setUnreadCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [finishedCards, setFinishedCards] = useState({});
+  const isJeroenAccount =
+    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const loadBookings = useCallback(
     async (options = {}) => {
@@ -190,6 +212,119 @@ const HomeScreen = ({ navigation }) => {
     return () => clearInterval(interval);
   }, [activeRoverCards]);
 
+  const loadFinishedCards = useCallback(async () => {
+    if (!supabase || !session?.email) {
+      setFinishedCards({});
+      return;
+    }
+
+    try {
+      const dayStart = startOfDay();
+      const dayEnd = endOfDay();
+      let query = supabase
+        .from("jeroen_paws_cards")
+        .select("*")
+        .gte("finished_at", dayStart.toISOString())
+        .lt("finished_at", dayEnd.toISOString());
+
+      if (isJeroenAccount) {
+        query = query.eq("owner_email", session.email);
+      } else if (session?.id) {
+        query = query.eq("client_id", session.id);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        throw error;
+      }
+
+      const mapped = (data || []).reduce((acc, card) => {
+        if (card?.booking_id) {
+          acc[card.booking_id] = card;
+        }
+        return acc;
+      }, {});
+      setFinishedCards(mapped);
+    } catch (error) {
+      console.error("Failed to load finished cards", error);
+    }
+  }, [isJeroenAccount, session?.email, session?.id]);
+
+  useEffect(() => {
+    loadFinishedCards();
+  }, [loadFinishedCards]);
+
+  useEffect(() => {
+    if (!Object.keys(finishedCards).length) {
+      return;
+    }
+    setActiveRoverCards((prev) => {
+      const next = { ...prev };
+      Object.keys(finishedCards).forEach((bookingId) => {
+        delete next[bookingId];
+      });
+      return next;
+    });
+  }, [finishedCards]);
+
+  useEffect(() => {
+    if (!supabase || !session?.id) {
+      return undefined;
+    }
+
+    const bookingFilter =
+      !isJeroenAccount && session?.id
+        ? `client_id=eq.${session.id}`
+        : undefined;
+    const bookingChannel = supabase
+      .channel("bookings-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings", filter: bookingFilter },
+        () => {
+          loadBookings({ silent: true });
+        }
+      )
+      .subscribe();
+
+    const cardChannel = supabase
+      .channel("jeroen-paws-cards-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "jeroen_paws_cards" },
+        () => {
+          loadFinishedCards();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bookingChannel);
+      supabase.removeChannel(cardChannel);
+    };
+  }, [isJeroenAccount, loadBookings, loadFinishedCards, session?.id]);
+
+  useEffect(() => {
+    if (!supabase || !session?.id) {
+      return undefined;
+    }
+
+    const messageChannel = supabase
+      .channel("messages-unread")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        () => {
+          loadUnreadMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messageChannel);
+    };
+  }, [loadUnreadMessages, session?.id]);
+
   const now = new Date();
   const upcomingBookings = bookings
     .filter((booking) => {
@@ -199,16 +334,27 @@ const HomeScreen = ({ navigation }) => {
       if (status.includes("cancelled") || status.includes("canceled")) {
         return false;
       }
+      const isAllowedStatus =
+        !status ||
+        status.includes("confirmed") ||
+        status.includes("paid") ||
+        status.includes("scheduled") ||
+        status.includes("completed") ||
+        status.includes("finished");
+      if (!isAllowedStatus) {
+        return false;
+      }
+      if (isSameDay(start, now)) {
+        return true;
+      }
       return start >= now;
     })
     .sort(
       (a, b) => new Date(a.start_at || 0) - new Date(b.start_at || 0)
     );
-  const upcomingPreview = upcomingBookings.slice(0, 3);
+  const upcomingPreview = upcomingBookings;
 
   const displayName = session?.name || "Jeroen";
-  const isJeroenAccount =
-    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
   const unreadBadgeCount = useMemo(() => {
     if (!unreadCount) return 0;
     if (isJeroenAccount) return unreadCount;
@@ -289,14 +435,35 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await Promise.all([
+                loadBookings(),
+                loadFinishedCards(),
+                loadUnreadMessages(),
+              ]);
+              setRefreshing(false);
+            }}
+            tintColor="#5d2fc5"
+          />
+        }
+      >
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Hi {displayName}</Text>
             <Text style={styles.subtitle}>Your booking overview</Text>
           </View>
           <View style={styles.headerRight}>
-            <Pressable onPress={() => navigation.navigate("ProfileOverview")}>
+            <Pressable
+              onPress={() =>
+                navigation.navigate("Profile", { screen: "ProfileOverview" })
+              }
+            >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials}</Text>
               </View>
@@ -369,6 +536,7 @@ const HomeScreen = ({ navigation }) => {
             const petList = resolveBookingPets(booking);
             const petsLabel = formatPetsLabel(petList);
             const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
+            const finishedCard = finishedCards[booking?.id];
             const hasActiveCard = Boolean(activeRoverCards[bookingId]);
             const activeStart = activeRoverCards[bookingId];
             const elapsedMs =
@@ -397,7 +565,9 @@ const HomeScreen = ({ navigation }) => {
                   </View>
                   <View style={styles.statusBadge}>
                     <Text style={styles.statusBadgeText}>
-                      {booking.status || "Scheduled"}
+                      {finishedCard
+                        ? "Finished"
+                        : booking.status || "Scheduled"}
                     </Text>
                   </View>
                 </View>
@@ -411,10 +581,18 @@ const HomeScreen = ({ navigation }) => {
                     <Pressable
                       style={({ pressed }) => [
                         styles.cardButton,
-                        hasActiveCard && styles.cardButtonActive,
+                        (hasActiveCard || finishedCard) &&
+                          styles.cardButtonActive,
                         pressed && styles.cardPressed,
                       ]}
                       onPress={() => {
+                        if (finishedCard?.id) {
+                          navigation.navigate("JeroenPawsCard", {
+                            cardId: finishedCard.id,
+                            readOnly: true,
+                          });
+                          return;
+                        }
                         if (hasActiveCard) {
                           navigation.navigate("JeroenPawsCard", {
                             bookingId,
@@ -446,10 +624,13 @@ const HomeScreen = ({ navigation }) => {
                       <Text
                         style={[
                           styles.cardButtonText,
-                          hasActiveCard && styles.cardButtonTextActive,
+                          (hasActiveCard || finishedCard) &&
+                            styles.cardButtonTextActive,
                         ]}
                       >
-                        {hasActiveCard
+                        {finishedCard
+                          ? "Open Jeroen & Paws Card"
+                          : hasActiveCard
                           ? "Open Jeroen & Paws Card"
                           : "Start Jeroen & Paws Card"}
                       </Text>

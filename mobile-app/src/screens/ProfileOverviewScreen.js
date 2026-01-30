@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -31,6 +32,7 @@ const ProfileOverviewScreen = ({ navigation }) => {
   const { session } = useSession();
   const [clientProfile, setClientProfile] = useState(null);
   const [pets, setPets] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
   const displayName = clientProfile?.full_name || session?.name || "Your profile";
   const location = clientProfile?.address || session?.address || "Add your area";
   const aboutItems = [
@@ -63,53 +65,59 @@ const ProfileOverviewScreen = ({ navigation }) => {
     },
   ];
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadProfile = useCallback(async () => {
+    if (!session?.id || !supabase) {
+      return;
+    }
 
-    const loadProfile = async () => {
-      if (!session?.id || !supabase) {
-        return;
+    try {
+      const clientResult = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", session.id)
+        .maybeSingle();
+
+      const petsResult = await supabase
+        .from("pets")
+        .select("*")
+        .eq("owner_id", session.id)
+        .order("created_at", { ascending: false });
+
+       if (clientResult.error) {
+        throw clientResult.error;
+      }
+      if (petsResult.error) {
+        throw petsResult.error;
       }
 
-      try {
-        const clientResult = await supabase
-          .from("clients")
-          .select("*")
-          .eq("id", session.id)
-          .maybeSingle();
-
-        const petsResult = await supabase
-          .from("pets")
-          .select("*")
-          .eq("owner_id", session.id)
-          .order("created_at", { ascending: false });
-
-        if (!isMounted) return;
-        if (clientResult.error) {
-          throw clientResult.error;
-        }
-        if (petsResult.error) {
-          throw petsResult.error;
-        }
-
-        setClientProfile(clientResult.data || null);
-        setPets(petsResult.data || []);
-      } catch (profileError) {
-        console.error("Failed to load profile", profileError);
-      }
-    };
-
-    loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
+      setClientProfile(clientResult.data || null);
+      setPets(petsResult.data || []);
+    } catch (profileError) {
+      console.error("Failed to load profile", profileError);
+    }
   }, [session?.id]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <ScreenHeader title="Profile overview" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await loadProfile();
+              setRefreshing(false);
+            }}
+            tintColor="#5d2fc5"
+          />
+        }
+      >
+        <ScreenHeader title="Profile overview" onBack={() => navigation.goBack()} />
         <View style={styles.profileCard}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{getInitials(displayName)}</Text>

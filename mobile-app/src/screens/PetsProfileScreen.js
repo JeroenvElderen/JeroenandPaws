@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { fetchJson } from "../api/client";
+import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 
 const getInitials = (name) => {
@@ -17,41 +19,48 @@ const getInitials = (name) => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const PetsProfileScreen = () => {
+const PetsProfileScreen = ({ navigation }) => {
   const { session } = useSession();
   const [pets, setPets] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+const loadPets = useCallback(async () => {
+    if (!session?.email) {
+      return;
+    }
+
+    try {
+      const data = await fetchJson(
+        `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+      );
+      setPets(Array.isArray(data?.pets) ? data.pets : []);
+    } catch (error) {
+      console.error("Failed to load pets", error);
+    }
+  }, [session?.email]);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadPets = async () => {
-      if (!session?.email) {
-        return;
-      }
-
-      try {
-        const data = await fetchJson(
-          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
-        );
-        if (!isMounted) return;
-        setPets(Array.isArray(data?.pets) ? data.pets : []);
-      } catch (error) {
-        console.error("Failed to load pets", error);
-      }
-    };
-
     loadPets();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [session?.email]);
+    }, [loadPets]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await loadPets();
+              setRefreshing(false);
+            }}
+            tintColor="#5d2fc5"
+          />
+        }
+      >
+        <ScreenHeader title="Your pets" onBack={() => navigation.goBack()} />
         <View style={styles.header}>
-          <Text style={styles.title}>Your pets</Text>
           <Text style={styles.subtitle}>
             {pets.length} {pets.length === 1 ? "pet" : "pets"} in your profile
           </Text>

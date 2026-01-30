@@ -13,7 +13,7 @@ import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 
 const SettingsScreen = ({ navigation }) => {
-  const { session } = useSession();
+  const { session, setSession } = useSession();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [smsAlerts, setSmsAlerts] = useState(true);
@@ -52,6 +52,20 @@ const SettingsScreen = ({ navigation }) => {
       if (error) {
         throw error;
       }
+      setSession((current) =>
+        current
+          ? {
+              ...current,
+              user: {
+                ...current.user,
+                user_metadata: {
+                  ...current.user.user_metadata,
+                  notification_preferences: next,
+                },
+              },
+            }
+          : current
+      );
       setStatus("idle");
     } catch (updateError) {
       console.error("Failed to update preferences", updateError);
@@ -80,6 +94,24 @@ const SettingsScreen = ({ navigation }) => {
       if (authError || clientError) {
         throw authError || clientError;
       }
+      setSession((current) =>
+        current
+          ? {
+              ...current,
+              user: {
+                ...current.user,
+                user_metadata: {
+                  ...current.user.user_metadata,
+                  keep_messages: value,
+                },
+              },
+              client: {
+                ...(current.client || {}),
+                keep_messages: value,
+              },
+            }
+          : current
+      );
       setStatus("idle");
     } catch (updateError) {
       console.error("Failed to update message retention", updateError);
@@ -179,13 +211,19 @@ const SettingsScreen = ({ navigation }) => {
         <View style={styles.card}>
           <Text style={styles.label}>Primary card</Text>
           <Text style={styles.value}>Manage your card on your next invoice.</Text>
-          <Pressable style={styles.button}>
+          <Pressable
+            style={styles.button}
+            onPress={() => navigation.navigate("PaymentMethods")}
+          >
             <Text style={styles.buttonText}>Update payment method</Text>
           </Pressable>
           <View style={styles.divider} />
           <Text style={styles.label}>Billing settings</Text>
           <Text style={styles.value}>Invoices go to {session?.email || "your email"}.</Text>
-          <Pressable style={styles.button}>
+          <Pressable
+            style={styles.button}
+            onPress={() => navigation.navigate("PaymentMethods")}
+          >
             <Text style={styles.buttonText}>Update billing details</Text>
           </Pressable>
         </View>

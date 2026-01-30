@@ -11,6 +11,7 @@ import ScreenHeader from "../components/ScreenHeader";
 
 const SUPPORT_EMAIL = "jeroen@jeroenandpaws.com";
 const SUPPORT_PHONE = "+353872473099";
+const SUPPORT_WHATSAPP = "https://wa.me/353872473099";
 
 const HelpSupportScreen = ({ navigation }) => {
   const handleEmailPress = async () => {
@@ -32,7 +33,11 @@ const HelpSupportScreen = ({ navigation }) => {
     await Linking.openURL(`tel:${SUPPORT_PHONE}`);
   };
 
-return (
+const handleWhatsAppPress = async () => {
+    await Linking.openURL(SUPPORT_WHATSAPP);
+  };
+
+  return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <ScreenHeader title="Help & Support" onBack={() => navigation.goBack()} />
@@ -46,16 +51,22 @@ return (
         </Pressable>
         <Pressable
           style={styles.card}
-          onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
+          onPress={() => navigation.getParent()?.navigate("Messages")}
         >
           <Text style={styles.cardTitle}>Live chat</Text>
           <Text style={styles.cardDescription}>
             Chat with us directly inside the app.
           </Text>
         </Pressable>
+        <Pressable style={styles.card} onPress={handleWhatsAppPress}>
+          <Text style={styles.cardTitle}>WhatsApp</Text>
+          <Text style={styles.cardDescription}>
+            Message us any time on WhatsApp.
+          </Text>
+        </Pressable>
         <View style={styles.noteCard}>
           <Text style={styles.noteText}>
-            We are available Monday to Saturday, 08:00–18:00.
+            We are available 24/7 for support via WhatsApp.
           </Text>
         </View>
       </ScrollView>
