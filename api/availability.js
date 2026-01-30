@@ -9,6 +9,55 @@ const {
 
 const EIRCODE_FULL_REGEX = /\b([AC-FHKNPRTV-Y]\d{2}[AC-FHKNPRTV-Y0-9]{4})\b/i;
 const EIRCODE_ROUTING_REGEX = /\b([AC-FHKNPRTV-Y]\d{2})\b/i;
+const AVAILABILITY_CACHE_TTL_MS = Number.parseInt(
+  process.env.AVAILABILITY_CACHE_TTL_MS ?? "300000",
+  10
+);
+const availabilityCache = new Map();
+
+const buildAvailabilityCacheKey = ({
+  durationMinutes,
+  windowDays,
+  clientAddress,
+}) => {
+  const safeDuration = Number(durationMinutes) || 0;
+  const safeWindow = Number(windowDays) || 0;
+  const normalizedAddress = (clientAddress || "").trim().toLowerCase();
+  return `${safeDuration}:${safeWindow}:${normalizedAddress}`;
+};
+
+const getCachedAvailability = ({ durationMinutes, windowDays, clientAddress }) => {
+  const key = buildAvailabilityCacheKey({
+    durationMinutes,
+    windowDays,
+    clientAddress,
+  });
+  const cached = availabilityCache.get(key);
+  if (!cached) return null;
+  if (
+    Number.isFinite(AVAILABILITY_CACHE_TTL_MS) &&
+    AVAILABILITY_CACHE_TTL_MS > 0 &&
+    Date.now() - cached.timestamp > AVAILABILITY_CACHE_TTL_MS
+  ) {
+    availabilityCache.delete(key);
+    return null;
+  }
+  return cached.data;
+};
+
+const setCachedAvailability = ({
+  durationMinutes,
+  windowDays,
+  clientAddress,
+  data,
+}) => {
+  const key = buildAvailabilityCacheKey({
+    durationMinutes,
+    windowDays,
+    clientAddress,
+  });
+  availabilityCache.set(key, { timestamp: Date.now(), data });
+};
 
 const extractEircode = (location = "") => {
   const trimmed = (location || "").toUpperCase();
@@ -366,8 +415,19 @@ const availabilityHandler = async (req, res) => {
       req.query || {};
     const serviceDurationMinutes = Number.parseInt(durationMinutes, 10);
 
-    const accessToken = await getAppOnlyAccessToken();
     const windowDays = resolveWindowDays(windowDaysParam);
+    const cachedAvailability = getCachedAvailability({
+      durationMinutes: serviceDurationMinutes,
+      windowDays,
+      clientAddress,
+    });
+    if (cachedAvailability) {
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify(cachedAvailability));
+      return;
+    }
+
+    const accessToken = await getAppOnlyAccessToken();
     const { startTime, endTime } = buildTimeWindow(windowDays);
     const events = await fetchCalendarEventsSafe({
       accessToken,
@@ -386,6 +446,12 @@ const availabilityHandler = async (req, res) => {
     });
 
     res.setHeader("Content-Type", "application/json");
+    setCachedAvailability({
+      durationMinutes: serviceDurationMinutes,
+      windowDays,
+      clientAddress,
+      data: availability,
+    });
     res.end(JSON.stringify(availability));
   } catch (error) {
     console.error("Availability error", error);
