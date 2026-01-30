@@ -221,29 +221,84 @@ const AppShell = () => {
 
   useEffect(() => {
     let isMounted = true;
+
+    const ensureClientAddress = async () => {
+      if (!supabase || !session?.id) {
+        return;
+      }
+      const existingAddress = (session.address || "").trim();
+      if (existingAddress) {
+        return;
+      }
+
+      try {
+        const clientResult = await supabase
+          .from("clients")
+          .select("address")
+          .eq("id", session.id)
+          .maybeSingle();
+        if (!isMounted) return;
+        if (clientResult.error) {
+          throw clientResult.error;
+        }
+        if (clientResult.data?.address) {
+          setSession((current) =>
+            current
+              ? {
+                  ...current,
+                  address: clientResult.data.address,
+                  client: {
+                    ...(current.client || {}),
+                    address: clientResult.data.address,
+                  },
+                }
+              : current
+          );
+        }
+      } catch (error) {
+        console.warn("Failed to refresh client address", error);
+      }
+    };
+
+    ensureClientAddress();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.id, session?.address, setSession]);
+
+  useEffect(() => {
+    let isMounted = true;
     let timeoutId;
 
     const prefetchBookingAvailability = async () => {
-      const clientAddress = (session?.address || "").trim();
+      const clientAddress = (session?.address || session?.client?.address || "")
+        .trim();
       if (!clientAddress) return;
 
       try {
         const defaultDurationMinutes = 60;
         const data = await fetchJson("/api/services", { timeoutMs: 30000 });
         if (!isMounted) return;
-        const firstService = (data?.services || []).find(Boolean);
-        if (!firstService) return;
-        const durationMinutes = Number(
-          firstService.duration_minutes ||
-            firstService.durationMinutes ||
-            defaultDurationMinutes
-        );
-        await prefetchAvailability({
-          durationMinutes,
-          windowDays: 21,
-          clientAddress,
-          timeoutMs: AVAILABILITY_TIMEOUT_MS,
+        const services = Array.isArray(data?.services) ? data.services : [];
+        if (!services.length) return;
+        const durations = new Set([defaultDurationMinutes]);
+        services.forEach((service) => {
+          const duration = Number(
+            service?.duration_minutes ||
+              service?.durationMinutes ||
+              defaultDurationMinutes
+          );
+          durations.add(duration);
         });
+        for (const durationMinutes of durations) {
+          await prefetchAvailability({
+            durationMinutes,
+            windowDays: 21,
+            clientAddress,
+            timeoutMs: AVAILABILITY_TIMEOUT_MS,
+          });
+        }
       } catch (error) {
         console.error("Failed to prefetch availability after auth", error);
       }
@@ -264,7 +319,7 @@ const AppShell = () => {
   if (!authReady) {
     return null;
   }
-  
+
   if (!session?.email) {
     return (
       <NavigationContainer>

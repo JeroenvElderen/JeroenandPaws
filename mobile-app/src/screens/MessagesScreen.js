@@ -454,8 +454,10 @@ const MessagesScreen = ({ navigation, route }) => {
     );
   }
 
+  const isKeyboardVisible = keyboardHeight > 0;
   const keyboardOffset = Math.max(0, keyboardHeight - insets.bottom);
-  const inputBottomSpacing = tabBarHeight + Math.max(insets.bottom, 12) + 12;
+  const inputBottomSpacing =
+    (isKeyboardVisible ? 0 : tabBarHeight) + Math.max(insets.bottom, 12) + 12;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -475,7 +477,7 @@ const MessagesScreen = ({ navigation, route }) => {
         <ScrollView
           contentContainerStyle={[
             styles.messages,
-            { paddingBottom: inputHeight + inputBottomSpacing },
+            { paddingBottom: inputHeight + inputBottomSpacing + keyboardOffset },
           ]}
           keyboardShouldPersistTaps="handled"
         >
@@ -568,7 +570,7 @@ const MessagesScreen = ({ navigation, route }) => {
             styles.inputContainer,
             {
               paddingBottom: Math.max(insets.bottom, 12),
-              marginBottom: tabBarHeight + 12,
+              marginBottom: (isKeyboardVisible ? 0 : tabBarHeight) + 12,
               transform: [{ translateY: -keyboardOffset }],
             },
           ]}

@@ -137,7 +137,8 @@ const HomeScreen = ({ navigation }) => {
     let timeoutId;
 
     const loadInitialAvailability = async () => {
-      const clientAddress = (session?.address || "").trim();
+      const clientAddress = (session?.address || session?.client?.address || "")
+        .trim();
       if (!clientAddress) return;
 
       try {
