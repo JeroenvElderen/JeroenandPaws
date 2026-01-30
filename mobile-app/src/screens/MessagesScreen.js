@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   SafeAreaView,
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
@@ -66,6 +67,8 @@ const MessagesScreen = ({ navigation, route }) => {
   const [error, setError] = useState("");
   const [threads, setThreads] = useState([]);
   const [lastReadAt, setLastReadAt] = useState(null);
+  const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -211,6 +214,25 @@ const MessagesScreen = ({ navigation, route }) => {
       loadLastReadAt();
     }, [loadMessages, loadLastReadAt])
   );
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showListener = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates?.height ?? 0);
+    });
+    const hideListener = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     loadThreads();
@@ -392,13 +414,11 @@ const MessagesScreen = ({ navigation, route }) => {
     );
   }
 
+  const keyboardOffset = Math.max(0, keyboardHeight - insets.bottom);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
+      <View style={styles.container}>
         <ScreenHeader
           title={isOwner ? activeClientName || "Client chat" : "Messages"}
           onBack={
@@ -486,26 +506,36 @@ const MessagesScreen = ({ navigation, route }) => {
             ))
           )}
         </ScrollView>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Write a message"
-            value={messageText}
-            onChangeText={setMessageText}
-            multiline
-          />
-          <Pressable
-            style={[
-              styles.sendButton,
-              status === "sending" && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSend}
-            disabled={status === "sending"}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
-          </Pressable>
+        <View
+          style={[
+            styles.inputContainer,
+            {
+              paddingBottom: Math.max(insets.bottom, 12),
+              transform: [{ translateY: -keyboardOffset }],
+            },
+          ]}
+        >
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Write a message"
+              value={messageText}
+              onChangeText={setMessageText}
+              multiline
+            />
+            <Pressable
+              style={[
+                styles.sendButton,
+                status === "sending" && styles.sendButtonDisabled,
+              ]}
+              onPress={handleSend}
+              disabled={status === "sending"}
+            >
+              <Text style={styles.sendButtonText}>Send</Text>
+            </Pressable>
+          </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -652,6 +682,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#6c5a92",
   },
+  inputContainer: {
+    backgroundColor: "transparent",
+  },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -661,7 +694,6 @@ const styles = StyleSheet.create({
     borderColor: "#ebe4f7",
     padding: 10,
     gap: 8,
-    marginBottom: 55,
   },
   input: {
     flex: 1,
