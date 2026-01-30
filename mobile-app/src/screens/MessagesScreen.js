@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../api/supabaseClient";
@@ -26,6 +27,19 @@ const formatMessageTime = (value) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const getMessageDateKey = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+};
+
+const formatMessageDay = (value) => {
+  if (!value) return "";
+  return new Date(value)
+    .toLocaleDateString("en-US", { weekday: "long" })
+    .toLowerCase();
 };
 
 const parseMessagePayload = (message) => {
@@ -69,6 +83,8 @@ const MessagesScreen = ({ navigation, route }) => {
   const [lastReadAt, setLastReadAt] = useState(null);
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [inputHeight, setInputHeight] = useState(0);
+  const tabBarHeight = useBottomTabBarHeight();
 
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -97,6 +113,30 @@ const MessagesScreen = ({ navigation, route }) => {
       })),
     [messages, isOwner]
   );
+
+  const messageItems = useMemo(() => {
+    const items = [];
+    let lastDateKey = "";
+
+    formattedMessages.forEach((message) => {
+      const dateKey = getMessageDateKey(message.created_at);
+      if (dateKey && dateKey !== lastDateKey) {
+        items.push({
+          type: "day",
+          id: `day-${dateKey}`,
+          label: formatMessageDay(message.created_at),
+        });
+        lastDateKey = dateKey;
+      }
+      items.push({
+        type: "message",
+        id: message.id || message.created_at,
+        message,
+      });
+    });
+
+    return items;
+  }, [formattedMessages]);
 
   const loadThreads = useCallback(async () => {
     if (!isOwner) return;
@@ -415,6 +455,7 @@ const MessagesScreen = ({ navigation, route }) => {
   }
 
   const keyboardOffset = Math.max(0, keyboardHeight - insets.bottom);
+  const inputBottomSpacing = tabBarHeight + Math.max(insets.bottom, 12) + 12;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -432,7 +473,10 @@ const MessagesScreen = ({ navigation, route }) => {
           }
         />
         <ScrollView
-          contentContainerStyle={styles.messages}
+          contentContainerStyle={[
+            styles.messages,
+            { paddingBottom: inputHeight + inputBottomSpacing },
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -443,67 +487,80 @@ const MessagesScreen = ({ navigation, route }) => {
               </Text>
             </View>
           ) : (
-            formattedMessages.map((message) => (
-              <View
-                key={message.id || message.created_at}
-                style={[
-                  styles.messageBubble,
-                  message.direction === "outgoing"
-                    ? styles.messageOutgoing
-                    : styles.messageIncoming,
-                ]}
-              >
-                {message.payload.type === "card" ? (
-                  <View>
-                    <Text style={styles.cardTitle}>
-                      {message.payload.title}
+            messageItems.map((item) => {
+              if (item.type === "day") {
+                return (
+                  <View key={item.id} style={styles.daySeparator}>
+                    <Text style={styles.daySeparatorText}>
+                      {item.label}
                     </Text>
+                    </View>
+                );
+              }
+
+              const { message } = item;
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.messageBubble,
+                    message.direction === "outgoing"
+                      ? styles.messageOutgoing
+                      : styles.messageIncoming,
+                  ]}
+                >
+                  {message.payload.type === "card" ? (
+                    <View>
+                      <Text style={styles.cardTitle}>
+                        {message.payload.title}
+                      </Text>
                     {message.payload.petsLabel ? (
-                      <Text style={styles.cardMeta}>
-                        {message.payload.petsLabel}
-                      </Text>
-                    ) : null}
-                    {message.payload.summary ? (
-                      <Text style={styles.cardMeta}>
-                        {message.payload.summary}
-                      </Text>
-                    ) : null}
-                    {message.payload.cardId ? (
-                      <Pressable
-                        style={styles.cardButton}
-                        onPress={() =>
-                          navigation.navigate("JeroenPawsCard", {
-                            cardId: message.payload.cardId,
-                            readOnly: true,
-                          })
-                        }
-                      >
-                        <Text style={styles.cardButtonText}>
-                          View Jeroen & Paws card
+                        <Text style={styles.cardMeta}>
+                          {message.payload.petsLabel}
                         </Text>
-                      </Pressable>
+                      ) : null}
+                      {message.payload.summary ? (
+                        <Text style={styles.cardMeta}>
+                          {message.payload.summary}
+                        </Text>
+                      ) : null}
+                      {message.payload.cardId ? (
+                        <Pressable
+                          style={styles.cardButton}
+                          onPress={() =>
+                            navigation.navigate("JeroenPawsCard", {
+                              cardId: message.payload.cardId,
+                              readOnly: true,
+                            })
+                          }
+                        >
+                          <Text style={styles.cardButtonText}>
+                            View Jeroen & Paws card
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ) : (
+                    <Text style={styles.messageText}>
+                      {message.payload.text}
+                    </Text>
+                  )}
+                  <View style={styles.messageMeta}>
+                    <Text style={styles.messageTime}>
+                      {formatMessageTime(message.created_at)}
+                    </Text>
+                    {message.direction === "outgoing" ? (
+                      <Text style={styles.messageReadIcon}>
+                        {lastReadAt &&
+                        new Date(message.created_at) <= new Date(lastReadAt)
+                          ? "✓✓"
+                          : "✓"}
+                      </Text>
                     ) : null}
                   </View>
-                ) : (
-                  <Text style={styles.messageText}>
-                    {message.payload.text}
-                  </Text>
-                )}
-                <View style={styles.messageMeta}>
-                  <Text style={styles.messageTime}>
-                    {formatMessageTime(message.created_at)}
-                  </Text>
-                  {message.direction === "outgoing" ? (
-                    <Text style={styles.messageReadIcon}>
-                      {lastReadAt &&
-                      new Date(message.created_at) <= new Date(lastReadAt)
-                        ? "✓✓"
-                        : "✓"}
-                    </Text>
-                  ) : null}
                 </View>
-              </View>
-            ))
+             );
+            })
           )}
         </ScrollView>
         <View
@@ -511,9 +568,13 @@ const MessagesScreen = ({ navigation, route }) => {
             styles.inputContainer,
             {
               paddingBottom: Math.max(insets.bottom, 12),
+              marginBottom: tabBarHeight + 12,
               transform: [{ translateY: -keyboardOffset }],
             },
           ]}
+          onLayout={(event) =>
+            setInputHeight(event.nativeEvent.layout.height)
+          }
         >
           <View style={styles.inputRow}>
             <TextInput
@@ -638,6 +699,16 @@ const styles = StyleSheet.create({
   messageOutgoing: {
     alignSelf: "flex-end",
     backgroundColor: "#efe9fb",
+  },
+  daySeparator: {
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  daySeparatorText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6c5a92",
+    textTransform: "capitalize",
   },
   messageText: {
     fontSize: 14,
