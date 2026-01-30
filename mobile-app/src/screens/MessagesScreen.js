@@ -362,7 +362,9 @@ const MessagesScreen = ({ navigation }) => {
     if (!tabParent) return undefined;
 
     tabParent.setOptions({
-      tabBarStyle: isChatView ? { display: "none" } : TAB_BAR_STYLE,
+      tabBarStyle: isChatView
+        ? { display: "none", height: 0 }
+        : TAB_BAR_STYLE,
     });
 
     return () => {
@@ -580,21 +582,29 @@ const MessagesScreen = ({ navigation }) => {
   };
 
   const renderChatHeader = () => {
-    if (!isOwner) return null;
     return (
-      <View style={styles.chatHeaderRow}>
+      <View style={styles.chatHeader}>
         <Pressable
-          style={styles.backPill}
-          onPress={() => setSelectedClientId(null)}
+          style={styles.backButton}
+          onPress={() => {
+            if (isOwner) {
+              setSelectedClientId(null);
+              return;
+            }
+            navigation.navigate("Home");
+          }}
         >
-          <Text style={styles.backText}>← Inbox</Text>
+          <Text style={styles.backButtonIcon}>←</Text>
         </Pressable>
-        <View>
-          <Text style={styles.chatTitle}>Chat</Text>
+        <View style={styles.chatHeaderText}>
+          <Text style={styles.chatTitle}>
+            {activeClient?.full_name || "Chat"}
+          </Text>
           <Text style={styles.chatSubtitle}>
-            {activeClient?.full_name || activeClient?.email || "Client"}
+            {activeClient?.full_name || activeClient?.email || "Jeroen & Paws"}
           </Text>
         </View>
+        <View style={styles.headerSpacer} />
       </View>
     );
   };
@@ -711,7 +721,7 @@ const MessagesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#ffffff",
   },
   keyboardAvoid: {
     flex: 1,
@@ -720,6 +730,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
+    backgroundColor: "#ffffff",
   },
   inboxList: {
     paddingBottom: 24,
@@ -775,27 +786,39 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
-  chatHeaderRow: {
+  chatHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 8,
-    gap: 12,
-  },
-  backPill: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0ecf6",
     backgroundColor: "#ffffff",
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f6f4fb",
     borderWidth: 1,
     borderColor: "#e7def7",
   },
-  backText: {
-    fontSize: 12,
-    fontWeight: "600",
+  backButtonIcon: {
+    fontSize: 18,
     color: "#46315f",
+  },
+  chatHeaderText: {
+    flex: 1,
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  headerSpacer: {
+    width: 38,
   },
   chatTitle: {
     fontSize: 16,

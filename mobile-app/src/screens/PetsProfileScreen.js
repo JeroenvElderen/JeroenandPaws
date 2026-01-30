@@ -7,9 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { fetchJson } from "../api/client";
+import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 
@@ -21,10 +24,20 @@ const getInitials = (name) => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
+const PET_TABS = ["About", "Summary", "Health", "Photo Gallery"];
+
+const safeValue = (value) =>
+  value === null || value === undefined || value === "" ? "—" : value;
+
 const PetsProfileScreen = ({ navigation, route }) => {
   const { session } = useSession();
   const [pets, setPets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState(PET_TABS[0]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftPet, setDraftPet] = useState(null);
+  const [saveStatus, setSaveStatus] = useState("idle");
+  const [saveError, setSaveError] = useState("");
   const selectedPet = route?.params?.pet || null;
   const isDetailView = Boolean(selectedPet);
 
@@ -49,27 +62,169 @@ const PetsProfileScreen = ({ navigation, route }) => {
     }
   }, [isDetailView, loadPets]);
 
+  useEffect(() => {
+    if (isDetailView) {
+      setDraftPet(selectedPet);
+      setIsEditing(false);
+      setActiveTab(PET_TABS[0]);
+      setSaveError("");
+      setSaveStatus("idle");
+    }
+  }, [isDetailView, selectedPet]);
+
+  const updateDraftField = (field, value) => {
+    setDraftPet((current) => ({ ...(current || {}), [field]: value }));
+  };
+
+  const handleSavePet = async () => {
+    if (!draftPet?.id || !supabase) {
+      setIsEditing(false);
+      return;
+    }
+
+    setSaveStatus("saving");
+    setSaveError("");
+    try {
+      const payload = { ...draftPet, updated_at: new Date().toISOString() };
+      const { data, error } = await supabase
+        .from("pets")
+        .update(payload)
+        .eq("id", draftPet.id)
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setDraftPet(data);
+      }
+      setSaveStatus("idle");
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to save pet profile", error);
+      setSaveError(error.message || "Unable to save changes.");
+      setSaveStatus("idle");
+    }
+  };
+
+  const handlePickPhoto = async (field) => {
+    setSaveError("");
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setSaveError("Photo access is required to upload images.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets?.[0];
+      if (!asset?.base64) return;
+      const dataUrl = `data:image/jpeg;base64,${asset.base64}`;
+
+      if (field === "photo_gallery_urls") {
+        const existing = Array.isArray(draftPet?.photo_gallery_urls)
+          ? draftPet.photo_gallery_urls
+          : [];
+        updateDraftField(field, [...existing, dataUrl]);
+        return;
+      }
+
+      updateDraftField(field, dataUrl);
+    } catch (error) {
+      console.error("Failed to pick photo", error);
+      setSaveError(error.message || "Unable to load photo.");
+    }
+  };
+
   if (isDetailView) {
+    const pet = draftPet || selectedPet || {};
     const petPhoto =
-      selectedPet.photo_data_url ||
-      selectedPet.photoUrl ||
-      selectedPet.photo_url ||
-      null;
-    const detailRows = [
-      { label: "Breed", value: selectedPet.breed },
-      { label: "Age", value: selectedPet.age },
-      { label: "Gender", value: selectedPet.gender },
-      { label: "Weight", value: selectedPet.weight },
-      { label: "Size", value: selectedPet.size },
-    ].filter((item) => Boolean(item.value));
+      pet.photo_data_url || pet.photoUrl || pet.photo_url || null;
+    const galleryPhotos = Array.isArray(pet.photo_gallery_urls)
+      ? pet.photo_gallery_urls
+      : [];
+
+    const renderField = (label, field, options = {}) => (
+      <View style={styles.detailRow} key={field}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        {isEditing ? (
+          <TextInput
+            style={[styles.input, options.multiline && styles.textArea]}
+            value={pet?.[field] ? String(pet[field]) : ""}
+            placeholder={options.placeholder || "Add info"}
+            multiline={options.multiline}
+            keyboardType={options.keyboardType}
+            onChangeText={(value) => updateDraftField(field, value)}
+          />
+        ) : (
+          <Text style={styles.detailValue}>{safeValue(pet?.[field])}</Text>
+        )}
+      </View>
+    );
+
+    const renderBooleanField = (label, field) => {
+      const value = pet?.[field];
+      const display =
+        typeof value === "boolean" ? (value ? "Yes" : "No") : "—";
+      return (
+        <View style={styles.detailRow} key={field}>
+          <Text style={styles.detailLabel}>{label}</Text>
+          {isEditing ? (
+            <Pressable
+              style={styles.booleanToggle}
+              onPress={() => updateDraftField(field, !value)}
+            >
+              <Text style={styles.booleanToggleText}>
+                {value ? "Yes" : "No"}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.detailValue}>{display}</Text>
+          )}
+        </View>
+      );
+    };
 
     return (
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container}>
-          <ScreenHeader
-            title={selectedPet.name || "Pet profile"}
-            onBack={() => navigation.goBack()}
-          />
+          <View style={styles.detailHeader}>
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.headerIcon}>←</Text>
+            </Pressable>
+            <Text style={styles.headerTitle}>
+              {pet.name || "Pet profile"}
+            </Text>
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={
+                isEditing
+                  ? handleSavePet
+                  : () => {
+                      setIsEditing(true);
+                      setSaveError("");
+                    }
+              }
+              disabled={saveStatus === "saving"}
+            >
+              <Text style={styles.headerActionText}>
+                {saveStatus === "saving"
+                  ? "Saving"
+                  : isEditing
+                  ? "Save"
+                  : "Edit"}
+              </Text>
+            </Pressable>
+          </View>
+
           <View style={styles.petDetailHeader}>
             {petPhoto ? (
               <Image
@@ -80,39 +235,165 @@ const PetsProfileScreen = ({ navigation, route }) => {
             ) : (
               <View style={styles.petHeroPlaceholder}>
                 <Text style={styles.petHeroPlaceholderText}>
-                  {getInitials(selectedPet.name || "Pet")}
+                  {getInitials(pet.name || "Pet")}
                 </Text>
               </View>
             )}
-            <Text style={styles.petDetailName}>
-              {selectedPet.name || "Pet"}
-            </Text>
-            {selectedPet.breed ? (
-              <Text style={styles.petDetailMeta}>{selectedPet.breed}</Text>
+            {isEditing ? (
+              <Pressable
+                style={styles.photoAction}
+                onPress={() => handlePickPhoto("photo_data_url")}
+              >
+                <Text style={styles.photoActionText}>
+                  {petPhoto ? "Change photo" : "Add photo"}
+                </Text>
+              </Pressable>
             ) : null}
+            <Text style={styles.petDetailName}>
+              {pet.name || "Pet"}
+            </Text>
+            <Text style={styles.petDetailMeta}>
+              {[pet.breed, pet.gender]
+                .filter(Boolean)
+                .join(" · ") || "Pet details"}
+            </Text>
           </View>
-          {detailRows.length ? (
-            <View style={styles.sectionCard}>
-              {detailRows.map((detail, index) => (
-                <View
-                  key={detail.label}
+
+          <View style={styles.tabRow}>
+            {PET_TABS.map((tab) => (
+              <Pressable
+                key={tab}
+                style={[
+                  styles.tabPill,
+                  activeTab === tab && styles.tabPillActive,
+                ]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text
                   style={[
-                    styles.detailRow,
-                    index === detailRows.length - 1 && styles.detailRowLast,
+                    styles.tabText,
+                    activeTab === tab && styles.tabTextActive,
                   ]}
                 >
-                  <Text style={styles.detailLabel}>{detail.label}</Text>
-                  <Text style={styles.detailValue}>{detail.value}</Text>
-                </View>
-              ))}
+                  {tab}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {activeTab === "About" ? (
+            <View style={styles.sectionCard}>
+              {renderField("Breed", "breed")}
+              {renderField("Birthdate", "birthdate", {
+                placeholder: "YYYY-MM-DD",
+              })}
+              {renderField("Age (years)", "age_years", {
+                keyboardType: "numeric",
+              })}
+              {renderField("Age (months)", "age_months", {
+                keyboardType: "numeric",
+              })}
+              {renderField("Weight (kg)", "weight_kg", {
+                keyboardType: "numeric",
+              })}
+              {renderField("Color", "color")}
+              {renderField("Microchip ID", "microchip_id")}
+              {renderField("Adoption date", "adoption_date", {
+                placeholder: "YYYY-MM-DD",
+              })}
+              {renderField("About your pet", "notes", {
+                multiline: true,
+              })}
             </View>
           ) : null}
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <View style={styles.sectionCard}>
-            <Text style={styles.noteText}>
-              {selectedPet.notes || "No notes yet."}
-            </Text>
-          </View>
+          
+          {activeTab === "Summary" ? (
+            <View style={styles.sectionCard}>
+              {renderField("Friendly with dogs", "socialization_dogs")}
+              {renderField("Friendly with cats", "socialization_cats")}
+              {renderField(
+                "Friendly with children",
+                "socialization_children"
+              )}
+              {renderBooleanField("Spayed/neutered", "spayed_neutered")}
+              {renderBooleanField("House trained", "house_trained")}
+              {renderField("Energy level", "energy_level")}
+              {renderField("Toilet break interval (hrs)", "toilet_break_interval_hours", {
+                keyboardType: "numeric",
+              })}
+              {renderField("Time alone (hrs)", "time_alone_max_hours", {
+                keyboardType: "numeric",
+              })}
+              {renderField("Feeding schedule", "feeding_schedule")}
+              {renderField("Care instructions", "care_instructions", {
+                multiline: true,
+              })}
+            </View>
+          ) : null}
+
+          {activeTab === "Health" ? (
+            <View style={styles.sectionCard}>
+              {renderField("Veterinary info", "vet_name")}
+              {renderField("Vet phone", "vet_phone")}
+              {renderField("Insurance provider", "insurance_provider")}
+              {renderField("Insurance plan", "insurance_plan")}
+              {renderField("Allergies", "allergies")}
+              {renderField("Medications", "medications")}
+              {renderField("Medical notes", "medical_notes", {
+                multiline: true,
+              })}
+            </View>
+          ) : null}
+
+          {activeTab === "Photo Gallery" ? (
+            <View style={styles.sectionCard}>
+              <Text style={styles.galleryTitle}>Photo Gallery</Text>
+              <Text style={styles.gallerySubtitle}>
+                Photos uploaded by the pet owner and sitters.
+              </Text>
+              <View style={styles.photoGrid}>
+                {galleryPhotos.map((uri, index) => (
+                  <Image
+                    key={`${uri}-${index}`}
+                    source={{ uri }}
+                    style={styles.galleryPhoto}
+                  />
+                ))}
+                {isEditing ? (
+                  <Pressable
+                    style={styles.addPhotoTile}
+                    onPress={() => handlePickPhoto("photo_gallery_urls")}
+                  >
+                    <Text style={styles.addPhotoIcon}>＋</Text>
+                    <Text style={styles.addPhotoLabel}>Add photos</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+
+          {saveError ? (
+            <Text style={styles.errorText}>{saveError}</Text>
+          ) : null}
+
+          {!isEditing ? (
+            <Pressable
+              style={styles.editProfileButton}
+              onPress={() => setIsEditing(true)}
+            >
+              <Text style={styles.editProfileText}>Edit profile</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.editProfileButton}
+              onPress={handleSavePet}
+              disabled={saveStatus === "saving"}
+            >
+              <Text style={styles.editProfileText}>
+                {saveStatus === "saving" ? "Saving..." : "Save profile"}
+              </Text>
+            </Pressable>
+          )}
         </ScrollView>
       </SafeAreaView>
     );
@@ -180,13 +461,43 @@ const PetsProfileScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#ffffff",
   },
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: 40,
     backgroundColor: "#ffffff",
+  },
+  detailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  headerIconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#efe7dd",
+  },
+  headerIcon: {
+    fontSize: 18,
+    color: "#2b1a4b",
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2b1a4b",
+  },
+  headerActionText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2b1a4b",
   },
   header: {
     alignItems: "center",
@@ -216,6 +527,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#5d2fc5",
   },
+  photoAction: {
+    marginBottom: 12,
+  },
+  photoActionText: {
+    fontSize: 13,
+    color: "#2f63d6",
+    fontWeight: "600",
+  },
   petDetailName: {
     fontSize: 24,
     fontWeight: "700",
@@ -225,6 +544,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6c5a92",
     marginTop: 6,
+  },
+  tabRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 16,
+  },
+  tabPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "#f6f4fb",
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+  },
+  tabPillActive: {
+    backgroundColor: "#2b1a4b",
+    borderColor: "#2b1a4b",
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6c5a92",
+  },
+  tabTextActive: {
+    color: "#ffffff",
   },
   title: {
     fontSize: 24,
@@ -282,10 +627,96 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#2b1a4b",
   },
+  booleanToggle: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: "#f2ecfb",
+  },
+  booleanToggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2b1a4b",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#2b1a4b",
+    backgroundColor: "#ffffff",
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
   noteText: {
     fontSize: 14,
     color: "#4a3a67",
     lineHeight: 20,
+  },
+  galleryTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2b1a4b",
+    marginBottom: 4,
+  },
+  gallerySubtitle: {
+    fontSize: 13,
+    color: "#6c5a92",
+    marginBottom: 12,
+  },
+  photoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  galleryPhoto: {
+    width: 120,
+    height: 120,
+    borderRadius: 14,
+    backgroundColor: "#f1edf9",
+  },
+  addPhotoTile: {
+    width: 120,
+    height: 120,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#cfd6e0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addPhotoIcon: {
+    fontSize: 28,
+    color: "#2f63d6",
+    marginBottom: 4,
+  },
+  addPhotoLabel: {
+    fontSize: 12,
+    color: "#2b1a4b",
+  },
+  editProfileButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#cfd6e0",
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    marginBottom: 12,
+  },
+  editProfileText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2b1a4b",
+  },
+  errorText: {
+    color: "#b42318",
+    marginBottom: 12,
+    textAlign: "center",
   },
   petCard: {
     flexDirection: "row",

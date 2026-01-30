@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -8,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 
@@ -98,8 +100,21 @@ const formatElapsedTime = (totalMs) => {
   ].join(":");
 };
 
+const formatFinishTime = (value) => {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(value);
+};
+
 const JeroenPawsCardScreen = ({ navigation, route }) => {
   const { session } = useSession();
+  const isOwner =
+    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
   const petList = useMemo(
     () => normalizePets(route?.params?.pets || route?.params?.pet),
     [route?.params?.pet, route?.params?.pets]
@@ -121,7 +136,10 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   );
   const serviceTitle = route?.params?.serviceTitle || "Drop-In Visits";
   const [note, setNote] = useState("");
-  const [photoCount, setPhotoCount] = useState(1);
+  const [photoCount, setPhotoCount] = useState(0);
+  const [cardPhotos, setCardPhotos] = useState([]);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState("idle");
+  const [photoUploadError, setPhotoUploadError] = useState("");
   const [walkCompleted, setWalkCompleted] = useState(false);
   const [finishStatus, setFinishStatus] = useState("idle");
   const [finishError, setFinishError] = useState("");
@@ -135,7 +153,14 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   const [cardPets, setCardPets] = useState(resolvedPets);
   const [cardPetsLabel, setCardPetsLabel] = useState(petsLabel);
   const [cardServiceTitle, setCardServiceTitle] = useState(serviceTitle);
-  
+  const bookingEnd = route?.params?.bookingEnd
+    ? new Date(route.params.bookingEnd)
+    : null;
+  const canFinishVisit =
+    !isOwner ||
+    !bookingEnd ||
+    Date.now() >= bookingEnd.getTime();
+
   const getPetKey = (pet, index) => pet?.id || pet?.name || `pet-${index}`;
 
   const buildActivityCounts = (pets) =>
@@ -223,6 +248,132 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   }, [route?.params?.cardId]);
 
   useEffect(() => {
+    if (!supabase) return;
+    const cardId = route?.params?.cardId || loadedCardId;
+    if (!cardId) return;
+
+    let isMounted = true;
+    const loadPhotos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("jeroen_paws_card_photos")
+          .select("id, photo_url, storage_path")
+          .eq("card_id", cardId)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        if (!isMounted) return;
+        const mapped = (data || []).map((photo) => ({
+          id: photo.id,
+          url: photo.photo_url,
+          path: photo.storage_path,
+        }));
+        setCardPhotos(mapped);
+      } catch (photoError) {
+        if (!isMounted) return;
+        console.error("Failed to load card photos", photoError);
+      }
+    };
+
+    loadPhotos();
+    return () => {
+      isMounted = false;
+    };
+  }, [loadedCardId, route?.params?.cardId]);
+
+  useEffect(() => {
+    setPhotoCount(cardPhotos.length);
+  }, [cardPhotos]);
+
+  const handleAddPhoto = async () => {
+    if (!supabase || isReadOnly || !isOwner) {
+      return;
+    }
+
+    setPhotoUploadError("");
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setPhotoUploadError("Photo access is required to upload images.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets?.[0];
+      if (!asset?.uri) return;
+
+      setPhotoUploadStatus("uploading");
+      const fileExtension = asset.uri.split(".").pop() || "jpg";
+      const bookingId = route?.params?.bookingId || "manual";
+      const storagePath = `cards/${bookingId}/${Date.now()}.${fileExtension}`;
+
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+
+      const { error: uploadError } = await supabase.storage
+        .from("jeroen-paws-card-photos")
+        .upload(storagePath, blob, {
+          contentType: asset.type || "image/jpeg",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("jeroen-paws-card-photos")
+        .getPublicUrl(storagePath);
+      const photoUrl = publicUrlData?.publicUrl;
+
+      if (!photoUrl) {
+        throw new Error("Failed to get photo URL.");
+      }
+
+      const insertPayload = {
+        card_id: loadedCardId || route?.params?.cardId || null,
+        booking_id: route?.params?.bookingId || null,
+        owner_email: session?.email || OWNER_EMAIL,
+        photo_url: photoUrl,
+        storage_path: storagePath,
+      };
+
+      const { data: inserted, error: insertError } = await supabase
+        .from("jeroen_paws_card_photos")
+        .insert(insertPayload)
+        .select("id, photo_url, storage_path")
+        .maybeSingle();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      if (inserted) {
+        setCardPhotos((prev) => [
+          ...prev,
+          {
+            id: inserted.id,
+            url: inserted.photo_url,
+            path: inserted.storage_path,
+          },
+        ]);
+      }
+
+      setPhotoUploadStatus("idle");
+    } catch (error) {
+      console.error("Failed to upload photo", error);
+      setPhotoUploadStatus("idle");
+      setPhotoUploadError(
+        error.message || "Unable to upload photo right now."
+      );
+    }
+  };
+
+  useEffect(() => {
     if (finishedAt) {
       const endTime = new Date(finishedAt).getTime();
       setElapsedMs(
@@ -302,6 +453,17 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         }
       }
 
+      if (route?.params?.bookingId) {
+        const { error: photoUpdateError } = await supabase
+          .from("jeroen_paws_card_photos")
+          .update({ card_id: data?.id || null })
+          .eq("booking_id", route.params.bookingId)
+          .is("card_id", null);
+        if (photoUpdateError) {
+          throw photoUpdateError;
+        }
+      }
+
       if (route?.params?.clientId) {
         const messageBody = JSON.stringify({
           type: "jeroen_paws_card",
@@ -360,13 +522,19 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
               </View>
             ) : null}
           </View>
-          <Pressable
-            style={styles.addPhotoButton}
-            onPress={() => setPhotoCount((count) => count + 1)}
-            disabled={isReadOnly}
-          >
-            <Text style={styles.addPhotoText}>📷 Add Photo</Text>
-          </Pressable>
+          {isOwner && !isReadOnly ? (
+            <Pressable
+              style={styles.addPhotoButton}
+              onPress={handleAddPhoto}
+              disabled={photoUploadStatus === "uploading"}
+            >
+              <Text style={styles.addPhotoText}>
+                {photoUploadStatus === "uploading"
+                  ? "Uploading..."
+                  : "📷 Add Photo"}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.timerCard}>
@@ -416,31 +584,60 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                         {activity.label}
                       </Text>
                     </View>
-                    <View style={styles.counter}>
-                      <Pressable
-                        style={[styles.counterButton, styles.counterButtonPrimary]}
-                        onPress={() => updateCount(petKey, activity.key, -1)}
-                        disabled={isReadOnly}
-                      >
-                        <Text style={styles.counterButtonText}>−</Text>
-                      </Pressable>
-                      <Text style={styles.counterValue}>
-                        {counts[petKey]?.[activity.key] ?? 0}
-                      </Text>
-                      <Pressable
-                        style={[styles.counterButton, styles.counterButtonPrimary]}
-                        onPress={() => updateCount(petKey, activity.key, 1)}
-                        disabled={isReadOnly}
-                      >
-                        <Text style={styles.counterButtonText}>+</Text>
-                      </Pressable>
-                    </View>
+                    {isReadOnly ? (
+                      <View style={styles.readOnlyCount}>
+                        <Text style={styles.readOnlyCountText}>
+                          {counts[petKey]?.[activity.key] ?? 0}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.counter}>
+                        <Pressable
+                          style={[
+                            styles.counterButton,
+                            styles.counterButtonPrimary,
+                          ]}
+                          onPress={() => updateCount(petKey, activity.key, -1)}
+                          disabled={isReadOnly}
+                        >
+                          <Text style={styles.counterButtonText}>−</Text>
+                        </Pressable>
+                        <Text style={styles.counterValue}>
+                          {counts[petKey]?.[activity.key] ?? 0}
+                        </Text>
+                        <Pressable
+                          style={[
+                            styles.counterButton,
+                            styles.counterButtonPrimary,
+                          ]}
+                          onPress={() => updateCount(petKey, activity.key, 1)}
+                          disabled={isReadOnly}
+                        >
+                          <Text style={styles.counterButtonText}>+</Text>
+                        </Pressable>
+                      </View>
+                    )}
                   </View>
                 ))}
               </View>
               );
           })}
         </View>
+
+        {cardPhotos.length ? (
+          <View style={styles.photoGallery}>
+            <Text style={styles.sectionTitle}>Photo Gallery</Text>
+            <View style={styles.photoGrid}>
+              {cardPhotos.map((photo) => (
+                <Image
+                  key={photo.id || photo.url}
+                  source={{ uri: photo.url }}
+                  style={styles.photoThumb}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.actionRow}>
           <Pressable style={styles.secondaryButton}>
@@ -454,7 +651,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         {finishError ? (
           <Text style={styles.errorText}>{finishError}</Text>
         ) : null}
-        {!isReadOnly ? (
+        {!isReadOnly && canFinishVisit ? (
           <Pressable
             style={styles.finishButton}
             onPress={
@@ -472,6 +669,12 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                 : "Finish Visit"}
             </Text>
           </Pressable>
+        ) : !isReadOnly && !canFinishVisit ? (
+          <View style={styles.finishBadge}>
+            <Text style={styles.finishBadgeText}>
+              Finish available at {formatFinishTime(bookingEnd)}
+            </Text>
+          </View>
         ) : (
           <View style={styles.finishBadge}>
             <Text style={styles.finishBadgeText}>
@@ -482,6 +685,9 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         <Text style={styles.photoCountText}>
           Photos: {photoCount} uploaded
         </Text>
+        {photoUploadError ? (
+          <Text style={styles.errorText}>{photoUploadError}</Text>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -490,11 +696,12 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#fffff",
   },
   container: {
     padding: 20,
     paddingBottom: 32,
+    backgroundColor: "#ffffff",
   },
   header: {
     flexDirection: "row",
@@ -690,6 +897,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  readOnlyCount: {
+    minWidth: 38,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: "#f2eff8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  readOnlyCountText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2b1a4b",
+  },
   counterButton: {
     width: 32,
     height: 32,
@@ -762,6 +983,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 12,
     color: "#7b6a9f",
+  },
+  photoGallery: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#ebe4f7",
+    padding: 16,
+    marginBottom: 16,
+  },
+  photoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  photoThumb: {
+    width: 96,
+    height: 96,
+    borderRadius: 16,
+    backgroundColor: "#f0ecf6",
   },
   errorText: {
     textAlign: "center",

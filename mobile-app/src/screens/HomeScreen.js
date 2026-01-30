@@ -173,19 +173,23 @@ const HomeScreen = ({ navigation }) => {
         if (cached) return;
         const data = await fetchJson("/api/services", { timeoutMs: 30000 });
         if (!isMounted) return;
-        const firstService = (data?.services || []).find(Boolean);
-        if (!firstService) return;
-        const durationMinutes = Number(
-          firstService.duration_minutes ||
-            firstService.durationMinutes ||
-            defaultDurationMinutes
+        const services = (data?.services || []).filter(Boolean);
+        if (!services.length) return;
+        await Promise.all(
+          services.map((service) => {
+            const durationMinutes = Number(
+              service.duration_minutes ||
+                service.durationMinutes ||
+                defaultDurationMinutes
+            );
+            return prefetchAvailability({
+              durationMinutes,
+              windowDays: DEFAULT_AVAILABILITY_WINDOW_DAYS,
+              clientAddress,
+              timeoutMs: AVAILABILITY_TIMEOUT_MS,
+            });
+          })
         );
-        await prefetchAvailability({
-          durationMinutes,
-          windowDays: DEFAULT_AVAILABILITY_WINDOW_DAYS,
-          clientAddress,
-          timeoutMs: AVAILABILITY_TIMEOUT_MS,
-        });
       } catch (error) {
         console.error("Failed to prefetch availability", error);
       }
@@ -656,13 +660,13 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#ffffff",
   },
   container: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#fffff",
   },
   header: {
     flexDirection: "row",
