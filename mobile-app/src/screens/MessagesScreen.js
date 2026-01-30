@@ -356,17 +356,20 @@ const MessagesScreen = ({ navigation }) => {
 
   useLayoutEffect(() => {
     const parent = navigation.getParent();
-    if (!parent) return undefined;
+    const parentState = parent?.getState?.();
+    const tabParent =
+      parentState?.type === "tab" ? parent : parent?.getParent();
+    if (!tabParent) return undefined;
 
-    parent.setOptions({
+    tabParent.setOptions({
       tabBarStyle: isChatView ? { display: "none" } : TAB_BAR_STYLE,
     });
 
     return () => {
-      parent.setOptions({ tabBarStyle: TAB_BAR_STYLE });
+      tabParent.setOptions({ tabBarStyle: TAB_BAR_STYLE });
     };
   }, [navigation, isChatView]);
-  
+
   const messageItems = useMemo(() => {
     let lastDayKey = null;
     const items = [];

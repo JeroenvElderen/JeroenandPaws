@@ -539,6 +539,7 @@ const HomeScreen = ({ navigation }) => {
             const finishedCard = finishedCards[booking?.id];
             const hasActiveCard = Boolean(activeRoverCards[bookingId]);
             const activeStart = activeRoverCards[bookingId];
+            const canViewCard = Boolean(finishedCard?.id);
             const elapsedMs =
               hasActiveCard && activeStart
                 ? Math.max(timeTick - activeStart, 0)
@@ -571,9 +572,9 @@ const HomeScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                {isJeroenAccount ? (
+                {isJeroenAccount || canViewCard ? (
                   <View style={styles.cardFooter}>
-                    {hasActiveCard ? (
+                    {isJeroenAccount && hasActiveCard ? (
                       <Text style={styles.cardTimerText}>
                         Active time {formatElapsedTime(elapsedMs)}
                       </Text>
@@ -605,6 +606,9 @@ const HomeScreen = ({ navigation }) => {
                           });
                           return;
                         }
+                        if (!isJeroenAccount) {
+                          return;
+                        }
                         const startTimestamp = Date.now();
                         setActiveRoverCards((prev) => ({
                           ...prev,
@@ -632,7 +636,9 @@ const HomeScreen = ({ navigation }) => {
                           ? "Open Jeroen & Paws Card"
                           : hasActiveCard
                           ? "Open Jeroen & Paws Card"
-                          : "Start Jeroen & Paws Card"}
+                          : isJeroenAccount
+                          ? "Start Jeroen & Paws Card"
+                          : "View Jeroen & Paws Card"}
                       </Text>
                     </Pressable>
                   </View>

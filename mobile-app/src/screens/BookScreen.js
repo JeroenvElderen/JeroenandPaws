@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
+  Dimensions,
   Modal,
   Pressable,
   RefreshControl,
@@ -46,6 +47,8 @@ const CATEGORY_ICONS = {
   "Daily strolls": "🚶",
   Services: "🐾",
 };
+
+const CALENDAR_PAGE_WIDTH = Dimensions.get("window").width - 32;
 
 const normalizeAddons = (addons = []) =>
   addons
@@ -237,7 +240,7 @@ const buildBookingMessage = (
   return lines.join("\n");
 };
 
-const BookScreen = ({ navigation }) => {
+const BookScreen = ({ navigation, route }) => {
   const { session } = useSession();
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -552,38 +555,65 @@ const BookScreen = ({ navigation }) => {
     (sum, option) => sum + option.price,
     0
   );
-  const totalPrice = basePrice + optionsTotal;
+  const selectedPetCount = selectedPets.length;
+  const newDogCount = showNewDogForm ? Number(formState.dogCount) || 0 : 0;
+  const petCount = Math.max(selectedPetCount + newDogCount, 1);
+  const additionalPetCount = Math.max(petCount - 1, 0);
+  const petsSubtotal =
+    basePrice * (1 + additionalPetCount * 0.5);
+  const totalPrice = petsSubtotal + optionsTotal;
   const availableDates = availability?.dates || [];
   const selectedDateEntry =
-    availableDates.find((day) => day.date === selectedDay) ||
-    availableDates[0] ||
-    null;
+    availableDates.find(
+      (day) => day.date === (selectedDay || formState.bookingDate)
+    ) || null;
   const availableSlots = selectedDateEntry?.slots || [];
   const selectedWindow = TIME_WINDOWS.find(
     (window) => window.id === formState.timeWindow
   );
   const filteredSlots = availableSlots.filter((slot) =>
-    slotMatchesWindow(slot.time, selectedWindow)
+    slotMatchesWindow(slot.time, selectedWindow) &&
+    slot.available &&
+    slot.reachable !== false
   );
-  const calendarYear = calendarMonth.getFullYear();
-  const calendarMonthIndex = calendarMonth.getMonth();
-  const calendarLabel = new Intl.DateTimeFormat("en-GB", {
-    month: "long",
-    year: "numeric",
-  }).format(calendarMonth);
-  const calendarFirstDay = new Date(calendarYear, calendarMonthIndex, 1).getDay();
-  const calendarDaysInMonth = new Date(
-    calendarYear,
-    calendarMonthIndex + 1,
-    0
-  ).getDate();
-  const calendarSlots = Array.from({ length: calendarFirstDay }, () => null).concat(
-    Array.from({ length: calendarDaysInMonth }, (_, index) => index + 1)
-  );
-  const calendarWeeks = [];
-  for (let i = 0; i < calendarSlots.length; i += 7) {
-    calendarWeeks.push(calendarSlots.slice(i, i + 7));
-  }
+  const calendarMonths = useMemo(() => {
+    const months = [];
+    const startMonth = new Date(
+      calendarMonth.getFullYear(),
+      calendarMonth.getMonth(),
+      1
+    );
+    for (let offset = 0; offset < 12; offset += 1) {
+      const monthDate = new Date(
+        startMonth.getFullYear(),
+        startMonth.getMonth() + offset,
+        1
+      );
+      const year = monthDate.getFullYear();
+      const monthIndex = monthDate.getMonth();
+      const label = new Intl.DateTimeFormat("en-GB", {
+        month: "long",
+        year: "numeric",
+      }).format(monthDate);
+      const firstDay = new Date(year, monthIndex, 1).getDay();
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      const slots = Array.from({ length: firstDay }, () => null).concat(
+        Array.from({ length: daysInMonth }, (_, index) => index + 1)
+      );
+      const weeks = [];
+      for (let i = 0; i < slots.length; i += 7) {
+        weeks.push(slots.slice(i, i + 7));
+      }
+      months.push({
+        key: `${year}-${monthIndex}`,
+        year,
+        monthIndex,
+        label,
+        weeks,
+      });
+    }
+    return months;
+  }, [calendarMonth]);
 
   const handleChange = (field, value) => {
     setFormState((current) => ({ ...current, [field]: value }));
@@ -686,6 +716,14 @@ const BookScreen = ({ navigation }) => {
     );
   };
 
+  const handleBackPress = () => {
+    if (route?.params?.returnToProfile) {
+      navigation.navigate("More", { screen: "ProfileOverview" });
+      return;
+    }
+    navigation.navigate("Home");
+  };
+
   const handleSubmit = async () => {
     if (
       !formState.address ||
@@ -784,7 +822,7 @@ const BookScreen = ({ navigation }) => {
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.navigate("Home")}
+            onPress={handleBackPress}
           >
             <Text style={styles.backIcon}>←</Text>
           </Pressable>
@@ -799,7 +837,7 @@ const BookScreen = ({ navigation }) => {
           const isExpanded = expandedCategories[group.category];
           const icon = CATEGORY_ICONS[group.category] || CATEGORY_ICONS.Services;
 
-        return (
+          return (
             <View key={group.category} style={styles.categorySection}>
               <Pressable
                 style={({ pressed }) => [
@@ -821,10 +859,10 @@ const BookScreen = ({ navigation }) => {
                 </View>
                 <Text style={styles.chevron}>{isExpanded ? "⌃" : "⌄"}</Text>
               </Pressable>
-            {isExpanded &&
-                group.services.map((service) => (
+              {isExpanded &&
+                group.services.map((service, serviceIndex) => (
                   <Pressable
-                    key={service.id}
+                    key={`${group.category}-${service.id || service.slug || service.title || serviceIndex}`}
                     style={({ pressed }) => [
                       styles.serviceCard,
                       pressed && styles.cardPressed,
@@ -1149,38 +1187,6 @@ const BookScreen = ({ navigation }) => {
                           </Text>
                         ) : (
                           <>
-                            <ScrollView
-                              horizontal
-                              showsHorizontalScrollIndicator={false}
-                              contentContainerStyle={styles.dateRow}
-                            >
-                              {availableDates.map((day) => (
-                                <Pressable
-                                  key={day.date}
-                                  style={({ pressed }) => [
-                                    styles.dateChip,
-                                    selectedDay === day.date &&
-                                      styles.dateChipActive,
-                                    pressed && styles.cardPressed,
-                                  ]}
-                                  onPress={() => {
-                                    setSelectedDay(day.date);
-                                    setSelectedSlot(null);
-                                    handleChange("bookingDate", day.date);
-                                  }}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.dateChipText,
-                                      selectedDay === day.date &&
-                                        styles.dateChipTextActive,
-                                    ]}
-                                  >
-                                    {day.date}
-                                  </Text>
-                                </Pressable>
-                              ))}
-                            </ScrollView>
                             {selectedDateEntry ? (
                               <View>
                                 <Text style={styles.label}>
@@ -1193,9 +1199,6 @@ const BookScreen = ({ navigation }) => {
                                     </Text>
                                   ) : (
                                     filteredSlots.map((slot) => {
-                                      const isAvailable =
-                                        slot.available &&
-                                        slot.reachable !== false;
                                       const isSelected =
                                         selectedSlot === slot.time &&
                                         selectedDateEntry.date ===
@@ -1206,11 +1209,8 @@ const BookScreen = ({ navigation }) => {
                                           style={({ pressed }) => [
                                             styles.timeChip,
                                             isSelected && styles.timeChipActive,
-                                            !isAvailable &&
-                                              styles.timeChipDisabled,
                                             pressed && styles.cardPressed,
                                           ]}
-                                          disabled={!isAvailable}
                                           onPress={() => {
                                             setSelectedSlot(slot.time);
                                             handleChange(
@@ -1235,8 +1235,6 @@ const BookScreen = ({ navigation }) => {
                                               styles.timeChipText,
                                               isSelected &&
                                                 styles.timeChipTextActive,
-                                              !isAvailable &&
-                                                styles.timeChipTextDisabled,
                                             ]}
                                           >
                                             {slot.time}
@@ -1256,9 +1254,9 @@ const BookScreen = ({ navigation }) => {
                     <Text style={styles.formSectionTitle}>Additional options</Text>
                     {availableAddons.length ? (
                       <View style={styles.chipRow}>
-                        {availableAddons.map((option) => (
+                        {availableAddons.map((option, optionIndex) => (
                           <Pressable
-                            key={option.id}
+                            key={`${option.id || option.label || optionIndex}`}
                             style={({ pressed }) => [
                               styles.optionChip,
                               selectedOptionIds.includes(option.id) &&
@@ -1355,11 +1353,18 @@ const BookScreen = ({ navigation }) => {
                 {basePrice ? (
                   <View style={styles.summaryTotals}>
                     <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Service</Text>
+                      <Text style={styles.summaryLabel}>
+                        Pets ({petCount})
+                      </Text>
                       <Text style={styles.summaryValue}>
-                        {formatCurrency(basePrice)}
+                        {formatCurrency(petsSubtotal)}
                       </Text>
                     </View>
+                    {petCount > 1 ? (
+                      <Text style={styles.summaryNote}>
+                        Additional pets are 50% off.
+                      </Text>
+                    ) : null}
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Add-ons</Text>
                       <Text style={styles.summaryValue}>
@@ -1403,84 +1408,70 @@ const BookScreen = ({ navigation }) => {
                   <Text style={styles.calendarHeaderText}>Done</Text>
                 </Pressable>
               </View>
-              <View style={styles.calendarMonthRow}>
-                <Pressable
-                  style={styles.calendarNavButton}
-                  onPress={() =>
-                    setCalendarMonth(
-                      new Date(
-                        calendarYear,
-                        calendarMonthIndex - 1,
-                        1
-                      )
-                    )
-                  }
-                >
-                  <Text style={styles.calendarNavText}>‹</Text>
-                </Pressable>
-                <Text style={styles.calendarMonthLabel}>{calendarLabel}</Text>
-                <Pressable
-                  style={styles.calendarNavButton}
-                  onPress={() =>
-                    setCalendarMonth(
-                      new Date(
-                        calendarYear,
-                        calendarMonthIndex + 1,
-                        1
-                      )
-                    )
-                  }
-                >
-                  <Text style={styles.calendarNavText}>›</Text>
-                </Pressable>
-              </View>
-              <View style={styles.weekHeader}>
-                {"SMTWTFS".split("").map((day) => (
-                  <Text key={day} style={styles.weekHeaderText}>
-                    {day}
-                  </Text>
-                ))}
-              </View>
-              {calendarWeeks.map((week, weekIndex) => (
-                <View key={`week-${weekIndex}`} style={styles.weekRow}>
-                  {week.map((day, dayIndex) => {
-                    if (!day) {
-                      return (
-                        <View
-                          key={`empty-${weekIndex}-${dayIndex}`}
-                          style={styles.dayCell}
-                        />
-                      );
-                    }
-                    const dateKey = buildDateKey(
-                      calendarYear,
-                      calendarMonthIndex,
-                      day
-                    );
-                    const isSelected = calendarDateDraft === dateKey;
-                    return (
-                      <Pressable
-                        key={dateKey}
-                        style={({ pressed }) => [
-                          styles.dayCell,
-                          isSelected && styles.daySelected,
-                          pressed && styles.dayPressed,
-                        ]}
-                        onPress={() => setCalendarDateDraft(dateKey)}
-                      >
-                        <Text
-                          style={[
-                            styles.dayText,
-                            isSelected && styles.dayTextSelected,
-                          ]}
-                        >
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.calendarMonthsScroll}
+              >
+                {calendarMonths.map((month) => (
+                  <View key={month.key} style={styles.calendarMonthPage}>
+                    <Text style={styles.calendarMonthLabel}>
+                      {month.label}
+                    </Text>
+                    <View style={styles.weekHeader}>
+                      {"SMTWTFS".split("").map((day) => (
+                        <Text key={day} style={styles.weekHeaderText}>
                           {day}
                         </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ))}
+                      ))}
+                    </View>
+                    {month.weeks.map((week, weekIndex) => (
+                      <View
+                        key={`${month.key}-week-${weekIndex}`}
+                        style={styles.weekRow}
+                      >
+                        {week.map((day, dayIndex) => {
+                          if (!day) {
+                            return (
+                              <View
+                                key={`${month.key}-empty-${weekIndex}-${dayIndex}`}
+                                style={styles.dayCell}
+                              />
+                            );
+                          }
+                          const dateKey = buildDateKey(
+                            month.year,
+                            month.monthIndex,
+                            day
+                          );
+                          const isSelected = calendarDateDraft === dateKey;
+                          return (
+                            <Pressable
+                              key={dateKey}
+                              style={({ pressed }) => [
+                                styles.dayCell,
+                                isSelected && styles.daySelected,
+                                pressed && styles.dayPressed,
+                              ]}
+                              onPress={() => setCalendarDateDraft(dateKey)}
+                            >
+                              <Text
+                                style={[
+                                  styles.dayText,
+                                  isSelected && styles.dayTextSelected,
+                                ]}
+                              >
+                                {day}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -2036,6 +2027,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 4,
   },
+  summaryNote: {
+    fontSize: 12,
+    color: "#6c5a92",
+    marginBottom: 6,
+  },
   summaryLabel: {
     fontSize: 13,
     color: "#6c5a92",
@@ -2075,6 +2071,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#2b1a4b",
+  },
+  calendarMonthsScroll: {
+    paddingBottom: 8,
+  },
+  calendarMonthPage: {
+    width: CALENDAR_PAGE_WIDTH,
   },
   calendarMonthRow: {
     flexDirection: "row",

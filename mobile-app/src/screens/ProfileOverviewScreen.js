@@ -131,7 +131,7 @@ const ProfileOverviewScreen = ({ navigation }) => {
 
         <Pressable
           style={styles.quickActionCard}
-          onPress={() => navigation.navigate("Book")}
+          onPress={() => navigation.navigate("Book", { returnToProfile: true })}
         >
           <Text style={styles.quickActionIcon}>✨</Text>
           <Text style={styles.quickActionText}>Book a new service</Text>
@@ -189,7 +189,14 @@ const ProfileOverviewScreen = ({ navigation }) => {
               .filter(Boolean)
               .join(" • ");
             return (
-              <View key={pet.id || pet.name} style={styles.petCard}>
+              <Pressable
+                key={pet.id || pet.name}
+                style={({ pressed }) => [
+                  styles.petCard,
+                  pressed && styles.petCardPressed,
+                ]}
+                onPress={() => navigation.push("PetsProfile", { pet })}
+              >
                 <View style={styles.petAvatar}>
                   <Text style={styles.petAvatarText}>
                     {getInitials(pet.name || "Pet")}
@@ -200,7 +207,7 @@ const ProfileOverviewScreen = ({ navigation }) => {
                   <Text style={styles.petMeta}>{meta}</Text>
                 </View>
                 <Text style={styles.petChevron}>›</Text>
-              </View>
+              </Pressable>
             );
           })
         )}
@@ -345,6 +352,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e6e6e6",
     marginBottom: 12,
+  },
+  petCardPressed: {
+    opacity: 0.85,
   },
   petAvatar: {
     width: 56,
