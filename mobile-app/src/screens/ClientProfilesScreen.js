@@ -36,12 +36,29 @@ const ClientProfilesScreen = ({ navigation }) => {
     if (!supabase || !isOwner) return;
     setStatus("loading");
     try {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, full_name, email, address, profile_photo_url, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setClients(data || []);
+      const pageSize = 1000;
+      let offset = 0;
+      let allClients = [];
+
+      while (true) {
+        const { data, error } = await supabase
+          .from("clients")
+          .select("id, full_name, email, address, profile_photo_url, created_at")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + pageSize - 1);
+
+        if (error) throw error;
+
+        const batch = data || [];
+        allClients = [...allClients, ...batch];
+
+        if (batch.length < pageSize) {
+          break;
+        }
+        offset += pageSize;
+      }
+
+      setClients(allClients);
       setStatus("idle");
     } catch (error) {
       console.error("Failed to load clients", error);

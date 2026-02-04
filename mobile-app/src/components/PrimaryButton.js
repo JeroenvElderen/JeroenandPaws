@@ -17,23 +17,23 @@ const PrimaryButton = ({ label, onPress, variant = "primary" }) => (
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#6c3ad6",
+    backgroundColor: "#7c45f3",
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 20,
     alignItems: "center",
     marginVertical: 6,
-    shadowColor: "#6c3ad6",
+    shadowColor: "#000000",
     shadowOpacity: 0.16,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 14,
     elevation: 3,
   },
   buttonOutline: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "#c9b8ee",
-    shadowOpacity: 0.04,
+    borderColor: "#7c45f3",
+    shadowOpacity: 0,
     elevation: 0,
   },
   buttonPressed: {
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   textOutline: {
-    color: "#5d2fc5",
+    color: "#f4f2ff",
   },
 });
 

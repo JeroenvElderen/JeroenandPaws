@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { supabase } from "../api/supabaseClient";
@@ -19,11 +20,11 @@ import { clearActiveCard } from "../utils/activeCards";
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const defaultActivities = [
-  { key: "pee", label: "Pee", icon: "💧" },
-  { key: "poo", label: "Poo", icon: "💩" },
-  { key: "food", label: "Food", icon: "🍽️" },
-  { key: "water", label: "Water", icon: "🧊" },
-  { key: "walk", label: "Walk", icon: "🐾" },
+  { key: "pee", label: "Pee", icon: "water" },
+  { key: "poo", label: "Poo", icon: "emoticon-poop" },
+  { key: "food", label: "Food", icon: "food" },
+  { key: "water", label: "Water", icon: "cup-water" },
+  { key: "walk", label: "Walk", icon: "paw" },
 ];
 
 const formatPetsLabel = (pets) => {
@@ -167,12 +168,13 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
           0
         )
       : 0;
-  const elapsedMinutes = Math.floor(elapsedMs / 60000);
   const remainingMs = bookingDurationMinutes
-    ? Math.max((bookingDurationMinutes - elapsedMinutes) * 60000, 0)
+    ? Math.max(bookingDurationMinutes * 60000 - elapsedMs, 0)
     : 0;
   const canFinishVisit =
-    !isOwner || !bookingDurationMinutes || elapsedMinutes >= bookingDurationMinutes;
+    !isOwner ||
+    !bookingDurationMinutes ||
+    elapsedMs >= bookingDurationMinutes * 60000;
 
   const getPetKey = (pet, index) => pet?.id || pet?.name || `pet-${index}`;
 
@@ -434,6 +436,11 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   };
 
   useEffect(() => {
+    if (!cardStartedAt) {
+      setElapsedMs(0);
+      return undefined;
+    }
+
     if (finishedAt) {
       const endTime = new Date(finishedAt).getTime();
       setElapsedMs(
@@ -581,7 +588,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
             setPhotoCount(0);
             setCardPhotos([]);
             setCounts(buildActivityCounts(cardPets));
-            setCardStartedAt(Date.now());
+            setCardStartedAt(null);
             navigation.goBack();
           },
         },
@@ -638,7 +645,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
               <Text style={styles.addPhotoText}>
                 {photoUploadStatus === "uploading"
                   ? "Uploading..."
-                  : "📷 Add Photo"}
+                  : "Add photo"}
               </Text>
             </Pressable>
           ) : null}
@@ -687,7 +694,11 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                   return (
                     <View key={activity.key} style={styles.activityRow}>
                     <View style={styles.activityLabel}>
-                      <Text style={styles.activityIcon}>{activity.icon}</Text>
+                      <MaterialCommunityIcons
+                        name={activity.icon}
+                        size={18}
+                        color="#7c45f3"
+                      />
                       <Text style={styles.activityText}>
                         {activity.label}
                       </Text>
@@ -801,12 +812,12 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   container: {
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   header: {
     flexDirection: "row",
@@ -817,15 +828,15 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#efe7dd",
+    borderColor: "#1f1535",
   },
   backIcon: {
     fontSize: 20,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   headerText: {
     flex: 1,
@@ -834,21 +845,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   headerSubtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   headerSpacer: {
     width: 42,
   },
   mapCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     padding: 16,
     marginBottom: 16,
   },
@@ -860,18 +871,18 @@ const styles = StyleSheet.create({
   mapPlaceholder: {
     height: 160,
     borderRadius: 16,
-    backgroundColor: "#f0ecf6",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
   },
   mapPlaceholderText: {
-    color: "#8c7bb0",
+    color: "#c9c5d8",
     fontSize: 13,
     marginBottom: 8,
   },
   routeBadge: {
-    backgroundColor: "#2f63d6",
+    backgroundColor: "#7c45f3",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
@@ -884,76 +895,82 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#cfd6e0",
+    borderColor: "#2a1d45",
     paddingVertical: 12,
     alignItems: "center",
   },
   addPhotoText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#3a2b55",
+    color: "#f4f2ff",
   },
   timerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   timerLabel: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginBottom: 4,
   },
   timerValue: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#2f63d6",
+    color: "#f4f2ff",
   },
   timerMeta: {
     marginTop: 4,
     fontSize: 12,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
   },
   noteCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     padding: 16,
     marginBottom: 16,
   },
   noteTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 8,
   },
   noteInput: {
     minHeight: 72,
     fontSize: 14,
-    color: "#4a3b63",
+    color: "#f4f2ff",
+    backgroundColor: "#0c081f",
+    borderWidth: 1,
+    borderColor: "#1f1535",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   section: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     padding: 16,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 16,
   },
   petSection: {
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#efe4f7",
+    borderBottomColor: "#1f1535",
     paddingBottom: 12,
   },
   petRow: {
@@ -965,23 +982,23 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
   petAvatarText: {
     fontWeight: "700",
-    color: "#5d2fc5",
+    color: "#f4f2ff",
   },
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   petBreed: {
     fontSize: 13,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
     marginTop: 4,
   },
   activityRow: {
@@ -995,12 +1012,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  activityIcon: {
-    fontSize: 18,
-  },
   activityText: {
     fontSize: 15,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   counter: {
     flexDirection: "row",
@@ -1012,44 +1026,44 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: "#f2eff8",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
   },
   readOnlyCountText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   counterButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#d9d9de",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
   },
   counterButtonPrimary: {
-    backgroundColor: "#2b1a4b",
+    backgroundColor: "#7c45f3",
   },
   counterButtonText: {
     fontSize: 18,
-    color: "#ffffff",
+    color: "#f4f2ff",
   },
   counterValue: {
     fontSize: 15,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     fontWeight: "600",
     minWidth: 20,
     textAlign: "center",
   },
   finishButton: {
     borderRadius: 999,
-    backgroundColor: "#2f63d6",
+    backgroundColor: "#7c45f3",
     paddingVertical: 14,
     alignItems: "center",
-    shadowColor: "#2b1a4b",
-    shadowOpacity: 0.12,
+    shadowColor: "#000000",
+    shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
   },
@@ -1061,40 +1075,40 @@ const styles = StyleSheet.create({
   finishBadge: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#cfd6e0",
+    borderColor: "#2a1d45",
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
   },
   finishBadgeText: {
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     fontWeight: "600",
   },
   photoCountText: {
     marginTop: 12,
     textAlign: "center",
     fontSize: 12,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
   },
   resetButton: {
     marginTop: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#f0c2c2",
+    borderColor: "#4a1f3d",
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#fff5f5",
+    backgroundColor: "#1f1535",
     marginBottom: 12,
   },
   resetButtonText: {
-    color: "#a01212",
+    color: "#ff8f8f",
     fontWeight: "700",
   },
   photoGallery: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     padding: 16,
     marginBottom: 16,
   },
@@ -1107,11 +1121,11 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 16,
-    backgroundColor: "#f0ecf6",
+    backgroundColor: "#1f1535",
   },
   errorText: {
     textAlign: "center",
-    color: "#b42318",
+    color: "#ff6b6b",
     marginBottom: 10,
     fontSize: 13,
   },

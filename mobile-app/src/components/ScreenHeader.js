@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const ScreenHeader = ({ title, onBack, variant = "light" }) => {
+const ScreenHeader = ({ title, onBack, variant = "dark" }) => {
   const isDark = variant === "dark";
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>

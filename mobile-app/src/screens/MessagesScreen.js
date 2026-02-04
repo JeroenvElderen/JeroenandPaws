@@ -19,6 +19,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../api/supabaseClient";
@@ -55,7 +56,7 @@ const parseMessageBody = (body) => {
 const buildPreviewText = (body) => {
   const parsed = parseMessageBody(body);
   if (parsed.type === "image") {
-    return "📷 Photo";
+    return "Photo attachment";
   }
   if (parsed.type === "jeroen_paws_card") {
     return parsed.title || "Jeroen & Paws Card";
@@ -616,11 +617,15 @@ const MessagesScreen = ({ navigation }) => {
             onPress={() =>
               navigation.navigate("Profile", {
                 screen: "ProfileOverview",
-                params: { clientId: activeClientId },
+                params: { clientId: activeClientId },params: { clientId: activeClientId, returnTo: "Messages" },
               })
             }
           >
-            <Text style={styles.headerActionText}>👤</Text>
+            <Ionicons
+              name="person-circle"
+              size={28}
+              color="#7c45f3"
+            />
           </Pressable>
         ) : (
           <View style={styles.headerSpacer} />
@@ -682,7 +687,7 @@ const MessagesScreen = ({ navigation }) => {
         ) : null}
         <View style={styles.inputRow}>
           <Pressable style={styles.attachButton} onPress={handlePickImage}>
-            <Text style={styles.attachIcon}>🖼️</Text>
+            <Ionicons name="image" size={20} color="#7c45f3" />
           </Pressable>
           <TextInput
             style={styles.input}
@@ -759,7 +764,7 @@ const MessagesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   keyboardAvoid: {
     flex: 1,
@@ -768,18 +773,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   inboxList: {
     paddingBottom: 24,
   },
   inboxCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     padding: 16,
-    marginBottom: 12,
+    marginTop: 12,
   },
   cardPressed: {
     opacity: 0.7,
@@ -792,12 +797,12 @@ const styles = StyleSheet.create({
   inboxName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 6,
   },
   inboxPreview: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     maxWidth: 220,
   },
   inboxMeta: {
@@ -812,7 +817,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#5d2fc5",
+    backgroundColor: "#7c45f3",
   },
   emptyState: {
     alignItems: "center",
@@ -820,11 +825,11 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   chatContainer: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   chatHeader: {
     flexDirection: "row",
@@ -833,8 +838,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0ecf6",
-    backgroundColor: "#ffffff",
+    borderBottomColor: "#1f1535",
+    backgroundColor: "#120d23",
   },
   backButton: {
     width: 38,
@@ -842,13 +847,13 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f6f4fb",
+    backgroundColor: "#1f1535",
     borderWidth: 1,
-    borderColor: "#e7def7",
+    borderColor: "#2a1d45",
   },
   backButtonIcon: {
     fontSize: 18,
-    color: "#46315f",
+    color: "#f4f2ff",
   },
   chatHeaderText: {
     flex: 1,
@@ -864,21 +869,18 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     borderWidth: 1,
-    borderColor: "#e7def7",
-  },
-  headerActionText: {
-    fontSize: 16,
+    borderColor: "#2a1d45",
   },
   chatTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   chatSubtitle: {
     fontSize: 12,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginTop: 2,
   },
   messageList: {
@@ -901,18 +903,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   messageBubbleOwn: {
-    backgroundColor: "#e9e4ff",
+    backgroundColor: "#2a1d45",
     borderTopRightRadius: 4,
   },
   messageBubbleOther: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderTopLeftRadius: 4,
     borderWidth: 1,
-    borderColor: "#e7def7",
+    borderColor: "#1f1535",
   },
   messageText: {
     fontSize: 14,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   messageMeta: {
     flexDirection: "row",
@@ -943,16 +945,16 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#7c6ba0",
-    backgroundColor: "#efe9fb",
+    color: "#c9c5d8",
+    backgroundColor: "#1f1535",
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   inputWrapper: {
     borderTopWidth: 1,
-    borderTopColor: "#e7def7",
-    backgroundColor: "#ffffff",
+    borderTopColor: "#1f1535",
+    backgroundColor: "#0c081f",
     paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 12,
@@ -966,26 +968,24 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#f1ecfb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
-  },
-  attachIcon: {
-    fontSize: 18,
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#e7def7",
+    borderColor: "#1f1535",
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
     maxHeight: 90,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
+    color: "#f4f2ff",
   },
   sendButton: {
-    backgroundColor: "#5d2fc5",
+    backgroundColor: "#7c45f3",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 18,
@@ -1013,13 +1013,13 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#f3eefb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
   },
   previewRemoveText: {
     fontSize: 12,
-    color: "#5d2fc5",
+    color: "#f4f2ff",
   },
   messageImage: {
     width: 220,
@@ -1032,11 +1032,11 @@ const styles = StyleSheet.create({
   cardMessageTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   cardMessageBody: {
     fontSize: 12,
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   loadingState: {
     alignItems: "center",
@@ -1046,12 +1046,12 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     fontSize: 12,
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   errorText: {
     marginTop: 6,
     fontSize: 12,
-    color: "#c0392b",
+    color: "#ff6b6b",
   },
 });
 

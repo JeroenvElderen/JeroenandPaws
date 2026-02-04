@@ -17,9 +17,9 @@ import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 
 const getInitials = (name) => {
-  if (!name) return "🐾";
+  if (!name) return "JP";
   const parts = name.trim().split(" ").filter(Boolean);
-  if (parts.length === 0) return "🐾";
+  if (parts.length === 0) return "JP";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
@@ -560,13 +560,13 @@ const PetsProfileScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: 40,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   detailHeader: {
     flexDirection: "row",
@@ -578,25 +578,25 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#efe7dd",
+    borderColor: "#1f1535",
   },
   headerIcon: {
     fontSize: 18,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   headerActionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   header: {
     alignItems: "center",
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 220,
     borderRadius: 18,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -624,24 +624,24 @@ const styles = StyleSheet.create({
   petHeroPlaceholderText: {
     fontSize: 40,
     fontWeight: "700",
-    color: "#5d2fc5",
+    color: "#f4f2ff",
   },
   photoAction: {
     marginBottom: 12,
   },
   photoActionText: {
     fontSize: 13,
-    color: "#2f63d6",
+    color: "#bfa7ff",
     fontWeight: "600",
   },
   petDetailName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   petDetailMeta: {
     fontSize: 16,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginTop: 6,
   },
   tabRow: {
@@ -654,9 +654,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "#f6f4fb",
+    backgroundColor: "#120d23",
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
   },
   tabPillActive: {
     backgroundColor: "#2b1a4b",
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   tabTextActive: {
     color: "#ffffff",
@@ -673,37 +673,37 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: "#f4f2ff",
   },
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#6f6f6f",
+    color: "#c9c5d8",
   },
   emptyCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e6e6e6",
+    borderColor: "#1f1535",
   },
   emptyText: {
     fontSize: 14,
-    color: "#6f6f6f",
+    color: "#c9c5d8",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginTop: 12,
     marginBottom: 8,
   },
   sectionCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ece4fb",
+    borderColor: "#1f1535",
     marginBottom: 16,
   },
   detailRow: {
@@ -719,59 +719,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    color: "#8d80a8",
+    color: "#8b7ca8",
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 15,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   selectInput: {
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   selectValue: {
     fontSize: 14,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   selectChevron: {
     fontSize: 12,
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   selectOptions: {
     marginTop: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
+    borderColor: "#1f1535",
+    backgroundColor: "#120d23",
     overflow: "hidden",
   },
   selectOption: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1edf9",
+    borderBottomColor: "#1f1535",
   },
   selectOptionText: {
     fontSize: 14,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#2b1a4b",
-    backgroundColor: "#ffffff",
+    color: "#f4f2ff",
+    backgroundColor: "#120d23",
   },
   textArea: {
     minHeight: 80,
@@ -779,18 +779,18 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: 14,
-    color: "#4a3a67",
+    color: "#c9c5d8",
     lineHeight: 20,
   },
   galleryTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 4,
   },
   gallerySubtitle: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginBottom: 12,
   },
   photoGrid: {
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 14,
-    backgroundColor: "#f1edf9",
+    backgroundColor: "#1f1535",
   },
   addPhotoTile: {
     width: 120,
@@ -810,46 +810,46 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#cfd6e0",
+    borderColor: "#2a1d45",
     alignItems: "center",
     justifyContent: "center",
   },
   addPhotoIcon: {
     fontSize: 28,
-    color: "#2f63d6",
+    color: "#bfa7ff",
     marginBottom: 4,
   },
   addPhotoLabel: {
     fontSize: 12,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   editProfileButton: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#cfd6e0",
+    borderColor: "#2a1d45",
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     marginBottom: 12,
   },
   editProfileText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   errorText: {
-    color: "#b42318",
+    color: "#ff6b6b",
     marginBottom: 12,
     textAlign: "center",
   },
   petCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#e6e6e6",
+    borderColor: "#1f1535",
     marginBottom: 12,
   },
   petCardPressed: {
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
   petAvatarText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b2b2b",
+    color: "#f4f2ff",
   },
   petInfo: {
     flex: 1,
@@ -880,16 +880,16 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: "#f4f2ff",
   },
   petMeta: {
     fontSize: 13,
-    color: "#6f6f6f",
+    color: "#c9c5d8",
     marginTop: 4,
   },
   petChevron: {
     fontSize: 22,
-    color: "#b0b0b0",
+    color: "#8b7ca8",
   },
 });
 

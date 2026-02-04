@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
@@ -13,25 +14,25 @@ import { useSession } from "../context/SessionContext";
 const userItems = [
   {
     label: "Profile",
-    icon: "🪪",
+    icon: "card-account-details",
     description: "View your profile details",
     route: "ProfileOverview",
   },
   {
     label: "Your pets",
-    icon: "🐶",
+    icon: "dog",
     description: "Manage pet profiles",
     route: "PetsProfile",
   },
   {
     label: "Settings",
-    icon: "🛠️",
+    icon: "cog",
     description: "Notifications and preferences",
     route: "Settings",
   },
   {
     label: "Help Centre & Support",
-    icon: "🛟",
+    icon: "lifebuoy",
     description: "Email, call, or WhatsApp",
     route: "HelpSupport",
   },
@@ -72,7 +73,12 @@ const MoreScreen = ({ navigation }) => {
               onPress={() => navigation.navigate(item.route)}
             >
               <View style={styles.menuLeft}>
-                <Text style={styles.menuIcon}>{item.icon}</Text>
+                <MaterialCommunityIcons
+                  name={item.icon}
+                  size={20}
+                  color="#7c45f3"
+                  style={styles.menuIcon}
+                />
                 <View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
                   <Text style={styles.menuDescription}>
@@ -93,7 +99,12 @@ const MoreScreen = ({ navigation }) => {
                 onPress={() => navigation.navigate("ClientProfiles")}
               >
                 <View style={styles.menuLeft}>
-                  <Text style={styles.menuIcon}>🗂️</Text>
+                  <MaterialCommunityIcons
+                    name="folder-account"
+                    size={20}
+                    color="#7c45f3"
+                    style={styles.menuIcon}
+                  />
                   <View>
                     <Text style={styles.menuLabel}>Client profiles</Text>
                     <Text style={styles.menuDescription}>
@@ -109,7 +120,12 @@ const MoreScreen = ({ navigation }) => {
         <View style={styles.sectionCard}>
           <Pressable style={styles.menuItem} onPress={handleLogout}>
             <View style={styles.menuLeft}>
-              <Text style={styles.menuIcon}>🚪</Text>
+              <MaterialCommunityIcons
+                name="logout"
+                size={20}
+                color="#7c45f3"
+                style={styles.menuIcon}
+              />
               <View>
                 <Text style={styles.menuLabel}>Log out</Text>
                 <Text style={styles.menuDescription}>
@@ -128,29 +144,29 @@ const MoreScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
     padding: 20,
     paddingBottom: 32,
   },
   chevron: {
     fontSize: 20,
-    color: "#a194bb",
+    color: "#8b7ca8",
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 12,
   },
   sectionCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 20,
     overflow: "hidden",
   },
@@ -161,7 +177,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f2ecfb",
+    borderBottomColor: "#1f1535",
   },
   menuItemLast: {
     borderBottomWidth: 0,
@@ -171,17 +187,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   menuIcon: {
-    fontSize: 18,
     marginRight: 10,
   },
   menuLabel: {
     fontSize: 15,
-    color: "#3a2b55",
+    color: "#f4f2ff",
     fontWeight: "600",
   },
   menuDescription: {
     fontSize: 12,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
     marginTop: 2,
   },
 });

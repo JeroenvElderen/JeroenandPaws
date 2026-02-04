@@ -270,27 +270,27 @@ const CalendarScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
     padding: 20,
     paddingBottom: 32,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 16,
     textAlign: "center",
   },
   calendarCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 20,
   },
   monthHeader: {
@@ -303,18 +303,18 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f1ecfb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
   },
   monthButtonText: {
     fontSize: 18,
-    color: "#5d2fc5",
+    color: "#bfa7ff",
   },
   monthLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     textAlign: "center",
   },
   weekHeader: {
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     width: 32,
     textAlign: "center",
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -342,36 +342,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayBooked: {
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
   },
   daySelected: {
-    backgroundColor: "#6c3ad6",
+    backgroundColor: "#7c45f3",
   },
   dayPressed: {
     opacity: 0.85,
   },
   dayText: {
     fontSize: 12,
-    color: "#2b1a4b",
+    color: "#c9c5d8",
     fontWeight: "600",
   },
   dayTextBooked: {
-    color: "#5d2fc5",
+    color: "#bfa7ff",
   },
   dayTextSelected: {
     color: "#ffffff",
   },
   listCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
   },
   listTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 12,
   },
   bookingRow: {
@@ -380,31 +380,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f2ecfb",
+    borderBottomColor: "#1f1535",
   },
   bookingDate: {
     fontSize: 14,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     fontWeight: "600",
   },
   bookingService: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginTop: 2,
   },
   bookingTime: {
     fontSize: 12,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     marginTop: 2,
   },
   bookingStatus: {
     fontSize: 12,
-    color: "#5d2fc5",
+    color: "#bfa7ff",
     fontWeight: "600",
   },
   emptyText: {
     fontSize: 13,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
   },
 });
 

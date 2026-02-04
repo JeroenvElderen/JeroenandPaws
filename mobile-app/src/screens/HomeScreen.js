@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { fetchJson } from "../api/client";
@@ -514,7 +515,7 @@ const HomeScreen = ({ navigation }) => {
             <Pressable onPress={() => navigation.navigate("Messages")}>
               <View style={styles.iconBadgeWrapper}>
                 <View style={styles.iconBadge}>
-                  <Text style={styles.iconBadgeText}>💬</Text>
+                  <Ionicons name="chatbubble-ellipses" size={18} color="#f4f2ff" />
                 </View>
                 {unreadBadgeCount > 0 ? (
                   <View style={styles.unreadBadge}>
@@ -533,7 +534,7 @@ const HomeScreen = ({ navigation }) => {
         </Text>
 
         <View style={styles.noticeCard}>
-          <Text style={styles.noticeIcon}>🗓️</Text>
+          <Ionicons name="calendar" size={18} color="#f4f2ff" />
           <Text style={styles.noticeText}>
             {upcomingBookings.length
               ? `${upcomingBookings.length} upcoming booking${
@@ -687,7 +688,7 @@ const HomeScreen = ({ navigation }) => {
                     {isJeroenAccount && booking?.client_id ? (
                       <Pressable
                         style={({ pressed }) => [
-                          styles.profileLink,
+                          styles.cardButton,
                           pressed && styles.cardPressed,
                         ]}
                         onPress={() =>
@@ -697,7 +698,7 @@ const HomeScreen = ({ navigation }) => {
                           })
                         }
                       >
-                        <Text style={styles.profileLinkText}>
+                        <Text style={styles.cardButtonText}>
                           View client profile
                         </Text>
                       </Pressable>
@@ -717,19 +718,24 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#120d23",
+    borderWidth: 1,
+    borderColor: "#1f1535",
   },
   headerRight: {
     flexDirection: "row",
@@ -738,50 +744,47 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   subtitle: {
     fontSize: 16,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginTop: 2,
   },
   dateStamp: {
     fontSize: 13,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     marginTop: 4,
   },
   avatar: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#d8ccef",
+    borderColor: "#2a1d45",
   },
   avatarText: {
     fontWeight: "700",
-    color: "#5d2fc5",
+    color: "#f4f2ff",
   },
   iconBadge: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#2a1d45",
   },
   iconBadgeWrapper: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconBadgeText: {
-    fontSize: 18,
   },
   unreadBadge: {
     position: "absolute",
@@ -791,11 +794,11 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 4,
-    backgroundColor: "#d92c2c",
+    backgroundColor: "#d33a3a",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#ffffff",
+    borderColor: "#0c081f",
   },
   unreadBadgeText: {
     fontSize: 10,
@@ -804,31 +807,28 @@ const styles = StyleSheet.create({
   },
   updateText: {
     fontSize: 14,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     marginBottom: 14,
   },
   noticeCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
-    shadowColor: "#2b1a4b",
-    shadowOpacity: 0.06,
+    borderColor: "#1f1535",
+    shadowColor: "#000000",
+    shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
-    elevation: 2,
+    elevation: 3,
     marginBottom: 14,
-  },
-  noticeIcon: {
-    fontSize: 18,
-    marginRight: 10,
+    gap: 10,
   },
   noticeText: {
     fontSize: 14,
-    color: "#3a2b55",
+    color: "#f4f2ff",
     fontWeight: "700",
   },
   quickActions: {
@@ -836,11 +836,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quickCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -852,51 +852,51 @@ const styles = StyleSheet.create({
   },
   quickLabel: {
     fontSize: 15,
-    color: "#2f2149",
+    color: "#f4f2ff",
     fontWeight: "600",
   },
   quickSubtext: {
     fontSize: 13,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
     marginTop: 4,
   },
   chevron: {
     fontSize: 24,
-    color: "#a194bb",
+    color: "#8b6ca8",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 12,
   },
   emptyCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
   },
   emptyText: {
     fontSize: 14,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 16,
   },
   cardJeroen: {
-    borderColor: "#c8b8a4",
+    borderColor: "#2f2149",
   },
   cardJeroenActive: {
     borderWidth: 2,
-    borderColor: "#9a6b2d",
-    shadowColor: "#5b3a0f",
-    shadowOpacity: 0.12,
+    borderColor: "#7c45f3",
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 14,
     elevation: 4,
@@ -909,76 +909,62 @@ const styles = StyleSheet.create({
   },
   cardTime: {
     fontSize: 16,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     fontWeight: "700",
   },
   cardTitle: {
     fontSize: 15,
-    color: "#4a3a68",
+    color: "#c9c5d8",
     marginTop: 4,
     fontWeight: "600",
   },
   cardMeta: {
     fontSize: 14,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     marginTop: 4,
   },
   statusBadge: {
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   statusBadgeText: {
-    color: "#5d2fc5",
+    color: "#bfa7ff",
     fontWeight: "600",
     fontSize: 12,
   },
   cardFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#efe4d6",
+    borderTopColor: "#1f1535",
     paddingTop: 12,
     marginTop: 4,
   },
   cardTimerText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2f63d6",
+    color: "#7c45f3",
     marginBottom: 10,
   },
   cardButton: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#d9d2c7",
+    borderColor: "#2a1d45",
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
-  },
-  profileLink: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#efe9fb",
-    marginTop: 8,
-  },
-  profileLinkText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#5d2fc5",
+    backgroundColor: "#120d23",
+    marginBottom: 12,
   },
   cardButtonActive: {
-    backgroundColor: "#2f63d6",
-    borderColor: "#2f63d6",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   cardButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#554e44",
+    color: "#f4f2ff",
     textAlign: "center",
   },
   cardButtonTextActive: {

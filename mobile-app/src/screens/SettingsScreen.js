@@ -152,8 +152,8 @@ const SettingsScreen = ({ navigation }) => {
                   sms: smsAlerts,
                 });
               }}
-              trackColor={{ false: "#e6def6", true: "#bda8f0" }}
-              thumbColor={notificationsEnabled ? "#6c3ad6" : "#f2ecfb"}
+              trackColor={{ false: "#1f1535", true: "#7c45f3" }}
+              thumbColor={notificationsEnabled ? "#f4f2ff" : "#8b7ca8"}
             />
           </View>
           <View style={styles.row}>
@@ -171,8 +171,8 @@ const SettingsScreen = ({ navigation }) => {
                   sms: smsAlerts,
                 });
               }}
-              trackColor={{ false: "#e6def6", true: "#bda8f0" }}
-              thumbColor={emailUpdates ? "#6c3ad6" : "#f2ecfb"}
+              trackColor={{ false: "#1f1535", true: "#7c45f3" }}
+              thumbColor={emailUpdates ? "#f4f2ff" : "#8b7ca8"}
             />
           </View>
           <View style={styles.row}>
@@ -190,8 +190,8 @@ const SettingsScreen = ({ navigation }) => {
                   sms: value,
                 });
               }}
-              trackColor={{ false: "#e6def6", true: "#bda8f0" }}
-              thumbColor={smsAlerts ? "#6c3ad6" : "#f2ecfb"}
+              trackColor={{ false: "#1f1535", true: "#7c45f3" }}
+              thumbColor={smsAlerts ? "#f4f2ff" : "#8b7ca8"}
             />
           </View>
           {status === "saving" ? (
@@ -248,20 +248,20 @@ const SettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 16,
   },
   row: {
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f2ecfb",
+    borderBottomColor: "#1f1535",
   },
   rowCopy: {
     flex: 1,
@@ -279,47 +279,47 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   helper: {
     fontSize: 12,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
     marginTop: 4,
   },
   helperText: {
     fontSize: 12,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 12,
   },
   value: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginBottom: 12,
   },
   button: {
     alignSelf: "flex-start",
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#2a1d45",
     marginBottom: 6,
   },
   buttonText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#4a3a68",
+    color: "#f4f2ff",
   },
   divider: {
     height: 1,
-    backgroundColor: "#f2ecfb",
+    backgroundColor: "#1f1535",
     marginVertical: 12,
   },
 });

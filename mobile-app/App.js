@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Platform, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -34,15 +35,15 @@ const RootStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 
 const TabLabel = ({ label, color }) => (
-  <Text style={{ color, fontSize: 12, marginBottom: 4 }}>{label}</Text>
+  <Text style={{ color, fontSize: 12 }}>{label}</Text>
 );
 
 const tabIcons = {
-  Home: "🏠",
-  Book: "📖",
-  Calendar: "📅",
-  Messages: "💬",
-  Profile: "⋯",
+  Home: "home",
+  Book: "book",
+  Calendar: "calendar",
+  Messages: "chatbubbles",
+  Profile: "ellipsis-horizontal",
 };
 
 Notifications.setNotificationHandler({
@@ -88,7 +89,7 @@ const ProfileStackScreen = () => (
     <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
     <ProfileStack.Screen
       name="ProfileOverview"
-      component={ProfileOverviewScreen}
+      component={MoreScreen}
     />
     <ProfileStack.Screen
       name="ClientProfiles"
@@ -109,10 +110,13 @@ const MainTabs = () => (
     screenOptions={{
       headerShown: false,
       tabBarStyle: TAB_BAR_STYLE,
-      tabBarActiveTintColor: "#5d2fc5",
-      tabBarInactiveTintColor: "#a093b9",
+      tabBarActiveTintColor: "#7c45f3",
+      tabBarInactiveTintColor: "#8b7ca8",
       tabBarIconStyle: {
-        marginTop: 8,
+        marginTop: 0,
+      },
+      tabBarLabelStyle: {
+        marginBottom: 0,
       },
       tabBarItemStyle: {
         flex: 1,
@@ -126,7 +130,7 @@ const MainTabs = () => (
       component={HomeScreen}
       options={{
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>{tabIcons.Home}</Text>
+          <Ionicons name={tabIcons.Home} size={20} color={color} />
         ),
         tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
       }}
@@ -136,7 +140,7 @@ const MainTabs = () => (
       component={BookScreen}
       options={{
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>{tabIcons.Book}</Text>
+          <Ionicons name={tabIcons.Book} size={20} color={color} />
         ),
         tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
       }}
@@ -146,7 +150,7 @@ const MainTabs = () => (
       component={CalendarScreen}
       options={{
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>{tabIcons.Calendar}</Text>
+          <Ionicons name={tabIcons.Calendar} size={20} color={color} />
         ),
         tabBarLabel: ({ color }) => (
           <TabLabel label="Calendar" color={color} />
@@ -159,7 +163,7 @@ const MainTabs = () => (
       options={{
         tabBarStyle: { ...TAB_BAR_STYLE, display: "none" },
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>{tabIcons.Messages}</Text>
+          <Ionicons name={tabIcons.Messages} size={20} color={color} />
         ),
         tabBarLabel: ({ color }) => (
           <TabLabel label="Messages" color={color} />
@@ -171,7 +175,7 @@ const MainTabs = () => (
       component={ProfileStackScreen}
       options={{
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>{tabIcons.Profile}</Text>
+          <Ionicons name={tabIcons.Profile} size={20} color={color} />
         ),
         tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
       }}

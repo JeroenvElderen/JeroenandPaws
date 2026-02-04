@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchJson } from "../api/client";
 import {
   DEFAULT_AVAILABILITY_WINDOW_DAYS,
@@ -36,14 +37,14 @@ const CATEGORY_ORDER = [
 ];
 
 const CATEGORY_ICONS = {
-  Training: "🎓",
-  "Overnight Support": "🌙",
-  "Daytime Care": "☀️",
-  "Group Adventures": "🧭",
-  "Home visits": "🏡",
-  "Solo Journeys": "🦮",
-  "Daily strolls": "🚶",
-  Services: "🐾",
+  Training: "school",
+  "Overnight Support": "moon-waning-crescent",
+  "Daytime Care": "weather-sunny",
+  "Group Adventures": "compass-rose",
+  "Home visits": "home-heart",
+  "Solo Journeys": "dog-service",
+  "Daily strolls": "walk",
+  Services: "paw",
 };
 
 const CALENDAR_PAGE_WIDTH = Dimensions.get("window").width - 32;
@@ -72,13 +73,29 @@ const createDog = () => ({
   breed: "",
   age: "",
   size: "",
+  weight: "",
+  adoptionDate: "",
 });
 
 const BOARDING_EIRCODE = "A98H940";
 const SCHEDULE_OPTIONS = [
-  { value: "one_time", label: "One time", icon: "📅" },
-  { value: "repeat_weekly", label: "Repeat weekly", icon: "↻" },
+  { value: "one_time", label: "One time", icon: "calendar-month" },
+  { value: "repeat_weekly", label: "Repeat weekly", icon: "repeat" },
 ];
+const AGE_OPTIONS = [
+  "Under 1 year",
+  "1 year",
+  "2 years",
+  "3 years",
+  "4 years",
+  "5 years",
+  "6 years",
+  "7 years",
+  "8 years",
+  "9 years",
+  "10+ years",
+];
+const SIZE_OPTIONS = ["Small", "Medium", "Large"];
 const WEEKDAY_OPTIONS = [
   { value: 0, label: "S", name: "Sunday" },
   { value: 1, label: "M", name: "Monday" },
@@ -187,7 +204,9 @@ const buildBookingMessage = (
             dog?.name && `Name: ${dog.name}`,
             dog?.breed && `Breed: ${dog.breed}`,
             dog?.age && `Age: ${dog.age}`,
-            dog?.size && `Size/weight: ${dog.size}`,
+            dog?.size && `Size: ${dog.size}`,
+            dog?.weight && `Weight: ${dog.weight} kg`,
+            dog?.adoptionDate && `Adoption date: ${dog.adoptionDate}`,
           ].filter(Boolean);
 
           return parts.length
@@ -251,6 +270,7 @@ const BookScreen = ({ navigation, route }) => {
   const [showNewDogForm, setShowNewDogForm] = useState(false);
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [availableAddons, setAvailableAddons] = useState([]);
+  const [showAddonDropdown, setShowAddonDropdown] = useState(false);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [availability, setAvailability] = useState(null);
@@ -259,6 +279,8 @@ const BookScreen = ({ navigation, route }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showAvailability, setShowAvailability] = useState(false);
+  const [activeAgeDropdown, setActiveAgeDropdown] = useState(null);
+  const [activeSizeDropdown, setActiveSizeDropdown] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [calendarDateDraft, setCalendarDateDraft] = useState(null);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -643,6 +665,15 @@ const BookScreen = ({ navigation, route }) => {
     });
   };
 
+  const handleTimeWindowSelect = (windowId) => {
+    handleChange("timeWindow", windowId);
+    if (!formState.bookingDate) {
+      handleOpenCalendar();
+      return;
+    }
+    setShowAvailability(true);
+  };
+
   const handleOpenCalendar = () => {
     const today = new Date();
     const initialDateKey =
@@ -659,6 +690,9 @@ const BookScreen = ({ navigation, route }) => {
       setSelectedDay(calendarDateDraft);
       setSelectedSlot(null);
     }
+    if (formState.timeWindow) {
+        setShowAvailability(true);
+      }
     setShowCalendar(false);
   };
 
@@ -680,6 +714,9 @@ const BookScreen = ({ navigation, route }) => {
     setSelectedOptionIds([]);
     setSelectedPetIds([]);
     setShowNewDogForm(false);
+    setShowAddonDropdown(false);
+    setActiveAgeDropdown(null);
+    setActiveSizeDropdown(null);
     setAvailability(null);
     setAvailabilityStatus("idle");
     setAvailabilityError("");
@@ -852,7 +889,11 @@ const BookScreen = ({ navigation, route }) => {
               >
                 <View style={styles.categoryLeft}>
                   <View style={styles.categoryIcon}>
-                    <Text style={styles.categoryIconText}>{icon}</Text>
+                    <MaterialCommunityIcons
+                      name={icon}
+                      size={20}
+                      color="#f4f2ff"
+                    />
                   </View>
                   <View>
                     <Text style={styles.categoryTitle}>{group.category}</Text>
@@ -874,9 +915,11 @@ const BookScreen = ({ navigation, route }) => {
                     onPress={() => openService(service)}
                   >
                     <View style={styles.serviceIcon}>
-                      <Text style={styles.serviceIconText}>
-                        {icon}
-                      </Text>
+                      <MaterialCommunityIcons
+                        name={icon}
+                        size={18}
+                        color="#f4f2ff"
+                      />
                     </View>
                     <View style={styles.serviceCopy}>
                       <Text style={styles.serviceTitle}>{service.title}</Text>
@@ -923,14 +966,6 @@ const BookScreen = ({ navigation, route }) => {
                   </View>
                   ) : (
                   <View>
-                    <Text style={styles.formSectionTitle}>Service</Text>
-                    <Text style={styles.label}>Service type</Text>
-                    <TextInput
-                      style={[styles.input, styles.readOnlyInput]}
-                      value={formState.serviceType}
-                      editable={false}
-                    />
-
                     <Text style={styles.formSectionTitle}>Your pets</Text>
                     <Text style={styles.label}>Select existing pets</Text>
                     {existingPets.length ? (
@@ -1030,23 +1065,102 @@ const BookScreen = ({ navigation, route }) => {
                             <View style={styles.inlineInputs}>
                               <View style={styles.inlineInput}>
                                 <Text style={styles.label}>Age *</Text>
+                                <Pressable
+                                  style={styles.dropdown}
+                                  onPress={() =>
+                                    setActiveAgeDropdown(
+                                      activeAgeDropdown === index ? null : index
+                                    )
+                                  }
+                                >
+                                  <Text style={styles.dropdownValue}>
+                                    {dog.age || "Select age"}
+                                  </Text>
+                                  <Ionicons
+                                    name="chevron-down"
+                                    size={16}
+                                    color="#c9c5d8"
+                                  />
+                                </Pressable>
+                                {activeAgeDropdown === index ? (
+                                  <View style={styles.dropdownList}>
+                                    {AGE_OPTIONS.map((option) => (
+                                      <Pressable
+                                        key={`${option}-${index}`}
+                                        style={styles.dropdownItem}
+                                        onPress={() => {
+                                          handleDogChange(index, "age", option);
+                                          setActiveAgeDropdown(null);
+                                        }}
+                                      >
+                                        <Text style={styles.dropdownItemText}>
+                                          {option}
+                                        </Text>
+                                      </Pressable>
+                                    ))}
+                                  </View>
+                                ) : null}
+                              </View>
+                              <View style={styles.inlineInput}>
+                                <Text style={styles.label}>Size *</Text>
+                                <Pressable
+                                  style={styles.dropdown}
+                                  onPress={() =>
+                                    setActiveSizeDropdown(
+                                      activeSizeDropdown === index ? null : index
+                                    )
+                                  }
+                                >
+                                  <Text style={styles.dropdownValue}>
+                                    {dog.size || "Select size"}
+                                  </Text>
+                                  <Ionicons
+                                    name="chevron-down"
+                                    size={16}
+                                    color="#c9c5d8"
+                                  />
+                                </Pressable>
+                                {activeSizeDropdown === index ? (
+                                  <View style={styles.dropdownList}>
+                                    {SIZE_OPTIONS.map((option) => (
+                                      <Pressable
+                                        key={`${option}-${index}`}
+                                        style={styles.dropdownItem}
+                                        onPress={() => {
+                                          handleDogChange(index, "size", option);
+                                          setActiveSizeDropdown(null);
+                                        }}
+                                      >
+                                        <Text style={styles.dropdownItemText}>
+                                          {option}
+                                        </Text>
+                                      </Pressable>
+                                    ))}
+                                  </View>
+                                ) : null}
+                              </View>
+                            </View>
+                            <View style={styles.inlineInputs}>
+                              <View style={styles.inlineInput}>
+                                <Text style={styles.label}>Weight (kg) *</Text>
                                 <TextInput
                                   style={styles.input}
-                                  placeholder="2 years"
-                                  value={dog.age}
+                                  placeholder="e.g., 12"
+                                  value={dog.weight}
+                                  keyboardType="numeric"
                                   onChangeText={(value) =>
-                                    handleDogChange(index, "age", value)
+                                    handleDogChange(index, "weight", value)
                                   }
                                 />
                               </View>
                               <View style={styles.inlineInput}>
-                                <Text style={styles.label}>Size *</Text>
+                                <Text style={styles.label}>Adoption date *</Text>
                                 <TextInput
                                   style={styles.input}
-                                  placeholder="12 kg"
-                                  value={dog.size}
+                                  placeholder="YYYY-MM-DD"
+                                  value={dog.adoptionDate}
                                   onChangeText={(value) =>
-                                    handleDogChange(index, "size", value)
+                                    handleDogChange(index, "adoptionDate", value)
                                   }
                                 />
                               </View>
@@ -1074,9 +1188,14 @@ const BookScreen = ({ navigation, route }) => {
                               handleScheduleTypeChange(option.value)
                             }
                           >
-                            <Text style={styles.scheduleTypeIcon}>
-                              {option.icon}
-                            </Text>
+                            <MaterialCommunityIcons
+                              name={option.icon}
+                              size={18}
+                              color={
+                                isActive ? "#f4f2ff" : "#c9c5d8"
+                              }
+                              style={styles.scheduleTypeIcon}
+                            />
                             <Text
                               style={[
                                 styles.scheduleTypeLabel,
@@ -1152,7 +1271,7 @@ const BookScreen = ({ navigation, route }) => {
                               pressed && styles.cardPressed,
                             ]}
                             onPress={() =>
-                              handleChange("timeWindow", window.id)
+                              handleTimeWindowSelect(window.id)
                             }
                           >
                             <Text
@@ -1167,18 +1286,6 @@ const BookScreen = ({ navigation, route }) => {
                         );
                       })}
                     </View>
-                    <Pressable
-                      style={styles.searchButton}
-                      onPress={() => {
-                        if (!formState.bookingDate) {
-                          handleOpenCalendar();
-                          return;
-                        }
-                        setShowAvailability(true);
-                      }}
-                    >
-                      <Text style={styles.searchButtonText}>Search now</Text>
-                    </Pressable>
                     {showAvailability ? (
                       <View style={styles.availabilityCard}>
                         {availabilityStatus === "loading" ? (
@@ -1257,29 +1364,42 @@ const BookScreen = ({ navigation, route }) => {
 
                     <Text style={styles.formSectionTitle}>Additional options</Text>
                     {availableAddons.length ? (
-                      <View style={styles.chipRow}>
-                        {availableAddons.map((option, optionIndex) => (
-                          <Pressable
-                            key={`${option.id || option.label || optionIndex}`}
-                            style={({ pressed }) => [
-                              styles.optionChip,
-                              selectedOptionIds.includes(option.id) &&
-                                styles.optionChipActive,
-                              pressed && styles.cardPressed,
-                            ]}
-                            onPress={() => toggleOption(option.id)}
-                          >
-                            <Text
-                              style={[
-                                styles.optionChipText,
-                                selectedOptionIds.includes(option.id) &&
-                                  styles.optionChipTextActive,
-                              ]}
-                            >
-                              {option.label} · {formatCurrency(option.price)}
-                            </Text>
-                          </Pressable>
-                        ))}
+                      <View>
+                        <Pressable
+                          style={styles.dropdown}
+                          onPress={() => setShowAddonDropdown((current) => !current)}
+                        >
+                          <Text style={styles.dropdownValue}>
+                            {selectedOptions.length
+                              ? selectedOptions.map((option) => option.label).join(", ")
+                              : "Select add-ons"}
+                          </Text>
+                          <Ionicons
+                            name={showAddonDropdown ? "chevron-up" : "chevron-down"}
+                            size={16}
+                            color="#c9c5d8"
+                          />
+                        </Pressable>
+                        {showAddonDropdown ? (
+                          <View style={styles.dropdownList}>
+                            {availableAddons.map((option, optionIndex) => (
+                              <Pressable
+                                key={`${option.id || option.label || optionIndex}`}
+                                style={styles.dropdownItem}
+                                onPress={() => toggleOption(option.id)}
+                              >
+                                <View style={styles.dropdownItemRow}>
+                                  <Text style={styles.dropdownItemText}>
+                                    {option.label}
+                                  </Text>
+                                  <Text style={styles.dropdownItemMeta}>
+                                    {formatCurrency(option.price)}
+                                  </Text>
+                                </View>
+                              </Pressable>
+                            ))}
+                          </View>
+                        ) : null}
                       </View>
                     ) : (
                       <Text style={styles.helperText}>
@@ -1331,6 +1451,12 @@ const BookScreen = ({ navigation, route }) => {
                   </Text>
                 </View>
               <Text style={styles.summaryLine}>Service: {serviceLabel}</Text>
+                <Text style={styles.summaryLine}>
+                Price: {basePrice ? formatCurrency(basePrice) : "Quote required"}
+              </Text>
+              <Text style={styles.summaryLine}>
+                Total: {basePrice ? formatCurrency(totalPrice) : "Quote required"}
+              </Text>
                 <Text style={styles.summaryLine}>
                   Pets:{" "}
                   {selectedPets.length
@@ -1490,11 +1616,11 @@ const BookScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
     padding: 20,
     paddingBottom: 32,
   },
@@ -1508,26 +1634,26 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#e7def7",
+    borderColor: "#1f1535",
     position: "absolute",
     left: 0,
   },
   backIcon: {
     fontSize: 18,
-    color: "#46315f",
+    color: "#f4f2ff",
   },
   title: {
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     fontSize: 20,
     fontWeight: "700",
   },
   subtitle: {
     fontSize: 14,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     textAlign: "center",
     marginBottom: 12,
   },
@@ -1538,13 +1664,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
-    shadowColor: "#2b1a4b",
-    shadowOpacity: 0.05,
+    borderColor: "#1f1535",
+    shadowColor: "#000000",
+    shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
     elevation: 2,
@@ -1558,33 +1684,30 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
   },
-  categoryIconText: {
-    fontSize: 20,
-  },
   categoryTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   categoryHint: {
     fontSize: 13,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     marginTop: 4,
   },
   serviceCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
-    shadowColor: "#2b1a4b",
+    borderColor: "#1f1535",
+    shadowColor: "#000000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
@@ -1600,7 +1723,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -1608,30 +1731,27 @@ const styles = StyleSheet.create({
   serviceCopy: {
     flex: 1,
   },
-  serviceIconText: {
-    fontSize: 20,
-  },
   serviceTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   serviceDescription: {
     fontSize: 14,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
     marginTop: 4,
   },
   chevron: {
     fontSize: 22,
-    color: "#b2a6c9",
+    color: "#8b7ca8",
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(43, 26, 75, 0.35)",
+    backgroundColor: "rgba(5, 4, 15, 0.7)",
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#0c081f",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     height: "92%",
@@ -1645,23 +1765,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#e8def7",
+    borderBottomColor: "#1f1535",
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   modalSubtitle: {
     fontSize: 13,
-    color: "#7b6a9f",
+    color: "#c9c5d8",
     marginTop: 2,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -1669,7 +1789,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 16,
-    color: "#46315f",
+    color: "#f4f2ff",
   },
   formContent: {
     padding: 20,
@@ -1678,30 +1798,76 @@ const styles = StyleSheet.create({
   formSectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginTop: 8,
     marginBottom: 10,
   },
   label: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginBottom: 6,
     fontWeight: "600",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: "#1f1535",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#120d23",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    gap: 8,
+  },
+  dropdownValue: {
+    fontSize: 14,
+    color: "#f4f2ff",
+    flex: 1,
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: "#1f1535",
+    borderRadius: 14,
+    backgroundColor: "#120d23",
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1f1535",
+  },
+  dropdownItemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dropdownItemText: {
+    color: "#f4f2ff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dropdownItemMeta: {
+    color: "#8b7ca8",
+    fontSize: 12,
   },
   readOnlyInput: {
-    backgroundColor: "#f2ecfb",
-    color: "#5b4a7c",
+    backgroundColor: "#1f1535",
+    color: "#c9c5d8",
   },
   textArea: {
     minHeight: 90,
@@ -1722,15 +1888,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
+    borderColor: "#1f1535",
+    backgroundColor: "#120d23",
   },
   dateChipActive: {
-    backgroundColor: "#6c3ad6",
-    borderColor: "#6c3ad6",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   dateChipText: {
-    color: "#5d2fc5",
+    color: "#c9c5d8",
     fontWeight: "600",
     fontSize: 12,
   },
@@ -1748,19 +1914,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
+    borderColor: "#1f1535",
+    backgroundColor: "#120d23",
   },
   timeChipActive: {
-    backgroundColor: "#2b1a4b",
-    borderColor: "#2b1a4b",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   timeChipDisabled: {
-    backgroundColor: "#f2ecfb",
-    borderColor: "#e6def6",
+    backgroundColor: "#1f1535",
+    borderColor: "#1f1535",
   },
   timeChipText: {
-    color: "#5d2fc5",
+    color: "#c9c5d8",
     fontWeight: "600",
     fontSize: 12,
   },
@@ -1768,7 +1934,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   timeChipTextDisabled: {
-    color: "#a093b9",
+    color: "#8b7ca8",
   },
   chipRow: {
     flexDirection: "row",
@@ -1781,15 +1947,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
+    borderColor: "#1f1535",
+    backgroundColor: "#120d23",
   },
   countChipActive: {
-    backgroundColor: "#6c3ad6",
-    borderColor: "#6c3ad6",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   countChipText: {
-    color: "#5d2fc5",
+    color: "#c9c5d8",
     fontWeight: "600",
   },
   countChipTextActive: {
@@ -1800,15 +1966,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
+    borderColor: "#1f1535",
+    backgroundColor: "#120d23",
   },
   petChipActive: {
-    backgroundColor: "#6c3ad6",
-    borderColor: "#6c3ad6",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   petChipText: {
-    color: "#5d2fc5",
+    color: "#c9c5d8",
     fontWeight: "600",
     fontSize: 13,
   },
@@ -1820,18 +1986,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 16,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#2a1d45",
     marginBottom: 16,
   },
   addPetButtonText: {
-    color: "#4a3a68",
+    color: "#f4f2ff",
     fontWeight: "600",
   },
   helperText: {
     fontSize: 12,
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     marginBottom: 10,
   },
   scheduleTypeRow: {
@@ -1841,29 +2007,29 @@ const styles = StyleSheet.create({
   },
   scheduleTypeCard: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
   },
   scheduleTypeCardActive: {
-    borderColor: "#2b1a4b",
-    backgroundColor: "#f4f1fb",
+    borderColor: "#7c45f3",
+    backgroundColor: "#1f1535",
   },
   scheduleTypeIcon: {
-    fontSize: 18,
+    marginBottom: 2,
   },
   scheduleTypeLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   scheduleTypeLabelActive: {
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   weekdayRow: {
     flexDirection: "row",
@@ -1876,19 +2042,19 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
   },
   weekdayChipActive: {
-    backgroundColor: "#2b1a4b",
-    borderColor: "#2b1a4b",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   weekdayChipText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   weekdayChipTextActive: {
     color: "#ffffff",
@@ -1898,16 +2064,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 16,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
   },
   datePickerValue: {
     fontSize: 14,
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     fontWeight: "600",
   },
   timeWindowRow: {
@@ -1921,46 +2087,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
+    borderColor: "#1f1535",
+    backgroundColor: "#120d23",
   },
   timeWindowChipActive: {
-    backgroundColor: "#2b1a4b",
-    borderColor: "#2b1a4b",
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
   },
   timeWindowText: {
-    color: "#6c5a92",
+    color: "#c9c5d8",
     fontSize: 12,
     fontWeight: "600",
   },
   timeWindowTextActive: {
     color: "#ffffff",
   },
-  searchButton: {
-    borderRadius: 20,
-    backgroundColor: "#2f63d6",
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  searchButtonText: {
-    color: "#ffffff",
-    fontWeight: "700",
-  },
   availabilityCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#1f1535",
     padding: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     marginBottom: 12,
   },
   dogCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 12,
   },
   dogTitle: {
@@ -1976,33 +2131,13 @@ const styles = StyleSheet.create({
   inlineInput: {
     flex: 1,
   },
-  optionChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#e6def6",
-    backgroundColor: "#ffffff",
-  },
-  optionChipActive: {
-    backgroundColor: "#6c3ad6",
-    borderColor: "#6c3ad6",
-  },
-  optionChipText: {
-    color: "#5d2fc5",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  optionChipTextActive: {
-    color: "#ffffff",
-  },
   summaryBar: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
     borderTopWidth: 1,
-    borderTopColor: "#e8def7",
-    backgroundColor: "#f6f3fb",
+    borderTopColor: "#1f1535",
+    backgroundColor: "#0c081f",
   },
   summaryHeader: {
     flexDirection: "row",
@@ -2013,16 +2148,16 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   summaryTotal: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   summaryLine: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginBottom: 4,
   },
   summaryTotals: {
@@ -2036,25 +2171,25 @@ const styles = StyleSheet.create({
   },
   summaryNote: {
     fontSize: 12,
-    color: "#6c5a92",
+    color: "#8b7ca8",
     marginBottom: 6,
   },
   summaryLabel: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
   },
   summaryValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   calendarBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(43, 26, 75, 0.35)",
+    backgroundColor: "rgba(5, 4, 15, 0.7)",
   },
   calendarCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 16,
@@ -2072,12 +2207,12 @@ const styles = StyleSheet.create({
   calendarHeaderText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   calendarHeaderTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   calendarMonthsScroll: {
     paddingBottom: 8,
@@ -2094,19 +2229,20 @@ const styles = StyleSheet.create({
   calendarMonthLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
+    marginBottom: 12,
   },
   calendarNavButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f1ecfb",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
   },
   calendarNavText: {
     fontSize: 18,
-    color: "#5d2fc5",
+    color: "#bfa7ff",
   },
   weekHeader: {
     flexDirection: "row",
@@ -2116,7 +2252,7 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     width: 32,
     textAlign: "center",
-    color: "#7b6a9f",
+    color: "#8b7ca8",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -2133,41 +2269,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   daySelected: {
-    backgroundColor: "#2b1a4b",
+    backgroundColor: "#7c45f3",
   },
   dayPressed: {
     opacity: 0.85,
   },
   dayText: {
     fontSize: 12,
-    color: "#2b1a4b",
+    color: "#c9c5d8",
     fontWeight: "600",
   },
   dayTextSelected: {
     color: "#ffffff",
   },
   errorText: {
-    color: "#b42318",
+    color: "#ff6b6b",
     fontSize: 13,
     marginBottom: 12,
   },
   successCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     alignItems: "center",
   },
   successTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
     marginBottom: 8,
   },
   successText: {
     fontSize: 14,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     textAlign: "center",
     marginBottom: 16,
   },

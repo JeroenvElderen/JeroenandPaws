@@ -76,30 +76,30 @@ const HelpSupportScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#ebe4f7",
+    borderColor: "#1f1535",
     marginBottom: 12,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: "#f4f2ff",
   },
   cardDescription: {
     fontSize: 13,
-    color: "#6c5a92",
+    color: "#c9c5d8",
     marginTop: 6,
   },
 });

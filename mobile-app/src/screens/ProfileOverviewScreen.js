@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
@@ -52,29 +53,29 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
   const contactEmail = clientProfile?.email || session?.email || "—";
   const aboutItems = [
     {
-      icon: "📅",
+      icon: "calendar-month",
       label: "Member since",
       value: formatMonthYear(clientProfile?.created_at),
     },
     {
-      icon: "🐾",
+      icon: "paw",
       label: "Pets in profile",
       value: `${pets.length} ${pets.length === 1 ? "pet" : "pets"}`,
     },
   ];
   const contactItems = [
     {
-      icon: "📧",
+      icon: "email",
       label: "Email address",
       value: contactEmail,
     },
     {
-      icon: "📞",
+      icon: "phone",
       label: "Phone number",
       value: clientProfile?.phone_number || session?.phone || "—",
     },
     {
-      icon: "📍",
+      icon: "map-marker",
       label: "Eircode",
       value: location,
     },
@@ -185,7 +186,16 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
           />
         }
       >
-        <ScreenHeader title="Profile overview" onBack={() => navigation.goBack()} />
+        <ScreenHeader
+          title="Profile overview"
+          onBack={() => {
+            if (route?.params?.returnTo) {
+              navigation.getParent()?.navigate(route.params.returnTo);
+              return;
+            }
+            navigation.goBack();
+          }}
+        />
         <View style={styles.profileCard}>
           <View style={styles.avatarCircle}>
             {profilePhotoUrl ? (
@@ -217,7 +227,11 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
           ) : null}
           <Text style={styles.profileName}>{displayName}</Text>
           <View style={styles.locationRow}>
-            <Text style={styles.locationIcon}>📍</Text>
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={18}
+              color="#c9c5d8"
+            />
             <Text style={styles.locationText}>{location}</Text>
           </View>
         </View>
@@ -232,7 +246,11 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                 index === aboutItems.length - 1 && styles.detailRowLast,
               ]}
             >
-              <Text style={styles.detailIcon}>{item.icon}</Text>
+              <MaterialCommunityIcons
+                name={item.icon}
+                size={18}
+                color="#c9c5d8"
+              />
               <View style={styles.detailInfo}>
                 <Text style={styles.detailLabel}>{item.label}</Text>
                 <Text style={styles.detailValue}>{item.value}</Text>
@@ -251,7 +269,11 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                 index === contactItems.length - 1 && styles.detailRowLast,
               ]}
             >
-              <Text style={styles.detailIcon}>{item.icon}</Text>
+              <MaterialCommunityIcons
+                name={item.icon}
+                size={18}
+                color="#c9c5d8"
+              />
               <View style={styles.detailInfo}>
                 <Text style={styles.detailLabel}>{item.label}</Text>
                 <Text style={styles.detailValue}>{item.value}</Text>
@@ -312,11 +334,11 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0c081f",
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
@@ -328,7 +350,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -341,15 +363,15 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 30,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: "#f4f2ff",
   },
   photoButton: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "#efe9fb",
+    backgroundColor: "#1f1535",
     borderWidth: 1,
-    borderColor: "#e6def6",
+    borderColor: "#2a1d45",
     marginBottom: 10,
   },
   photoButtonPressed: {
@@ -358,42 +380,39 @@ const styles = StyleSheet.create({
   photoButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#5d2fc5",
+    color: "#f4f2ff",
   },
   photoError: {
     fontSize: 12,
-    color: "#b42318",
+    color: "#ff6b6b",
     marginBottom: 8,
   },
   profileName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: "#f4f2ff",
     marginBottom: 6,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  locationIcon: {
-    marginRight: 6,
-    fontSize: 14,
+    gap: 6,
   },
   locationText: {
     fontSize: 14,
-    color: "#5f5f5f",
+    color: "#c9c5d8",
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: "#f4f2ff",
     marginBottom: 12,
   },
   sectionCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e6e6e6",
+    borderColor: "#1f1535",
     marginBottom: 24,
     overflow: "hidden",
   },
@@ -403,50 +422,45 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eeeeee",
+    borderBottomColor: "#1f1535",
   },
   detailRowLast: {
     borderBottomWidth: 0,
-  },
-  detailIcon: {
-    width: 28,
-    fontSize: 18,
-    marginRight: 12,
   },
   detailInfo: {
     flex: 1,
   },
   detailLabel: {
     fontSize: 13,
-    color: "#6f6f6f",
+    color: "#c9c5d8",
     fontWeight: "600",
   },
   detailValue: {
     fontSize: 15,
-    color: "#1f1f1f",
+    color: "#f4f2ff",
     fontWeight: "600",
     marginTop: 4,
   },
   emptyCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e6e6e6",
+    borderColor: "#1f1535",
     marginBottom: 24,
   },
   emptyText: {
     fontSize: 14,
-    color: "#6f6f6f",
+    color: "#c9c5d8",
   },
   petCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#120d23",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#e6e6e6",
+    borderColor: "#1f1535",
     marginBottom: 12,
   },
   petCardPressed: {
@@ -456,7 +470,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#1f1535",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -469,7 +483,7 @@ const styles = StyleSheet.create({
   petAvatarText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#2b2b2b",
+    color: "#f4f2ff",
   },
   petInfo: {
     flex: 1,
@@ -477,16 +491,16 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1f1f1f",
+    color: "#f4f2ff",
   },
   petMeta: {
     fontSize: 13,
-    color: "#6f6f6f",
+    color: "#c9c5d8",
     marginTop: 4,
   },
   petChevron: {
     fontSize: 22,
-    color: "#b0b0b0",
+    color: "#8b7ca8",
   },
 });
 
