@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
   detailRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1edf9",
+    borderBottomColor: "#1f1535",
   },
   detailRowLast: {
     borderBottomWidth: 0,
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   },
   selectInput: {
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     backgroundColor: "#120d23",
     overflow: "hidden",
   },
@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

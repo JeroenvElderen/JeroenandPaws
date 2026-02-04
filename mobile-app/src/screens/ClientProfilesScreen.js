@@ -25,8 +25,8 @@ const getInitials = (name) => {
 };
 
 const ClientProfilesScreen = ({ navigation }) => {
-  const { session } = useSession();
-  const [clients, setClients] = useState([]);
+  const { session, clientProfiles, setClientProfiles } = useSession();
+  const [clients, setClients] = useState(clientProfiles);
   const [searchValue, setSearchValue] = useState("");
   const [status, setStatus] = useState("idle");
   const isOwner =
@@ -59,6 +59,7 @@ const ClientProfilesScreen = ({ navigation }) => {
       }
 
       setClients(allClients);
+      setClientProfiles(allClients);
       setStatus("idle");
     } catch (error) {
       console.error("Failed to load clients", error);
@@ -67,8 +68,13 @@ const ClientProfilesScreen = ({ navigation }) => {
   }, [isOwner]);
 
   useEffect(() => {
+    if (clientProfiles.length) {
+      setClients(clientProfiles);
+      setStatus("idle");
+      return;
+    }
     loadClients();
-  }, [loadClients]);
+  }, [clientProfiles, loadClients]);
 
   const filteredClients = useMemo(() => {
     const term = searchValue.trim().toLowerCase();
@@ -201,7 +207,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

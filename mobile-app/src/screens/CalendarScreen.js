@@ -297,7 +297,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   monthButton: {
     width: 32,
@@ -316,11 +317,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#f4f2ff",
     textAlign: "center",
+    marginHorizontal: 12,
   },
   weekHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginTop: 6,
+    marginBottom: 12,
   },
   weekHeaderText: {
     width: 32,

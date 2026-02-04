@@ -362,38 +362,71 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
+        base64: true,
       });
       if (result.canceled) return;
 
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
 
-      setPhotoUploadStatus("uploading");
-      const fileExtension = asset.uri.split(".").pop() || "jpg";
-      const bookingId = route?.params?.bookingId || "manual";
-      const storagePath = `cards/${bookingId}/${Date.now()}.${fileExtension}`;
-
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-
-      const { error: uploadError } = await supabase.storage
-        .from("jeroen-paws-card-photos")
-        .upload(storagePath, blob, {
-          contentType: asset.type || "image/jpeg",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw uploadError;
+      const mimeType = asset.mimeType || "image/jpeg";
+      const dataUrl = asset.base64
+        ? `data:${mimeType};base64,${asset.base64}`
+        : null;
+      const previewId = `local-${Date.now()}`;
+      if (dataUrl) {
+        setCardPhotos((prev) => [
+          ...prev,
+          {
+            id: previewId,
+            url: dataUrl,
+            path: null,
+          },
+        ]);
       }
 
-      const { data: publicUrlData } = supabase.storage
-        .from("jeroen-paws-card-photos")
-        .getPublicUrl(storagePath);
-      const photoUrl = publicUrlData?.publicUrl;
+      setPhotoUploadStatus("uploading");
+      const bookingId = route?.params?.bookingId || "manual";
+      let photoUrl = dataUrl;
+      let storagePath = null;
+
+      try {
+        const fileExtension = asset.uri.split(".").pop() || "jpg";
+        storagePath = `cards/${bookingId}/${Date.now()}.${fileExtension}`;
+
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+
+        const { error: uploadError } = await supabase.storage
+          .from("jeroen-paws-card-photos")
+          .upload(storagePath, blob, {
+            contentType: asset.type || mimeType,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("jeroen-paws-card-photos")
+          .getPublicUrl(storagePath);
+        const publicUrl = publicUrlData?.publicUrl;
+
+        if (!publicUrl) {
+          throw new Error("Failed to get photo URL.");
+        }
+        photoUrl = publicUrl;
+      } catch (uploadError) {
+        console.warn(
+          "Failed to upload photo to storage, saving inline.",
+          uploadError
+        );
+        storagePath = null;
+      }
 
       if (!photoUrl) {
-        throw new Error("Failed to get photo URL.");
+        throw new Error("No photo data available to save.");
       }
 
       const insertPayload = {
@@ -415,14 +448,28 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
       }
 
       if (inserted) {
-        setCardPhotos((prev) => [
-          ...prev,
-          {
-            id: inserted.id,
-            url: inserted.photo_url,
-            path: inserted.storage_path,
-          },
-        ]);
+        setCardPhotos((prev) => {
+          const hasPreview = prev.some((photo) => photo.id === previewId);
+          if (!hasPreview) {
+            return [
+              ...prev,
+              {
+                id: inserted.id,
+                url: inserted.photo_url,
+                path: inserted.storage_path,
+              },
+            ];
+          }
+          return prev.map((photo) =>
+            photo.id === previewId
+              ? {
+                  id: inserted.id,
+                  url: inserted.photo_url,
+                  path: inserted.storage_path,
+                }
+              : photo
+          );
+        });
       }
 
       setPhotoUploadStatus("idle");
@@ -948,7 +995,7 @@ const styles = StyleSheet.create({
     color: "#f4f2ff",
     backgroundColor: "#0c081f",
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
