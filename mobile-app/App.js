@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import HomeScreen from "./src/screens/HomeScreen";
 import BookScreen from "./src/screens/BookScreen";
 import MoreScreen from "./src/screens/MoreScreen";
@@ -33,6 +34,7 @@ import { TAB_BAR_STYLE } from "./src/utils/tabBar";
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const TabLabel = ({ label, color }) => (
   <Text style={{ color, fontSize: 12 }}>{label}</Text>
@@ -80,7 +82,17 @@ const registerForPushNotifications = async () => {
     });
   }
 
-  const tokenResponse = await Notifications.getExpoPushTokenAsync();
+  const projectId =
+    Constants.easConfig?.projectId ||
+    Constants.expoConfig?.extra?.eas?.projectId ||
+    Constants.expoConfig?.extra?.projectId;
+  if (!projectId) {
+    return null;
+  }
+
+  const tokenResponse = await Notifications.getExpoPushTokenAsync({
+    projectId,
+  });
   return tokenResponse.data || null;
 };
 
@@ -89,7 +101,7 @@ const ProfileStackScreen = () => (
     <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
     <ProfileStack.Screen
       name="ProfileOverview"
-      component={MoreScreen}
+      component={ProfileOverviewScreen}
     />
     <ProfileStack.Screen
       name="ClientProfiles"
@@ -184,7 +196,8 @@ const MainTabs = () => (
 );
 
 const AppShell = () => {
-  const { session, setSession } = useSession();
+  const { session, setSession, clientProfiles, setClientProfiles } =
+    useSession();
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
@@ -363,6 +376,59 @@ const AppShell = () => {
   useEffect(() => {
     let isMounted = true;
 
+    const preloadClientProfiles = async () => {
+      if (
+        !supabase ||
+        !session?.email ||
+        clientProfiles.length ||
+        session.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()
+      ) {
+        return;
+      }
+
+      try {
+        const pageSize = 1000;
+        let offset = 0;
+        let allClients = [];
+
+        while (true) {
+          const { data, error } = await supabase
+            .from("clients")
+            .select("id, full_name, email, address, profile_photo_url, created_at")
+            .order("created_at", { ascending: false })
+            .range(offset, offset + pageSize - 1);
+
+          if (error) {
+            throw error;
+          }
+
+          const batch = data || [];
+          allClients = [...allClients, ...batch];
+
+          if (batch.length < pageSize) {
+            break;
+          }
+          offset += pageSize;
+        }
+
+        if (isMounted) {
+          setClientProfiles(allClients);
+        }
+      } catch (error) {
+        console.warn("Failed to preload client profiles", error);
+      }
+    };
+
+    preloadClientProfiles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [clientProfiles.length, session?.email, setClientProfiles]);
+
+  useEffect(() => {
+    let isMounted = true;
+
     const ensureClientAddress = async () => {
       if (!supabase || !session?.id) {
         return;
@@ -466,7 +532,7 @@ const AppShell = () => {
   if (!session?.email) {
     return (
       <NavigationContainer>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <AuthScreen onAuthenticate={setSession} />
       </NavigationContainer>
     );
@@ -474,7 +540,7 @@ const AppShell = () => {
 
   return (
     <NavigationContainer>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="MainTabs" component={MainTabs} />
         <RootStack.Screen

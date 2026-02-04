@@ -59,7 +59,10 @@ const MoreScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+      >
         <ScreenHeader title="Profile" />
         <Text style={styles.sectionTitle}>More</Text>
         <View style={styles.sectionCard}>
@@ -151,6 +154,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#0c081f",
     padding: 20,
     paddingBottom: 32,
+  },
+  scrollView: {
+    backgroundColor: "#0c081f",
   },
   chevron: {
     fontSize: 20,

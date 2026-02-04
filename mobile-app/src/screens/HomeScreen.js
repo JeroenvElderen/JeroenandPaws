@@ -398,6 +398,7 @@ const HomeScreen = ({ navigation }) => {
   const upcomingPreview = upcomingBookings;
 
   const displayName = session?.name || "Jeroen";
+  const firstName = displayName.split(" ").filter(Boolean)[0] || displayName;
   const unreadBadgeCount = useMemo(() => {
     if (!unreadCount) return 0;
     if (isJeroenAccount) return unreadCount;
@@ -498,7 +499,7 @@ const HomeScreen = ({ navigation }) => {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Hi {displayName}</Text>
+            <Text style={styles.title}>Hi {firstName}</Text>
             <Text style={styles.subtitle}>Your booking overview</Text>
             <Text style={styles.dateStamp}>{dateStamp}</Text>
           </View>
@@ -745,16 +746,20 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     color: "#f4f2ff",
+    letterSpacing: 0.3,
   },
   subtitle: {
     fontSize: 16,
     color: "#c9c5d8",
     marginTop: 2,
+    lineHeight: 22,
+    letterSpacing: 0.2,
   },
   dateStamp: {
     fontSize: 13,
     color: "#8b7ca8",
     marginTop: 4,
+    letterSpacing: 0.2,
   },
   avatar: {
     width: 46,
@@ -809,6 +814,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#8b7ca8",
     marginBottom: 14,
+    letterSpacing: 0.2,
+    lineHeight: 20,
   },
   noticeCard: {
     flexDirection: "row",
@@ -830,6 +837,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#f4f2ff",
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
   quickActions: {
     gap: 12,

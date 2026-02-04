@@ -4,13 +4,16 @@ const SessionContext = createContext(null);
 
 export const SessionProvider = ({ children }) => {
   const [session, setSession] = useState(null);
+  const [clientProfiles, setClientProfiles] = useState([]);
 
   const value = useMemo(
     () => ({
       session,
       setSession,
+      clientProfiles,
+      setClientProfiles,
     }),
-    [session]
+    [session, clientProfiles]
   );
 
   return (

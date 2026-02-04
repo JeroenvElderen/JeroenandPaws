@@ -628,7 +628,11 @@ const BookScreen = ({ navigation, route }) => {
       );
       const weeks = [];
       for (let i = 0; i < slots.length; i += 7) {
-        weeks.push(slots.slice(i, i + 7));
+        const week = slots.slice(i, i + 7);
+        while (week.length < 7) {
+          week.push(null);
+        }
+        weeks.push(week);
       }
       months.push({
         key: `${year}-${monthIndex}`,
@@ -1445,18 +1449,16 @@ const BookScreen = ({ navigation, route }) => {
                 <View style={styles.summaryHeader}>
                   <Text style={styles.summaryTitle}>Booking summary</Text>
                   <Text style={styles.summaryTotal}>
-                    {basePrice
-                      ? formatCurrency(totalPrice)
-                      : "Quote required"}
+                    {formatCurrency(totalPrice)}
                   </Text>
                 </View>
-              <Text style={styles.summaryLine}>Service: {serviceLabel}</Text>
+                <Text style={styles.summaryLine}>Service: {serviceLabel}</Text>
                 <Text style={styles.summaryLine}>
-                Price: {basePrice ? formatCurrency(basePrice) : "Quote required"}
-              </Text>
-              <Text style={styles.summaryLine}>
-                Total: {basePrice ? formatCurrency(totalPrice) : "Quote required"}
-              </Text>
+                  Price: {formatCurrency(basePrice)}
+                </Text>
+                <Text style={styles.summaryLine}>
+                  Total: {formatCurrency(totalPrice)}
+                </Text>
                 <Text style={styles.summaryLine}>
                   Pets:{" "}
                   {selectedPets.length
@@ -1480,29 +1482,25 @@ const BookScreen = ({ navigation, route }) => {
                     {selectedOptions.map((option) => option.label).join(", ")}
                   </Text>
                 ) : null}
-                {basePrice ? (
-                  <View style={styles.summaryTotals}>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>
-                        Pets ({petCount})
-                      </Text>
-                      <Text style={styles.summaryValue}>
-                        {formatCurrency(petsSubtotal)}
-                      </Text>
-                    </View>
-                    {petCount > 1 ? (
-                      <Text style={styles.summaryNote}>
-                        Additional pets are 50% off.
-                      </Text>
-                    ) : null}
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Add-ons</Text>
-                      <Text style={styles.summaryValue}>
-                        {formatCurrency(optionsTotal)}
-                      </Text>
-                    </View>
+                <View style={styles.summaryTotals}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Pets ({petCount})</Text>
+                    <Text style={styles.summaryValue}>
+                      {formatCurrency(petsSubtotal)}
+                    </Text>
                   </View>
-                ) : null}
+                  {petCount > 1 ? (
+                    <Text style={styles.summaryNote}>
+                      Additional pets are 50% off.
+                    </Text>
+                  ) : null}
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Add-ons</Text>
+                    <Text style={styles.summaryValue}>
+                      {formatCurrency(optionsTotal)}
+                    </Text>
+                  </View>
+                </View>
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 <PrimaryButton
                   label={
@@ -1810,7 +1808,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1821,7 +1819,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1839,7 +1837,7 @@ const styles = StyleSheet.create({
   },
   dropdownList: {
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: "#7c45f3",
     borderRadius: 14,
     backgroundColor: "#120d23",
     marginBottom: 12,
@@ -2185,14 +2183,17 @@ const styles = StyleSheet.create({
   },
   calendarBackdrop: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: "center",
     backgroundColor: "rgba(5, 4, 15, 0.7)",
   },
   calendarCard: {
     backgroundColor: "#0c081f",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     padding: 16,
+    flex: 1,
   },
   calendarHeader: {
     flexDirection: "row",
@@ -2215,10 +2216,12 @@ const styles = StyleSheet.create({
     color: "#f4f2ff",
   },
   calendarMonthsScroll: {
-    paddingBottom: 8,
+    paddingBottom: 16,
+    flexGrow: 1,
   },
   calendarMonthPage: {
     width: CALENDAR_PAGE_WIDTH,
+    flex: 1,
   },
   calendarMonthRow: {
     flexDirection: "row",
