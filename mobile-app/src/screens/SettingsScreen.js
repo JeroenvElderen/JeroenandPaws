@@ -21,14 +21,16 @@ const SettingsScreen = ({ navigation }) => {
   const [status, setStatus] = useState("idle");
 
   useEffect(() => {
-    const preferences = session?.user?.user_metadata?.notification_preferences;
+    const preferences =
+      session?.user?.user_metadata?.notification_preferences ||
+      session?.client?.notification_preferences;
     if (!preferences) {
       return;
     }
     setNotificationsEnabled(Boolean(preferences.push));
     setEmailUpdates(Boolean(preferences.email));
     setSmsAlerts(Boolean(preferences.sms));
-  }, [session?.user?.user_metadata]);
+  }, [session?.user?.user_metadata, session?.client?.notification_preferences]);
 
   useEffect(() => {
     const keepPreference =
@@ -44,13 +46,20 @@ const SettingsScreen = ({ navigation }) => {
     }
     setStatus("saving");
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          notification_preferences: next,
-        },
-      });
-      if (error) {
-        throw error;
+      const [{ error: authError }, { error: clientError }] =
+        await Promise.all([
+          supabase.auth.updateUser({
+            data: {
+              notification_preferences: next,
+            },
+          }),
+          supabase
+            .from("clients")
+            .update({ notification_preferences: next })
+            .eq("id", session.user.id),
+        ]);
+      if (authError || clientError) {
+        throw authError || clientError;
       }
       setSession((current) =>
         current
@@ -62,6 +71,10 @@ const SettingsScreen = ({ navigation }) => {
                   ...current.user.user_metadata,
                   notification_preferences: next,
                 },
+              },
+              client: {
+                ...(current.client || {}),
+                notification_preferences: next,
               },
             }
           : current

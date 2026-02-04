@@ -53,6 +53,9 @@ export const resolveClientProfile = async ({
     full_name: user?.user_metadata?.full_name || fallback.fullName || "",
     phone_number: user?.user_metadata?.phone || fallback.phone || "",
     address: user?.user_metadata?.address || fallback.address || "",
+    notification_preferences:
+      user?.user_metadata?.notification_preferences || null,
+    expo_push_token: user?.user_metadata?.expo_push_token || null,
   };
 
   const upsertResult = await supabase

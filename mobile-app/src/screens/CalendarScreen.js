@@ -132,7 +132,11 @@ const CalendarScreen = () => {
   );
   const weeks = [];
   for (let i = 0; i < calendarSlots.length; i += 7) {
-    weeks.push(calendarSlots.slice(i, i + 7));
+    const week = calendarSlots.slice(i, i + 7);
+    while (week.length < 7) {
+      week.push(null);
+    }
+    weeks.push(week);
   }
 
   const goToPreviousMonth = () => {

@@ -33,14 +33,12 @@ const CATEGORY_ORDER = [
   "Overnight Support",
   "Daytime Care",
   "Group Adventures",
-  "Custom Care",
 ];
 
 const CATEGORY_ICONS = {
   Training: "🎓",
   "Overnight Support": "🌙",
   "Daytime Care": "☀️",
-  "Custom Care": "🧩",
   "Group Adventures": "🧭",
   "Home visits": "🏡",
   "Solo Journeys": "🦮",
@@ -500,7 +498,13 @@ const BookScreen = ({ navigation, route }) => {
       if (title.includes("tailored") || title.includes("custom solution")) {
         return false;
       }
+      if (title.includes("custom care") || title.includes("custom adventure")) {
+        return false;
+      }
       if (category.includes("tailored")) {
+        return false;
+      }
+      if (category.includes("custom care")) {
         return false;
       }
       return true;
@@ -1528,7 +1532,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categorySection: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   categoryCard: {
     flexDirection: "row",
@@ -1544,7 +1548,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
     elevation: 2,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   categoryLeft: {
     flexDirection: "row",
@@ -1585,7 +1589,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
     elevation: 2,
-    marginBottom: 12,
+    marginBottom: 8,
     marginLeft: 8,
   },
   cardPressed: {

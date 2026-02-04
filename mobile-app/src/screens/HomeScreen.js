@@ -31,6 +31,14 @@ const formatDateLabel = (date) =>
     month: "short",
   }).format(date);
 
+const formatDateStamp = (date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+
 const formatTime = (date) =>
   new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -122,6 +130,7 @@ const HomeScreen = ({ navigation }) => {
   const [finishedCards, setFinishedCards] = useState({});
   const isJeroenAccount =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const dateStamp = useMemo(() => formatDateStamp(new Date()), []);
 
   const loadBookings = useCallback(
     async (options = {}) => {
@@ -225,7 +234,7 @@ const HomeScreen = ({ navigation }) => {
     };
 
     if (session?.email) {
-      timeoutId = setTimeout(loadInitialAvailability, 500);
+      timeoutId = setTimeout(loadInitialAvailability, 150);
     }
 
     return () => {
@@ -490,6 +499,7 @@ const HomeScreen = ({ navigation }) => {
           <View>
             <Text style={styles.title}>Hi {displayName}</Text>
             <Text style={styles.subtitle}>Your booking overview</Text>
+            <Text style={styles.dateStamp}>{dateStamp}</Text>
           </View>
           <View style={styles.headerRight}>
             <Pressable
@@ -674,6 +684,24 @@ const HomeScreen = ({ navigation }) => {
                           : "View Jeroen & Paws Card"}
                       </Text>
                     </Pressable>
+                    {isJeroenAccount && booking?.client_id ? (
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.profileLink,
+                          pressed && styles.cardPressed,
+                        ]}
+                        onPress={() =>
+                          navigation.navigate("Profile", {
+                            screen: "ProfileOverview",
+                            params: { clientId: booking.client_id },
+                          })
+                        }
+                      >
+                        <Text style={styles.profileLinkText}>
+                          View client profile
+                        </Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                 ) : null}
               </View>
@@ -716,6 +744,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6c5a92",
     marginTop: 2,
+  },
+  dateStamp: {
+    fontSize: 13,
+    color: "#7b6a9f",
+    marginTop: 4,
   },
   avatar: {
     width: 46,
@@ -922,6 +955,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#ffffff",
+  },
+  profileLink: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#efe9fb",
+    marginTop: 8,
+  },
+  profileLinkText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#5d2fc5",
   },
   cardButtonActive: {
     backgroundColor: "#2f63d6",

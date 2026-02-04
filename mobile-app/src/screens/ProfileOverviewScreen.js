@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   RefreshControl,
@@ -9,10 +10,10 @@ import {
   Text,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
-
 
 const formatMonthYear = (value) => {
   if (!value) return "—";
@@ -29,13 +30,26 @@ const getInitials = (name) => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const ProfileOverviewScreen = ({ navigation }) => {
+const ProfileOverviewScreen = ({ navigation, route }) => {
   const { session } = useSession();
   const [clientProfile, setClientProfile] = useState(null);
   const [pets, setPets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const displayName = clientProfile?.full_name || session?.name || "Your profile";
-  const location = clientProfile?.address || session?.address || "Add your area";
+  const [photoStatus, setPhotoStatus] = useState("idle");
+  const [photoError, setPhotoError] = useState("");
+  const viewingClientId = route?.params?.clientId || session?.id;
+  const isOwnProfile = viewingClientId === session?.id;
+  const displayName =
+    clientProfile?.full_name ||
+    (isOwnProfile ? session?.name : null) ||
+    "Profile";
+  const location =
+    clientProfile?.address ||
+    (isOwnProfile ? session?.address : null) ||
+    "Add your area";
+  const profilePhotoUrl =
+    clientProfile?.profile_photo_url || clientProfile?.profilePhotoUrl || null;
+  const contactEmail = clientProfile?.email || session?.email || "—";
   const aboutItems = [
     {
       icon: "📅",
@@ -52,7 +66,7 @@ const ProfileOverviewScreen = ({ navigation }) => {
     {
       icon: "📧",
       label: "Email address",
-      value: clientProfile?.email || session?.email || "—",
+      value: contactEmail,
     },
     {
       icon: "📞",
@@ -67,7 +81,7 @@ const ProfileOverviewScreen = ({ navigation }) => {
   ];
 
   const loadProfile = useCallback(async () => {
-    if (!session?.id || !supabase) {
+    if (!viewingClientId || !supabase) {
       return;
     }
 
@@ -75,13 +89,13 @@ const ProfileOverviewScreen = ({ navigation }) => {
       const clientResult = await supabase
         .from("clients")
         .select("*")
-        .eq("id", session.id)
+        .eq("id", viewingClientId)
         .maybeSingle();
 
       const petsResult = await supabase
         .from("pets")
         .select("*")
-        .eq("owner_id", session.id)
+        .eq("owner_id", viewingClientId)
         .order("created_at", { ascending: false });
 
        if (clientResult.error) {
@@ -96,7 +110,60 @@ const ProfileOverviewScreen = ({ navigation }) => {
     } catch (profileError) {
       console.error("Failed to load profile", profileError);
     }
-  }, [session?.id]);
+  }, [viewingClientId]);
+
+  const handleSelectPhoto = useCallback(async () => {
+    if (!supabase || !isOwnProfile || !viewingClientId) {
+      return;
+    }
+    setPhotoError("");
+    setPhotoStatus("uploading");
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== "granted") {
+        setPhotoError("Please allow photo access to upload a profile photo.");
+        setPhotoStatus("idle");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (result.canceled) {
+        setPhotoStatus("idle");
+        return;
+      }
+
+      const asset = result.assets?.[0];
+      if (!asset?.base64) {
+        setPhotoError("Unable to read that photo. Please try another one.");
+        setPhotoStatus("idle");
+        return;
+      }
+
+      const mimeType = asset.mimeType || "image/jpeg";
+      const dataUrl = `data:${mimeType};base64,${asset.base64}`;
+
+      const { error } = await supabase
+        .from("clients")
+        .update({ profile_photo_url: dataUrl })
+        .eq("id", viewingClientId);
+      if (error) throw error;
+
+      setClientProfile((current) =>
+        current ? { ...current, profile_photo_url: dataUrl } : current
+      );
+      setPhotoStatus("idle");
+    } catch (error) {
+      console.error("Failed to update profile photo", error);
+      setPhotoError("We could not upload that photo right now.");
+      setPhotoStatus("error");
+    }
+  }, [isOwnProfile, viewingClientId]);
 
   useEffect(() => {
     loadProfile();
@@ -121,8 +188,33 @@ const ProfileOverviewScreen = ({ navigation }) => {
         <ScreenHeader title="Profile overview" onBack={() => navigation.goBack()} />
         <View style={styles.profileCard}>
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{getInitials(displayName)}</Text>
+            {profilePhotoUrl ? (
+              <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{getInitials(displayName)}</Text>
+            )}
           </View>
+          {isOwnProfile ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.photoButton,
+                pressed && styles.photoButtonPressed,
+              ]}
+              onPress={handleSelectPhoto}
+              disabled={photoStatus === "uploading"}
+            >
+              {photoStatus === "uploading" ? (
+                <ActivityIndicator size="small" color="#5d2fc5" />
+              ) : (
+                <Text style={styles.photoButtonText}>
+                  {profilePhotoUrl ? "Change photo" : "Upload photo"}
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+          {photoError ? (
+            <Text style={styles.photoError}>{photoError}</Text>
+          ) : null}
           <Text style={styles.profileName}>{displayName}</Text>
           <View style={styles.locationRow}>
             <Text style={styles.locationIcon}>📍</Text>
@@ -241,10 +333,37 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
+  avatarImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
   avatarText: {
     fontSize: 30,
     fontWeight: "700",
     color: "#1f1f1f",
+  },
+  photoButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "#efe9fb",
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    marginBottom: 10,
+  },
+  photoButtonPressed: {
+    opacity: 0.9,
+  },
+  photoButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#5d2fc5",
+  },
+  photoError: {
+    fontSize: 12,
+    color: "#b42318",
+    marginBottom: 8,
   },
   profileName: {
     fontSize: 24,

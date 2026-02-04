@@ -18,6 +18,7 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 import PaymentMethodsScreen from "./src/screens/PaymentMethodsScreen";
 import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
+import ClientProfilesScreen from "./src/screens/ClientProfilesScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 import { fetchJson } from "./src/api/client";
 import { supabase } from "./src/api/supabaseClient";
@@ -89,6 +90,10 @@ const ProfileStackScreen = () => (
       name="ProfileOverview"
       component={ProfileOverviewScreen}
     />
+    <ProfileStack.Screen
+      name="ClientProfiles"
+      component={ClientProfilesScreen}
+    />
     <ProfileStack.Screen name="PetsProfile" component={PetsProfileScreen} />
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     <ProfileStack.Screen
@@ -152,6 +157,7 @@ const MainTabs = () => (
       name="Messages"
       component={MessagesScreen}
       options={{
+        tabBarStyle: { ...TAB_BAR_STYLE, display: "none" },
         tabBarIcon: ({ color }) => (
           <Text style={{ color, fontSize: 18 }}>{tabIcons.Messages}</Text>
         ),
@@ -278,6 +284,12 @@ const AppShell = () => {
           await supabase.auth.updateUser({
             data: { expo_push_token: null },
           });
+          if (session?.id) {
+            await supabase
+              .from("clients")
+              .update({ expo_push_token: null })
+              .eq("id", session.id);
+          }
           if (!isMounted) return;
           setSession((current) =>
             current
@@ -307,6 +319,15 @@ const AppShell = () => {
           if (error) {
             console.warn("Failed to store push token", error);
             return;
+          }
+          if (session?.id) {
+            const { error: clientError } = await supabase
+              .from("clients")
+              .update({ expo_push_token: token })
+              .eq("id", session.id);
+            if (clientError) {
+              console.warn("Failed to store client push token", clientError);
+            }
           }
           setSession((current) =>
             current
@@ -407,21 +428,23 @@ const AppShell = () => {
           );
           durations.add(duration);
         });
-        for (const durationMinutes of durations) {
-          await prefetchAvailability({
-            durationMinutes,
-            windowDays: 21,
-            clientAddress,
-            timeoutMs: AVAILABILITY_TIMEOUT_MS,
-          });
-        }
+        await Promise.allSettled(
+          Array.from(durations).map((durationMinutes) =>
+            prefetchAvailability({
+              durationMinutes,
+              windowDays: 21,
+              clientAddress,
+              timeoutMs: AVAILABILITY_TIMEOUT_MS,
+            })
+          )
+        );
       } catch (error) {
         console.error("Failed to prefetch availability after auth", error);
       }
     };
 
     if (session?.email) {
-      timeoutId = setTimeout(prefetchBookingAvailability, 500);
+      timeoutId = setTimeout(prefetchBookingAvailability, 150);
     }
 
     return () => {

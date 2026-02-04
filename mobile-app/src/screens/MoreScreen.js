@@ -37,8 +37,12 @@ const userItems = [
   },
 ];
 
+const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+
 const MoreScreen = ({ navigation }) => {
-  const { setSession } = useSession();
+  const { session, setSession } = useSession();
+  const isOwner =
+    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const handleLogout = async () => {
     try {
@@ -80,6 +84,28 @@ const MoreScreen = ({ navigation }) => {
             </Pressable>
           ))}
         </View>
+        {isOwner ? (
+          <>
+            <Text style={styles.sectionTitle}>Owner tools</Text>
+            <View style={styles.sectionCard}>
+              <Pressable
+                style={[styles.menuItem, styles.menuItemLast]}
+                onPress={() => navigation.navigate("ClientProfiles")}
+              >
+                <View style={styles.menuLeft}>
+                  <Text style={styles.menuIcon}>🗂️</Text>
+                  <View>
+                    <Text style={styles.menuLabel}>Client profiles</Text>
+                    <Text style={styles.menuDescription}>
+                      Find and open client profiles
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : null}
         <View style={styles.sectionCard}>
           <Pressable style={styles.menuItem} onPress={handleLogout}>
             <View style={styles.menuLeft}>

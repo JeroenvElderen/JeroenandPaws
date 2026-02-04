@@ -610,7 +610,21 @@ const MessagesScreen = ({ navigation }) => {
             {activeClient?.full_name || activeClient?.email || "Jeroen & Paws"}
           </Text>
         </View>
-        <View style={styles.headerSpacer} />
+        {isOwner && activeClientId ? (
+          <Pressable
+            style={styles.headerAction}
+            onPress={() =>
+              navigation.navigate("Profile", {
+                screen: "ProfileOverview",
+                params: { clientId: activeClientId },
+              })
+            }
+          >
+            <Text style={styles.headerActionText}>👤</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
     );
   };
@@ -843,6 +857,19 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 38,
+  },
+  headerAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#efe9fb",
+    borderWidth: 1,
+    borderColor: "#e7def7",
+  },
+  headerActionText: {
+    fontSize: 16,
   },
   chatTitle: {
     fontSize: 16,
