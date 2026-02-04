@@ -33,7 +33,7 @@ const HelpSupportScreen = ({ navigation }) => {
     await Linking.openURL(`tel:${SUPPORT_PHONE}`);
   };
 
-const handleWhatsAppPress = async () => {
+  const handleWhatsAppPress = async () => {
     await Linking.openURL(SUPPORT_WHATSAPP);
   };
 
@@ -43,11 +43,15 @@ const handleWhatsAppPress = async () => {
         <ScreenHeader title="Help & Support" onBack={() => navigation.goBack()} />
         <Pressable style={styles.card} onPress={handleEmailPress}>
           <Text style={styles.cardTitle}>Email us</Text>
-          <Text style={styles.cardDescription}>{SUPPORT_EMAIL}</Text>
+          <Text style={styles.cardDescription}>
+            {SUPPORT_EMAIL} · Replies within 24 hours
+          </Text>
         </Pressable>
         <Pressable style={styles.card} onPress={handleCallPress}>
           <Text style={styles.cardTitle}>Call</Text>
-          <Text style={styles.cardDescription}>{SUPPORT_PHONE}</Text>
+          <Text style={styles.cardDescription}>
+            {SUPPORT_PHONE} · 09:00-18:00
+          </Text>
         </Pressable>
         <Pressable
           style={styles.card}
@@ -55,20 +59,15 @@ const handleWhatsAppPress = async () => {
         >
           <Text style={styles.cardTitle}>Live chat</Text>
           <Text style={styles.cardDescription}>
-            Chat with us directly inside the app.
+            Available 09:00-18:00 inside the app.
           </Text>
         </Pressable>
         <Pressable style={styles.card} onPress={handleWhatsAppPress}>
           <Text style={styles.cardTitle}>WhatsApp</Text>
           <Text style={styles.cardDescription}>
-            Message us any time on WhatsApp.
+            24/7 via WhatsApp.
           </Text>
         </Pressable>
-        <View style={styles.noteCard}>
-          <Text style={styles.noteText}>
-            We are available 24/7 for support via WhatsApp.
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -77,13 +76,13 @@ const handleWhatsAppPress = async () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#ffffff",
   },
   container: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#ffffff",
   },
   card: {
     backgroundColor: "#ffffff",
@@ -102,18 +101,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6c5a92",
     marginTop: 6,
-  },
-  noteCard: {
-    backgroundColor: "#efe9fb",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#e6def6",
-  },
-  noteText: {
-    fontSize: 13,
-    color: "#6c5a92",
-    textAlign: "center",
   },
 });
 

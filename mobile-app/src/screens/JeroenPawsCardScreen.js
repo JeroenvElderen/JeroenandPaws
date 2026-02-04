@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Image,
   Pressable,
   SafeAreaView,
@@ -10,8 +11,10 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { clearActiveCard } from "../utils/activeCards";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -21,7 +24,6 @@ const defaultActivities = [
   { key: "food", label: "Food", icon: "🍽️" },
   { key: "water", label: "Water", icon: "🧊" },
   { key: "walk", label: "Walk", icon: "🐾" },
-  { key: "training", label: "Training", icon: "🎯" },
 ];
 
 const formatPetsLabel = (pets) => {
@@ -100,15 +102,11 @@ const formatElapsedTime = (totalMs) => {
   ].join(":");
 };
 
-const formatFinishTime = (value) => {
-  if (!value) return "";
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(value);
+const buildStaticMapUrl = (coords) => {
+  if (!coords) return null;
+  const lat = coords.latitude.toFixed(5);
+  const lon = coords.longitude.toFixed(5);
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=15&size=640x320&markers=${lat},${lon},red-pushpin`;
 };
 
 const JeroenPawsCardScreen = ({ navigation, route }) => {
@@ -145,6 +143,9 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   const [finishError, setFinishError] = useState("");
   const [finishedAt, setFinishedAt] = useState(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [location, setLocation] = useState(null);
+  const [locationError, setLocationError] = useState("");
+  const locationSubscriptionRef = useRef(null);
   const [loadedCardId, setLoadedCardId] = useState(null);
   const isReadOnly = Boolean(route?.params?.readOnly || route?.params?.cardId);
   const [cardStartedAt, setCardStartedAt] = useState(
@@ -153,13 +154,25 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   const [cardPets, setCardPets] = useState(resolvedPets);
   const [cardPetsLabel, setCardPetsLabel] = useState(petsLabel);
   const [cardServiceTitle, setCardServiceTitle] = useState(serviceTitle);
+  const bookingStart = route?.params?.bookingStart
+    ? new Date(route.params.bookingStart)
+    : null;
   const bookingEnd = route?.params?.bookingEnd
     ? new Date(route.params.bookingEnd)
     : null;
+  const bookingDurationMinutes =
+    bookingStart && bookingEnd
+      ? Math.max(
+          Math.floor((bookingEnd.getTime() - bookingStart.getTime()) / 60000),
+          0
+        )
+      : 0;
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+  const remainingMs = bookingDurationMinutes
+    ? Math.max((bookingDurationMinutes - elapsedMinutes) * 60000, 0)
+    : 0;
   const canFinishVisit =
-    !isOwner ||
-    !bookingEnd ||
-    Date.now() >= bookingEnd.getTime();
+    !isOwner || !bookingDurationMinutes || elapsedMinutes >= bookingDurationMinutes;
 
   const getPetKey = (pet, index) => pet?.id || pet?.name || `pet-${index}`;
 
@@ -193,6 +206,53 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
       },
     }));
   };
+
+  useEffect(() => {
+    if (!isOwner || isReadOnly) {
+      return undefined;
+    }
+    let isMounted = true;
+    const startTracking = async () => {
+      setLocationError("");
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        if (isMounted) {
+          setLocationError("Location permission is required for tracking.");
+        }
+        return;
+      }
+      try {
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (isMounted) {
+          setLocation(current.coords);
+        }
+        const subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 5000,
+            distanceInterval: 5,
+          },
+          (update) => {
+            if (!isMounted) return;
+            setLocation(update.coords);
+          }
+        );
+        locationSubscriptionRef.current = subscription;
+      } catch (error) {
+        if (isMounted) {
+          setLocationError("Unable to load live location right now.");
+        }
+      }
+    };
+    startTracking();
+    return () => {
+      isMounted = false;
+      locationSubscriptionRef.current?.remove?.();
+      locationSubscriptionRef.current = null;
+    };
+  }, [isOwner, isReadOnly]);
 
   useEffect(() => {
     let isMounted = true;
@@ -443,6 +503,10 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
       setLoadedCardId(data?.id || null);
       setFinishedAt(finishTimestamp);
 
+      if (isOwner && route?.params?.bookingId) {
+        await clearActiveCard(session?.email || OWNER_EMAIL, route.params.bookingId);
+      }
+
       if (route?.params?.bookingId) {
         const { error: bookingError } = await supabase
           .from("bookings")
@@ -494,6 +558,39 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleResetWalk = () => {
+    if (!isOwner || isReadOnly) return;
+    Alert.alert(
+      "Reset walk?",
+      "This will stop the current walk and reset the card to not started.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            if (route?.params?.bookingId) {
+              await clearActiveCard(
+                session?.email || OWNER_EMAIL,
+                route.params.bookingId
+              );
+            }
+            setFinishedAt(null);
+            setWalkCompleted(false);
+            setElapsedMs(0);
+            setPhotoCount(0);
+            setCardPhotos([]);
+            setCounts(buildActivityCounts(cardPets));
+            setCardStartedAt(Date.now());
+            navigation.goBack();
+          },
+        },
+      ]
+    );
+  };
+
+  const mapUrl = buildStaticMapUrl(location);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -512,16 +609,26 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.mapCard}>
-          <View style={styles.mapPlaceholder}>
-            <Text style={styles.mapPlaceholderText}>Walk Map Preview</Text>
-            {walkCompleted ? (
-              <View style={styles.routeBadge}>
-                <Text style={styles.routeBadgeText}>
-                  Walking route tracked
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          {mapUrl ? (
+            <Image
+              source={{ uri: mapUrl }}
+              style={styles.mapImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.mapPlaceholder}>
+              <Text style={styles.mapPlaceholderText}>
+                {locationError || "Fetching live map..."}
+              </Text>
+              {walkCompleted ? (
+                <View style={styles.routeBadge}>
+                  <Text style={styles.routeBadgeText}>
+                    Walking route tracked
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
           {isOwner && !isReadOnly ? (
             <Pressable
               style={styles.addPhotoButton}
@@ -575,9 +682,10 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                     <Text style={styles.petBreed}>{meta}</Text>
                   </View>
                 </View>
-              
-              {defaultActivities.map((activity) => (
-                  <View key={activity.key} style={styles.activityRow}>
+                {defaultActivities.map((activity) => {
+                  const activityCount = counts[petKey]?.[activity.key] ?? 0;
+                  return (
+                    <View key={activity.key} style={styles.activityRow}>
                     <View style={styles.activityLabel}>
                       <Text style={styles.activityIcon}>{activity.icon}</Text>
                       <Text style={styles.activityText}>
@@ -587,7 +695,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                     {isReadOnly ? (
                       <View style={styles.readOnlyCount}>
                         <Text style={styles.readOnlyCountText}>
-                          {counts[petKey]?.[activity.key] ?? 0}
+                          {activityCount}
                         </Text>
                       </View>
                     ) : (
@@ -595,7 +703,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                         <Pressable
                           style={[
                             styles.counterButton,
-                            styles.counterButtonPrimary,
+                            activityCount > 0 && styles.counterButtonPrimary,
                           ]}
                           onPress={() => updateCount(petKey, activity.key, -1)}
                           disabled={isReadOnly}
@@ -603,7 +711,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                           <Text style={styles.counterButtonText}>−</Text>
                         </Pressable>
                         <Text style={styles.counterValue}>
-                          {counts[petKey]?.[activity.key] ?? 0}
+                          {activityCount}
                         </Text>
                         <Pressable
                           style={[
@@ -618,7 +726,8 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                       </View>
                     )}
                   </View>
-                ))}
+                  );
+                })}
               </View>
               );
           })}
@@ -638,15 +747,6 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
             </View>
           </View>
         ) : null}
-
-        <View style={styles.actionRow}>
-          <Pressable style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Care Info</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Call owner</Text>
-          </Pressable>
-        </View>
 
         {finishError ? (
           <Text style={styles.errorText}>{finishError}</Text>
@@ -672,7 +772,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         ) : !isReadOnly && !canFinishVisit ? (
           <View style={styles.finishBadge}>
             <Text style={styles.finishBadgeText}>
-              Finish available at {formatFinishTime(bookingEnd)}
+              Remaining time {formatElapsedTime(remainingMs)}
             </Text>
           </View>
         ) : (
@@ -688,6 +788,11 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         {photoUploadError ? (
           <Text style={styles.errorText}>{photoUploadError}</Text>
         ) : null}
+      {isOwner && !isReadOnly ? (
+          <Pressable style={styles.resetButton} onPress={handleResetWalk}>
+            <Text style={styles.resetButtonText}>Reset walk</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -696,7 +801,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fffff",
+    backgroundColor: "#ffffff",
   },
   container: {
     padding: 20,
@@ -745,6 +850,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ebe4f7",
     padding: 16,
+    marginBottom: 16,
+  },
+  mapImage: {
+    height: 160,
+    borderRadius: 16,
     marginBottom: 16,
   },
   mapPlaceholder: {
@@ -933,24 +1043,6 @@ const styles = StyleSheet.create({
     minWidth: 20,
     textAlign: "center",
   },
-  actionRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#cfd6e0",
-    paddingVertical: 12,
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-  },
-  secondaryButtonText: {
-    color: "#2b1a4b",
-    fontWeight: "600",
-  },
   finishButton: {
     borderRadius: 999,
     backgroundColor: "#2f63d6",
@@ -983,6 +1075,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 12,
     color: "#7b6a9f",
+  },
+  resetButton: {
+    marginTop: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#f0c2c2",
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: "#fff5f5",
+    marginBottom: 12,
+  },
+  resetButtonText: {
+    color: "#a01212",
+    fontWeight: "700",
   },
   photoGallery: {
     backgroundColor: "#ffffff",

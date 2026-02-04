@@ -25,6 +25,8 @@ const getInitials = (name) => {
 };
 
 const PET_TABS = ["About", "Summary", "Health", "Photo Gallery"];
+const YES_MAYBE_NO_OPTIONS = ["Yes", "Maybe", "No"];
+const ENERGY_LEVEL_OPTIONS = ["Low", "Medium", "High", "Extreme"];
 
 const safeValue = (value) =>
   value === null || value === undefined || value === "" ? "—" : value;
@@ -38,6 +40,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
   const [draftPet, setDraftPet] = useState(null);
   const [saveStatus, setSaveStatus] = useState("idle");
   const [saveError, setSaveError] = useState("");
+  const [openSelectField, setOpenSelectField] = useState(null);
   const selectedPet = route?.params?.pet || null;
   const isDetailView = Boolean(selectedPet);
 
@@ -69,6 +72,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
       setActiveTab(PET_TABS[0]);
       setSaveError("");
       setSaveStatus("idle");
+      setOpenSelectField(null);
     }
   }, [isDetailView, selectedPet]);
 
@@ -79,6 +83,22 @@ const PetsProfileScreen = ({ navigation, route }) => {
   const handleSavePet = async () => {
     if (!draftPet?.id || !supabase) {
       setIsEditing(false);
+      return;
+    }
+
+    const isFieldEmpty = (value) =>
+      value === null || value === undefined || value === "";
+    const missingFields = [
+      { key: "age_years", label: "Age" },
+      { key: "weight_kg", label: "Weight (kg)" },
+      { key: "adoption_date", label: "Adoption date" },
+    ].filter((field) => isFieldEmpty(draftPet?.[field.key]));
+
+    if (missingFields.length) {
+      setSaveError(
+        `Please fill in ${missingFields.map((field) => field.label).join(", ")}.`
+      );
+      setSaveStatus("idle");
       return;
     }
 
@@ -167,24 +187,75 @@ const PetsProfileScreen = ({ navigation, route }) => {
       </View>
     );
 
-    const renderBooleanField = (label, field) => {
-      const value = pet?.[field];
-      const display =
-        typeof value === "boolean" ? (value ? "Yes" : "No") : "—";
+    const resolveYesMaybeNo = (value) => {
+      if (value === true) return "Yes";
+      if (value === false) return "No";
+      if (typeof value === "string") {
+        const normalized = value.toLowerCase();
+        if (normalized.startsWith("y")) return "Yes";
+        if (normalized.startsWith("n")) return "No";
+        if (normalized.startsWith("m")) return "Maybe";
+      }
+      return "Maybe";
+    };
+
+    const renderSelectField = (
+      label,
+      field,
+      options,
+      { isBoolean = false } = {}
+    ) => {
+      const rawValue = pet?.[field];
+      const displayValue = isBoolean
+        ? resolveYesMaybeNo(rawValue)
+        : rawValue
+        ? String(rawValue)
+        : "—";
+
+      const handleSelect = (selection) => {
+        if (isBoolean) {
+          updateDraftField(
+            field,
+            selection === "Yes" ? true : selection === "No" ? false : null
+          );
+        } else {
+          updateDraftField(field, selection);
+        }
+        setOpenSelectField(null);
+      };
+
       return (
         <View style={styles.detailRow} key={field}>
           <Text style={styles.detailLabel}>{label}</Text>
           {isEditing ? (
-            <Pressable
-              style={styles.booleanToggle}
-              onPress={() => updateDraftField(field, !value)}
-            >
-              <Text style={styles.booleanToggleText}>
-                {value ? "Yes" : "No"}
-              </Text>
-            </Pressable>
+            <View>
+              <Pressable
+                style={styles.selectInput}
+                onPress={() =>
+                  setOpenSelectField((current) =>
+                    current === field ? null : field
+                  )
+                }
+              >
+                <Text style={styles.selectValue}>{displayValue}</Text>
+                <Text style={styles.selectChevron}>▾</Text>
+              </Pressable>
+              {openSelectField === field ? (
+                <View style={styles.selectOptions}>
+                  {options.map((option) => (
+                    <Pressable
+                      key={`${field}-${option}`}
+                      style={styles.selectOption}
+                      onPress={() => handleSelect(option)}
+                    >
+                      <Text style={styles.selectOptionText}>{option}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+            </View>
           ) : (
-            <Text style={styles.detailValue}>{display}</Text>
+            <Text style={styles.detailValue}>{displayValue}</Text>
           )}
         </View>
       );
@@ -287,18 +358,15 @@ const PetsProfileScreen = ({ navigation, route }) => {
               {renderField("Birthdate", "birthdate", {
                 placeholder: "YYYY-MM-DD",
               })}
-              {renderField("Age (years)", "age_years", {
+              {renderField("Age *", "age_years", {
                 keyboardType: "numeric",
               })}
-              {renderField("Age (months)", "age_months", {
-                keyboardType: "numeric",
-              })}
-              {renderField("Weight (kg)", "weight_kg", {
+              {renderField("Weight (kg) *", "weight_kg", {
                 keyboardType: "numeric",
               })}
               {renderField("Color", "color")}
               {renderField("Microchip ID", "microchip_id")}
-              {renderField("Adoption date", "adoption_date", {
+              {renderField("Adoption date *", "adoption_date", {
                 placeholder: "YYYY-MM-DD",
               })}
               {renderField("About your pet", "notes", {
@@ -309,15 +377,38 @@ const PetsProfileScreen = ({ navigation, route }) => {
           
           {activeTab === "Summary" ? (
             <View style={styles.sectionCard}>
-              {renderField("Friendly with dogs", "socialization_dogs")}
-              {renderField("Friendly with cats", "socialization_cats")}
-              {renderField(
-                "Friendly with children",
-                "socialization_children"
+              {renderSelectField(
+                "Friendly with dogs",
+                "socialization_dogs",
+                YES_MAYBE_NO_OPTIONS
               )}
-              {renderBooleanField("Spayed/neutered", "spayed_neutered")}
-              {renderBooleanField("House trained", "house_trained")}
-              {renderField("Energy level", "energy_level")}
+              {renderSelectField(
+                "Friendly with cats",
+                "socialization_cats",
+                YES_MAYBE_NO_OPTIONS
+              )}
+              {renderSelectField(
+                "Friendly with children",
+                "socialization_children",
+                YES_MAYBE_NO_OPTIONS
+              )}
+              {renderSelectField(
+                "Spayed/neutered",
+                "spayed_neutered",
+                YES_MAYBE_NO_OPTIONS,
+                { isBoolean: true }
+              )}
+              {renderSelectField(
+                "House trained",
+                "house_trained",
+                YES_MAYBE_NO_OPTIONS,
+                { isBoolean: true }
+              )}
+              {renderSelectField(
+                "Energy level",
+                "energy_level",
+                ENERGY_LEVEL_OPTIONS
+              )}
               {renderField("Toilet break interval (hrs)", "toilet_break_interval_hours", {
                 keyboardType: "numeric",
               })}
@@ -336,7 +427,6 @@ const PetsProfileScreen = ({ navigation, route }) => {
               {renderField("Veterinary info", "vet_name")}
               {renderField("Vet phone", "vet_phone")}
               {renderField("Insurance provider", "insurance_provider")}
-              {renderField("Insurance plan", "insurance_plan")}
               {renderField("Allergies", "allergies")}
               {renderField("Medications", "medications")}
               {renderField("Medical notes", "medical_notes", {
@@ -438,9 +528,18 @@ const PetsProfileScreen = ({ navigation, route }) => {
               onPress={() => navigation.push("PetsProfile", { pet })}
             >
               <View style={styles.petAvatar}>
-                <Text style={styles.petAvatarText}>
-                  {getInitials(pet.name || "Pet")}
-                </Text>
+                {pet.photo_data_url || pet.photoUrl || pet.photo_url ? (
+                  <Image
+                    source={{
+                      uri: pet.photo_data_url || pet.photoUrl || pet.photo_url,
+                    }}
+                    style={styles.petAvatarImage}
+                  />
+                ) : (
+                  <Text style={styles.petAvatarText}>
+                    {getInitials(pet.name || "Pet")}
+                  </Text>
+                )}
               </View>
               <View style={styles.petInfo}>
                 <Text style={styles.petName}>{pet.name || "Pet"}</Text>
@@ -627,16 +726,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#2b1a4b",
   },
-  booleanToggle: {
-    alignSelf: "flex-start",
+  selectInput: {
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: "#f2ecfb",
+    paddingVertical: 10,
+    backgroundColor: "#ffffff",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  booleanToggleText: {
-    fontSize: 13,
-    fontWeight: "600",
+  selectValue: {
+    fontSize: 14,
+    color: "#2b1a4b",
+  },
+  selectChevron: {
+    fontSize: 12,
+    color: "#6c5a92",
+  },
+  selectOptions: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e6def6",
+    backgroundColor: "#ffffff",
+    overflow: "hidden",
+  },
+  selectOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1edf9",
+  },
+  selectOptionText: {
+    fontSize: 14,
     color: "#2b1a4b",
   },
   input: {
@@ -739,6 +863,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
+  },
+  petAvatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   petAvatarText: {
     fontSize: 18,

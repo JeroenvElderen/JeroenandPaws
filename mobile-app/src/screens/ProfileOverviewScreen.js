@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Image,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -129,15 +130,6 @@ const ProfileOverviewScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <Pressable
-          style={styles.quickActionCard}
-          onPress={() => navigation.navigate("Book", { returnToProfile: true })}
-        >
-          <Text style={styles.quickActionIcon}>✨</Text>
-          <Text style={styles.quickActionText}>Book a new service</Text>
-          <Text style={styles.quickActionChevron}>›</Text>
-        </Pressable>
-
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.sectionCard}>
           {aboutItems.map((item, index) => (
@@ -188,6 +180,8 @@ const ProfileOverviewScreen = ({ navigation }) => {
             const meta = [pet.breed || "Breed TBD", pet.age || "Age TBD"]
               .filter(Boolean)
               .join(" • ");
+            const petPhoto =
+              pet.photo_data_url || pet.photoUrl || pet.photo_url || null;
             return (
               <Pressable
                 key={pet.id || pet.name}
@@ -198,9 +192,16 @@ const ProfileOverviewScreen = ({ navigation }) => {
                 onPress={() => navigation.push("PetsProfile", { pet })}
               >
                 <View style={styles.petAvatar}>
-                  <Text style={styles.petAvatarText}>
-                    {getInitials(pet.name || "Pet")}
-                  </Text>
+                  {petPhoto ? (
+                    <Image
+                      source={{ uri: petPhoto }}
+                      style={styles.petAvatarImage}
+                    />
+                  ) : (
+                    <Text style={styles.petAvatarText}>
+                      {getInitials(pet.name || "Pet")}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.petInfo}>
                   <Text style={styles.petName}>{pet.name || "Pet"}</Text>
@@ -219,7 +220,7 @@ const ProfileOverviewScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f3fb",
+    backgroundColor: "#ffffff",
   },
   container: {
     flexGrow: 1,
@@ -262,30 +263,6 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 14,
     color: "#5f5f5f",
-  },
-  quickActionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    marginBottom: 28,
-  },
-  quickActionIcon: {
-    marginRight: 10,
-    fontSize: 18,
-  },
-  quickActionText: {
-    flex: 1,
-    fontSize: 15,
-    color: "#2b2b2b",
-    fontWeight: "600",
-  },
-  quickActionChevron: {
-    fontSize: 22,
-    color: "#b0b0b0",
   },
   sectionTitle: {
     fontSize: 20,
@@ -364,6 +341,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
+  },
+  petAvatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   petAvatarText: {
     fontSize: 18,

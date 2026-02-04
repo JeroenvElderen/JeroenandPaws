@@ -53,19 +53,23 @@ export const prefetchAvailability = async ({
     clientAddress: trimmedAddress,
   });
   if (cached) return cached;
-  const data = await fetchAvailability({
-    durationMinutes,
-    windowDays,
-    clientAddress: trimmedAddress,
-    timeoutMs,
-  });
-  setCachedAvailability({
-    durationMinutes,
-    windowDays,
-    clientAddress: trimmedAddress,
-    data,
-  });
-  return data;
+  try {
+    const data = await fetchAvailability({
+      durationMinutes,
+      windowDays,
+      clientAddress: trimmedAddress,
+      timeoutMs,
+    });
+    setCachedAvailability({
+      durationMinutes,
+      windowDays,
+      clientAddress: trimmedAddress,
+      data,
+    });
+    return data;
+  } catch (error) {
+    return null;
+  }
 };
 
 export const clearAvailabilityCache = () => {

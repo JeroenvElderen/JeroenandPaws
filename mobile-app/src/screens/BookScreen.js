@@ -1420,8 +1420,11 @@ const BookScreen = ({ navigation, route }) => {
                       {month.label}
                     </Text>
                     <View style={styles.weekHeader}>
-                      {"SMTWTFS".split("").map((day) => (
-                        <Text key={day} style={styles.weekHeaderText}>
+                      {"SMTWTFS".split("").map((day, index) => (
+                        <Text
+                          key={`${day}-${index}`}
+                          style={styles.weekHeaderText}
+                        >
                           {day}
                         </Text>
                       ))}

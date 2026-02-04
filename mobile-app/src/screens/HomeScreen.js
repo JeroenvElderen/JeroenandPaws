@@ -19,6 +19,7 @@ import {
 } from "../api/availabilityCache";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { loadActiveCards, saveActiveCards } from "../utils/activeCards";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
@@ -114,6 +115,7 @@ const HomeScreen = ({ navigation }) => {
   const [bookings, setBookings] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeRoverCards, setActiveRoverCards] = useState({});
+  const [activeCardsLoaded, setActiveCardsLoaded] = useState(false);
   const [timeTick, setTimeTick] = useState(Date.now());
   const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -146,6 +148,31 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [session?.email, loadBookings]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadStoredActiveCards = async () => {
+      if (!isJeroenAccount || !session?.email) {
+        setActiveCardsLoaded(true);
+        return;
+      }
+      const stored = await loadActiveCards(session.email);
+      if (!isMounted) return;
+      setActiveRoverCards(stored);
+      setActiveCardsLoaded(true);
+    };
+    loadStoredActiveCards();
+    return () => {
+      isMounted = false;
+    };
+  }, [isJeroenAccount, session?.email]);
+
+  useEffect(() => {
+    if (!activeCardsLoaded || !isJeroenAccount || !session?.email) {
+      return;
+    }
+    saveActiveCards(session.email, activeRoverCards);
+  }, [activeCardsLoaded, activeRoverCards, isJeroenAccount, session?.email]);
+
   useFocusEffect(
     useCallback(() => {
       if (session?.email) {
@@ -171,7 +198,9 @@ const HomeScreen = ({ navigation }) => {
           clientAddress,
         });
         if (cached) return;
-        const data = await fetchJson("/api/services", { timeoutMs: 30000 });
+        const data = await fetchJson("/api/services", {
+          timeoutMs: AVAILABILITY_TIMEOUT_MS,
+        });
         if (!isMounted) return;
         const services = (data?.services || []).filter(Boolean);
         if (!services.length) return;
@@ -191,7 +220,7 @@ const HomeScreen = ({ navigation }) => {
           })
         );
       } catch (error) {
-        console.error("Failed to prefetch availability", error);
+        console.warn("Failed to prefetch availability", error);
       }
     };
 
@@ -580,7 +609,7 @@ const HomeScreen = ({ navigation }) => {
                   <View style={styles.cardFooter}>
                     {isJeroenAccount && hasActiveCard ? (
                       <Text style={styles.cardTimerText}>
-                        Active time {formatElapsedTime(elapsedMs)}
+                        Timer {formatElapsedTime(elapsedMs)}
                       </Text>
                     ) : null}
                     <Pressable
@@ -666,7 +695,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     paddingBottom: 32,
-    backgroundColor: "#fffff",
+    backgroundColor: "#ffffff",
   },
   header: {
     flexDirection: "row",

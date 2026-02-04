@@ -22,7 +22,6 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../api/supabaseClient";
-import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 import { TAB_BAR_STYLE } from "../utils/tabBar";
 
@@ -352,7 +351,6 @@ const MessagesScreen = ({ navigation }) => {
     }
     return clientMeta?.[activeClientId] || { id: activeClientId };
   }, [activeClientId, clientMeta, isOwner, session]);
-  const isChatView = Boolean(activeClientId);
 
   useLayoutEffect(() => {
     const parent = navigation.getParent();
@@ -362,15 +360,13 @@ const MessagesScreen = ({ navigation }) => {
     if (!tabParent) return undefined;
 
     tabParent.setOptions({
-      tabBarStyle: isChatView
-        ? { display: "none", height: 0 }
-        : TAB_BAR_STYLE,
+      tabBarStyle: { display: "none", height: 0 },
     });
 
     return () => {
       tabParent.setOptions({ tabBarStyle: TAB_BAR_STYLE });
     };
-  }, [navigation, isChatView]);
+  }, [navigation]);
 
   const messageItems = useMemo(() => {
     let lastDayKey = null;
@@ -524,7 +520,6 @@ const MessagesScreen = ({ navigation }) => {
       ? new Date(message.created_at)
       : null;
     const timeLabel = createdAt ? formatMessageTime(createdAt) : "";
-    const readLabel = message.read_at ? "✓✓" : "✓";
     const readColor = message.read_at ? "#1d9bf0" : "#9aa0a6";
 
     return (
@@ -571,9 +566,20 @@ const MessagesScreen = ({ navigation }) => {
           <View style={styles.messageMeta}>
             <Text style={styles.messageTime}>{timeLabel}</Text>
             {isOwnMessage ? (
-              <Text style={[styles.readStatus, { color: readColor }]}>
-                {readLabel}
-              </Text>
+              <View style={styles.readStatusStack}>
+                <Text style={[styles.readStatus, { color: readColor }]}>
+                  ✓
+                </Text>
+                <Text
+                  style={[
+                    styles.readStatus,
+                    styles.readStatusOverlap,
+                    { color: readColor },
+                  ]}
+                >
+                  ✓
+                </Text>
+              </View>
             ) : null}
           </View>
         </View>
@@ -603,6 +609,24 @@ const MessagesScreen = ({ navigation }) => {
           <Text style={styles.chatSubtitle}>
             {activeClient?.full_name || activeClient?.email || "Jeroen & Paws"}
           </Text>
+        </View>
+        <View style={styles.headerSpacer} />
+      </View>
+    );
+  };
+
+  const renderInboxHeader = () => {
+    return (
+      <View style={styles.chatHeader}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.navigate("Home")}
+        >
+          <Text style={styles.backButtonIcon}>←</Text>
+        </Pressable>
+        <View style={styles.chatHeaderText}>
+          <Text style={styles.chatTitle}>Inbox</Text>
+          <Text style={styles.chatSubtitle}>Your conversations</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -681,7 +705,7 @@ const MessagesScreen = ({ navigation }) => {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={styles.container}>
-            <ScreenHeader title="Inbox" />
+            {renderInboxHeader()}
             {loadingInbox ? (
               <View style={styles.loadingState}>
                 <ActivityIndicator size="small" color="#5d2fc5" />
@@ -877,6 +901,13 @@ const styles = StyleSheet.create({
   readStatus: {
     fontSize: 12,
     fontWeight: "700",
+  },
+  readStatusStack: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  readStatusOverlap: {
+    marginLeft: -6,
   },
   dateRow: {
     alignItems: "center",
