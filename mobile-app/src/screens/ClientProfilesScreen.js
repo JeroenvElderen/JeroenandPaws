@@ -33,7 +33,8 @@ const ClientProfilesScreen = ({ navigation }) => {
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const loadClients = useCallback(async () => {
-    if (!supabase || !isOwner) return;
+    if (!supabase) return;
+    if (!session?.email) return;
     setStatus("loading");
     try {
       const pageSize = 1000;
@@ -41,11 +42,19 @@ const ClientProfilesScreen = ({ navigation }) => {
       let allClients = [];
 
       while (true) {
-        const { data, error } = await supabase
+        let query = supabase
           .from("clients")
           .select("id, full_name, email, address, profile_photo_url, created_at")
           .order("created_at", { ascending: false })
           .range(offset, offset + pageSize - 1);
+
+        if (isOwner) {
+          query = query.neq("email", OWNER_EMAIL);
+        } else {
+          query = query.eq("email", session.email);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -65,7 +74,7 @@ const ClientProfilesScreen = ({ navigation }) => {
       console.error("Failed to load clients", error);
       setStatus("error");
     }
-  }, [isOwner]);
+  }, [isOwner, session?.email]);
 
   useEffect(() => {
     if (clientProfiles.length) {
@@ -88,25 +97,6 @@ const ClientProfilesScreen = ({ navigation }) => {
       );
     });
   }, [clients, searchValue]);
-
-  if (!isOwner) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <ScreenHeader
-            title="Client profiles"
-            onBack={() => navigation.goBack()}
-            variant="dark"
-          />
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              This section is only available for the owner account.
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
