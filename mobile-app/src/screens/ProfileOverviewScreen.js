@@ -12,9 +12,11 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { supabase } from "../api/supabaseClient";
+import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+
+const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const formatMonthYear = (value) => {
   if (!value) return "—";
@@ -32,7 +34,7 @@ const getInitials = (name) => {
 };
 
 const ProfileOverviewScreen = ({ navigation, route }) => {
-  const { session } = useSession();
+  const { session, setSession } = useSession();
   const [clientProfile, setClientProfile] = useState(null);
   const [pets, setPets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,6 +42,8 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
   const [photoError, setPhotoError] = useState("");
   const viewingClientId = route?.params?.clientId || session?.id;
   const isOwnProfile = viewingClientId === session?.id;
+  const isOwner =
+    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
   const displayName =
     clientProfile?.full_name ||
     (isOwnProfile ? session?.name : null) ||
@@ -82,36 +86,77 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
   ];
 
   const loadProfile = useCallback(async () => {
-    if (!viewingClientId || !supabase) {
+    const activeClient =
+      isOwner && supabaseAdmin ? supabaseAdmin : supabase;
+    if (!viewingClientId || !activeClient) {
       return;
     }
 
     try {
-      const clientResult = await supabase
+      const clientResult = await activeClient
         .from("clients")
         .select("*")
         .eq("id", viewingClientId)
         .maybeSingle();
+      let clientData = clientResult.data || null;
 
-      const petsResult = await supabase
+      if (!clientData && session?.email) {
+        const normalizedEmail = session.email.trim().toLowerCase();
+        const emailResult = await activeClient
+          .from("clients")
+          .select("*")
+          .ilike("email", normalizedEmail)
+          .maybeSingle();
+        if (emailResult.error) {
+          throw emailResult.error;
+        }
+        clientData = emailResult.data || null;
+      }
+
+      const petsResult = await activeClient
         .from("pets")
         .select("*")
         .eq("owner_id", viewingClientId)
         .order("created_at", { ascending: false });
 
-       if (clientResult.error) {
+      if (clientResult.error) {
         throw clientResult.error;
       }
       if (petsResult.error) {
         throw petsResult.error;
       }
 
-      setClientProfile(clientResult.data || null);
+      setClientProfile(clientData || null);
       setPets(petsResult.data || []);
+      if (
+        isOwnProfile &&
+        clientData?.address &&
+        (!session?.address || !session.address.trim())
+      ) {
+        setSession((current) =>
+          current
+            ? {
+                ...current,
+                address: clientData.address,
+                client: {
+                  ...(current.client || {}),
+                  address: clientData.address,
+                },
+              }
+            : current
+        );
+      }
     } catch (profileError) {
       console.error("Failed to load profile", profileError);
     }
-  }, [viewingClientId]);
+  }, [
+    viewingClientId,
+    session?.email,
+    session?.address,
+    isOwnProfile,
+    isOwner,
+    setSession,
+  ]);
 
   const handleSelectPhoto = useCallback(async () => {
     if (!supabase || !isOwnProfile || !viewingClientId) {
@@ -249,6 +294,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
               <MaterialCommunityIcons
                 name={item.icon}
                 size={18}
+                marginRight={8}
                 color="#c9c5d8"
               />
               <View style={styles.detailInfo}>
@@ -272,6 +318,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
               <MaterialCommunityIcons
                 name={item.icon}
                 size={18}
+                marginRight={8}
                 color="#c9c5d8"
               />
               <View style={styles.detailInfo}>
