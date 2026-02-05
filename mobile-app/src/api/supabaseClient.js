@@ -8,7 +8,11 @@ const supabaseUrl =
 const supabaseAnonKey = 
   Constants.expoConfig?.extra?.supabaseAnonKey ||
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-const missingConfigMessage =
+const supabaseServiceRoleKey =
+  Constants.expoConfig?.extra?.supabaseServiceRoleKey ||
+  process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_SERVICE_KEY;
+  const missingConfigMessage =
   "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.";
 
 const createSupabaseClient = () =>
@@ -29,6 +33,18 @@ if (!supabase) {
   console.warn(missingConfigMessage);
 }
 
+export const supabaseAdmin =
+  supabaseUrl && supabaseServiceRoleKey
+    ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+          storage: AsyncStorage,
+        },
+      })
+    : null;
+    
 export const requireSupabaseClient = () => {
   if (!supabase) {
     throw new Error(missingConfigMessage);

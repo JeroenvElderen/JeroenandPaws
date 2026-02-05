@@ -194,6 +194,21 @@ const parseTimeToMinutes = (time) => {
   return hours * 60 + minutes;
 };
 
+const resolveAvailabilityWindowDays = (
+  bookingDate,
+  fallbackDays = DEFAULT_AVAILABILITY_WINDOW_DAYS
+) => {
+  if (!bookingDate) return fallbackDays;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(`${bookingDate}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return fallbackDays;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.ceil((target - today) / msPerDay) + 1;
+  if (!Number.isFinite(diffDays)) return fallbackDays;
+  return Math.max(fallbackDays, diffDays);
+};
+
 const slotMatchesWindow = (slotTime, window) => {
   if (!window || !slotTime) return true;
   const minutes = parseTimeToMinutes(slotTime);
@@ -407,7 +422,10 @@ const BookScreen = ({ navigation, route }) => {
             selectedService.durationMinutes ||
             60
         );
-        const windowDays = DEFAULT_AVAILABILITY_WINDOW_DAYS;
+        const windowDays = resolveAvailabilityWindowDays(
+          formState.bookingDate,
+          DEFAULT_AVAILABILITY_WINDOW_DAYS
+        );
         const cachedAvailability = getCachedAvailability({
           durationMinutes,
           windowDays,

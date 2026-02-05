@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import ScreenHeader from "../components/ScreenHeader";
-import { supabase } from "../api/supabaseClient";
+import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
@@ -33,7 +33,9 @@ const ClientProfilesScreen = ({ navigation }) => {
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const loadClients = useCallback(async () => {
-    if (!supabase) return;
+    const activeClient =
+      isOwner && supabaseAdmin ? supabaseAdmin : supabase;
+    if (!activeClient) return;
     if (!session?.email) return;
     setStatus("loading");
     try {
@@ -42,15 +44,13 @@ const ClientProfilesScreen = ({ navigation }) => {
       let allClients = [];
 
       while (true) {
-        let query = supabase
+        let query = activeClient
           .from("clients")
           .select("id, full_name, email, address, profile_photo_url, created_at")
           .order("created_at", { ascending: false })
           .range(offset, offset + pageSize - 1);
 
-        if (isOwner) {
-          query = query.neq("email", OWNER_EMAIL);
-        } else {
+        if (!isOwner) {
           query = query.eq("email", session.email);
         }
 
