@@ -97,7 +97,12 @@ const registerForPushNotifications = async () => {
 };
 
 const ProfileStackScreen = () => (
-  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+  <ProfileStack.Navigator
+    screenOptions={{
+      headerShown: false,
+      contentStyle: { backgroundColor: "#0c081f" },
+    }}
+  >
     <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
     <ProfileStack.Screen
       name="ProfileOverview"

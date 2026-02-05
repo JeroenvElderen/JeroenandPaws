@@ -49,6 +49,14 @@ const CATEGORY_ICONS = {
 
 const CALENDAR_PAGE_WIDTH = Dimensions.get("window").width - 32;
 
+const parsePriceValue = (value) => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") return value;
+  const normalized = String(value).replace(/,/g, ".");
+  const numeric = Number(normalized.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
 const normalizeAddons = (addons = []) =>
   addons
     .map((addon, index) => {
@@ -63,7 +71,7 @@ const normalizeAddons = (addons = []) =>
       return {
         id: String(addon.id ?? addon.value ?? addon.slug ?? index),
         label,
-        price: Number(rawPrice) || 0,
+        price: parsePriceValue(rawPrice),
       };
     })
     .filter((addon) => addon.label);
@@ -576,7 +584,12 @@ const BookScreen = ({ navigation, route }) => {
   const selectedOptions = availableAddons.filter((option) =>
     selectedOptionIds.includes(option.id)
   );
-  const basePrice = Number(selectedService?.price) || 0;
+  const basePrice = parsePriceValue(
+    selectedService?.price ??
+      selectedService?.cost ??
+      selectedService?.amount ??
+      0
+  );
   const optionsTotal = selectedOptions.reduce(
     (sum, option) => sum + option.price,
     0
@@ -1520,21 +1533,12 @@ const BookScreen = ({ navigation, route }) => {
           onRequestClose={() => setShowCalendar(false)}
         >
           <View style={styles.calendarBackdrop}>
-            <View style={styles.calendarCard}>
+            <SafeAreaView style={styles.calendarCard}>
               <View style={styles.calendarHeader}>
-                <Pressable
-                  style={styles.calendarHeaderButton}
-                  onPress={() => setShowCalendar(false)}
-                >
-                  <Text style={styles.calendarHeaderText}>Cancel</Text>
-                </Pressable>
                 <Text style={styles.calendarHeaderTitle}>Select Date</Text>
-                <Pressable
-                  style={styles.calendarHeaderButton}
-                  onPress={handleConfirmCalendar}
-                >
-                  <Text style={styles.calendarHeaderText}>Done</Text>
-                </Pressable>
+                <Text style={styles.calendarHeaderSubtitle}>
+                  Choose the perfect day for your visit.
+                </Text>
               </View>
               <ScrollView
                 horizontal
@@ -1544,9 +1548,11 @@ const BookScreen = ({ navigation, route }) => {
               >
                 {calendarMonths.map((month) => (
                   <View key={month.key} style={styles.calendarMonthPage}>
-                    <Text style={styles.calendarMonthLabel}>
-                      {month.label}
-                    </Text>
+                    <View style={styles.calendarMonthHeader}>
+                      <Text style={styles.calendarMonthLabel}>
+                        {month.label}
+                      </Text>
+                    </View>
                     <View style={styles.weekHeader}>
                       {"SMTWTFS".split("").map((day, index) => (
                         <Text
@@ -1603,7 +1609,29 @@ const BookScreen = ({ navigation, route }) => {
                   </View>
                 ))}
               </ScrollView>
-            </View>
+              <View style={styles.calendarActions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.calendarActionButton,
+                    styles.calendarCancelButton,
+                    pressed && styles.calendarActionPressed,
+                  ]}
+                  onPress={() => setShowCalendar(false)}
+                >
+                  <Text style={styles.calendarCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.calendarActionButton,
+                    styles.calendarConfirmButton,
+                    pressed && styles.calendarActionPressed,
+                  ]}
+                  onPress={handleConfirmCalendar}
+                >
+                  <Text style={styles.calendarConfirmText}>Select date</Text>
+                </Pressable>
+              </View>
+            </SafeAreaView>
           </View>
         </Modal>
       </Modal>
@@ -2188,64 +2216,55 @@ const styles = StyleSheet.create({
   },
   calendarCard: {
     backgroundColor: "#0c081f",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    padding: 16,
-    flex: 1,
+    borderRadius: 28,
+    padding: 18,
+    marginHorizontal: 16,
+    maxHeight: "88%",
+    borderWidth: 1,
+    borderColor: "rgba(124, 69, 243, 0.4)",
+    shadowColor: "#000000",
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-  },
-  calendarHeaderButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  calendarHeaderText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#f4f2ff",
+    marginBottom: 16,
   },
   calendarHeaderTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: "700",
     color: "#f4f2ff",
+    marginBottom: 4,
+    marginTop: 12,
+  },
+  calendarHeaderSubtitle: {
+    fontSize: 12,
+    color: "#8b7ca8",
   },
   calendarMonthsScroll: {
-    paddingBottom: 16,
+    paddingBottom: 8,
     flexGrow: 1,
   },
   calendarMonthPage: {
     width: CALENDAR_PAGE_WIDTH,
     flex: 1,
   },
-  calendarMonthRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  calendarMonthHeader: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: "#120d23",
+    borderWidth: 1,
+    borderColor: "#1f1535",
     marginBottom: 12,
   },
   calendarMonthLabel: {
     fontSize: 16,
     fontWeight: "700",
     color: "#f4f2ff",
-    marginBottom: 12,
-  },
-  calendarNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  calendarNavText: {
-    fontSize: 18,
-    color: "#bfa7ff",
+    textAlign: "center",
   },
   weekHeader: {
     flexDirection: "row",
@@ -2253,9 +2272,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   weekHeaderText: {
-    width: 32,
+    width: 36,
     textAlign: "center",
-    color: "#8b7ca8",
+    color: "#9b8ab8",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -2265,24 +2284,65 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dayCell: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "transparent",
   },
   daySelected: {
     backgroundColor: "#7c45f3",
+    borderColor: "#bfa7ff",
   },
   dayPressed: {
     opacity: 0.85,
   },
   dayText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#c9c5d8",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   dayTextSelected: {
+    color: "#ffffff",
+  },
+  calendarActions: {
+    flexDirection: "row",
+    gap: 0,
+    marginTop: 1,
+  },
+  calendarActionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    marginRight: 12,
+    marginLeft: 12,
+    marginBottom: 12,
+  },
+  calendarCancelButton: {
+    backgroundColor: "#120d23",
+    borderColor: "#2a1d45",
+  },
+  calendarConfirmButton: {
+    backgroundColor: "#7c45f3",
+    borderColor: "#7c45f3",
+  },
+  calendarActionPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
+  calendarCancelText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#f4f2ff",
+  },
+  calendarConfirmText: {
+    fontSize: 13,
+    fontWeight: "700",
     color: "#ffffff",
   },
   errorText: {

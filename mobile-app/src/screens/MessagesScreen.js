@@ -636,16 +636,23 @@ const MessagesScreen = ({ navigation }) => {
 
   const renderInboxHeader = () => {
     return (
-      <View style={styles.chatHeader}>
+      <View style={styles.inboxHeader}>
         <Pressable
           style={styles.backButton}
           onPress={() => navigation.navigate("Home")}
         >
           <Text style={styles.backButtonIcon}>←</Text>
         </Pressable>
-        <View style={styles.chatHeaderText}>
-          <Text style={styles.chatTitle}>Inbox</Text>
-          <Text style={styles.chatSubtitle}>Your conversations</Text>
+        <View style={styles.inboxHeaderContent}>
+          <View style={styles.inboxHeaderIcon}>
+            <Ionicons name="mail" size={18} color="#f4f2ff" />
+          </View>
+          <View>
+            <Text style={styles.inboxHeaderTitle}>Inbox</Text>
+            <Text style={styles.inboxHeaderSubtitle}>
+              Your conversations.
+            </Text>
+          </View>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -841,6 +848,23 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1f1535",
     backgroundColor: "#120d23",
   },
+  inboxHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1f1535",
+    backgroundColor: "#120d23",
+    borderRadius: 18,
+    marginBottom: 12,
+    shadowColor: "#000000",
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
   backButton: {
     width: 38,
     height: 38,
@@ -859,6 +883,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     marginLeft: 8,
+  },
+  inboxHeaderContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginLeft: 8,
+  },
+  inboxHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#7c45f3",
   },
   headerSpacer: {
     width: 38,
@@ -879,6 +918,16 @@ const styles = StyleSheet.create({
     color: "#f4f2ff",
   },
   chatSubtitle: {
+    fontSize: 12,
+    color: "#c9c5d8",
+    marginTop: 2,
+  },
+  inboxHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#f4f2ff",
+  },
+  inboxHeaderSubtitle: {
     fontSize: 12,
     color: "#c9c5d8",
     marginTop: 2,

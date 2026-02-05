@@ -44,7 +44,7 @@ const SettingsScreen = ({ navigation }) => {
     if (!supabase || !session?.user) {
       return;
     }
-    setStatus("saving");
+     setStatus("idle");
     try {
       const [{ error: authError }, { error: clientError }] =
         await Promise.all([
@@ -79,7 +79,6 @@ const SettingsScreen = ({ navigation }) => {
             }
           : current
       );
-      setStatus("idle");
     } catch (updateError) {
       console.error("Failed to update preferences", updateError);
       setStatus("error");
@@ -90,7 +89,7 @@ const SettingsScreen = ({ navigation }) => {
     if (!supabase || !session?.user) {
       return;
     }
-    setStatus("saving");
+    setStatus("idle");
     try {
       const [{ error: authError }, { error: clientError }] =
         await Promise.all([
@@ -125,7 +124,6 @@ const SettingsScreen = ({ navigation }) => {
             }
           : current
       );
-      setStatus("idle");
     } catch (updateError) {
       console.error("Failed to update message retention", updateError);
       setStatus("error");
@@ -146,7 +144,33 @@ const SettingsScreen = ({ navigation }) => {
               value={notificationsEnabled}
               onValueChange={(value) => {
                 setNotificationsEnabled(value);
-                updatePreferences({
+                setSession((current) =>
+                  current
+                    ? {
+                        ...current,
+                        user: {
+                          ...current.user,
+                          user_metadata: {
+                            ...current.user.user_metadata,
+                            notification_preferences: {
+                              push: value,
+                              email: emailUpdates,
+                              sms: smsAlerts,
+                            },
+                          },
+                        },
+                        client: {
+                          ...(current.client || {}),
+                          notification_preferences: {
+                            push: value,
+                            email: emailUpdates,
+                            sms: smsAlerts,
+                          },
+                        },
+                      }
+                    : current
+                );
+                void updatePreferences({
                   push: value,
                   email: emailUpdates,
                   sms: smsAlerts,
@@ -165,7 +189,33 @@ const SettingsScreen = ({ navigation }) => {
               value={emailUpdates}
               onValueChange={(value) => {
                 setEmailUpdates(value);
-                updatePreferences({
+                setSession((current) =>
+                  current
+                    ? {
+                        ...current,
+                        user: {
+                          ...current.user,
+                          user_metadata: {
+                            ...current.user.user_metadata,
+                            notification_preferences: {
+                              push: notificationsEnabled,
+                              email: value,
+                              sms: smsAlerts,
+                            },
+                          },
+                        },
+                        client: {
+                          ...(current.client || {}),
+                          notification_preferences: {
+                            push: notificationsEnabled,
+                            email: value,
+                            sms: smsAlerts,
+                          },
+                        },
+                      }
+                    : current
+                );
+                void updatePreferences({
                   push: notificationsEnabled,
                   email: value,
                   sms: smsAlerts,
@@ -184,7 +234,33 @@ const SettingsScreen = ({ navigation }) => {
               value={smsAlerts}
               onValueChange={(value) => {
                 setSmsAlerts(value);
-                updatePreferences({
+                setSession((current) =>
+                  current
+                    ? {
+                        ...current,
+                        user: {
+                          ...current.user,
+                          user_metadata: {
+                            ...current.user.user_metadata,
+                            notification_preferences: {
+                              push: notificationsEnabled,
+                              email: emailUpdates,
+                              sms: value,
+                            },
+                          },
+                        },
+                        client: {
+                          ...(current.client || {}),
+                          notification_preferences: {
+                            push: notificationsEnabled,
+                            email: emailUpdates,
+                            sms: value,
+                          },
+                        },
+                      }
+                    : current
+                );
+                void updatePreferences({
                   push: notificationsEnabled,
                   email: emailUpdates,
                   sms: value,
@@ -194,8 +270,10 @@ const SettingsScreen = ({ navigation }) => {
               thumbColor={smsAlerts ? "#f4f2ff" : "#8b7ca8"}
             />
           </View>
-          {status === "saving" ? (
-            <Text style={styles.helperText}>Saving preferences…</Text>
+          {status === "error" ? (
+            <Text style={styles.helperText}>
+              We couldn’t save that change yet. Please try again.
+            </Text>
           ) : null}
         </View>
 
@@ -212,7 +290,25 @@ const SettingsScreen = ({ navigation }) => {
               value={keepMessages}
               onValueChange={(value) => {
                 setKeepMessages(value);
-                updateMessageRetention(value);
+                setSession((current) =>
+                  current
+                    ? {
+                        ...current,
+                        user: {
+                          ...current.user,
+                          user_metadata: {
+                            ...current.user.user_metadata,
+                            keep_messages: value,
+                          },
+                        },
+                        client: {
+                          ...(current.client || {}),
+                          keep_messages: value,
+                        },
+                      }
+                    : current
+                );
+                void updateMessageRetention(value);
               }}
               trackColor={{ false: "#e6def6", true: "#bda8f0" }}
               thumbColor={keepMessages ? "#6c3ad6" : "#f2ecfb"}
