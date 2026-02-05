@@ -295,6 +295,9 @@ const BookScreen = ({ navigation, route }) => {
   const [activeSizeDropdown, setActiveSizeDropdown] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [calendarDateDraft, setCalendarDateDraft] = useState(null);
+  const [calendarPageWidth, setCalendarPageWidth] = useState(
+    CALENDAR_PAGE_WIDTH
+  );
   const [showCalendar, setShowCalendar] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [debouncedAddress, setDebouncedAddress] = useState(
@@ -1548,10 +1551,24 @@ const BookScreen = ({ navigation, route }) => {
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
+                snapToInterval={calendarPageWidth}
+                decelerationRate="fast"
+                onLayout={(event) => {
+                  const { width } = event.nativeEvent.layout;
+                  if (width && width !== calendarPageWidth) {
+                    setCalendarPageWidth(width);
+                  }
+                }}
                 contentContainerStyle={styles.calendarMonthsScroll}
               >
                 {calendarMonths.map((month) => (
-                  <View key={month.key} style={styles.calendarMonthPage}>
+                  <View
+                    key={month.key}
+                    style={[
+                      styles.calendarMonthPage,
+                      { width: calendarPageWidth },
+                    ]}
+                  >
                     <View style={styles.calendarMonthHeader}>
                       <Text style={styles.calendarMonthLabel}>
                         {month.label}
@@ -2252,7 +2269,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   calendarMonthPage: {
-    width: CALENDAR_PAGE_WIDTH,
     flex: 1,
   },
   calendarMonthHeader: {
