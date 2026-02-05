@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -29,6 +29,7 @@ const ClientProfilesScreen = ({ navigation }) => {
   const [clients, setClients] = useState(clientProfiles);
   const [searchValue, setSearchValue] = useState("");
   const [status, setStatus] = useState("idle");
+  const ownerLoadRef = useRef(false);
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
@@ -73,17 +74,24 @@ const ClientProfilesScreen = ({ navigation }) => {
     } catch (error) {
       console.error("Failed to load clients", error);
       setStatus("error");
+    } finally {
+      if (isOwner) {
+        ownerLoadRef.current = true;
+      }
     }
   }, [isOwner, session?.email]);
 
   useEffect(() => {
-    if (clientProfiles.length) {
+    if (clientProfiles.length && !isOwner) {
       setClients(clientProfiles);
       setStatus("idle");
       return;
     }
+    if (isOwner && ownerLoadRef.current) {
+      return;
+    }
     loadClients();
-  }, [clientProfiles, loadClients]);
+  }, [clientProfiles, isOwner, loadClients]);
 
   const filteredClients = useMemo(() => {
     const term = searchValue.trim().toLowerCase();

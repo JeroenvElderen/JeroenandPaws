@@ -23,7 +23,7 @@ import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import ClientProfilesScreen from "./src/screens/ClientProfilesScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 import { fetchJson } from "./src/api/client";
-import { supabase } from "./src/api/supabaseClient";
+import { supabase, supabaseAdmin } from "./src/api/supabaseClient";
 import { buildSessionPayload, resolveClientProfile } from "./src/utils/session";
 import {
   AVAILABILITY_TIMEOUT_MS,
@@ -392,12 +392,13 @@ const AppShell = () => {
       }
 
       try {
+        const activeClient = supabaseAdmin || supabase;
         const pageSize = 1000;
         let offset = 0;
         let allClients = [];
 
         while (true) {
-          const { data, error } = await supabase
+          const { data, error } = await activeClient
             .from("clients")
             .select("id, full_name, email, address, profile_photo_url, created_at")
             .order("created_at", { ascending: false })
