@@ -47,7 +47,11 @@ const CATEGORY_ICONS = {
   Services: "paw",
 };
 
-const CALENDAR_PAGE_WIDTH = Dimensions.get("window").width - 32;
+const CALENDAR_CARD_HORIZONTAL_MARGIN = 16;
+const CALENDAR_CARD_PADDING = 18;
+const CALENDAR_PAGE_WIDTH =
+  Dimensions.get("window").width -
+  (CALENDAR_CARD_HORIZONTAL_MARGIN * 2 + CALENDAR_CARD_PADDING * 2);
 
 const parsePriceValue = (value) => {
   if (value === null || value === undefined) return 0;
@@ -2217,8 +2221,8 @@ const styles = StyleSheet.create({
   calendarCard: {
     backgroundColor: "#0c081f",
     borderRadius: 28,
-    padding: 18,
-    marginHorizontal: 16,
+    padding: CALENDAR_CARD_PADDING,
+    marginHorizontal: CALENDAR_CARD_HORIZONTAL_MARGIN,
     maxHeight: "88%",
     borderWidth: 1,
     borderColor: "rgba(124, 69, 243, 0.4)",
