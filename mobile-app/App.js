@@ -42,49 +42,19 @@ const RootStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
+const TabItem = ({ label, color, icon }) => (
+  <View style={styles.tabItem}>
+    <Ionicons name={icon} size={20} color={color} />
+    <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+  </View>
+);
+
 const tabIcons = {
   Home: "home",
   Book: "book",
   Calendar: "calendar",
   Messages: "chatbubbles",
   Profile: "ellipsis-horizontal",
-};
-
-const TabBarButton = ({
-  accessibilityLabel,
-  accessibilityState,
-  iconName,
-  inactiveColor,
-  label,
-  onLongPress,
-  onPress,
-  testID,
-  activeColor,
-  style,
-}) => {
-  const isFocused = accessibilityState?.selected;
-  const color = isFocused ? activeColor : inactiveColor;
-
-  return (
-    <Pressable
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      accessibilityState={accessibilityState}
-      onLongPress={onLongPress}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.tabBarButton,
-        style,
-        pressed && styles.tabBarButtonPressed,
-      ]}
-      testID={testID}
-    >
-      <View style={styles.tabBarButtonContent}>
-        <Ionicons name={iconName} size={20} color={color} />
-        <Text style={[styles.tabBarLabel, { color }]}>{label}</Text>
-      </View>
-    </Pressable>
-  );
 };
 
 Notifications.setNotificationHandler({
@@ -184,8 +154,15 @@ const MainTabs = () => {
         headerShown: false,
         unmountOnBlur: true,
         tabBarStyle: getTabBarStyle(theme),
+        tabBarActiveTintColor: theme.colors.accent,
+        tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarShowLabel: false,
-        tabBarItemStyle: styles.tabBarItem,
+        tabBarItemStyle: {
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: 0,
+        },
       }}
     >
       <Tab.Screen
@@ -193,14 +170,8 @@ const MainTabs = () => {
         component={HomeScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarButton: (props) => (
-            <TabBarButton
-              {...props}
-              iconName={tabIcons.Home}
-              label="Home"
-              activeColor={theme.colors.accent}
-              inactiveColor={theme.colors.textMuted}
-            />
+          tabBarIcon: ({ color }) => (
+            <TabItem label="Home" color={color} icon={tabIcons.Home} />
           ),
         }}
       />
@@ -209,14 +180,8 @@ const MainTabs = () => {
         component={BookScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarButton: (props) => (
-            <TabBarButton
-              {...props}
-              iconName={tabIcons.Book}
-              label="Book"
-              activeColor={theme.colors.accent}
-              inactiveColor={theme.colors.textMuted}
-            />
+          tabBarIcon: ({ color }) => (
+            <TabItem label="Book" color={color} icon={tabIcons.Book} />
           ),
         }}
       />
@@ -225,14 +190,8 @@ const MainTabs = () => {
         component={CalendarScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarButton: (props) => (
-            <TabBarButton
-              {...props}
-              iconName={tabIcons.Calendar}
-              label="Calendar"
-              activeColor={theme.colors.accent}
-              inactiveColor={theme.colors.textMuted}
-            />
+          tabBarIcon: ({ color }) => (
+            <TabItem label="Calendar" color={color} icon={tabIcons.Calendar} />
           ),
         }}
       />
@@ -242,14 +201,8 @@ const MainTabs = () => {
         listeners={createTabPressListener()}
         options={{
           tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
-          tabBarButton: (props) => (
-            <TabBarButton
-              {...props}
-              iconName={tabIcons.Messages}
-              label="Messages"
-              activeColor={theme.colors.accent}
-              inactiveColor={theme.colors.textMuted}
-            />
+          tabBarIcon: ({ color }) => (
+            <TabItem label="Messages" color={color} icon={tabIcons.Messages} />
           ),
         }}
       />
@@ -258,14 +211,8 @@ const MainTabs = () => {
         component={ProfileStackScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarButton: (props) => (
-            <TabBarButton
-              {...props}
-              iconName={tabIcons.Profile}
-              label="More"
-              activeColor={theme.colors.accent}
-              inactiveColor={theme.colors.textMuted}
-            />
+          tabBarIcon: ({ color }) => (
+            <TabItem label="More" color={color} icon={tabIcons.Profile} />
           ),
         }}
       />
@@ -729,25 +676,11 @@ const App = () => (
 );
 
 const styles = StyleSheet.create({
-  tabBarItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 0,
-  },
-  tabBarButton: {
-    flex: 1,
+  tabItem: {
     alignItems: "center",
     justifyContent: "center",
   },
-  tabBarButtonPressed: {
-    opacity: 0.7,
-  },
-  tabBarButtonContent: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabBarLabel: {
+  tabLabel: {
     fontSize: 12,
     marginTop: 4,
   },
