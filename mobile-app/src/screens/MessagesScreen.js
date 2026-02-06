@@ -84,16 +84,20 @@ const MessagesScreen = ({ navigation }) => {
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
+  const selfClientId = session?.client?.id || session?.id || null;
+
   useEffect(() => {
-    if (!isOwner && session?.id) {
-      setSelectedClientId(session.id);
+    if (!isOwner && selfClientId) {
+      setSelectedClientId(selfClientId);
     }
-  }, [isOwner, session?.id]);
+  }, [isOwner, selfClientId]);
 
   const storageKey = useMemo(() => {
-    if (!session?.id) return null;
-    return `messages:lastRead:${isOwner ? OWNER_CLIENT_ID : session.id}`;
-  }, [isOwner, session?.id]);
+    if (!selfClientId) return null;
+    return `messages:lastRead:${
+      isOwner ? OWNER_CLIENT_ID : selfClientId
+    }`;
+  }, [isOwner, selfClientId]);
 
   const updateLastRead = useCallback(
     async (clientId, timestamp) => {
@@ -367,7 +371,10 @@ const MessagesScreen = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, [messages.length]);
 
-  const activeClientId = selectedClientId;
+  const activeClientId = isOwner ? selectedClientId : selfClientId;
+  const canSendMessage = isOwner
+    ? Boolean(activeClientId)
+    : Boolean(selfClientId && activeClientId === selfClientId);
   const activeClient = useMemo(() => {
     if (!activeClientId) return null;
     if (!isOwner) {
@@ -457,7 +464,7 @@ const MessagesScreen = ({ navigation }) => {
   };
 
   const handleSend = async () => {
-    if (!supabase || !activeClientId || sending) return;
+    if (!supabase || !canSendMessage || sending) return;
     const trimmed = inputValue.trim();
     const payloads = [];
 
@@ -740,11 +747,15 @@ const MessagesScreen = ({ navigation }) => {
             style={({ pressed }) => [
               styles.sendButton,
               pressed && styles.cardPressed,
-              (sending || (!inputValue.trim() && !pendingImage)) &&
+              (sending ||
+                !canSendMessage ||
+                (!inputValue.trim() && !pendingImage)) &&
                 styles.sendButtonDisabled,
             ]}
             onPress={handleSend}
-            disabled={sending || (!inputValue.trim() && !pendingImage)}
+            disabled={
+              sending || !canSendMessage || (!inputValue.trim() && !pendingImage)
+            }
           >
             <Text style={styles.sendButtonText}>Send</Text>
           </Pressable>
