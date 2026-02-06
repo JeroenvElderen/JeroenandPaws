@@ -66,7 +66,7 @@ const buildPreviewText = (body) => {
 };
 
 const MessagesScreen = ({ navigation }) => {
-  const { session } = useSession();
+  const { session, clientProfiles } = useSession();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const tabBarStyle = useMemo(() => getTabBarStyle(theme), [theme]);
@@ -84,7 +84,16 @@ const MessagesScreen = ({ navigation }) => {
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
-  const selfClientId = session?.client?.id || session?.id || null;
+  const selfClientId = useMemo(() => {
+    if (isOwner) {
+      return OWNER_CLIENT_ID;
+    }
+    const clientId = session?.client?.id || session?.id || null;
+    if (clientId === OWNER_CLIENT_ID) {
+      return null;
+    }
+    return clientId;
+  }, [isOwner, session?.client?.id, session?.id]);
 
   useEffect(() => {
     if (!isOwner && selfClientId) {
@@ -222,7 +231,16 @@ const MessagesScreen = ({ navigation }) => {
           return acc;
         }, {});
       }
-
+      if (clientProfiles?.length) {
+        clientLookup = clientProfiles.reduce((acc, client) => {
+          if (!client?.id) return acc;
+          if (!acc[client.id]) {
+            acc[client.id] = client;
+          }
+          return acc;
+        }, clientLookup);
+      }
+      
       const items = Array.from(latestByClient.values()).map((message) => ({
         ...message,
         unread: unreadClientIds.has(message.client_id),
@@ -258,7 +276,7 @@ const MessagesScreen = ({ navigation }) => {
     } finally {
       setLoadingInbox(false);
     }
-  }, [isOwner, session?.email, storageKey]);
+  }, [clientProfiles, isOwner, session?.email, storageKey]);
 
   useEffect(() => {
     if (isOwner) {
@@ -660,7 +678,7 @@ const MessagesScreen = ({ navigation }) => {
             onPress={() =>
               navigation.navigate("Profile", {
                 screen: "ProfileOverview",
-                params: { clientId: activeClientId },params: { clientId: activeClientId, returnTo: "Messages" },
+                params: { clientId: activeClientId, returnTo: "Messages" },
               })
             }
           >

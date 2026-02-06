@@ -34,6 +34,10 @@ yarn-error.log*
 supabase tables/
 rebuild html to react/
 
+# allow documented Supabase policies
+!supabase tables/
+!supabase tables/clients_rls.sql
+
 # public folder rules
 
 # Ignore ALL nested images
