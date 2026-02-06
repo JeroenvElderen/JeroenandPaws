@@ -1,8 +1,19 @@
-import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import * as Device from "expo-device";
@@ -70,8 +81,7 @@ const registerForPushNotifications = async (accentColor) => {
     return null;
   }
 
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
   if (existingStatus !== "granted") {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -134,17 +144,19 @@ const ProfileStackScreen = () => {
   );
 };
 
-const createTabPressListener = (targetScreen) => ({ navigation, route }) => ({
-  tabPress: () => {
-    const nestedState = route.state;
-    if (nestedState?.index > 0) {
-      navigation.navigate(
-        route.name,
-        targetScreen ? { screen: targetScreen } : undefined
-      );
-    }
-  },
-});
+const createTabPressListener =
+  (targetScreen) =>
+  ({ navigation, route }) => ({
+    tabPress: () => {
+      const nestedState = route.state;
+      if (nestedState?.index > 0) {
+        navigation.navigate(
+          route.name,
+          targetScreen ? { screen: targetScreen } : undefined,
+        );
+      }
+    },
+  });
 
 const MainTabs = () => {
   const { theme } = useTheme();
@@ -159,9 +171,14 @@ const MainTabs = () => {
         tabBarShowLabel: false,
         tabBarItemStyle: {
           flex: 1,
-          alignItems: "center",
+          height: 72,
           justifyContent: "center",
-          paddingVertical: 0,
+          alignItems: "center",
+        },
+        tabBarIconStyle: {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
         },
       }}
     >
@@ -276,7 +293,7 @@ const AppShell = () => {
                 user: authSession.user,
                 client: clientProfile,
                 fallback: { email: authSession.user.email || "" },
-              })
+              }),
             );
           }
         }
@@ -311,12 +328,12 @@ const AppShell = () => {
                 user: authSession.user,
                 client: clientProfile,
                 fallback: { email: authSession.user.email || "" },
-              })
+              }),
             );
           } catch (error) {
             console.warn("Failed to hydrate session", error);
           }
-        }
+        },
       );
       subscription = authListener.data?.subscription;
     }
@@ -364,7 +381,7 @@ const AppShell = () => {
                     },
                   },
                 }
-              : current
+              : current,
           );
         }
         return;
@@ -402,7 +419,7 @@ const AppShell = () => {
                     },
                   },
                 }
-              : current
+              : current,
           );
         }
       } catch (error) {
@@ -439,7 +456,9 @@ const AppShell = () => {
         while (true) {
           const { data, error } = await activeClient
             .from("clients")
-            .select("id, full_name, email, address, profile_photo_url, created_at")
+            .select(
+              "id, full_name, email, address, profile_photo_url, created_at",
+            )
             .order("created_at", { ascending: false })
             .range(offset, offset + pageSize - 1);
 
@@ -504,7 +523,7 @@ const AppShell = () => {
                     address: clientResult.data.address,
                   },
                 }
-              : current
+              : current,
           );
         }
       } catch (error) {
@@ -524,8 +543,11 @@ const AppShell = () => {
     let timeoutId;
 
     const prefetchBookingAvailability = async () => {
-      const clientAddress = (session?.address || session?.client?.address || "")
-        .trim();
+      const clientAddress = (
+        session?.address ||
+        session?.client?.address ||
+        ""
+      ).trim();
       if (!clientAddress) return;
 
       try {
@@ -539,7 +561,7 @@ const AppShell = () => {
           const duration = Number(
             service?.duration_minutes ||
               service?.durationMinutes ||
-              defaultDurationMinutes
+              defaultDurationMinutes,
           );
           durations.add(duration);
         });
@@ -550,8 +572,8 @@ const AppShell = () => {
               windowDays: 21,
               clientAddress,
               timeoutMs: AVAILABILITY_TIMEOUT_MS,
-            })
-          )
+            }),
+          ),
         );
       } catch (error) {
         console.error("Failed to prefetch availability after auth", error);
@@ -588,9 +610,7 @@ const AppShell = () => {
           >
             <View style={modalStyles.modalOverlay}>
               <View style={modalStyles.modalCard}>
-                <Text style={modalStyles.modalTitle}>
-                  Choose your theme
-                </Text>
+                <Text style={modalStyles.modalTitle}>Choose your theme</Text>
                 <Text style={modalStyles.modalBody}>
                   Use your system setting or choose in-app settings anytime.
                 </Text>
@@ -637,9 +657,7 @@ const AppShell = () => {
         >
           <View style={modalStyles.modalOverlay}>
             <View style={modalStyles.modalCard}>
-              <Text style={modalStyles.modalTitle}>
-                Choose your theme
-              </Text>
+              <Text style={modalStyles.modalTitle}>Choose your theme</Text>
               <Text style={modalStyles.modalBody}>
                 Use your system setting or choose in-app settings anytime.
               </Text>
@@ -688,55 +706,55 @@ const styles = StyleSheet.create({
 
 const createModalStyles = (theme) =>
   StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: theme.colors.background,
-  },
-  modalCard: {
-    borderRadius: 24,
-    padding: 24,
-    backgroundColor: theme.colors.surface,
-    shadowColor: theme.shadow.soft.shadowColor,
-    shadowOpacity: theme.shadow.soft.shadowOpacity,
-    shadowOffset: theme.shadow.soft.shadowOffset,
-    shadowRadius: theme.shadow.soft.shadowRadius,
-    elevation: theme.shadow.soft.elevation,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 8,
-    color: theme.colors.textPrimary,
-  },
-  modalBody: {
-    fontSize: 14,
-    marginBottom: 16,
-    color: theme.colors.textSecondary,
-  },
-  modalButton: {
-    borderRadius: 18,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 12,
-    backgroundColor: theme.colors.accent,
-  },
-  modalButtonOutline: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: theme.colors.borderStrong,
-  },
-  modalButtonText: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: theme.colors.white,
-  },
-  modalButtonTextOutline: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: theme.colors.textPrimary,
-  },
-});
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      padding: 24,
+      backgroundColor: theme.colors.background,
+    },
+    modalCard: {
+      borderRadius: 24,
+      padding: 24,
+      backgroundColor: theme.colors.surface,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      marginBottom: 8,
+      color: theme.colors.textPrimary,
+    },
+    modalBody: {
+      fontSize: 14,
+      marginBottom: 16,
+      color: theme.colors.textSecondary,
+    },
+    modalButton: {
+      borderRadius: 18,
+      paddingVertical: 12,
+      alignItems: "center",
+      marginBottom: 12,
+      backgroundColor: theme.colors.accent,
+    },
+    modalButtonOutline: {
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    modalButtonText: {
+      fontWeight: "600",
+      fontSize: 14,
+      color: theme.colors.white,
+    },
+    modalButtonTextOutline: {
+      fontWeight: "600",
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+    },
+  });
 
 export default App;

@@ -12,8 +12,6 @@ export const getTabBarStyle = (theme) => ({
   shadowOffset: theme.shadow.soft.shadowOffset,
   shadowRadius: theme.shadow.soft.shadowRadius,
   elevation: theme.shadow.soft.elevation,
-  alignItems: "center",
-  justifyContent: "center",
   alignSelf: "center",
   width: "90%",
   paddingVertical: 0,
