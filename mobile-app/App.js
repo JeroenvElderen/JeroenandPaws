@@ -195,14 +195,15 @@ const MainTabs = ({ theme }) => (
     />
     <Tab.Screen
       name="Profile"
-      component={(props) => <ProfileStackScreen {...props} theme={theme} />}
       options={{
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Profile} size={20} color={color} />
         ),
         tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
       }}
-    />
+    >
+      {(props) => <ProfileStackScreen {...props} theme={theme} />}
+    </Tab.Screen>
   </Tab.Navigator>
 );
 
