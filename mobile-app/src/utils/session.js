@@ -33,6 +33,28 @@ export const resolveClientProfile = async ({
 }) => {
   if (!supabase || !user?.id) return null;
 
+  const waitForClientRow = async ({ attempts = 5, delayMs = 500 } = {}) => {
+    for (let i = 0; i < attempts; i += 1) {
+      const { data: retryData, error: retryError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (retryError) {
+        throw retryError;
+      }
+
+      if (retryData) {
+        return retryData;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    return null;
+  };
+
   const { data, error } = await supabase
     .from("clients")
     .select("*")
@@ -65,8 +87,24 @@ export const resolveClientProfile = async ({
     .maybeSingle();
 
   if (upsertResult.error) {
+    const message = upsertResult.error.message || "";
+    if (message.toLowerCase().includes("row level security")) {
+      const createdByTrigger = await waitForClientRow();
+      if (createdByTrigger) {
+        return createdByTrigger;
+      }
+      throw new Error(
+        "Your account was created, but we could not finish setting up your profile. Please try logging in again."
+      );
+    }
     throw upsertResult.error;
   }
 
-  return upsertResult.data || null;
+  const resolvedClient = upsertResult.data || (await waitForClientRow());
+  if (!resolvedClient) {
+    throw new Error(
+      "Your account was created, but we could not finish setting up your profile. Please try logging in again."
+    );
+  }
+  return resolvedClient;
 };
