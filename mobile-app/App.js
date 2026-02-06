@@ -102,31 +102,34 @@ const registerForPushNotifications = async (accentColor) => {
   return tokenResponse.data || null;
 };
 
-const ProfileStackScreen = ({ theme }) => (
-  <ProfileStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      contentStyle: { backgroundColor: theme.colors.background },
-    }}
-  >
-    <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
-    <ProfileStack.Screen
-      name="ProfileOverview"
-      component={ProfileOverviewScreen}
-    />
-    <ProfileStack.Screen
-      name="ClientProfiles"
-      component={ClientProfilesScreen}
-    />
-    <ProfileStack.Screen name="PetsProfile" component={PetsProfileScreen} />
-    <ProfileStack.Screen name="Settings" component={SettingsScreen} />
-    <ProfileStack.Screen
-      name="PaymentMethods"
-      component={PaymentMethodsScreen}
-    />
-    <ProfileStack.Screen name="HelpSupport" component={HelpSupportScreen} />
-  </ProfileStack.Navigator>
-);
+const ProfileStackScreen = () => {
+  const { theme } = useTheme();
+  return (
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}
+    >
+      <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
+      <ProfileStack.Screen
+        name="ProfileOverview"
+        component={ProfileOverviewScreen}
+      />
+      <ProfileStack.Screen
+        name="ClientProfiles"
+        component={ClientProfilesScreen}
+      />
+      <ProfileStack.Screen name="PetsProfile" component={PetsProfileScreen} />
+      <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+      <ProfileStack.Screen
+        name="PaymentMethods"
+        component={PaymentMethodsScreen}
+      />
+      <ProfileStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+    </ProfileStack.Navigator>
+  );
+};
 
 const createTabPressListener = (targetScreen) => ({ navigation, route }) => ({
   tabPress: () => {
@@ -140,90 +143,92 @@ const createTabPressListener = (targetScreen) => ({ navigation, route }) => ({
   },
 });
 
-const MainTabs = ({ theme }) => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      unmountOnBlur: true,
-      tabBarStyle: getTabBarStyle(theme),
-      tabBarActiveTintColor: theme.colors.accent,
-      tabBarInactiveTintColor: theme.colors.textMuted,
-      tabBarIconStyle: {
-        marginTop: 0,
-      },
-      tabBarLabelStyle: {
-        marginBottom: 0,
-      },
-      tabBarItemStyle: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-      },
-    }}
-  >
-    <Tab.Screen
-      name="Home"
-      component={HomeScreen}
-      listeners={createTabPressListener()}
-      options={{
-        tabBarIcon: ({ color }) => (
-          <Ionicons name={tabIcons.Home} size={20} color={color} />
-        ),
-        tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
-      }}
-    />
-    <Tab.Screen
-      name="Book"
-      component={BookScreen}
-      listeners={createTabPressListener()}
-      options={{
-        tabBarIcon: ({ color }) => (
-          <Ionicons name={tabIcons.Book} size={20} color={color} />
-        ),
-        tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
-      }}
-    />
-    <Tab.Screen
-      name="Calendar"
-      component={CalendarScreen}
-      listeners={createTabPressListener()}
-      options={{
-        tabBarIcon: ({ color }) => (
-          <Ionicons name={tabIcons.Calendar} size={20} color={color} />
-        ),
-        tabBarLabel: ({ color }) => (
-          <TabLabel label="Calendar" color={color} />
-        ),
-      }}
-    />
-    <Tab.Screen
-      name="Messages"
-      component={MessagesScreen}
-      listeners={createTabPressListener()}
-      options={{
-        tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
-        tabBarIcon: ({ color }) => (
-          <Ionicons name={tabIcons.Messages} size={20} color={color} />
-        ),
-        tabBarLabel: ({ color }) => (
-          <TabLabel label="Messages" color={color} />
-        ),
-      }}
-    />
-    <Tab.Screen
-      name="Profile"
-      listeners={createTabPressListener()}
-      options={{
-        tabBarIcon: ({ color }) => (
-          <Ionicons name={tabIcons.Profile} size={20} color={color} />
-        ),
-        tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
+const MainTabs = () => {
+  const { theme } = useTheme();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        unmountOnBlur: true,
+        tabBarStyle: getTabBarStyle(theme),
+        tabBarActiveTintColor: theme.colors.accent,
+        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarIconStyle: {
+          marginTop: 0,
+        },
+        tabBarLabelStyle: {
+          marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+        },
       }}
     >
-      {(props) => <ProfileStackScreen {...props} theme={theme} />}
-    </Tab.Screen>
-  </Tab.Navigator>
-);
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        listeners={createTabPressListener()}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name={tabIcons.Home} size={20} color={color} />
+          ),
+          tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Book"
+        component={BookScreen}
+        listeners={createTabPressListener()}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name={tabIcons.Book} size={20} color={color} />
+          ),
+          tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarScreen}
+        listeners={createTabPressListener()}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name={tabIcons.Calendar} size={20} color={color} />
+          ),
+          tabBarLabel: ({ color }) => (
+            <TabLabel label="Calendar" color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Messages"
+        component={MessagesScreen}
+        listeners={createTabPressListener()}
+        options={{
+          tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
+          tabBarIcon: ({ color }) => (
+            <Ionicons name={tabIcons.Messages} size={20} color={color} />
+          ),
+          tabBarLabel: ({ color }) => (
+            <TabLabel label="Messages" color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStackScreen}
+        listeners={createTabPressListener()}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name={tabIcons.Profile} size={20} color={color} />
+          ),
+          tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 const AppShell = () => {
   const {
@@ -627,10 +632,7 @@ const AppShell = () => {
     <NavigationContainer theme={navigationTheme}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen
-          name="MainTabs"
-          component={(props) => <MainTabs {...props} theme={theme} />}
-        />
+        <RootStack.Screen name="MainTabs" component={MainTabs} />
         <RootStack.Screen
           name="JeroenPawsCard"
           component={JeroenPawsCardScreen}
