@@ -14,6 +14,8 @@ console.log("BOOT SUPABASE_URL =", process.env.SUPABASE_URL);
 
 const supabaseServiceRoleKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const supabaseAnonKey =
+  process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 let supabaseAdmin = null;
 
@@ -38,6 +40,32 @@ const createConfigError = () => {
   error.publicMessage =
     "Bookings are temporarily unavailable. Please try again later.";
   return error;
+};
+
+const createSupabaseUserClient = (accessToken) => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn(
+      "Supabase user client is missing configuration. Check NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY/SUPABASE_ANON_KEY"
+    );
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    global: accessToken
+      ? { headers: { Authorization: `Bearer ${accessToken}` } }
+      : undefined,
+  });
+};
+
+const getBearerToken = (req) => {
+  const header = req?.headers?.authorization || req?.headers?.Authorization;
+  if (!header || typeof header !== "string") return null;
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
 };
 
 const parseDataUrlImage = (dataUrl = "") => {
@@ -819,5 +847,7 @@ module.exports = {
   deletePetPhotoFromStorage,
   createSignedPetPhotoUrl,
   supabaseAdmin,
+  createSupabaseUserClient,
+  getBearerToken,
   requireSupabase,
 };

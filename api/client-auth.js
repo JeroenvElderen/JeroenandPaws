@@ -90,7 +90,12 @@ module.exports = async (req, res) => {
       const profile = await buildProfile(user.id);
 
       res.setHeader("Content-Type", "application/json");
-      return res.end(JSON.stringify(profile));
+      return res.end(
+        JSON.stringify({
+          ...profile,
+          session: data?.session || null,
+        })
+      );
 
     } catch (error) {
       console.error("Client auth error", error);

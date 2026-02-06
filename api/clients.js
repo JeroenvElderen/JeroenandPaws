@@ -1,8 +1,10 @@
 const {
   supabaseAdmin,
+  createSupabaseUserClient,
   ensureClientProfile,
   ensureAuthUserWithPassword,
   hashPassword,
+  getBearerToken,
   requireSupabase,
 } = require("./_lib/supabase");
 const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
@@ -108,6 +110,11 @@ module.exports = async (req, res) => {
       const { id, email, fullName, phone, address, newEmail } = req.body || {};
       const normalizedEmail = (email || newEmail || "").toLowerCase();
       const addressToStore = (address || "").trim();
+      const accessToken = getBearerToken(req);
+      const supabaseUser = accessToken
+        ? createSupabaseUserClient(accessToken)
+        : null;
+      const dataClient = supabaseUser || supabaseAdmin;
 
       if (!id && !normalizedEmail) {
         res.statusCode = 400;
@@ -115,7 +122,7 @@ module.exports = async (req, res) => {
         return;
       }
 
-      const clientLookup = await supabaseAdmin
+      const clientLookup = await dataClient
         .from("clients")
         .select("*")
         .eq(id ? "id" : "email", id || normalizedEmail)
@@ -137,7 +144,7 @@ module.exports = async (req, res) => {
 
       const nextEmail = (newEmail || existingClient.email || "").toLowerCase();
 
-      const updateResult = await supabaseAdmin
+      const updateResult = await dataClient
         .from("clients")
         .update({
           full_name: fullName ?? existingClient.full_name,
