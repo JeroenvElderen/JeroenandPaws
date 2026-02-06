@@ -42,16 +42,49 @@ const RootStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
-const TabLabel = ({ label, color }) => (
-  <Text style={{ color, fontSize: 12 }}>{label}</Text>
-);
-
 const tabIcons = {
   Home: "home",
   Book: "book",
   Calendar: "calendar",
   Messages: "chatbubbles",
   Profile: "ellipsis-horizontal",
+};
+
+const TabBarButton = ({
+  accessibilityLabel,
+  accessibilityState,
+  iconName,
+  inactiveColor,
+  label,
+  onLongPress,
+  onPress,
+  testID,
+  activeColor,
+  style,
+}) => {
+  const isFocused = accessibilityState?.selected;
+  const color = isFocused ? activeColor : inactiveColor;
+
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityState={accessibilityState}
+      onLongPress={onLongPress}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.tabBarButton,
+        style,
+        pressed && styles.tabBarButtonPressed,
+      ]}
+      testID={testID}
+    >
+      <View style={styles.tabBarButtonContent}>
+        <Ionicons name={iconName} size={20} color={color} />
+        <Text style={[styles.tabBarLabel, { color }]}>{label}</Text>
+      </View>
+    </Pressable>
+  );
 };
 
 Notifications.setNotificationHandler({
@@ -151,23 +184,8 @@ const MainTabs = () => {
         headerShown: false,
         unmountOnBlur: true,
         tabBarStyle: getTabBarStyle(theme),
-        tabBarActiveTintColor: theme.colors.accent,
-        tabBarInactiveTintColor: theme.colors.textMuted,
-        tabBarIconStyle: {
-          marginTop: 0,
-          marginBottom: 4,
-        },
-        tabBarLabelStyle: {
-          marginBottom: 0,
-          marginTop: 0,
-          paddingTop: 0,
-        },
-        tabBarItemStyle: {
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingVertical: 0,
-        },
+        tabBarShowLabel: false,
+        tabBarItemStyle: styles.tabBarItem,
       }}
     >
       <Tab.Screen
@@ -175,10 +193,15 @@ const MainTabs = () => {
         component={HomeScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarIcon: ({ color }) => (
-            <Ionicons name={tabIcons.Home} size={20} color={color} />
+          tabBarButton: (props) => (
+            <TabBarButton
+              {...props}
+              iconName={tabIcons.Home}
+              label="Home"
+              activeColor={theme.colors.accent}
+              inactiveColor={theme.colors.textMuted}
+            />
           ),
-          tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
         }}
       />
       <Tab.Screen
@@ -186,10 +209,15 @@ const MainTabs = () => {
         component={BookScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarIcon: ({ color }) => (
-            <Ionicons name={tabIcons.Book} size={20} color={color} />
+          tabBarButton: (props) => (
+            <TabBarButton
+              {...props}
+              iconName={tabIcons.Book}
+              label="Book"
+              activeColor={theme.colors.accent}
+              inactiveColor={theme.colors.textMuted}
+            />
           ),
-          tabBarLabel: ({ color }) => <TabLabel label="Book" color={color} />,
         }}
       />
       <Tab.Screen
@@ -197,11 +225,14 @@ const MainTabs = () => {
         component={CalendarScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarIcon: ({ color }) => (
-            <Ionicons name={tabIcons.Calendar} size={20} color={color} />
-          ),
-          tabBarLabel: ({ color }) => (
-            <TabLabel label="Calendar" color={color} />
+          tabBarButton: (props) => (
+            <TabBarButton
+              {...props}
+              iconName={tabIcons.Calendar}
+              label="Calendar"
+              activeColor={theme.colors.accent}
+              inactiveColor={theme.colors.textMuted}
+            />
           ),
         }}
       />
@@ -211,11 +242,14 @@ const MainTabs = () => {
         listeners={createTabPressListener()}
         options={{
           tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
-          tabBarIcon: ({ color }) => (
-            <Ionicons name={tabIcons.Messages} size={20} color={color} />
-          ),
-          tabBarLabel: ({ color }) => (
-            <TabLabel label="Messages" color={color} />
+          tabBarButton: (props) => (
+            <TabBarButton
+              {...props}
+              iconName={tabIcons.Messages}
+              label="Messages"
+              activeColor={theme.colors.accent}
+              inactiveColor={theme.colors.textMuted}
+            />
           ),
         }}
       />
@@ -224,10 +258,15 @@ const MainTabs = () => {
         component={ProfileStackScreen}
         listeners={createTabPressListener()}
         options={{
-          tabBarIcon: ({ color }) => (
-            <Ionicons name={tabIcons.Profile} size={20} color={color} />
+          tabBarButton: (props) => (
+            <TabBarButton
+              {...props}
+              iconName={tabIcons.Profile}
+              label="More"
+              activeColor={theme.colors.accent}
+              inactiveColor={theme.colors.textMuted}
+            />
           ),
-          tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -688,6 +727,31 @@ const App = () => (
     </SessionProvider>
   </ThemeProvider>
 );
+
+const styles = StyleSheet.create({
+  tabBarItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 0,
+  },
+  tabBarButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabBarButtonPressed: {
+    opacity: 0.7,
+  },
+  tabBarButtonContent: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabBarLabel: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+});
 
 const createModalStyles = (theme) =>
   StyleSheet.create({
