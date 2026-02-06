@@ -128,10 +128,23 @@ const ProfileStackScreen = ({ theme }) => (
   </ProfileStack.Navigator>
 );
 
+const createTabPressListener = (targetScreen) => ({ navigation, route }) => ({
+  tabPress: () => {
+    const nestedState = route.state;
+    if (nestedState?.index > 0) {
+      navigation.navigate(
+        route.name,
+        targetScreen ? { screen: targetScreen } : undefined
+      );
+    }
+  },
+});
+
 const MainTabs = ({ theme }) => (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
+      unmountOnBlur: true,
       tabBarStyle: getTabBarStyle(theme),
       tabBarActiveTintColor: theme.colors.accent,
       tabBarInactiveTintColor: theme.colors.textMuted,
@@ -151,6 +164,7 @@ const MainTabs = ({ theme }) => (
     <Tab.Screen
       name="Home"
       component={HomeScreen}
+      listeners={createTabPressListener()}
       options={{
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Home} size={20} color={color} />
@@ -161,6 +175,7 @@ const MainTabs = ({ theme }) => (
     <Tab.Screen
       name="Book"
       component={BookScreen}
+      listeners={createTabPressListener()}
       options={{
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Book} size={20} color={color} />
@@ -171,6 +186,7 @@ const MainTabs = ({ theme }) => (
     <Tab.Screen
       name="Calendar"
       component={CalendarScreen}
+      listeners={createTabPressListener()}
       options={{
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Calendar} size={20} color={color} />
@@ -183,6 +199,7 @@ const MainTabs = ({ theme }) => (
     <Tab.Screen
       name="Messages"
       component={MessagesScreen}
+      listeners={createTabPressListener()}
       options={{
         tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
         tabBarIcon: ({ color }) => (
@@ -195,6 +212,7 @@ const MainTabs = ({ theme }) => (
     />
     <Tab.Screen
       name="Profile"
+      listeners={createTabPressListener()}
       options={{
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Profile} size={20} color={color} />
