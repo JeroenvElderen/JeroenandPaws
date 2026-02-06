@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { fetchJson } from "../api/client";
 import { DEFAULT_AVAILABILITY_WINDOW_DAYS } from "../api/availability";
@@ -24,7 +23,6 @@ import { loadActiveCards, saveActiveCards } from "../utils/activeCards";
 import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
-const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
 
 const formatDateLabel = (date) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -129,7 +127,6 @@ const HomeScreen = ({ navigation }) => {
   const [activeRoverCards, setActiveRoverCards] = useState({});
   const [activeCardsLoaded, setActiveCardsLoaded] = useState(false);
   const [timeTick, setTimeTick] = useState(Date.now());
-  const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [finishedCards, setFinishedCards] = useState({});
   const isJeroenAccount =
@@ -350,26 +347,6 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [isJeroenAccount, loadBookings, loadFinishedCards, session?.id]);
 
-  useEffect(() => {
-    if (!supabase || !session?.id) {
-      return undefined;
-    }
-
-    const messageChannel = supabase
-      .channel("messages-unread")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        () => {
-          loadUnreadMessages();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(messageChannel);
-    };
-  }, [loadUnreadMessages, session?.id]);
 
   const now = new Date();
   const upcomingBookings = bookings
@@ -402,83 +379,12 @@ const HomeScreen = ({ navigation }) => {
 
   const displayName = session?.name || "Jeroen";
   const firstName = displayName.split(" ").filter(Boolean)[0] || displayName;
-  const unreadBadgeCount = useMemo(() => {
-    if (!unreadCount) return 0;
-    if (isJeroenAccount) return unreadCount;
-    return 1;
-  }, [isJeroenAccount, unreadCount]);
   const initials = displayName
     .split(" ")
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-
-  const loadUnreadMessages = useCallback(async () => {
-    if (!session?.id || !supabase) {
-      setUnreadCount(0);
-      return;
-    }
-
-    const isOwner = isJeroenAccount;
-    const storageKey = `messages:lastRead:${
-      isOwner ? OWNER_CLIENT_ID : session.id
-    }`;
-
-    try {
-      const raw = await AsyncStorage.getItem(storageKey);
-      const lastReadMap = raw ? JSON.parse(raw) : {};
-      const lastReadValues = Object.values(lastReadMap)
-        .map((value) => new Date(value).getTime())
-        .filter((value) => Number.isFinite(value));
-      const minLastRead =
-        lastReadValues.length > 0 ? Math.min(...lastReadValues) : null;
-
-      let query = supabase
-        .from("messages")
-        .select("client_id, created_at, sender")
-        .order("created_at", { ascending: false });
-
-      if (isOwner) {
-        query = query.eq("sender", "client");
-      } else {
-        query = query.eq("sender", "owner").eq("client_id", session.id);
-      }
-
-      if (minLastRead) {
-        query = query.gt("created_at", new Date(minLastRead).toISOString());
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        throw error;
-      }
-
-      const unreadClients = (data || []).reduce((acc, message) => {
-        const lastRead = lastReadMap[message.client_id];
-        if (!lastRead) {
-          acc.add(message.client_id);
-          return acc;
-        }
-        if (new Date(message.created_at) > new Date(lastRead)) {
-          acc.add(message.client_id);
-        }
-        return acc;
-      }, new Set());
-
-      const count = unreadClients.size;
-
-      setUnreadCount(count);
-    } catch (error) {
-      console.error("Failed to load unread messages", error);
-    }
-  }, [isJeroenAccount, session?.id]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadUnreadMessages();
-    }, [loadUnreadMessages])
-  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -492,7 +398,6 @@ const HomeScreen = ({ navigation }) => {
               await Promise.all([
                 loadBookings(),
                 loadFinishedCards(),
-                loadUnreadMessages(),
               ]);
               setRefreshing(false);
             }}
@@ -514,24 +419,6 @@ const HomeScreen = ({ navigation }) => {
             >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials}</Text>
-              </View>
-            </Pressable>
-            <Pressable onPress={() => navigation.navigate("Messages")}>
-              <View style={styles.iconBadgeWrapper}>
-                <View style={styles.iconBadge}>
-                  <Ionicons
-                    name="chatbubble-ellipses"
-                    size={18}
-                    color={theme.colors.textPrimary}
-                  />
-                </View>
-                {unreadBadgeCount > 0 ? (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadBadgeText}>
-                      {unreadBadgeCount}
-                    </Text>
-                  </View>
-                ) : null}
               </View>
             </Pressable>
           </View>
@@ -787,40 +674,6 @@ const createStyles = (theme) =>
     avatarText: {
       fontWeight: "700",
       color: theme.colors.textPrimary,
-    },
-    iconBadge: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: theme.colors.surfaceAccent,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
-    },
-    iconBadgeWrapper: {
-      position: "relative",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    unreadBadge: {
-      position: "absolute",
-      top: -4,
-      right: -4,
-      minWidth: 16,
-      height: 16,
-      borderRadius: 8,
-      paddingHorizontal: 4,
-      backgroundColor: theme.colors.danger,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: theme.colors.background,
-    },
-    unreadBadgeText: {
-      fontSize: 10,
-      fontWeight: "700",
-      color: theme.colors.white,
     },
     updateText: {
       fontSize: 14,

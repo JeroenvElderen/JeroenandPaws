@@ -15,10 +15,11 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import HomeScreen from "./src/screens/HomeScreen";
 import BookScreen from "./src/screens/BookScreen";
 import MoreScreen from "./src/screens/MoreScreen";
@@ -52,10 +53,27 @@ const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
 
-const TabItem = ({ label, color, icon }) => (
+const TabItem = ({
+  label,
+  color,
+  icon,
+  badgeCount = 0,
+  badgeStyle,
+  badgeTextStyle,
+}) => (
   <View style={styles.tabItem}>
-    <Ionicons name={icon} size={20} color={color} />
+    <View style={styles.tabIconWrapper}>
+      <Ionicons name={icon} size={20} color={color} />
+      {badgeCount > 0 ? (
+        <View style={[styles.tabBadge, badgeStyle]}>
+          <Text style={[styles.tabBadgeText, badgeTextStyle]}>
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </Text>
+        </View>
+      ) : null}
+    </View>
     <Text style={[styles.tabLabel, { color }]}>{label}</Text>
   </View>
 );
@@ -160,6 +178,110 @@ const createTabPressListener =
 
 const MainTabs = () => {
   const { theme } = useTheme();
+  const { session } = useSession();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const isJeroenAccount =
+    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const unreadBadgeCount = useMemo(() => {
+    if (!unreadCount) return 0;
+    if (isJeroenAccount) return unreadCount;
+    return 1;
+  }, [isJeroenAccount, unreadCount]);
+  const badgeStyles = useMemo(
+    () => ({
+      badge: {
+        backgroundColor: theme.colors.danger,
+        borderColor: theme.colors.background,
+      },
+      badgeText: {
+        color: theme.colors.white,
+      },
+    }),
+    [theme.colors.background, theme.colors.danger, theme.colors.white],
+  );
+
+  const loadUnreadMessages = useCallback(async () => {
+    if (!session?.id || !supabase) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const storageKey = `messages:lastRead:${
+      isJeroenAccount ? OWNER_CLIENT_ID : session.id
+    }`;
+
+    try {
+      const raw = await AsyncStorage.getItem(storageKey);
+      const lastReadMap = raw ? JSON.parse(raw) : {};
+      const lastReadValues = Object.values(lastReadMap)
+        .map((value) => new Date(value).getTime())
+        .filter((value) => Number.isFinite(value));
+      const minLastRead =
+        lastReadValues.length > 0 ? Math.min(...lastReadValues) : null;
+
+      let query = supabase
+        .from("messages")
+        .select("client_id, created_at, sender")
+        .order("created_at", { ascending: false });
+
+      if (isJeroenAccount) {
+        query = query.eq("sender", "client");
+      } else {
+        query = query.eq("sender", "owner").eq("client_id", session.id);
+      }
+
+      if (minLastRead) {
+        query = query.gt("created_at", new Date(minLastRead).toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        throw error;
+      }
+
+      const unreadClients = (data || []).reduce((acc, message) => {
+        const lastRead = lastReadMap[message.client_id];
+        if (!lastRead) {
+          acc.add(message.client_id);
+          return acc;
+        }
+        if (new Date(message.created_at) > new Date(lastRead)) {
+          acc.add(message.client_id);
+        }
+        return acc;
+      }, new Set());
+
+      setUnreadCount(unreadClients.size);
+    } catch (error) {
+      console.error("Failed to load unread messages", error);
+    }
+  }, [isJeroenAccount, session?.id]);
+
+  useEffect(() => {
+    loadUnreadMessages();
+  }, [loadUnreadMessages]);
+
+  useEffect(() => {
+    if (!supabase || !session?.id) {
+      return undefined;
+    }
+
+    const messageChannel = supabase
+      .channel("messages-unread-tab")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        () => {
+          loadUnreadMessages();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messageChannel);
+    };
+  }, [loadUnreadMessages, session?.id]);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -219,7 +341,14 @@ const MainTabs = () => {
         options={{
           tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
           tabBarIcon: ({ color }) => (
-            <TabItem label="Messages" color={color} icon={tabIcons.Messages} />
+            <TabItem
+              label="Messages"
+              color={color}
+              icon={tabIcons.Messages}
+              badgeCount={unreadBadgeCount}
+              badgeStyle={badgeStyles.badge}
+              badgeTextStyle={badgeStyles.badgeText}
+            />
           ),
         }}
       />
@@ -698,9 +827,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  tabIconWrapper: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   tabLabel: {
     fontSize: 12,
     marginTop: 4,
+  },
+  tabBadge: {
+    position: "absolute",
+    top: -6,
+    right: -12,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: "#E5484D",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 });
 
