@@ -174,8 +174,8 @@ const MessagesScreen = ({ navigation }) => {
       const { data, error } = await supabase
         .from("messages")
         .select("id, client_id, sender, body, created_at, read_at")
-        .order("created_at", { ascending: false });
-
+        .neq("client_id", OWNER_CLIENT_ID)
+        .order("created_at", { ascending: false });        
       if (error) throw error;
 
       const latestByClient = new Map();
@@ -204,7 +204,9 @@ const MessagesScreen = ({ navigation }) => {
         }
       });
 
-      const clientIds = Array.from(latestByClient.keys());
+      const clientIds = Array.from(latestByClient.keys()).filter(
+        (clientId) => clientId !== OWNER_CLIENT_ID
+      );
       let clientLookup = {};
 
       if (clientIds.length > 0) {
@@ -286,6 +288,10 @@ const MessagesScreen = ({ navigation }) => {
   const loadMessages = useCallback(
     async (clientId) => {
       if (!supabase || !clientId) return;
+      if (isOwner && clientId === OWNER_CLIENT_ID) {
+        setMessages([]);
+        return;
+      }
       setLoadingChat(true);
       try {
         await deleteOldMessages(clientId);
@@ -309,7 +315,7 @@ const MessagesScreen = ({ navigation }) => {
         setLoadingChat(false);
       }
     },
-    [deleteOldMessages, markMessagesRead, updateLastRead]
+    [deleteOldMessages, isOwner, markMessagesRead, updateLastRead]
   );
 
   useEffect(() => {
@@ -373,7 +379,7 @@ const MessagesScreen = ({ navigation }) => {
 
   const activeClientId = isOwner ? selectedClientId : selfClientId;
   const canSendMessage = isOwner
-    ? Boolean(activeClientId)
+    ? Boolean(activeClientId && activeClientId !== OWNER_CLIENT_ID)
     : Boolean(selfClientId && activeClientId === selfClientId);
   const activeClient = useMemo(() => {
     if (!activeClientId) return null;
@@ -426,6 +432,7 @@ const MessagesScreen = ({ navigation }) => {
   }, [messages]);
 
   const handleSelectClient = (clientId) => {
+    if (isOwner && clientId === OWNER_CLIENT_ID) return;
     setSelectedClientId(clientId);
     if (clientId) {
       updateLastRead(clientId, new Date().toISOString());
