@@ -16,5 +16,5 @@ export const getTabBarStyle = (theme) => ({
   justifyContent: "center",
   alignSelf: "center",
   width: "90%",
-  paddingVertical: 8,
+  paddingVertical: 0,
 });

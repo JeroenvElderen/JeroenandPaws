@@ -155,14 +155,18 @@ const MainTabs = () => {
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarIconStyle: {
           marginTop: 0,
+          marginBottom: 4,
         },
         tabBarLabelStyle: {
           marginBottom: 0,
+          marginTop: 0,
+          paddingTop: 0,
         },
         tabBarItemStyle: {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
+          paddingVertical: 0,
         },
       }}
     >
