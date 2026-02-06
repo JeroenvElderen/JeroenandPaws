@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Pressable,
@@ -15,6 +15,7 @@ import { fetchJson } from "../api/client";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const getInitials = (name) => {
   if (!name) return "JP";
@@ -33,6 +34,8 @@ const safeValue = (value) =>
 
 const PetsProfileScreen = ({ navigation, route }) => {
   const { session } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [pets, setPets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState(PET_TABS[0]);
@@ -501,7 +504,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
               await loadPets();
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -557,340 +560,341 @@ const PetsProfileScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    backgroundColor: "#0c081f",
-  },
-  detailHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  headerIconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#120d23",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#1f1535",
-  },
-  headerIcon: {
-    fontSize: 18,
-    color: "#f4f2ff",
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  headerActionText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  petDetailHeader: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  petHeroImage: {
-    width: "100%",
-    height: 220,
-    borderRadius: 18,
-    marginBottom: 16,
-  },
-  petHeroPlaceholder: {
-    width: "100%",
-    height: 220,
-    borderRadius: 18,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  petHeroPlaceholderText: {
-    fontSize: 40,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  photoAction: {
-    marginBottom: 12,
-  },
-  photoActionText: {
-    fontSize: 13,
-    color: "#bfa7ff",
-    fontWeight: "600",
-  },
-  petDetailName: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petDetailMeta: {
-    fontSize: 16,
-    color: "#c9c5d8",
-    marginTop: 6,
-  },
-  tabRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 16,
-  },
-  tabPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: "#120d23",
-    borderWidth: 1,
-    borderColor: "#1f1535",
-  },
-  tabPillActive: {
-    backgroundColor: "#2b1a4b",
-    borderColor: "#2b1a4b",
-  },
-  tabText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#c9c5d8",
-  },
-  tabTextActive: {
-    color: "#ffffff",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  subtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    color: "#c9c5d8",
-  },
-  emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#c9c5d8",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  sectionCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
-  },
-  detailRow: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-  },
-  detailRowLast: {
-    borderBottomWidth: 0,
-    paddingBottom: 0,
-  },
-  detailLabel: {
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    color: "#8b7ca8",
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 15,
-    color: "#f4f2ff",
-  },
-  selectInput: {
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#120d23",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  selectValue: {
-    fontSize: 14,
-    color: "#f4f2ff",
-  },
-  selectChevron: {
-    fontSize: 12,
-    color: "#c9c5d8",
-  },
-  selectOptions: {
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    backgroundColor: "#120d23",
-    overflow: "hidden",
-  },
-  selectOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-  },
-  selectOptionText: {
-    fontSize: 14,
-    color: "#f4f2ff",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#120d23",
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  noteText: {
-    fontSize: 14,
-    color: "#c9c5d8",
-    lineHeight: 20,
-  },
-  galleryTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 4,
-  },
-  gallerySubtitle: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginBottom: 12,
-  },
-  photoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  galleryPhoto: {
-    width: 120,
-    height: 120,
-    borderRadius: 14,
-    backgroundColor: "#1f1535",
-  },
-  addPhotoTile: {
-    width: 120,
-    height: 120,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#2a1d45",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addPhotoIcon: {
-    fontSize: 28,
-    color: "#bfa7ff",
-    marginBottom: 4,
-  },
-  addPhotoLabel: {
-    fontSize: 12,
-    color: "#f4f2ff",
-  },
-  editProfileButton: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-    paddingVertical: 12,
-    alignItems: "center",
-    backgroundColor: "#120d23",
-    marginBottom: 12,
-  },
-  editProfileText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  errorText: {
-    color: "#ff6b6b",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  petCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
-  },
-  petCardPressed: {
-    opacity: 0.85,
-  },
-  petAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  petAvatarImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  petAvatarText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petInfo: {
-    flex: 1,
-  },
-  petName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petMeta: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginTop: 4,
-  },
-  petChevron: {
-    fontSize: 22,
-    color: "#8b7ca8",
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+    },
+    detailHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.sm,
+    },
+    headerIconButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    headerIcon: {
+      fontSize: 18,
+      color: theme.colors.textPrimary,
+    },
+    headerTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    headerActionText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: theme.spacing.lg,
+    },
+    petDetailHeader: {
+      alignItems: "center",
+      marginBottom: theme.spacing.md,
+    },
+    petHeroImage: {
+      width: "100%",
+      height: 220,
+      borderRadius: theme.radius.lg,
+      marginBottom: theme.spacing.md,
+    },
+    petHeroPlaceholder: {
+      width: "100%",
+      height: 220,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: theme.spacing.md,
+    },
+    petHeroPlaceholderText: {
+      fontSize: 40,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    photoAction: {
+      marginBottom: theme.spacing.sm,
+    },
+    photoActionText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.accentSoft,
+      fontWeight: "600",
+    },
+    petDetailName: {
+      fontSize: theme.typography.title.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petDetailMeta: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    tabRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    tabPill: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    tabPillActive: {
+      backgroundColor: theme.colors.surfaceAccent,
+      borderColor: theme.colors.surfaceAccent,
+    },
+    tabText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textSecondary,
+    },
+    tabTextActive: {
+      color: theme.colors.white,
+    },
+    title: {
+      fontSize: theme.typography.title.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    subtitle: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    emptyCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    emptyText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    sectionTitle: {
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+    },
+    sectionCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.md,
+    },
+    detailRow: {
+      paddingVertical: theme.spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    detailRowLast: {
+      borderBottomWidth: 0,
+      paddingBottom: 0,
+    },
+    detailLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      color: theme.colors.textMuted,
+      marginBottom: theme.spacing.xs,
+    },
+    detailValue: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    selectInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      backgroundColor: theme.colors.surface,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    selectValue: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    selectChevron: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    selectOptions: {
+      marginTop: theme.spacing.xs,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      backgroundColor: theme.colors.surface,
+      overflow: "hidden",
+    },
+    selectOption: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    selectOptionText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      backgroundColor: theme.colors.surface,
+    },
+    textArea: {
+      minHeight: 80,
+      textAlignVertical: "top",
+    },
+    noteText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    galleryTitle: {
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    gallerySubtitle: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.sm,
+    },
+    photoGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+    },
+    galleryPhoto: {
+      width: 120,
+      height: 120,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    addPhotoTile: {
+      width: 120,
+      height: 120,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: theme.colors.borderStrong,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    addPhotoIcon: {
+      fontSize: 28,
+      color: theme.colors.accentSoft,
+      marginBottom: theme.spacing.xs,
+    },
+    addPhotoLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    editProfileButton: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingVertical: theme.spacing.sm,
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+      marginBottom: theme.spacing.sm,
+    },
+    editProfileText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    errorText: {
+      color: theme.colors.danger,
+      marginBottom: theme.spacing.sm,
+      textAlign: "center",
+    },
+    petCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.sm,
+    },
+    petCardPressed: {
+      opacity: 0.85,
+    },
+    petAvatar: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: theme.spacing.sm,
+    },
+    petAvatarImage: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+    },
+    petAvatarText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petInfo: {
+      flex: 1,
+    },
+    petName: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petMeta: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    petChevron: {
+      fontSize: 22,
+      color: theme.colors.textMuted,
+    },
+  });
 
 export default PetsProfileScreen;

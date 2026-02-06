@@ -16,6 +16,7 @@ import * as Location from "expo-location";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { clearActiveCard } from "../utils/activeCards";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -112,6 +113,8 @@ const buildStaticMapUrl = (coords) => {
 
 const JeroenPawsCardScreen = ({ navigation, route }) => {
   const { session } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
   const petList = useMemo(
@@ -744,7 +747,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                       <MaterialCommunityIcons
                         name={activity.icon}
                         size={18}
-                        color="#7c45f3"
+                        color={theme.colors.accent}
                       />
                       <Text style={styles.activityText}>
                         {activity.label}
@@ -856,326 +859,327 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#120d23",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#1f1535",
-  },
-  backIcon: {
-    fontSize: 20,
-    color: "#f4f2ff",
-  },
-  headerText: {
-    flex: 1,
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  headerSubtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: "#c9c5d8",
-  },
-  headerSpacer: {
-    width: 42,
-  },
-  mapCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
-  },
-  mapImage: {
-    height: 160,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  mapPlaceholder: {
-    height: 160,
-    borderRadius: 16,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  mapPlaceholderText: {
-    color: "#c9c5d8",
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  routeBadge: {
-    backgroundColor: "#7c45f3",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  routeBadgeText: {
-    color: "#ffffff",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  addPhotoButton: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  addPhotoText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  timerCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  timerLabel: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginBottom: 4,
-  },
-  timerValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  timerMeta: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "#8b7ca8",
-  },
-  noteCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
-  },
-  noteTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 8,
-  },
-  noteInput: {
-    minHeight: 72,
-    fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#0c081f",
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  section: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 16,
-  },
-  petSection: {
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-    paddingBottom: 12,
-  },
-  petRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  petAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  petAvatarText: {
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petBreed: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginTop: 4,
-  },
-  activityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-  },
-  activityLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  activityText: {
-    fontSize: 15,
-    color: "#f4f2ff",
-  },
-  counter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  readOnlyCount: {
-    minWidth: 38,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  readOnlyCountText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  counterButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  counterButtonPrimary: {
-    backgroundColor: "#7c45f3",
-  },
-  counterButtonText: {
-    fontSize: 18,
-    color: "#f4f2ff",
-  },
-  counterValue: {
-    fontSize: 15,
-    color: "#f4f2ff",
-    fontWeight: "600",
-    minWidth: 20,
-    textAlign: "center",
-  },
-  finishButton: {
-    borderRadius: 999,
-    backgroundColor: "#7c45f3",
-    paddingVertical: 14,
-    alignItems: "center",
-    shadowColor: "#000000",
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-  },
-  finishButtonText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  finishBadge: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-    paddingVertical: 12,
-    alignItems: "center",
-    backgroundColor: "#120d23",
-  },
-  finishBadgeText: {
-    color: "#f4f2ff",
-    fontWeight: "600",
-  },
-  photoCountText: {
-    marginTop: 12,
-    textAlign: "center",
-    fontSize: 12,
-    color: "#8b7ca8",
-  },
-  resetButton: {
-    marginTop: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#4a1f3d",
-    paddingVertical: 12,
-    alignItems: "center",
-    backgroundColor: "#1f1535",
-    marginBottom: 12,
-  },
-  resetButtonText: {
-    color: "#ff8f8f",
-    fontWeight: "700",
-  },
-  photoGallery: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
-  },
-  photoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  photoThumb: {
-    width: 96,
-    height: 96,
-    borderRadius: 16,
-    backgroundColor: "#1f1535",
-  },
-  errorText: {
-    textAlign: "center",
-    color: "#ff6b6b",
-    marginBottom: 10,
-    fontSize: 13,
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      padding: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.lg,
+    },
+    backButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    backIcon: {
+      fontSize: 20,
+      color: theme.colors.textPrimary,
+    },
+    headerText: {
+      flex: 1,
+      alignItems: "center",
+    },
+    headerTitle: {
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    headerSubtitle: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    headerSpacer: {
+      width: 42,
+    },
+    mapCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    mapImage: {
+      height: 160,
+      borderRadius: theme.radius.md,
+      marginBottom: theme.spacing.md,
+    },
+    mapPlaceholder: {
+      height: 160,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: theme.spacing.md,
+    },
+    mapPlaceholderText: {
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.caption.fontSize,
+      marginBottom: theme.spacing.xs,
+    },
+    routeBadge: {
+      backgroundColor: theme.colors.accent,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: 999,
+    },
+    routeBadgeText: {
+      color: theme.colors.white,
+      fontWeight: "600",
+      fontSize: theme.typography.caption.fontSize,
+    },
+    addPhotoButton: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingVertical: theme.spacing.sm,
+      alignItems: "center",
+    },
+    addPhotoText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    timerCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    timerLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.xs,
+    },
+    timerValue: {
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    timerMeta: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+    },
+    noteCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    noteTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    noteInput: {
+      minHeight: 72,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+    },
+    section: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    sectionTitle: {
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.md,
+    },
+    petSection: {
+      marginBottom: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      paddingBottom: theme.spacing.sm,
+    },
+    petRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    petAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: theme.spacing.sm,
+    },
+    petAvatarText: {
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petName: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petBreed: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    activityRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: theme.spacing.xs,
+    },
+    activityLabel: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    activityText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    counter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    readOnlyCount: {
+      minWidth: 38,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: 999,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    readOnlyCountText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    counterButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    counterButtonPrimary: {
+      backgroundColor: theme.colors.accent,
+    },
+    counterButtonText: {
+      fontSize: 18,
+      color: theme.colors.textPrimary,
+    },
+    counterValue: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      minWidth: 20,
+      textAlign: "center",
+    },
+    finishButton: {
+      borderRadius: 999,
+      backgroundColor: theme.colors.accent,
+      paddingVertical: theme.spacing.md,
+      alignItems: "center",
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+    },
+    finishButtonText: {
+      color: theme.colors.white,
+      fontWeight: "700",
+      fontSize: theme.typography.body.fontSize,
+    },
+    finishBadge: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingVertical: theme.spacing.sm,
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+    },
+    finishBadgeText: {
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    photoCountText: {
+      marginTop: theme.spacing.sm,
+      textAlign: "center",
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+    },
+    resetButton: {
+      marginTop: theme.spacing.sm,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingVertical: theme.spacing.sm,
+      alignItems: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      marginBottom: theme.spacing.sm,
+    },
+    resetButtonText: {
+      color: theme.colors.danger,
+      fontWeight: "700",
+    },
+    photoGallery: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    photoGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+    },
+    photoThumb: {
+      width: 96,
+      height: 96,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    errorText: {
+      textAlign: "center",
+      color: theme.colors.danger,
+      marginBottom: theme.spacing.sm,
+      fontSize: theme.typography.caption.fontSize,
+    },
+  });
 
 export default JeroenPawsCardScreen;

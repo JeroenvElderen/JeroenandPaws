@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -11,14 +11,20 @@ import {
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+import { THEME_MODES, THEME_PREFERENCES, useTheme } from "../context/ThemeContext";
 
 const SettingsScreen = ({ navigation }) => {
   const { session, setSession } = useSession();
+  const { theme, mode, preference, setThemeMode, setThemePreference } =
+    useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [smsAlerts, setSmsAlerts] = useState(true);
   const [keepMessages, setKeepMessages] = useState(false);
   const [status, setStatus] = useState("idle");
+  const isSystemTheme = preference === THEME_PREFERENCES.system;
+  const isDarkMode = mode === THEME_MODES.dark;
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   useEffect(() => {
     const preferences =
@@ -44,7 +50,7 @@ const SettingsScreen = ({ navigation }) => {
     if (!supabase || !session?.user) {
       return;
     }
-     setStatus("idle");
+    setStatus("idle");
     try {
       const [{ error: authError }, { error: clientError }] =
         await Promise.all([
@@ -134,6 +140,54 @@ const SettingsScreen = ({ navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <ScreenHeader title="Settings" onBack={() => navigation.goBack()} />
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.rowCopy}>
+              <Text style={styles.label}>Use system setting</Text>
+              <Text style={styles.helper}>
+                Match your device light or dark theme automatically.
+              </Text>
+            </View>
+            <Switch
+              value={isSystemTheme}
+              onValueChange={(value) =>
+                setThemePreference(
+                  value ? THEME_PREFERENCES.system : THEME_PREFERENCES.manual
+                )
+              }
+              trackColor={{
+                false: theme.colors.borderStrong,
+                true: theme.colors.accent,
+              }}
+              thumbColor={
+                isSystemTheme ? theme.colors.white : theme.colors.surfaceAccent
+              }
+            />
+          </View>
+          <View style={[styles.row, styles.rowLast]}>
+            <View style={styles.rowCopy}>
+              <Text style={styles.label}>Dark mode</Text>
+              <Text style={styles.helper}>
+                Only applies when using in-app settings.
+              </Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={(value) =>
+                setThemeMode(value ? THEME_MODES.dark : THEME_MODES.light)
+              }
+              disabled={isSystemTheme}
+              trackColor={{
+                false: theme.colors.borderStrong,
+                true: theme.colors.accent,
+              }}
+              thumbColor={
+                isDarkMode ? theme.colors.white : theme.colors.surfaceAccent
+              }
+            />
+          </View>
+        </View>
         <View style={styles.card}>
           <View style={styles.row}>
             <View>
@@ -176,8 +230,15 @@ const SettingsScreen = ({ navigation }) => {
                   sms: smsAlerts,
                 });
               }}
-              trackColor={{ false: "#1f1535", true: "#7c45f3" }}
-              thumbColor={notificationsEnabled ? "#f4f2ff" : "#8b7ca8"}
+              trackColor={{
+                false: theme.colors.borderStrong,
+                true: theme.colors.accent,
+              }}
+              thumbColor={
+                notificationsEnabled
+                  ? theme.colors.white
+                  : theme.colors.surfaceAccent
+              }
             />
           </View>
           <View style={styles.row}>
@@ -221,11 +282,16 @@ const SettingsScreen = ({ navigation }) => {
                   sms: smsAlerts,
                 });
               }}
-              trackColor={{ false: "#1f1535", true: "#7c45f3" }}
-              thumbColor={emailUpdates ? "#f4f2ff" : "#8b7ca8"}
+              trackColor={{
+                false: theme.colors.borderStrong,
+                true: theme.colors.accent,
+              }}
+              thumbColor={
+                emailUpdates ? theme.colors.white : theme.colors.surfaceAccent
+              }
             />
           </View>
-          <View style={styles.row}>
+          <View style={[styles.row, styles.rowLast]}>
             <View>
               <Text style={styles.label}>SMS alerts</Text>
               <Text style={styles.helper}>Last-minute schedule changes.</Text>
@@ -266,8 +332,13 @@ const SettingsScreen = ({ navigation }) => {
                   sms: value,
                 });
               }}
-              trackColor={{ false: "#1f1535", true: "#7c45f3" }}
-              thumbColor={smsAlerts ? "#f4f2ff" : "#8b7ca8"}
+              trackColor={{
+                false: theme.colors.borderStrong,
+                true: theme.colors.accent,
+              }}
+              thumbColor={
+                smsAlerts ? theme.colors.white : theme.colors.surfaceAccent
+              }
             />
           </View>
           {status === "error" ? (
@@ -310,8 +381,13 @@ const SettingsScreen = ({ navigation }) => {
                 );
                 void updateMessageRetention(value);
               }}
-              trackColor={{ false: "#e6def6", true: "#bda8f0" }}
-              thumbColor={keepMessages ? "#6c3ad6" : "#f2ecfb"}
+              trackColor={{
+                false: theme.colors.border,
+                true: theme.colors.accentSoft,
+              }}
+              thumbColor={
+                keepMessages ? theme.colors.accent : theme.colors.surface
+              }
             />
           </View>
         </View>
@@ -341,83 +417,88 @@ const SettingsScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
-  },
-  card: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-  },
-  rowCopy: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  helper: {
-    fontSize: 12,
-    color: "#c9c5d8",
-    marginTop: 4,
-  },
-  helperText: {
-    fontSize: 12,
-    color: "#c9c5d8",
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 12,
-  },
-  value: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginBottom: 12,
-  },
-  button: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: "#1f1535",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-    marginBottom: 6,
-  },
-  buttonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#1f1535",
-    marginVertical: 12,
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.md,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    rowLast: {
+      borderBottomWidth: 0,
+      paddingBottom: 0,
+    },
+    rowCopy: {
+      flex: 1,
+      paddingRight: theme.spacing.sm,
+    },
+    label: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    helper: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    helperText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.sm,
+    },
+    value: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.sm,
+    },
+    button: {
+      alignSelf: "flex-start",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      backgroundColor: theme.colors.surfaceAccent,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      marginBottom: theme.spacing.xs,
+    },
+    buttonText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      marginVertical: theme.spacing.sm,
+    },
+  });
 
 export default SettingsScreen;

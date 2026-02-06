@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -15,6 +15,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -35,6 +36,8 @@ const getInitials = (name) => {
 
 const ProfileOverviewScreen = ({ navigation, route }) => {
   const { session, setSession } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [clientProfile, setClientProfile] = useState(null);
   const [pets, setPets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -227,7 +230,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
               await loadProfile();
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -259,7 +262,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
               disabled={photoStatus === "uploading"}
             >
               {photoStatus === "uploading" ? (
-                <ActivityIndicator size="small" color="#5d2fc5" />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
               ) : (
                 <Text style={styles.photoButtonText}>
                   {profilePhotoUrl ? "Change photo" : "Upload photo"}
@@ -275,7 +278,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
             <MaterialCommunityIcons
               name="map-marker"
               size={18}
-              color="#c9c5d8"
+              color={theme.colors.textSecondary}
             />
             <Text style={styles.locationText}>{location}</Text>
           </View>
@@ -295,7 +298,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                 name={item.icon}
                 size={18}
                 marginRight={8}
-                color="#c9c5d8"
+                color={theme.colors.textSecondary}
               />
               <View style={styles.detailInfo}>
                 <Text style={styles.detailLabel}>{item.label}</Text>
@@ -319,7 +322,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                 name={item.icon}
                 size={18}
                 marginRight={8}
-                color="#c9c5d8"
+                color={theme.colors.textSecondary}
               />
               <View style={styles.detailInfo}>
                 <Text style={styles.detailLabel}>{item.label}</Text>
@@ -378,177 +381,178 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#0c081f",
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  profileCard: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  avatarCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  avatarImage: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-  },
-  avatarText: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  photoButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: "#1f1535",
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-    marginBottom: 10,
-  },
-  photoButtonPressed: {
-    opacity: 0.9,
-  },
-  photoButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  photoError: {
-    fontSize: 12,
-    color: "#ff6b6b",
-    marginBottom: 8,
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 6,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  locationText: {
-    fontSize: 14,
-    color: "#c9c5d8",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 12,
-  },
-  sectionCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 24,
-    overflow: "hidden",
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-  },
-  detailRowLast: {
-    borderBottomWidth: 0,
-  },
-  detailInfo: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    fontWeight: "600",
-  },
-  detailValue: {
-    fontSize: 15,
-    color: "#f4f2ff",
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 24,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#c9c5d8",
-  },
-  petCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
-  },
-  petCardPressed: {
-    opacity: 0.85,
-  },
-  petAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  petAvatarImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  petAvatarText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petInfo: {
-    flex: 1,
-  },
-  petName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  petMeta: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginTop: 4,
-  },
-  petChevron: {
-    fontSize: 22,
-    color: "#8b7ca8",
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+    },
+    profileCard: {
+      alignItems: "center",
+      marginBottom: theme.spacing.lg,
+    },
+    avatarCircle: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    avatarImage: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+    },
+    avatarText: {
+      fontSize: 30,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    photoButton: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      marginBottom: theme.spacing.sm,
+    },
+    photoButtonPressed: {
+      opacity: 0.9,
+    },
+    photoButtonText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    photoError: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.danger,
+      marginBottom: theme.spacing.xs,
+    },
+    profileName: {
+      fontSize: theme.typography.title.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    locationRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
+    },
+    locationText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    sectionTitle: {
+      fontSize: theme.typography.headline.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.sm,
+    },
+    sectionCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.lg,
+      overflow: "hidden",
+    },
+    detailRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    detailRowLast: {
+      borderBottomWidth: 0,
+    },
+    detailInfo: {
+      flex: 1,
+    },
+    detailLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      fontWeight: "600",
+    },
+    detailValue: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+      marginTop: theme.spacing.xs,
+    },
+    emptyCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.lg,
+    },
+    emptyText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    petCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.sm,
+    },
+    petCardPressed: {
+      opacity: 0.85,
+    },
+    petAvatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: theme.spacing.sm,
+    },
+    petAvatarImage: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+    },
+    petAvatarText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petInfo: {
+      flex: 1,
+    },
+    petName: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    petMeta: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    petChevron: {
+      fontSize: 22,
+      color: theme.colors.textMuted,
+    },
+  });
 
 export default ProfileOverviewScreen;

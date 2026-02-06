@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -10,6 +11,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const userItems = [
   {
@@ -42,6 +44,8 @@ const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const MoreScreen = ({ navigation }) => {
   const { session, setSession } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
@@ -79,7 +83,7 @@ const MoreScreen = ({ navigation }) => {
                 <MaterialCommunityIcons
                   name={item.icon}
                   size={20}
-                  color="#7c45f3"
+                  color={theme.colors.accent}
                   style={styles.menuIcon}
                 />
                 <View>
@@ -105,7 +109,7 @@ const MoreScreen = ({ navigation }) => {
                   <MaterialCommunityIcons
                     name="folder-account"
                     size={20}
-                    color="#7c45f3"
+                    color={theme.colors.accent}
                     style={styles.menuIcon}
                   />
                   <View>
@@ -126,7 +130,7 @@ const MoreScreen = ({ navigation }) => {
               <MaterialCommunityIcons
                 name="logout"
                 size={20}
-                color="#7c45f3"
+                color={theme.colors.accent}
                 style={styles.menuIcon}
               />
               <View>
@@ -144,67 +148,68 @@ const MoreScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#0c081f",
-    padding: 20,
-    paddingBottom: 32,
-  },
-  scrollView: {
-    backgroundColor: "#0c081f",
-  },
-  chevron: {
-    fontSize: 20,
-    color: "#8b7ca8",
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 12,
-  },
-  sectionCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 20,
-    overflow: "hidden",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-  },
-  menuItemLast: {
-    borderBottomWidth: 0,
-  },
-  menuLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  menuIcon: {
-    marginRight: 10,
-  },
-  menuLabel: {
-    fontSize: 15,
-    color: "#f4f2ff",
-    fontWeight: "600",
-  },
-  menuDescription: {
-    fontSize: 12,
-    color: "#c9c5d8",
-    marginTop: 2,
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      backgroundColor: theme.colors.background,
+      padding: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+    },
+    scrollView: {
+      backgroundColor: theme.colors.background,
+    },
+    chevron: {
+      fontSize: 20,
+      color: theme.colors.textMuted,
+    },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.sm,
+    },
+    sectionCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.lg,
+      overflow: "hidden",
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    menuItemLast: {
+      borderBottomWidth: 0,
+    },
+    menuLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    menuIcon: {
+      marginRight: theme.spacing.sm,
+    },
+    menuLabel: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    menuDescription: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+  });
 
 export default MoreScreen;

@@ -13,6 +13,7 @@ import {
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -26,6 +27,8 @@ const getInitials = (name) => {
 
 const ClientProfilesScreen = ({ navigation }) => {
   const { session, clientProfiles, setClientProfiles } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [clients, setClients] = useState(clientProfiles);
   const [searchValue, setSearchValue] = useState("");
   const [status, setStatus] = useState("idle");
@@ -112,7 +115,6 @@ const ClientProfilesScreen = ({ navigation }) => {
         <ScreenHeader
           title="Client profiles"
           onBack={() => navigation.goBack()}
-          variant="dark"
         />
         <View style={styles.searchCard}>
           <Text style={styles.searchLabel}>Search clients</Text>
@@ -125,7 +127,7 @@ const ClientProfilesScreen = ({ navigation }) => {
         </View>
         {status === "loading" ? (
           <View style={styles.loadingState}>
-            <ActivityIndicator size="small" color="#7c45f3" />
+            <ActivityIndicator size="small" color={theme.colors.accent} />
             <Text style={styles.loadingText}>Loading client list…</Text>
           </View>
         ) : null}
@@ -178,113 +180,114 @@ const ClientProfilesScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
-  },
-  searchCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
-  },
-  searchLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#c9c5d8",
-    marginBottom: 8,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#0c081f",
-  },
-  loadingState: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  loadingText: {
-    marginLeft: 10,
-    color: "#c9c5d8",
-    fontSize: 13,
-  },
-  emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: "#c9c5d8",
-  },
-  clientCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
-  },
-  cardPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  avatarImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  clientCopy: {
-    flex: 1,
-  },
-  clientName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  clientMeta: {
-    fontSize: 12,
-    color: "#c9c5d8",
-    marginTop: 3,
-  },
-  clientChevron: {
-    fontSize: 22,
-    color: "#7c45f3",
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+    },
+    searchCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.md,
+    },
+    searchLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.xs,
+    },
+    searchInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      backgroundColor: theme.colors.surfaceElevated,
+    },
+    loadingState: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    loadingText: {
+      marginLeft: theme.spacing.sm,
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.caption.fontSize,
+    },
+    emptyCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.md,
+    },
+    emptyText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    clientCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.sm,
+    },
+    cardPressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.99 }],
+    },
+    avatar: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: theme.spacing.sm,
+    },
+    avatarImage: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+    },
+    avatarText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    clientCopy: {
+      flex: 1,
+    },
+    clientName: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    clientMeta: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: 3,
+    },
+    clientChevron: {
+      fontSize: 22,
+      color: theme.colors.accent,
+    },
+  });
 
 export default ClientProfilesScreen;

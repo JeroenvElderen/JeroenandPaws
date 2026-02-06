@@ -77,7 +77,7 @@ const darkColors = {
   white: "#ffffff",
 };
 
-export const createTheme = (mode = THEME_MODES.dark) => ({
+export const createTheme = (mode = THEME_MODES.light) => ({
   colors: mode === THEME_MODES.light ? lightColors : darkColors,
   ...baseTokens,
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Linking,
   Pressable,
@@ -11,11 +11,14 @@ import {
 } from "react-native";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const REVOLUT_PORTAL_URL = "https://revolut.me/jeroenandpaws";
 
 const PaymentMethodsScreen = () => {
   const { session, setSession } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [billingName, setBillingName] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [billingVat, setBillingVat] = useState("");
@@ -122,79 +125,80 @@ const PaymentMethodsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 6,
-  },
-  value: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginBottom: 12,
-  },
-  button: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: "#1f1535",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-  },
-  buttonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#f4f2ff",
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#c9c5d8",
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#120d23",
-    marginBottom: 12,
-  },
-  errorText: {
-    fontSize: 12,
-    color: "#ff6b6b",
-    marginTop: 6,
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.md,
+      textAlign: "center",
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.sm,
+    },
+    label: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    value: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.sm,
+    },
+    button: {
+      alignSelf: "flex-start",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      backgroundColor: theme.colors.surfaceAccent,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    buttonText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    inputLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.xs,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      backgroundColor: theme.colors.surfaceElevated,
+      marginBottom: theme.spacing.sm,
+    },
+    errorText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.danger,
+      marginTop: theme.spacing.xs,
+    },
+  });
 
 export default PaymentMethodsScreen;

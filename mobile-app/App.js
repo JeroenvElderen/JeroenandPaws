@@ -1,10 +1,10 @@
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { Platform, Text } from "react-native";
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -22,6 +22,12 @@ import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import ClientProfilesScreen from "./src/screens/ClientProfilesScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
+import {
+  ThemeProvider,
+  THEME_MODES,
+  THEME_PREFERENCES,
+  useTheme,
+} from "./src/context/ThemeContext";
 import { fetchJson } from "./src/api/client";
 import { supabase, supabaseAdmin } from "./src/api/supabaseClient";
 import { buildSessionPayload, resolveClientProfile } from "./src/utils/session";
@@ -29,7 +35,7 @@ import {
   AVAILABILITY_TIMEOUT_MS,
   prefetchAvailability,
 } from "./src/api/availabilityCache";
-import { TAB_BAR_STYLE } from "./src/utils/tabBar";
+import { getTabBarStyle } from "./src/utils/tabBar";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -56,7 +62,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const registerForPushNotifications = async () => {
+const registerForPushNotifications = async (accentColor) => {
   if (!Device.isDevice) {
     return null;
   }
@@ -78,7 +84,7 @@ const registerForPushNotifications = async () => {
       name: "default",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#5d2fc5",
+      lightColor: accentColor,
     });
   }
 
@@ -96,11 +102,11 @@ const registerForPushNotifications = async () => {
   return tokenResponse.data || null;
 };
 
-const ProfileStackScreen = () => (
+const ProfileStackScreen = ({ theme }) => (
   <ProfileStack.Navigator
     screenOptions={{
       headerShown: false,
-      contentStyle: { backgroundColor: "#0c081f" },
+      contentStyle: { backgroundColor: theme.colors.background },
     }}
   >
     <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
@@ -122,13 +128,13 @@ const ProfileStackScreen = () => (
   </ProfileStack.Navigator>
 );
 
-const MainTabs = () => (
+const MainTabs = ({ theme }) => (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
-      tabBarStyle: TAB_BAR_STYLE,
-      tabBarActiveTintColor: "#7c45f3",
-      tabBarInactiveTintColor: "#8b7ca8",
+      tabBarStyle: getTabBarStyle(theme),
+      tabBarActiveTintColor: theme.colors.accent,
+      tabBarInactiveTintColor: theme.colors.textMuted,
       tabBarIconStyle: {
         marginTop: 0,
       },
@@ -178,7 +184,7 @@ const MainTabs = () => (
       name="Messages"
       component={MessagesScreen}
       options={{
-        tabBarStyle: { ...TAB_BAR_STYLE, display: "none" },
+        tabBarStyle: { ...getTabBarStyle(theme), display: "none" },
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Messages} size={20} color={color} />
         ),
@@ -189,7 +195,7 @@ const MainTabs = () => (
     />
     <Tab.Screen
       name="Profile"
-      component={ProfileStackScreen}
+      component={(props) => <ProfileStackScreen {...props} theme={theme} />}
       options={{
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Profile} size={20} color={color} />
@@ -201,9 +207,28 @@ const MainTabs = () => (
 );
 
 const AppShell = () => {
+  const {
+    theme,
+    mode,
+    preference,
+    hasHydrated,
+    needsThemeChoice,
+    completeThemeChoice,
+  } = useTheme();
   const { session, setSession, clientProfiles, setClientProfiles } =
     useSession();
   const [authReady, setAuthReady] = useState(false);
+  const isDark = mode === THEME_MODES.dark;
+  const modalStyles = useMemo(() => createModalStyles(theme), [theme]);
+  const navigationTheme = isDark
+    ? {
+        ...DarkTheme,
+        colors: { ...DarkTheme.colors, background: theme.colors.background },
+      }
+    : {
+        ...DefaultTheme,
+        colors: { ...DefaultTheme.colors, background: theme.colors.background },
+      };
 
   useEffect(() => {
     let isMounted = true;
@@ -332,7 +357,7 @@ const AppShell = () => {
       }
 
       try {
-        const token = await registerForPushNotifications();
+        const token = await registerForPushNotifications(theme.colors.accent);
         if (!token || !isMounted) return;
         if (token !== session?.user?.user_metadata?.expo_push_token) {
           const { error } = await supabase.auth.updateUser({
@@ -376,7 +401,7 @@ const AppShell = () => {
     return () => {
       isMounted = false;
     };
-  }, [session?.user, setSession]);
+  }, [session?.user, setSession, theme.colors.accent]);
 
   useEffect(() => {
     let isMounted = true;
@@ -537,31 +562,159 @@ const AppShell = () => {
 
   if (!session?.email) {
     return (
-      <NavigationContainer>
-        <StatusBar style="light" />
+      <NavigationContainer theme={navigationTheme}>
+        <StatusBar style={isDark ? "light" : "dark"} />
         <AuthScreen onAuthenticate={setSession} />
+        {hasHydrated ? (
+          <Modal
+            visible={needsThemeChoice}
+            transparent
+            animationType="fade"
+            statusBarTranslucent
+          >
+            <View style={modalStyles.modalOverlay}>
+              <View style={modalStyles.modalCard}>
+                <Text style={modalStyles.modalTitle}>
+                  Choose your theme
+                </Text>
+                <Text style={modalStyles.modalBody}>
+                  Use your system setting or choose in-app settings anytime.
+                </Text>
+                <Pressable
+                  style={modalStyles.modalButton}
+                  onPress={() => completeThemeChoice(THEME_PREFERENCES.system)}
+                >
+                  <Text style={modalStyles.modalButtonText}>
+                    Use system setting
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={modalStyles.modalButtonOutline}
+                  onPress={() => completeThemeChoice(THEME_PREFERENCES.manual)}
+                >
+                  <Text style={modalStyles.modalButtonTextOutline}>
+                    Choose in app
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
+        ) : null}
       </NavigationContainer>
     );
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="light" />
+    <NavigationContainer theme={navigationTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="MainTabs" component={MainTabs} />
+        <RootStack.Screen
+          name="MainTabs"
+          component={(props) => <MainTabs {...props} theme={theme} />}
+        />
         <RootStack.Screen
           name="JeroenPawsCard"
           component={JeroenPawsCardScreen}
         />
       </RootStack.Navigator>
+      {hasHydrated ? (
+        <Modal
+          visible={needsThemeChoice}
+          transparent
+          animationType="fade"
+          statusBarTranslucent
+        >
+          <View style={modalStyles.modalOverlay}>
+            <View style={modalStyles.modalCard}>
+              <Text style={modalStyles.modalTitle}>
+                Choose your theme
+              </Text>
+              <Text style={modalStyles.modalBody}>
+                Use your system setting or choose in-app settings anytime.
+              </Text>
+              <Pressable
+                style={modalStyles.modalButton}
+                onPress={() => completeThemeChoice(THEME_PREFERENCES.system)}
+              >
+                <Text style={modalStyles.modalButtonText}>
+                  Use system setting
+                </Text>
+              </Pressable>
+              <Pressable
+                style={modalStyles.modalButtonOutline}
+                onPress={() => completeThemeChoice(THEME_PREFERENCES.manual)}
+              >
+                <Text style={modalStyles.modalButtonTextOutline}>
+                  Choose in app
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </NavigationContainer>
   );
 };
 
 const App = () => (
-  <SessionProvider>
-    <AppShell />
-  </SessionProvider>
+  <ThemeProvider>
+    <SessionProvider>
+      <AppShell />
+    </SessionProvider>
+  </ThemeProvider>
 );
+
+const createModalStyles = (theme) =>
+  StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: theme.colors.background,
+  },
+  modalCard: {
+    borderRadius: 24,
+    padding: 24,
+    backgroundColor: theme.colors.surface,
+    shadowColor: theme.shadow.soft.shadowColor,
+    shadowOpacity: theme.shadow.soft.shadowOpacity,
+    shadowOffset: theme.shadow.soft.shadowOffset,
+    shadowRadius: theme.shadow.soft.shadowRadius,
+    elevation: theme.shadow.soft.elevation,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: theme.colors.textPrimary,
+  },
+  modalBody: {
+    fontSize: 14,
+    marginBottom: 16,
+    color: theme.colors.textSecondary,
+  },
+  modalButton: {
+    borderRadius: 18,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 12,
+    backgroundColor: theme.colors.accent,
+  },
+  modalButtonOutline: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+  },
+  modalButtonText: {
+    fontWeight: "600",
+    fontSize: 14,
+    color: theme.colors.white,
+  },
+  modalButtonTextOutline: {
+    fontWeight: "600",
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+  },
+});
 
 export default App;

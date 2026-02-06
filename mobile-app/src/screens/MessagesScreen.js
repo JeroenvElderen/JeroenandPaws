@@ -24,7 +24,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
-import { TAB_BAR_STYLE } from "../utils/tabBar";
+import { useTheme } from "../context/ThemeContext";
+import { getTabBarStyle } from "../utils/tabBar";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
@@ -66,6 +67,9 @@ const buildPreviewText = (body) => {
 
 const MessagesScreen = ({ navigation }) => {
   const { session } = useSession();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const tabBarStyle = useMemo(() => getTabBarStyle(theme), [theme]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [inboxItems, setInboxItems] = useState([]);
   const [clientMeta, setClientMeta] = useState({});
@@ -365,9 +369,9 @@ const MessagesScreen = ({ navigation }) => {
     });
 
     return () => {
-      tabParent.setOptions({ tabBarStyle: TAB_BAR_STYLE });
+      tabParent.setOptions({ tabBarStyle });
     };
-  }, [navigation]);
+  }, [navigation, tabBarStyle]);
 
   const messageItems = useMemo(() => {
     let lastDayKey = null;
@@ -521,7 +525,9 @@ const MessagesScreen = ({ navigation }) => {
       ? new Date(message.created_at)
       : null;
     const timeLabel = createdAt ? formatMessageTime(createdAt) : "";
-    const readColor = message.read_at ? "#1d9bf0" : "#9aa0a6";
+    const readColor = message.read_at
+      ? theme.colors.accent
+      : theme.colors.textMuted;
 
     return (
       <View
@@ -624,7 +630,7 @@ const MessagesScreen = ({ navigation }) => {
             <Ionicons
               name="person-circle"
               size={28}
-              color="#7c45f3"
+              color={theme.colors.accent}
             />
           </Pressable>
         ) : (
@@ -645,7 +651,11 @@ const MessagesScreen = ({ navigation }) => {
         </Pressable>
         <View style={styles.inboxHeaderContent}>
           <View style={styles.inboxHeaderIcon}>
-            <Ionicons name="mail" size={18} color="#f4f2ff" />
+            <Ionicons
+              name="mail"
+              size={18}
+              color={theme.colors.textPrimary}
+            />
           </View>
           <View>
             <Text style={styles.inboxHeaderTitle}>Inbox</Text>
@@ -664,7 +674,7 @@ const MessagesScreen = ({ navigation }) => {
       {renderChatHeader()}
       {loadingChat ? (
         <View style={styles.loadingState}>
-          <ActivityIndicator size="small" color="#5d2fc5" />
+          <ActivityIndicator size="small" color={theme.colors.accent} />
           <Text style={styles.loadingText}>Loading chat…</Text>
         </View>
       ) : (
@@ -694,7 +704,7 @@ const MessagesScreen = ({ navigation }) => {
         ) : null}
         <View style={styles.inputRow}>
           <Pressable style={styles.attachButton} onPress={handlePickImage}>
-            <Ionicons name="image" size={20} color="#7c45f3" />
+            <Ionicons name="image" size={20} color={theme.colors.accent} />
           </Pressable>
           <TextInput
             style={styles.input}
@@ -734,7 +744,7 @@ const MessagesScreen = ({ navigation }) => {
             {renderInboxHeader()}
             {loadingInbox ? (
               <View style={styles.loadingState}>
-                <ActivityIndicator size="small" color="#5d2fc5" />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
                 <Text style={styles.loadingText}>Loading messages…</Text>
               </View>
             ) : inboxItems.length === 0 ? (
@@ -768,340 +778,334 @@ const MessagesScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    backgroundColor: "#0c081f",
-  },
-  inboxList: {
-    paddingBottom: 24,
-  },
-  inboxCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginTop: 12,
-  },
-  cardPressed: {
-    opacity: 0.7,
-  },
-  inboxHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  inboxName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 6,
-  },
-  inboxPreview: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    maxWidth: 220,
-  },
-  inboxMeta: {
-    alignItems: "flex-end",
-  },
-  inboxTime: {
-    fontSize: 12,
-    color: "#8b7ca8",
-    marginBottom: 8,
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#7c45f3",
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    color: "#c9c5d8",
-  },
-  chatContainer: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  chatHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-    backgroundColor: "#120d23",
-  },
-  inboxHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    marginBottom: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1f1535",
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-  },
-  backButtonIcon: {
-    fontSize: 18,
-    color: "#f4f2ff",
-  },
-  chatHeaderText: {
-    flex: 1,
-    alignItems: "center",
-    marginLeft: 8,
-  },
-  inboxHeaderContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginLeft: 8,
-  },
-  inboxHeaderIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#7c45f3",
-  },
-  headerSpacer: {
-    width: 38,
-  },
-  headerAction: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1f1535",
-    borderWidth: 1,
-    borderColor: "#2a1d45",
-  },
-  chatTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  chatSubtitle: {
-    fontSize: 12,
-    color: "#c9c5d8",
-    marginTop: 2,
-  },
-  inboxHeaderTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  inboxHeaderSubtitle: {
-    fontSize: 12,
-    color: "#c9c5d8",
-    marginTop: 2,
-  },
-  messageList: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  messageRow: {
-    marginBottom: 12,
-    flexDirection: "row",
-  },
-  messageRowOwn: {
-    justifyContent: "flex-end",
-  },
-  messageRowOther: {
-    justifyContent: "flex-start",
-  },
-  messageBubble: {
-    maxWidth: "78%",
-    padding: 12,
-    borderRadius: 16,
-  },
-  messageBubbleOwn: {
-    backgroundColor: "#2a1d45",
-    borderTopRightRadius: 4,
-  },
-  messageBubbleOther: {
-    backgroundColor: "#120d23",
-    borderTopLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-  },
-  messageText: {
-    fontSize: 14,
-    color: "#f4f2ff",
-  },
-  messageMeta: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 6,
-    gap: 6,
-  },
-  messageTime: {
-    fontSize: 11,
-    color: "#8b7ca8",
-  },
-  readStatus: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  readStatusStack: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  readStatusOverlap: {
-    marginLeft: -6,
-  },
-  dateRow: {
-    alignItems: "center",
-    marginVertical: 16,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#c9c5d8",
-    backgroundColor: "#1f1535",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  inputWrapper: {
-    borderTopWidth: 1,
-    borderTopColor: "#1f1535",
-    backgroundColor: "#0c081f",
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  attachButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    maxHeight: 90,
-    backgroundColor: "#120d23",
-    color: "#f4f2ff",
-  },
-  sendButton: {
-    backgroundColor: "#7c45f3",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendButtonText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  previewImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-  },
-  previewRemove: {
-    marginLeft: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#1f1535",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  previewRemoveText: {
-    fontSize: 12,
-    color: "#f4f2ff",
-  },
-  messageImage: {
-    width: 220,
-    height: 160,
-    borderRadius: 12,
-  },
-  cardMessage: {
-    gap: 6,
-  },
-  cardMessageTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#f4f2ff",
-  },
-  cardMessageBody: {
-    fontSize: 12,
-    color: "#c9c5d8",
-  },
-  loadingState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 30,
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: "#c9c5d8",
-  },
-  errorText: {
-    marginTop: 6,
-    fontSize: 12,
-    color: "#ff6b6b",
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    keyboardAvoid: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
+      backgroundColor: theme.colors.background,
+    },
+    inboxList: {
+      paddingBottom: theme.spacing.lg,
+    },
+    inboxCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: theme.spacing.md,
+      marginTop: theme.spacing.sm,
+    },
+    cardPressed: {
+      opacity: 0.7,
+    },
+    inboxName: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    inboxPreview: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      maxWidth: 220,
+    },
+    inboxMeta: {
+      alignItems: "flex-end",
+    },
+    inboxTime: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      marginBottom: theme.spacing.xs,
+    },
+    unreadDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.colors.accent,
+    },
+    emptyState: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: theme.spacing.xxl,
+    },
+    emptyText: {
+      color: theme.colors.textSecondary,
+    },
+    chatContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    chatHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    inboxHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      marginBottom: theme.spacing.sm,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      elevation: theme.shadow.soft.elevation,
+    },
+    backButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    backButtonIcon: {
+      fontSize: 18,
+      color: theme.colors.textPrimary,
+    },
+    chatHeaderText: {
+      flex: 1,
+      alignItems: "center",
+      marginLeft: theme.spacing.xs,
+    },
+    inboxHeaderContent: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      marginLeft: theme.spacing.xs,
+    },
+    inboxHeaderIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.accent,
+    },
+    headerSpacer: {
+      width: 38,
+    },
+    headerAction: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    chatTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    chatSubtitle: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    inboxHeaderTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    inboxHeaderSubtitle: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    messageList: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
+    },
+    messageRow: {
+      marginBottom: theme.spacing.sm,
+      flexDirection: "row",
+    },
+    messageRowOwn: {
+      justifyContent: "flex-end",
+    },
+    messageRowOther: {
+      justifyContent: "flex-start",
+    },
+    messageBubble: {
+      maxWidth: "78%",
+      padding: theme.spacing.sm,
+      borderRadius: theme.radius.md,
+    },
+    messageBubbleOwn: {
+      backgroundColor: theme.colors.surfaceAccent,
+      borderTopRightRadius: 4,
+    },
+    messageBubbleOther: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    messageText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    messageMeta: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
+      gap: theme.spacing.xs,
+    },
+    messageTime: {
+      fontSize: 11,
+      color: theme.colors.textMuted,
+    },
+    readStatus: {
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    readStatusStack: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    readStatusOverlap: {
+      marginLeft: -6,
+    },
+    dateRow: {
+      alignItems: "center",
+      marginVertical: theme.spacing.md,
+    },
+    dateText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textSecondary,
+      backgroundColor: theme.colors.surfaceAccent,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+      borderRadius: theme.radius.md,
+    },
+    inputWrapper: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.sm,
+    },
+    inputRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: theme.spacing.xs,
+    },
+    attachButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: theme.radius.lg,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      maxHeight: 90,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.textPrimary,
+    },
+    sendButton: {
+      backgroundColor: theme.colors.accent,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.lg,
+    },
+    sendButtonDisabled: {
+      opacity: 0.5,
+    },
+    sendButtonText: {
+      color: theme.colors.white,
+      fontWeight: "700",
+      fontSize: theme.typography.caption.fontSize,
+    },
+    previewRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.xs,
+    },
+    previewImage: {
+      width: 64,
+      height: 64,
+      borderRadius: theme.radius.md,
+    },
+    previewRemove: {
+      marginLeft: theme.spacing.xs,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    previewRemoveText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textPrimary,
+    },
+    messageImage: {
+      width: 220,
+      height: 160,
+      borderRadius: theme.radius.md,
+    },
+    cardMessage: {
+      gap: theme.spacing.xs,
+    },
+    cardMessageTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    cardMessageBody: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    loadingState: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: theme.spacing.xxl,
+    },
+    loadingText: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    errorText: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.danger,
+    },
+  });
 
 export default MessagesScreen;
