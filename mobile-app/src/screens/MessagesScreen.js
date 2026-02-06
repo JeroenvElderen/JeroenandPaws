@@ -222,8 +222,31 @@ const MessagesScreen = ({ navigation }) => {
         unread: unreadClientIds.has(message.client_id),
       }));
 
+      const dedupedMap = new Map();
+      items.forEach((message) => {
+        const email =
+          clientLookup?.[message.client_id]?.email?.toLowerCase();
+        const dedupeKey = email || message.client_id;
+        const existing = dedupedMap.get(dedupeKey);
+        if (!existing) {
+          dedupedMap.set(dedupeKey, message);
+          return;
+        }
+        const currentTime = new Date(message.created_at || 0).getTime();
+        const existingTime = new Date(existing.created_at || 0).getTime();
+        if (currentTime > existingTime) {
+          dedupedMap.set(dedupeKey, message);
+        }
+      });
+
+      const dedupedItems = Array.from(dedupedMap.values()).sort(
+        (a, b) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      );
+
       setClientMeta(clientLookup);
-      setInboxItems(items);
+      setInboxItems(dedupedItems);
     } catch (error) {
       console.error("Failed to load inbox", error);
     } finally {
@@ -770,7 +793,7 @@ const MessagesScreen = ({ navigation }) => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {renderChat()}
       </KeyboardAvoidingView>
