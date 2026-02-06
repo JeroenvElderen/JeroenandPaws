@@ -11,6 +11,7 @@ import {
 import { fetchJson } from "../api/client";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const formatDateLabel = (date) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -33,6 +34,7 @@ const buildDateKey = (year, monthIndex, day) => {
 };
 
 const CalendarScreen = () => {
+  const { theme } = useTheme();
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -147,6 +149,8 @@ const CalendarScreen = () => {
     setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -159,7 +163,7 @@ const CalendarScreen = () => {
               await loadBookings();
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -267,31 +271,33 @@ const CalendarScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#0c081f",
-    padding: 20,
-    paddingBottom: 32,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 16,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
     textAlign: "center",
   },
   calendarCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 20,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.lg,
+    ...theme.shadow.soft,
   },
   monthHeader: {
     flexDirection: "row",
@@ -304,18 +310,18 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
   },
   monthButtonText: {
     fontSize: 18,
-    color: "#bfa7ff",
+    color: theme.colors.accentSoft,
   },
   monthLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     textAlign: "center",
     marginHorizontal: 12,
   },
@@ -328,7 +334,7 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     width: 32,
     textAlign: "center",
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -345,37 +351,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayBooked: {
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceAccent,
   },
   daySelected: {
-    backgroundColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
   },
   dayPressed: {
     opacity: 0.85,
   },
   dayText: {
     fontSize: 12,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
   },
   dayTextBooked: {
-    color: "#bfa7ff",
+    color: theme.colors.accentSoft,
   },
   dayTextSelected: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   listCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
+    ...theme.shadow.soft,
   },
   listTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 12,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
   },
   bookingRow: {
     flexDirection: "row",
@@ -383,32 +390,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
   },
   bookingDate: {
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
   },
   bookingService: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   bookingTime: {
     fontSize: 12,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   bookingStatus: {
     fontSize: 12,
-    color: "#bfa7ff",
+    color: theme.colors.accentSoft,
     fontWeight: "600",
   },
   emptyText: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
-});
+  });
 
 export default CalendarScreen;

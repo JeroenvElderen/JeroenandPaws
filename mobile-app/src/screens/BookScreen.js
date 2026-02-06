@@ -25,6 +25,7 @@ import {
 import { supabase } from "../api/supabaseClient";
 import PrimaryButton from "../components/PrimaryButton";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const CATEGORY_ORDER = [
   "Daily strolls",
@@ -285,6 +286,7 @@ const buildBookingMessage = (
 };
 
 const BookScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { session } = useSession();
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -886,6 +888,8 @@ const BookScreen = ({ navigation, route }) => {
     }
   };
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -898,7 +902,7 @@ const BookScreen = ({ navigation, route }) => {
               await Promise.all([loadServices(), loadAddons(), loadPets()]);
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -934,7 +938,7 @@ const BookScreen = ({ navigation, route }) => {
                     <MaterialCommunityIcons
                       name={icon}
                       size={20}
-                      color="#f4f2ff"
+                      color={theme.colors.textPrimary}
                     />
                   </View>
                   <View>
@@ -960,7 +964,7 @@ const BookScreen = ({ navigation, route }) => {
                       <MaterialCommunityIcons
                         name={icon}
                         size={18}
-                        color="#f4f2ff"
+                        color={theme.colors.textPrimary}
                       />
                     </View>
                     <View style={styles.serviceCopy}>
@@ -1121,7 +1125,7 @@ const BookScreen = ({ navigation, route }) => {
                                   <Ionicons
                                     name="chevron-down"
                                     size={16}
-                                    color="#c9c5d8"
+                                    color={theme.colors.textSecondary}
                                   />
                                 </Pressable>
                                 {activeAgeDropdown === index ? (
@@ -1159,7 +1163,7 @@ const BookScreen = ({ navigation, route }) => {
                                   <Ionicons
                                     name="chevron-down"
                                     size={16}
-                                    color="#c9c5d8"
+                                    color={theme.colors.textSecondary}
                                   />
                                 </Pressable>
                                 {activeSizeDropdown === index ? (
@@ -1234,7 +1238,9 @@ const BookScreen = ({ navigation, route }) => {
                               name={option.icon}
                               size={18}
                               color={
-                                isActive ? "#f4f2ff" : "#c9c5d8"
+                                isActive
+                                  ? theme.colors.textPrimary
+                                  : theme.colors.textSecondary
                               }
                               style={styles.scheduleTypeIcon}
                             />
@@ -1419,7 +1425,7 @@ const BookScreen = ({ navigation, route }) => {
                           <Ionicons
                             name={showAddonDropdown ? "chevron-up" : "chevron-down"}
                             size={16}
-                            color="#c9c5d8"
+                            color={theme.colors.textSecondary}
                           />
                         </Pressable>
                         {showAddonDropdown ? (
@@ -1678,49 +1684,49 @@ const BookScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#0c081f",
-    padding: 20,
-    paddingBottom: 32,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
   header: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
     minHeight: 44,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     position: "absolute",
     left: 0,
   },
   backIcon: {
     fontSize: 18,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   title: {
-    color: "#f4f2ff",
-    fontSize: 20,
-    fontWeight: "700",
+    color: theme.colors.textPrimary,
+    ...theme.typography.headline,
   },
   subtitle: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   categorySection: {
     marginBottom: 8,
@@ -1729,16 +1735,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#120d23",
-    padding: 16,
-    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    shadowColor: "#000000",
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 2,
+    borderColor: theme.colors.border,
+    ...theme.shadow.soft,
     marginBottom: 8,
   },
   categoryLeft: {
@@ -1749,7 +1751,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -1757,26 +1759,22 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   categoryHint: {
     fontSize: 13,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     marginTop: 4,
   },
   serviceCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#120d23",
-    padding: 16,
-    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    shadowColor: "#000000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 2,
+    borderColor: theme.colors.border,
+    ...theme.shadow.soft,
     marginBottom: 8,
     marginLeft: 8,
   },
@@ -1788,7 +1786,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -1799,16 +1797,16 @@ const styles = StyleSheet.create({
   serviceTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   serviceDescription: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   chevron: {
     fontSize: 22,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
   modalBackdrop: {
     flex: 1,
@@ -1816,9 +1814,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: "#0c081f",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
     height: "92%",
   },
   modalBody: {
@@ -1828,69 +1826,68 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
+    ...theme.typography.headline,
+    color: theme.colors.textPrimary,
   },
   modalSubtitle: {
-    fontSize: 13,
-    color: "#c9c5d8",
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#e7def7",
+    borderColor: theme.colors.border,
   },
   closeButtonText: {
     fontSize: 16,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   formContent: {
-    padding: 20,
+    padding: theme.spacing.lg,
     paddingBottom: 180,
   },
   formSectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginTop: 8,
     marginBottom: 10,
   },
   label: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 6,
     fontWeight: "600",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 12,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
   },
   dropdown: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1899,14 +1896,14 @@ const styles = StyleSheet.create({
   },
   dropdownValue: {
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     flex: 1,
   },
   dropdownList: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 14,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     marginBottom: 12,
     overflow: "hidden",
   },
@@ -1914,7 +1911,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
   },
   dropdownItemRow: {
     flexDirection: "row",
@@ -1922,17 +1919,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dropdownItemText: {
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontSize: 13,
     fontWeight: "600",
   },
   dropdownItemMeta: {
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     fontSize: 12,
   },
   readOnlyInput: {
-    backgroundColor: "#1f1535",
-    color: "#c9c5d8",
+    backgroundColor: theme.colors.surfaceAccent,
+    color: theme.colors.textSecondary,
   },
   textArea: {
     minHeight: 90,
@@ -1953,20 +1950,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    backgroundColor: "#120d23",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   dateChipActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   dateChipText: {
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
     fontSize: 12,
   },
   dateChipTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   slotRow: {
     flexDirection: "row",
@@ -1979,27 +1976,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    backgroundColor: "#120d23",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   timeChipActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   timeChipDisabled: {
-    backgroundColor: "#1f1535",
-    borderColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.surfaceAccent,
   },
   timeChipText: {
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
     fontSize: 12,
   },
   timeChipTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   timeChipTextDisabled: {
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
   chipRow: {
     flexDirection: "row",
@@ -2012,57 +2009,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    backgroundColor: "#120d23",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   countChipActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   countChipText: {
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
   },
   countChipTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   petChip: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    backgroundColor: "#120d23",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   petChipActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   petChipText: {
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
     fontSize: 13,
   },
   petChipTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   addPetButton: {
     alignSelf: "flex-start",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 16,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceAccent,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     marginBottom: 16,
   },
   addPetButtonText: {
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
   },
   helperText: {
     fontSize: 12,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     marginBottom: 10,
   },
   scheduleTypeRow: {
@@ -2072,18 +2069,18 @@ const styles = StyleSheet.create({
   },
   scheduleTypeCard: {
     flex: 1,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
   },
   scheduleTypeCardActive: {
-    borderColor: "#7c45f3",
-    backgroundColor: "#1f1535",
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surfaceAccent,
   },
   scheduleTypeIcon: {
     marginBottom: 2,
@@ -2091,10 +2088,10 @@ const styles = StyleSheet.create({
   scheduleTypeLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   scheduleTypeLabelActive: {
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   weekdayRow: {
     flexDirection: "row",
@@ -2107,38 +2104,38 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
   },
   weekdayChipActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   weekdayChipText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   weekdayChipTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   datePickerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 16,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
   },
   datePickerValue: {
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
   },
   timeWindowRow: {
@@ -2152,41 +2149,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    backgroundColor: "#120d23",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   timeWindowChipActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   timeWindowText: {
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
   timeWindowTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   availabilityCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     padding: 12,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     marginBottom: 12,
   },
   dogCard: {
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     marginBottom: 12,
   },
   dogTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2b1a4b",
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   inlineInputs: {
@@ -2197,12 +2194,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   summaryBar: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: "#1f1535",
-    backgroundColor: "#0c081f",
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   summaryHeader: {
     flexDirection: "row",
@@ -2213,16 +2210,16 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   summaryTotal: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   summaryLine: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   summaryTotals: {
@@ -2236,17 +2233,17 @@ const styles = StyleSheet.create({
   },
   summaryNote: {
     fontSize: 12,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     marginBottom: 6,
   },
   summaryLabel: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   summaryValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   calendarBackdrop: {
     flex: 1,
@@ -2254,14 +2251,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(5, 4, 15, 0.7)",
   },
   calendarCard: {
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
     borderRadius: 28,
     padding: CALENDAR_CARD_PADDING,
     marginHorizontal: CALENDAR_CARD_HORIZONTAL_MARGIN,
     maxHeight: "88%",
     borderWidth: 1,
     borderColor: "rgba(124, 69, 243, 0.4)",
-    shadowColor: "#000000",
+    shadowColor: theme.shadow.soft.shadowColor,
     shadowOpacity: 0.35,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -2274,13 +2271,13 @@ const styles = StyleSheet.create({
   calendarHeaderTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 4,
     marginTop: 12,
   },
   calendarHeaderSubtitle: {
     fontSize: 12,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
   calendarMonthsScroll: {
     paddingBottom: 8,
@@ -2293,15 +2290,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     marginBottom: 12,
   },
   calendarMonthLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     textAlign: "center",
   },
   weekHeader: {
@@ -2312,7 +2309,7 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     width: 36,
     textAlign: "center",
-    color: "#9b8ab8",
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -2331,19 +2328,19 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   daySelected: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#bfa7ff",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accentSoft,
   },
   dayPressed: {
     opacity: 0.85,
   },
   dayText: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "700",
   },
   dayTextSelected: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   calendarActions: {
     flexDirection: "row",
@@ -2362,12 +2359,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   calendarCancelButton: {
-    backgroundColor: "#120d23",
-    borderColor: "#2a1d45",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.borderStrong,
   },
   calendarConfirmButton: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   calendarActionPressed: {
     opacity: 0.9,
@@ -2376,38 +2373,38 @@ const styles = StyleSheet.create({
   calendarCancelText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   calendarConfirmText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   errorText: {
-    color: "#ff6b6b",
+    color: theme.colors.danger,
     fontSize: 13,
     marginBottom: 12,
   },
   successCard: {
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
-    padding: 20,
+    padding: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
   successTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   successText: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     textAlign: "center",
     marginBottom: 16,
   },
-});
+  });
 
 export default BookScreen;

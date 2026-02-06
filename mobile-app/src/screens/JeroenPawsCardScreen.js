@@ -16,6 +16,7 @@ import * as Location from "expo-location";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { clearActiveCard } from "../utils/activeCards";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -111,6 +112,7 @@ const buildStaticMapUrl = (coords) => {
 };
 
 const JeroenPawsCardScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { session } = useSession();
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -645,6 +647,8 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
 
   const mapUrl = buildStaticMapUrl(location);
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -741,11 +745,11 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
                   return (
                     <View key={activity.key} style={styles.activityRow}>
                     <View style={styles.activityLabel}>
-                      <MaterialCommunityIcons
-                        name={activity.icon}
-                        size={18}
-                        color="#7c45f3"
-                      />
+                        <MaterialCommunityIcons
+                          name={activity.icon}
+                          size={18}
+                          color={theme.colors.accent}
+                        />
                       <Text style={styles.activityText}>
                         {activity.label}
                       </Text>
@@ -856,15 +860,16 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: "row",
@@ -875,15 +880,15 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
   },
   backIcon: {
     fontSize: 20,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   headerText: {
     flex: 1,
@@ -892,23 +897,24 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   headerSubtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   headerSpacer: {
     width: 42,
   },
   mapCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.soft,
   },
   mapImage: {
     height: 160,
@@ -918,106 +924,106 @@ const styles = StyleSheet.create({
   mapPlaceholder: {
     height: 160,
     borderRadius: 16,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
   },
   mapPlaceholderText: {
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontSize: 13,
     marginBottom: 8,
   },
   routeBadge: {
-    backgroundColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
   },
   routeBadgeText: {
-    color: "#ffffff",
+    color: theme.colors.white,
     fontWeight: "600",
     fontSize: 12,
   },
   addPhotoButton: {
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     paddingVertical: 12,
     alignItems: "center",
   },
   addPhotoText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   timerCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
   timerLabel: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   timerValue: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   timerMeta: {
     marginTop: 4,
     fontSize: 12,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
   noteCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   noteTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   noteInput: {
     minHeight: 72,
     fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#0c081f",
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   section: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 16,
   },
   petSection: {
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
     paddingBottom: 12,
   },
   petRow: {
@@ -1029,23 +1035,23 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
   petAvatarText: {
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petBreed: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   activityRow: {
@@ -1061,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   activityText: {
     fontSize: 15,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   counter: {
     flexDirection: "row",
@@ -1072,92 +1078,89 @@ const styles = StyleSheet.create({
     minWidth: 38,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: "#1f1535",
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surfaceAccent,
     alignItems: "center",
     justifyContent: "center",
   },
   readOnlyCountText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   counterButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
   },
   counterButtonPrimary: {
-    backgroundColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
   },
   counterButtonText: {
     fontSize: 18,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   counterValue: {
     fontSize: 15,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
     minWidth: 20,
     textAlign: "center",
   },
   finishButton: {
-    borderRadius: 999,
-    backgroundColor: "#7c45f3",
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.accent,
     paddingVertical: 14,
     alignItems: "center",
-    shadowColor: "#000000",
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
+    ...theme.shadow.soft,
   },
   finishButtonText: {
-    color: "#ffffff",
+    color: theme.colors.white,
     fontWeight: "700",
     fontSize: 16,
   },
   finishBadge: {
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
   },
   finishBadgeText: {
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
   },
   photoCountText: {
     marginTop: 12,
     textAlign: "center",
     fontSize: 12,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
   resetButton: {
     marginTop: 10,
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: "#4a1f3d",
+    borderColor: theme.colors.borderStrong,
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceAccent,
     marginBottom: 12,
   },
   resetButtonText: {
-    color: "#ff8f8f",
+    color: theme.colors.danger,
     fontWeight: "700",
   },
   photoGallery: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    padding: 16,
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   photoGrid: {
     flexDirection: "row",
@@ -1168,14 +1171,14 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 16,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
   },
   errorText: {
     textAlign: "center",
-    color: "#ff6b6b",
+    color: theme.colors.danger,
     marginBottom: 10,
     fontSize: 13,
   },
-});
+  });
 
 export default JeroenPawsCardScreen;

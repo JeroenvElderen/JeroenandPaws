@@ -10,8 +10,10 @@ import {
 import PrimaryButton from "../components/PrimaryButton";
 import { supabase } from "../api/supabaseClient";
 import { buildSessionPayload, resolveClientProfile } from "../utils/session";
+import { useTheme } from "../context/ThemeContext";
 
 const AuthScreen = ({ onAuthenticate }) => {
+  const { theme } = useTheme();
   const [mode, setMode] = useState("login");
   const isRegistering = mode === "register";
   const [email, setEmail] = useState("");
@@ -171,6 +173,8 @@ const AuthScreen = ({ onAuthenticate }) => {
     }
   };
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -284,91 +288,93 @@ const AuthScreen = ({ onAuthenticate }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#0c081f",
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#c9c5d8",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  form: {
-    width: "100%",
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 20,
-  },
-  modeToggle: {
-    flexDirection: "row",
-    backgroundColor: "#120d23",
-    padding: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 999,
-    alignItems: "center",
-  },
-  modeButtonActive: {
-    backgroundColor: "#7c45f3",
-  },
-  modeButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#c9c5d8",
-  },
-  modeButtonTextActive: {
-    color: "#ffffff",
-  },
-  label: {
-    fontSize: 13,
-    color: "#c9c5d8",
-    marginBottom: 6,
-    fontWeight: "600",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#7c45f3",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: "#f4f2ff",
-    marginBottom: 12,
-    backgroundColor: "#0c081f",
-  },
-  buttonStack: {
-    width: "100%",
-  },
-  errorText: {
-    color: "#b42318",
-    fontSize: 13,
-    marginTop: 4,
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: theme.spacing.xl,
+      backgroundColor: theme.colors.background,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      textAlign: "center",
+      marginBottom: 10,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+      marginBottom: theme.spacing.xl,
+    },
+    form: {
+      width: "100%",
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.lg,
+      ...theme.shadow.soft,
+    },
+    modeToggle: {
+      flexDirection: "row",
+      backgroundColor: theme.colors.surface,
+      padding: theme.spacing.xs,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.md,
+    },
+    modeButton: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: theme.radius.pill,
+      alignItems: "center",
+    },
+    modeButtonActive: {
+      backgroundColor: theme.colors.accent,
+    },
+    modeButtonText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: theme.colors.textSecondary,
+    },
+    modeButtonTextActive: {
+      color: theme.colors.white,
+    },
+    label: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginBottom: 6,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 15,
+      color: theme.colors.textPrimary,
+      marginBottom: 12,
+      backgroundColor: theme.colors.surface,
+    },
+    buttonStack: {
+      width: "100%",
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 13,
+      marginTop: 4,
+    },
+  });
 
 export default AuthScreen;

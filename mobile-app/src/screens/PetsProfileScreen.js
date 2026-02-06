@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Pressable,
@@ -15,6 +15,7 @@ import { fetchJson } from "../api/client";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const getInitials = (name) => {
   if (!name) return "JP";
@@ -32,6 +33,7 @@ const safeValue = (value) =>
   value === null || value === undefined || value === "" ? "—" : value;
 
 const PetsProfileScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { session } = useSession();
   const [pets, setPets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -489,6 +491,8 @@ const PetsProfileScreen = ({ navigation, route }) => {
     );
   }
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -501,7 +505,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
               await loadPets();
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -557,16 +561,17 @@ const PetsProfileScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    backgroundColor: "#0c081f",
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
   },
   detailHeader: {
     flexDirection: "row",
@@ -578,25 +583,25 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
   },
   headerIcon: {
     fontSize: 18,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   headerActionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   header: {
     alignItems: "center",
@@ -616,7 +621,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 220,
     borderRadius: 18,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -624,24 +629,24 @@ const styles = StyleSheet.create({
   petHeroPlaceholderText: {
     fontSize: 40,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   photoAction: {
     marginBottom: 12,
   },
   photoActionText: {
     fontSize: 13,
-    color: "#bfa7ff",
+    color: theme.colors.accentSoft,
     fontWeight: "600",
   },
   petDetailName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petDetailMeta: {
     fontSize: 16,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 6,
   },
   tabRow: {
@@ -654,62 +659,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
   },
   tabPillActive: {
-    backgroundColor: "#2b1a4b",
-    borderColor: "#2b1a4b",
+    backgroundColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.surfaceAccent,
   },
   tabText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   tabTextActive: {
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
   },
   emptyText: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginTop: 12,
     marginBottom: 8,
   },
   sectionCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
     marginBottom: 16,
   },
   detailRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
   },
   detailRowLast: {
     borderBottomWidth: 0,
@@ -719,59 +724,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 15,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   selectInput: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   selectValue: {
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   selectChevron: {
     fontSize: 12,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   selectOptions: {
     marginTop: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#7c45f3",
-    backgroundColor: "#120d23",
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surface,
     overflow: "hidden",
   },
   selectOption: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
   },
   selectOptionText: {
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#120d23",
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
   },
   textArea: {
     minHeight: 80,
@@ -779,18 +784,18 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   galleryTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 4,
   },
   gallerySubtitle: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   photoGrid: {
@@ -802,7 +807,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 14,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
   },
   addPhotoTile: {
     width: 120,
@@ -810,47 +815,47 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     alignItems: "center",
     justifyContent: "center",
   },
   addPhotoIcon: {
     fontSize: 28,
-    color: "#bfa7ff",
+    color: theme.colors.accentSoft,
     marginBottom: 4,
   },
   addPhotoLabel: {
     fontSize: 12,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   editProfileButton: {
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     marginBottom: 12,
   },
   editProfileText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   errorText: {
-    color: "#ff6b6b",
+    color: theme.colors.danger,
     marginBottom: 12,
     textAlign: "center",
   },
   petCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
   },
   petCardPressed: {
     opacity: 0.85,
@@ -859,7 +864,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -872,7 +877,7 @@ const styles = StyleSheet.create({
   petAvatarText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petInfo: {
     flex: 1,
@@ -880,17 +885,17 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petMeta: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   petChevron: {
     fontSize: 22,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
-});
+  });
 
 export default PetsProfileScreen;

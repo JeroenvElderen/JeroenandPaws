@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Platform, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -29,7 +29,8 @@ import {
   AVAILABILITY_TIMEOUT_MS,
   prefetchAvailability,
 } from "./src/api/availabilityCache";
-import { TAB_BAR_STYLE } from "./src/utils/tabBar";
+import { getTabBarStyle } from "./src/utils/tabBar";
+import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -96,13 +97,15 @@ const registerForPushNotifications = async () => {
   return tokenResponse.data || null;
 };
 
-const ProfileStackScreen = () => (
-  <ProfileStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      contentStyle: { backgroundColor: "#0c081f" },
-    }}
-  >
+const ProfileStackScreen = () => {
+  const { theme } = useTheme();
+  return (
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}
+    >
     <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
     <ProfileStack.Screen
       name="ProfileOverview"
@@ -119,29 +122,34 @@ const ProfileStackScreen = () => (
       component={PaymentMethodsScreen}
     />
     <ProfileStack.Screen name="HelpSupport" component={HelpSupportScreen} />
-  </ProfileStack.Navigator>
-);
+    </ProfileStack.Navigator>
+  );
+};
 
-const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: TAB_BAR_STYLE,
-      tabBarActiveTintColor: "#7c45f3",
-      tabBarInactiveTintColor: "#8b7ca8",
-      tabBarIconStyle: {
-        marginTop: 0,
-      },
-      tabBarLabelStyle: {
-        marginBottom: 0,
-      },
-      tabBarItemStyle: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-      },
-    }}
-  >
+const MainTabs = () => {
+  const { theme } = useTheme();
+  const tabBarStyle = useMemo(() => getTabBarStyle(theme), [theme]);
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle,
+        tabBarActiveTintColor: theme.colors.accent,
+        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarIconStyle: {
+          marginTop: 0,
+        },
+        tabBarLabelStyle: {
+          marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+      }}
+    >
     <Tab.Screen
       name="Home"
       component={HomeScreen}
@@ -178,7 +186,7 @@ const MainTabs = () => (
       name="Messages"
       component={MessagesScreen}
       options={{
-        tabBarStyle: { ...TAB_BAR_STYLE, display: "none" },
+        tabBarStyle: { ...tabBarStyle, display: "none" },
         tabBarIcon: ({ color }) => (
           <Ionicons name={tabIcons.Messages} size={20} color={color} />
         ),
@@ -197,13 +205,15 @@ const MainTabs = () => (
         tabBarLabel: ({ color }) => <TabLabel label="More" color={color} />,
       }}
     />
-  </Tab.Navigator>
-);
+    </Tab.Navigator>
+  );
+};
 
 const AppShell = () => {
   const { session, setSession, clientProfiles, setClientProfiles } =
     useSession();
   const [authReady, setAuthReady] = useState(false);
+  const { mode } = useTheme();
 
   useEffect(() => {
     let isMounted = true;
@@ -538,7 +548,7 @@ const AppShell = () => {
   if (!session?.email) {
     return (
       <NavigationContainer>
-        <StatusBar style="light" />
+        <StatusBar style={mode === "dark" ? "light" : "dark"} />
         <AuthScreen onAuthenticate={setSession} />
       </NavigationContainer>
     );
@@ -546,7 +556,7 @@ const AppShell = () => {
 
   return (
     <NavigationContainer>
-      <StatusBar style="light" />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="MainTabs" component={MainTabs} />
         <RootStack.Screen
@@ -559,9 +569,11 @@ const AppShell = () => {
 };
 
 const App = () => (
-  <SessionProvider>
-    <AppShell />
-  </SessionProvider>
+  <ThemeProvider>
+    <SessionProvider>
+      <AppShell />
+    </SessionProvider>
+  </ThemeProvider>
 );
 
 export default App;

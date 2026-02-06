@@ -13,6 +13,7 @@ import {
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -25,6 +26,7 @@ const getInitials = (name) => {
 };
 
 const ClientProfilesScreen = ({ navigation }) => {
+  const { theme } = useTheme();
   const { session, clientProfiles, setClientProfiles } = useSession();
   const [clients, setClients] = useState(clientProfiles);
   const [searchValue, setSearchValue] = useState("");
@@ -106,6 +108,8 @@ const ClientProfilesScreen = ({ navigation }) => {
     });
   }, [clients, searchValue]);
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -125,7 +129,7 @@ const ClientProfilesScreen = ({ navigation }) => {
         </View>
         {status === "loading" ? (
           <View style={styles.loadingState}>
-            <ActivityIndicator size="small" color="#7c45f3" />
+            <ActivityIndicator size="small" color={theme.colors.accent} />
             <Text style={styles.loadingText}>Loading client list…</Text>
           </View>
         ) : null}
@@ -178,40 +182,42 @@ const ClientProfilesScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
   },
   searchCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.soft,
   },
   searchLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#0c081f",
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
   },
   loadingState: {
     flexDirection: "row",
@@ -220,30 +226,31 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 10,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontSize: 13,
   },
   emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
   },
   emptyText: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   clientCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.soft,
   },
   cardPressed: {
     opacity: 0.92,
@@ -253,7 +260,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   clientCopy: {
     flex: 1,
@@ -274,17 +281,17 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   clientMeta: {
     fontSize: 12,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 3,
   },
   clientChevron: {
     fontSize: 22,
-    color: "#7c45f3",
+    color: theme.colors.accent,
   },
-});
+  });
 
 export default ClientProfilesScreen;

@@ -21,6 +21,7 @@ import {
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { loadActiveCards, saveActiveCards } from "../utils/activeCards";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
@@ -120,6 +121,7 @@ const resolveBookingPets = (booking) => {
 };
 
 const HomeScreen = ({ navigation }) => {
+  const { theme } = useTheme();
   const { session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -477,6 +479,8 @@ const HomeScreen = ({ navigation }) => {
     }, [loadUnreadMessages])
   );
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -493,7 +497,7 @@ const HomeScreen = ({ navigation }) => {
               ]);
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -516,7 +520,11 @@ const HomeScreen = ({ navigation }) => {
             <Pressable onPress={() => navigation.navigate("Messages")}>
               <View style={styles.iconBadgeWrapper}>
                 <View style={styles.iconBadge}>
-                  <Ionicons name="chatbubble-ellipses" size={18} color="#f4f2ff" />
+                  <Ionicons
+                    name="chatbubble-ellipses"
+                    size={18}
+                    color={theme.colors.textPrimary}
+                  />
                 </View>
                 {unreadBadgeCount > 0 ? (
                   <View style={styles.unreadBadge}>
@@ -535,7 +543,7 @@ const HomeScreen = ({ navigation }) => {
         </Text>
 
         <View style={styles.noticeCard}>
-          <Ionicons name="calendar" size={18} color="#f4f2ff" />
+          <Ionicons name="calendar" size={18} color={theme.colors.textPrimary} />
           <Text style={styles.noticeText}>
             {upcomingBookings.length
               ? `${upcomingBookings.length} upcoming booking${
@@ -716,75 +724,73 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0c081f",
-  },
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: "#120d23",
-    borderWidth: 1,
-    borderColor: "#1f1535",
-  },
+const createStyles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1,
+      padding: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: theme.spacing.md,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...theme.shadow.soft,
+    },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    letterSpacing: 0.3,
+    ...theme.typography.title,
+    color: theme.colors.textPrimary,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#c9c5d8",
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
     marginTop: 2,
     lineHeight: 22,
-    letterSpacing: 0.2,
   },
   dateStamp: {
-    fontSize: 13,
-    color: "#8b7ca8",
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
     marginTop: 4,
-    letterSpacing: 0.2,
   },
   avatar: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
   },
   avatarText: {
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   iconBadge: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
   },
   iconBadgeWrapper: {
     position: "relative",
@@ -799,43 +805,38 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 4,
-    backgroundColor: "#d33a3a",
+    backgroundColor: theme.colors.danger,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#0c081f",
+    borderColor: theme.colors.background,
   },
   unreadBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#ffffff",
+    color: theme.colors.white,
   },
   updateText: {
-    fontSize: 14,
-    color: "#8b7ca8",
-    marginBottom: 14,
-    letterSpacing: 0.2,
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.md,
     lineHeight: 20,
   },
   noticeCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#120d23",
-    padding: 16,
-    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    shadowColor: "#000000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 3,
-    marginBottom: 14,
+    borderColor: theme.colors.border,
+    ...theme.shadow.soft,
+    marginBottom: theme.spacing.md,
     gap: 10,
   },
   noticeText: {
     fontSize: 14,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "700",
     letterSpacing: 0.2,
   },
@@ -844,15 +845,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quickCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 20,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    ...theme.shadow.soft,
   },
   cardPressed: {
     transform: [{ scale: 0.99 }],
@@ -860,54 +862,50 @@ const styles = StyleSheet.create({
   },
   quickLabel: {
     fontSize: 15,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
   },
   quickSubtext: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   chevron: {
     fontSize: 24,
-    color: "#8b6ca8",
+    color: theme.colors.accentSoft,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 12,
+    ...theme.typography.headline,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
   },
   emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
+    borderColor: theme.colors.border,
   },
   emptyText: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   card: {
-    backgroundColor: "#120d23",
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: theme.colors.surfaceElevated,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 16,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.soft,
   },
   cardJeroen: {
-    borderColor: "#2f2149",
+    borderColor: theme.colors.borderStrong,
   },
   cardJeroenActive: {
     borderWidth: 2,
-    borderColor: "#7c45f3",
-    shadowColor: "#000000",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 14,
-    elevation: 4,
+    borderColor: theme.colors.accent,
+    ...theme.shadow.glow,
   },
   cardRow: {
     flexDirection: "row",
@@ -917,67 +915,67 @@ const styles = StyleSheet.create({
   },
   cardTime: {
     fontSize: 16,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "700",
   },
   cardTitle: {
     fontSize: 15,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 4,
     fontWeight: "600",
   },
   cardMeta: {
     fontSize: 14,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
     marginTop: 4,
   },
   statusBadge: {
-    backgroundColor: "#1f1535",
-    borderRadius: 999,
+    backgroundColor: theme.colors.surfaceAccent,
+    borderRadius: theme.radius.pill,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   statusBadgeText: {
-    color: "#bfa7ff",
+    color: theme.colors.accentSoft,
     fontWeight: "600",
     fontSize: 12,
   },
   cardFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#1f1535",
+    borderTopColor: theme.colors.border,
     paddingTop: 12,
     marginTop: 4,
   },
   cardTimerText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#7c45f3",
+    color: theme.colors.accent,
     marginBottom: 10,
   },
   cardButton: {
-    borderRadius: 999,
+    borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#120d23",
+    backgroundColor: theme.colors.surface,
     marginBottom: 12,
   },
   cardButtonActive: {
-    backgroundColor: "#7c45f3",
-    borderColor: "#7c45f3",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   cardButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     textAlign: "center",
   },
-  cardButtonTextActive: {
-    color: "#ffffff",
-  },
-});
+    cardButtonTextActive: {
+      color: theme.colors.white,
+    },
+  });
 
 export default HomeScreen;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Linking,
   Pressable,
@@ -11,10 +11,12 @@ import {
 } from "react-native";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const REVOLUT_PORTAL_URL = "https://revolut.me/jeroenandpaws";
 
 const PaymentMethodsScreen = () => {
+  const { theme } = useTheme();
   const { session, setSession } = useSession();
   const [billingName, setBillingName] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
@@ -66,6 +68,8 @@ const PaymentMethodsScreen = () => {
       setStatus("error");
     }
   };
+
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -122,79 +126,81 @@ const PaymentMethodsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 16,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
     textAlign: "center",
   },
   card: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.soft,
   },
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   value: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   button: {
     alignSelf: "flex-start",
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
   },
   buttonText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   inputLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#7c45f3",
+    borderColor: theme.colors.accent,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#f4f2ff",
-    backgroundColor: "#120d23",
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
     marginBottom: 12,
   },
   errorText: {
     fontSize: 12,
-    color: "#ff6b6b",
+    color: theme.colors.danger,
     marginTop: 6,
   },
-});
+  });
 
 export default PaymentMethodsScreen;

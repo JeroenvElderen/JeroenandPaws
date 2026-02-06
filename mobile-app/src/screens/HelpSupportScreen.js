@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Linking,
   Pressable,
@@ -8,12 +9,16 @@ import {
   View,
 } from "react-native";
 import ScreenHeader from "../components/ScreenHeader";
+import { useTheme } from "../context/ThemeContext";
 
 const SUPPORT_EMAIL = "jeroen@jeroenandpaws.com";
 const SUPPORT_PHONE = "+353872473099";
 const SUPPORT_WHATSAPP = "https://wa.me/353872473099";
 
 const HelpSupportScreen = ({ navigation }) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const handleEmailPress = async () => {
     const outlookUrl = `ms-outlook://compose?to=${SUPPORT_EMAIL}`;
     const mailUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
@@ -73,35 +78,37 @@ const HelpSupportScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 32,
-    backgroundColor: "#0c081f",
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
   },
   card: {
-    backgroundColor: "#120d23",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.soft,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   cardDescription: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 6,
   },
-});
+  });
 
 export default HelpSupportScreen;

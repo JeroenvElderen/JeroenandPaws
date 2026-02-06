@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -15,6 +15,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
+import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
@@ -34,6 +35,7 @@ const getInitials = (name) => {
 };
 
 const ProfileOverviewScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const { session, setSession } = useSession();
   const [clientProfile, setClientProfile] = useState(null);
   const [pets, setPets] = useState([]);
@@ -215,6 +217,8 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
     loadProfile();
   }, [loadProfile]);
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -227,7 +231,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
               await loadProfile();
               setRefreshing(false);
             }}
-            tintColor="#5d2fc5"
+            tintColor={theme.colors.accent}
           />
         }
       >
@@ -259,7 +263,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
               disabled={photoStatus === "uploading"}
             >
               {photoStatus === "uploading" ? (
-                <ActivityIndicator size="small" color="#5d2fc5" />
+                <ActivityIndicator size="small" color={theme.colors.accent} />
               ) : (
                 <Text style={styles.photoButtonText}>
                   {profilePhotoUrl ? "Change photo" : "Upload photo"}
@@ -275,7 +279,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
             <MaterialCommunityIcons
               name="map-marker"
               size={18}
-              color="#c9c5d8"
+              color={theme.colors.textSecondary}
             />
             <Text style={styles.locationText}>{location}</Text>
           </View>
@@ -295,7 +299,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                 name={item.icon}
                 size={18}
                 marginRight={8}
-                color="#c9c5d8"
+                color={theme.colors.textSecondary}
               />
               <View style={styles.detailInfo}>
                 <Text style={styles.detailLabel}>{item.label}</Text>
@@ -319,7 +323,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                 name={item.icon}
                 size={18}
                 marginRight={8}
-                color="#c9c5d8"
+                color={theme.colors.textSecondary}
               />
               <View style={styles.detailInfo}>
                 <Text style={styles.detailLabel}>{item.label}</Text>
@@ -378,16 +382,17 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c081f",
+    backgroundColor: theme.colors.background,
   },
   container: {
     flexGrow: 1,
-    backgroundColor: "#0c081f",
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
   profileCard: {
     alignItems: "center",
@@ -397,7 +402,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -410,15 +415,15 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 30,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   photoButton: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: "#2a1d45",
+    borderColor: theme.colors.borderStrong,
     marginBottom: 10,
   },
   photoButtonPressed: {
@@ -427,17 +432,17 @@ const styles = StyleSheet.create({
   photoButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   photoError: {
     fontSize: 12,
-    color: "#ff6b6b",
+    color: theme.colors.danger,
     marginBottom: 8,
   },
   profileName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   locationRow: {
@@ -447,21 +452,22 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#f4f2ff",
-    marginBottom: 12,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
   },
   sectionCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 24,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.lg,
     overflow: "hidden",
+    ...theme.shadow.soft,
   },
   detailRow: {
     flexDirection: "row",
@@ -469,7 +475,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1535",
+    borderBottomColor: theme.colors.border,
   },
   detailRowLast: {
     borderBottomWidth: 0,
@@ -479,36 +485,36 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
   },
   detailValue: {
     fontSize: 15,
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
     fontWeight: "600",
     marginTop: 4,
   },
   emptyCard: {
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 24,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.lg,
   },
   emptyText: {
     fontSize: 14,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
   },
   petCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#120d23",
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: "#1f1535",
-    marginBottom: 12,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.md,
   },
   petCardPressed: {
     opacity: 0.85,
@@ -517,7 +523,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#1f1535",
+    backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -530,7 +536,7 @@ const styles = StyleSheet.create({
   petAvatarText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petInfo: {
     flex: 1,
@@ -538,17 +544,17 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f4f2ff",
+    color: theme.colors.textPrimary,
   },
   petMeta: {
     fontSize: 13,
-    color: "#c9c5d8",
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   petChevron: {
     fontSize: 22,
-    color: "#8b7ca8",
+    color: theme.colors.textMuted,
   },
-});
+  });
 
 export default ProfileOverviewScreen;
