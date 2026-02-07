@@ -92,12 +92,11 @@ const PetsProfileScreen = ({ navigation, route }) => {
       setDraftPet({
         name: "",
         breed: "",
-        birthdate: "",
+        birthdate: null,
         age_years: "",
         weight_kg: "",
         color: "",
         microchip_id: "",
-        adoption_date: "",
         notes: "",
         gender: "",
         socialization_dogs: "",
@@ -152,7 +151,6 @@ const PetsProfileScreen = ({ navigation, route }) => {
       { key: "name", label: "Name" },
       { key: "age_years", label: "Age" },
       { key: "weight_kg", label: "Weight (kg)" },
-      { key: "adoption_date", label: "Adoption date" },
     ].filter((field) => isFieldEmpty(draftPet?.[field.key]));
 
     if (missingFields.length) {
@@ -168,8 +166,13 @@ const PetsProfileScreen = ({ navigation, route }) => {
     try {
       const timestamp = new Date().toISOString();
       const { id, ...payload } = draftPet;
-      const basePayload = {
+      const normalizeDate = (value) => (value === "" ? null : value);
+      const normalizedPayload = {
         ...payload,
+        birthdate: normalizeDate(payload?.birthdate),
+      };
+      const basePayload = {
+        ...normalizedPayload,
         updated_at: timestamp,
       };
       const { data, error } = draftPet?.id
@@ -449,9 +452,6 @@ const PetsProfileScreen = ({ navigation, route }) => {
               {renderField("Color", "color")}
                {renderField("Gender", "gender")}
               {renderField("Microchip ID", "microchip_id")}
-              {renderField("Adoption date *", "adoption_date", {
-                placeholder: "YYYY-MM-DD",
-              })}
               {renderField("About your pet", "notes", {
                 multiline: true,
               })}
