@@ -549,17 +549,19 @@ const MessagesScreen = ({ navigation }) => {
     return (
       <Pressable
         style={({ pressed }) => [
-          styles.inboxRow,
+          styles.inboxCard,
           pressed && styles.cardPressed,
         ]}
         onPress={() => handleSelectClient(item.client_id)}
       >
-        <View style={styles.avatarCircle}>
-          <Ionicons
-            name="person"
-            size={20}
-            color={theme.colors.textSecondary}
-          />
+        <View style={styles.avatarGlow}>
+          <View style={styles.avatarCircle}>
+            <Ionicons
+              name="person"
+              size={18}
+              color={theme.colors.textSecondary}
+            />
+          </View>
         </View>
         <View style={styles.inboxBody}>
           <View style={styles.inboxTopRow}>
@@ -570,9 +572,9 @@ const MessagesScreen = ({ navigation }) => {
             <Text style={styles.inboxPreview} numberOfLines={1}>
               {preview}
             </Text>
-          {item.unread ? (
+            {item.unread ? (
               <View style={styles.unreadBadge}>
-                <Text style={styles.unreadBadgeText}>●</Text>
+                <Text style={styles.unreadBadgeText}>NEW</Text>
               </View>
             ) : null}
           </View>
@@ -599,7 +601,9 @@ const MessagesScreen = ({ navigation }) => {
       : null;
     const timeLabel = createdAt ? formatMessageTime(createdAt) : "";
     const readColor = message.read_at
-      ? theme.colors.accent
+      ? isOwnMessage
+        ? theme.colors.white
+        : theme.colors.accent
       : theme.colors.textMuted;
 
     return (
@@ -642,10 +646,24 @@ const MessagesScreen = ({ navigation }) => {
               </Text>
             </Pressable>
           ) : (
-            <Text style={styles.messageText}>{parsed.text}</Text>
+            <Text
+              style={[
+                styles.messageText,
+                isOwnMessage && styles.messageTextOwn,
+              ]}
+            >
+              {parsed.text}
+            </Text>
           )}
           <View style={styles.messageMeta}>
-            <Text style={styles.messageTime}>{timeLabel}</Text>
+            <Text
+              style={[
+                styles.messageTime,
+                isOwnMessage && styles.messageTimeOwn,
+              ]}
+            >
+              {timeLabel}
+            </Text>
             {isOwnMessage ? (
               <View style={styles.readStatusStack}>
                 <Text style={[styles.readStatus, { color: readColor }]}>
@@ -694,9 +712,12 @@ const MessagesScreen = ({ navigation }) => {
           <Text style={styles.chatTitle}>
             {activeClient?.full_name || "Chat"}
           </Text>
-          <Text style={styles.chatSubtitle}>
-            {activeClient?.email || "Online"}
-          </Text>
+          <View style={styles.statusRow}>
+            <View style={styles.statusDot} />
+            <Text style={styles.chatSubtitle}>
+              {activeClient?.email || "Active now"}
+            </Text>
+          </View>
         </View>
         {isOwner && activeClientId ? (
           <Pressable
@@ -730,7 +751,9 @@ const MessagesScreen = ({ navigation }) => {
         >
           <Text style={styles.backButtonIcon}>←</Text>
         </Pressable>
-        <Text style={styles.inboxHeaderTitle}>Chats</Text>
+        <View style={styles.inboxHeaderText}>
+          <Text style={styles.inboxHeaderTitle}>Messages</Text>
+        </View>
         <View style={styles.headerSpacer} />
       </View>
     );
@@ -779,6 +802,7 @@ const MessagesScreen = ({ navigation }) => {
             value={inputValue}
             onChangeText={setInputValue}
             multiline
+            placeholderTextColor={theme.colors.textMuted}
           />
           <Pressable
             style={({ pressed }) => [
@@ -820,6 +844,13 @@ const MessagesScreen = ({ navigation }) => {
               </View>
             ) : inboxItems.length === 0 ? (
               <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons
+                    name="chatbubbles"
+                    size={24}
+                    color={theme.colors.accent}
+                  />
+                </View>
                 <Text style={styles.emptyText}>No conversations yet.</Text>
               </View>
             ) : (
@@ -863,16 +894,24 @@ const createStyles = (theme) =>
       backgroundColor: theme.colors.background,
     },
     inboxList: {
+      paddingHorizontal: theme.spacing.md,
       paddingBottom: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
     },
-    inboxRow: {
+    inboxCard: {
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.lg,
       backgroundColor: theme.colors.surface,
+      marginBottom: theme.spacing.sm,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     cardPressed: {
       opacity: 0.7,
@@ -888,14 +927,27 @@ const createStyles = (theme) =>
       flex: 1,
       marginRight: theme.spacing.sm,
     },
-    avatarCircle: {
-      width: 46,
-      height: 46,
-      borderRadius: 23,
+    avatarGlow: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: theme.colors.surfaceAccent,
       marginRight: theme.spacing.md,
+      shadowColor: theme.colors.accent,
+      shadowOpacity: 0.22,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
+    },
+    avatarCircle: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surface,
     },
     inboxBody: {
       flex: 1,
@@ -924,25 +976,50 @@ const createStyles = (theme) =>
       backgroundColor: theme.colors.accent,
     },
     unreadBadge: {
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
+      minWidth: 36,
+      height: 22,
+      borderRadius: 11,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.success,
-      paddingHorizontal: 4,
+      backgroundColor: theme.colors.accent,
+      paddingHorizontal: theme.spacing.xs,
     },
     unreadBadgeText: {
       fontSize: 10,
+      fontWeight: "700",
       color: theme.colors.white,
+      letterSpacing: 0.5,
     },
     emptyState: {
       alignItems: "center",
       justifyContent: "center",
       paddingVertical: theme.spacing.xxl,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    emptyIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: theme.spacing.md,
+      shadowColor: theme.colors.accent,
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
     emptyText: {
       color: theme.colors.textSecondary,
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      marginBottom: theme.spacing.xs,
+    },
+    emptySubtext: {
+      color: theme.colors.textMuted,
+      fontSize: theme.typography.caption.fontSize,
+      textAlign: "center",
     },
     chatContainer: {
       flex: 1,
@@ -952,10 +1029,15 @@ const createStyles = (theme) =>
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2,
     },
     inboxHeader: {
       flexDirection: "row",
@@ -965,6 +1047,11 @@ const createStyles = (theme) =>
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2,
     },
     backButton: {
       width: 38,
@@ -1007,21 +1094,39 @@ const createStyles = (theme) =>
       borderColor: theme.colors.borderStrong,
     },
     chatTitle: {
-      fontSize: theme.typography.body.fontSize,
+      fontSize: theme.typography.headline.fontSize,
       fontWeight: "700",
       color: theme.colors.textPrimary,
     },
     chatSubtitle: {
-      flex: 1,
-      fontSize: theme.typography.headline.fontSize,
+      fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textSecondary,
-      marginTop: 2,
+      marginLeft: theme.spacing.xs,
+    },
+    statusRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 4,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.success,
     },
     inboxHeaderTitle: {
-      fontSize: theme.typography.body.fontSize,
+      fontSize: theme.typography.headline.fontSize,
       fontWeight: "700",
       color: theme.colors.textPrimary,
-    textAlign: "center",
+    },
+    inboxHeaderText: {
+      flex: 1,
+      alignItems: "center",
+    },
+    inboxHeaderSubtitle: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      marginTop: 2,
     },
     messageList: {
       paddingHorizontal: theme.spacing.md,
@@ -1042,26 +1147,31 @@ const createStyles = (theme) =>
       maxWidth: "78%",
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
-      borderRadius: theme.radius.md,
+      borderRadius: theme.radius.lg,
       shadowColor: theme.shadow.soft.shadowColor,
-      shadowOpacity: theme.shadow.soft.shadowOpacity,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 2,
+      shadowOpacity: 0.16,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 3,
     },
     messageBubbleOwn: {
-      ackgroundColor: "#DCF8C6",
-      borderTopRightRadius: 6,
+      backgroundColor: theme.colors.accent,
+      borderTopRightRadius: 10,
+      borderBottomRightRadius: 4,
     },
     messageBubbleOther: {
       backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 6,
+      borderTopLeftRadius: 10,
+      borderBottomLeftRadius: 4,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
     messageText: {
       fontSize: theme.typography.body.fontSize,
       color: theme.colors.textPrimary,
+    },
+    messageTextOwn: {
+      color: theme.colors.white,
     },
     messageMeta: {
       flexDirection: "row",
@@ -1073,6 +1183,9 @@ const createStyles = (theme) =>
     messageTime: {
       fontSize: 11,
       color: theme.colors.textMuted,
+    },
+    messageTimeOwn: {
+      color: theme.colors.white,
     },
     readStatus: {
       fontSize: 12,
@@ -1102,9 +1215,9 @@ const createStyles = (theme) =>
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
-      paddingHorizontal: theme.spacing.sm,
-      paddingTop: theme.spacing.xs,
-      paddingBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.lg,
     },
     inputRow: {
       flexDirection: "row",
@@ -1122,22 +1235,27 @@ const createStyles = (theme) =>
     input: {
       flex: 1,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: theme.radius.pill,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: theme.radius.lg,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
       fontSize: theme.typography.body.fontSize,
       maxHeight: 90,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       color: theme.colors.textPrimary,
     },
     sendButton: {
-      backgroundColor: theme.colors.success,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      backgroundColor: theme.colors.accent,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       alignItems: "center",
       justifyContent: "center",
+      shadowColor: theme.colors.accent,
+      shadowOpacity: 0.3,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
     sendButtonDisabled: {
       opacity: 0.5,
