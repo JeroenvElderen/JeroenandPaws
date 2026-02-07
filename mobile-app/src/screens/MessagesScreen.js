@@ -81,19 +81,26 @@ const MessagesScreen = ({ navigation }) => {
   const [sending, setSending] = useState(false);
   const [imagePickerError, setImagePickerError] = useState("");
   const listRef = useRef(null);
-  const isOwner =
-    session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner = useMemo(() => {
+    const normalizedEmail = session?.email?.toLowerCase();
+    const ownerEmail = OWNER_EMAIL.toLowerCase();
+    if (normalizedEmail && normalizedEmail === ownerEmail) {
+      return true;
+    }
+    const sessionId = session?.id || session?.client?.id || session?.user?.id;
+    return Boolean(sessionId && sessionId === OWNER_CLIENT_ID);
+  }, [session?.client?.id, session?.email, session?.id, session?.user?.id]);
 
   const selfClientId = useMemo(() => {
     if (isOwner) {
       return OWNER_CLIENT_ID;
     }
-    const clientId = session?.client?.id || session?.id || null;
-    if (clientId === OWNER_CLIENT_ID) {
+    const clientId = session?.client?.id || null;
+    if (!clientId || clientId === OWNER_CLIENT_ID) {
       return null;
     }
     return clientId;
-  }, [isOwner, session?.client?.id, session?.id]);
+  }, [isOwner, session?.client?.id]);
 
   useEffect(() => {
     if (!isOwner && selfClientId) {
@@ -356,7 +363,12 @@ const MessagesScreen = ({ navigation }) => {
         },
         (payload) => {
           const message = payload.new;
-          setMessages((prev) => [...prev, message]);
+          setMessages((prev) => {
+            if (prev.some((existing) => existing.id === message.id)) {
+              return prev;
+            }
+            return [...prev, message];
+          });
           if (message?.sender !== (isOwner ? "owner" : "client")) {
             markMessagesRead(selectedClientId);
             updateLastRead(selectedClientId, message.created_at);
@@ -494,7 +506,11 @@ const MessagesScreen = ({ navigation }) => {
 
   const handleSend = async () => {
     if (!supabase || !canSendMessage || sending) return;
-    if (!isOwner && activeClientId === OWNER_CLIENT_ID) {
+    const targetClientId = isOwner ? activeClientId : selfClientId;
+    if (!targetClientId) {
+      return;
+    }
+    if (targetClientId === OWNER_CLIENT_ID) {
       return;
     }
     const trimmed = inputValue.trim();
@@ -518,7 +534,7 @@ const MessagesScreen = ({ navigation }) => {
     setSending(true);
     try {
       const insertPayload = payloads.map((payload) => ({
-        client_id: activeClientId,
+        client_id: targetClientId,
         sender: isOwner ? "owner" : "client",
         body: payload.body,
       }));
