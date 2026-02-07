@@ -8,7 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import PrimaryButton from "../components/PrimaryButton";
-import { supabase } from "../api/supabaseClient";
+import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { buildSessionPayload, resolveClientProfile } from "../utils/session";
 import { useTheme } from "../context/ThemeContext";
 
@@ -26,7 +26,6 @@ const AuthScreen = ({ onAuthenticate }) => {
   const [error, setError] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingVerification, setPendingVerification] = useState(null);
-  const [verificationChannel, setVerificationChannel] = useState("email");
 
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
@@ -80,19 +79,46 @@ const AuthScreen = ({ onAuthenticate }) => {
 
     try {
       if (isRegistering) {
-        const recipient =
-          verificationChannel === "sms" ? phone.trim() : normalizedEmail;
-        const signUpResult = await supabase.auth.signInWithOtp({
-          ...(verificationChannel === "sms"
-            ? { phone: recipient }
-            : { email: recipient }),
-          options: {
-            shouldCreateUser: true,
-            data: {
-              full_name: fullName.trim(),
+        const recipient = phone.trim();
+        const shouldCreateUser = !supabaseAdmin;
+
+        if (supabaseAdmin) {
+          const { error: adminError } =
+            await supabaseAdmin.auth.admin.createUser({
+              email: normalizedEmail,
+              password: password.trim(),
               phone: phone.trim(),
-              address: eircode.trim(),
-            },
+              email_confirm: true,
+              user_metadata: {
+                full_name: fullName.trim(),
+                phone: phone.trim(),
+                address: eircode.trim(),
+              },
+            });
+
+          if (adminError) {
+            if (adminError.message?.toLowerCase().includes("already")) {
+              throw new Error(
+                "An account already exists for this email. Please log in instead."
+              );
+            }
+            throw adminError;
+          }
+        }
+
+        const signUpResult = await supabase.auth.signInWithOtp({
+          phone: recipient,
+          options: {
+            shouldCreateUser,
+            ...(shouldCreateUser
+              ? {
+                  data: {
+                    full_name: fullName.trim(),
+                    phone: phone.trim(),
+                    address: eircode.trim(),
+                  },
+                }
+              : {}),
           },
         });
 
@@ -101,12 +127,12 @@ const AuthScreen = ({ onAuthenticate }) => {
         }
 
         setPendingVerification({
-          channel: verificationChannel,
           recipient,
           email: normalizedEmail,
           fullName: fullName.trim(),
           phone: phone.trim(),
           address: eircode.trim(),
+          shouldCreateUser,
         });
         setVerificationCode("");
         setStatus("idle");
@@ -171,19 +197,11 @@ const AuthScreen = ({ onAuthenticate }) => {
     setError("");
 
     try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp(
-        pendingVerification.channel === "sms"
-          ? {
-              phone: pendingVerification.recipient,
-              token: verificationCode.trim(),
-              type: "sms",
-            }
-          : {
-              email: pendingVerification.recipient,
-              token: verificationCode.trim(),
-              type: "email",
-            }
-      );
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: pendingVerification.recipient,
+        token: verificationCode.trim(),
+        type: "sms",
+      });
 
       if (verifyError) {
         throw verifyError;
@@ -222,7 +240,7 @@ const AuthScreen = ({ onAuthenticate }) => {
       setVerificationCode("");
       setStatus("idle");
     } catch (verifyError) {
-      setError(verifyError.message || "Unable to verify your email.");
+      setError(verifyError.message || "Unable to verify your SMS code.");
       setStatus("error");
     }
   };
@@ -234,11 +252,9 @@ const AuthScreen = ({ onAuthenticate }) => {
 
     try {
       const { error: resendError } = await supabase.auth.signInWithOtp({
-        ...(pendingVerification.channel === "sms"
-          ? { phone: pendingVerification.recipient }
-          : { email: pendingVerification.recipient }),
+        phone: pendingVerification.recipient,
         options: {
-          shouldCreateUser: true,
+          shouldCreateUser: pendingVerification.shouldCreateUser,
         },
       });
 
@@ -247,11 +263,7 @@ const AuthScreen = ({ onAuthenticate }) => {
       }
 
       setStatus("idle");
-      setError(
-        pendingVerification.channel === "sms"
-          ? "Verification code sent. Check your SMS messages."
-          : "Verification code sent. Check your email."
-      );
+      setError("Verification code sent. Check your SMS messages.");
     } catch (resendError) {
       setError(resendError.message || "Unable to resend code.");
       setStatus("error");
@@ -315,11 +327,6 @@ const AuthScreen = ({ onAuthenticate }) => {
               <Text style={styles.helperText}>
                 Enter the code sent to {pendingVerification.recipient}.
               </Text>
-              {pendingVerification.channel === "email" ? (
-                <Text style={styles.helperText}>
-                  Emails come from jeroen@jeroenandpaws.com.
-                </Text>
-              ) : null}
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
             </View>
             <View style={styles.buttonStack}>
@@ -358,44 +365,6 @@ const AuthScreen = ({ onAuthenticate }) => {
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                   />
-                  <View style={styles.channelToggle}>
-                    <Pressable
-                      style={[
-                        styles.channelButton,
-                        verificationChannel === "email" &&
-                          styles.channelButtonActive,
-                      ]}
-                      onPress={() => setVerificationChannel("email")}
-                    >
-                      <Text
-                        style={[
-                          styles.channelButtonText,
-                          verificationChannel === "email" &&
-                            styles.channelButtonTextActive,
-                        ]}
-                      >
-                        Send code by email
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.channelButton,
-                        verificationChannel === "sms" &&
-                          styles.channelButtonActive,
-                      ]}
-                      onPress={() => setVerificationChannel("sms")}
-                    >
-                      <Text
-                        style={[
-                          styles.channelButtonText,
-                          verificationChannel === "sms" &&
-                            styles.channelButtonTextActive,
-                        ]}
-                      >
-                        Send code by SMS
-                      </Text>
-                    </Pressable>
-                  </View>
                   <Text style={styles.label}>Eircode</Text>
                   <TextInput
                     style={styles.input}
@@ -529,33 +498,6 @@ const createStyles = (theme) =>
       color: theme.colors.textPrimary,
       marginBottom: theme.spacing.sm,
       backgroundColor: theme.colors.surfaceElevated,
-    },
-    channelToggle: {
-      flexDirection: "row",
-      gap: theme.spacing.xs,
-      marginBottom: theme.spacing.sm,
-    },
-    channelButton: {
-      flex: 1,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.radius.md,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surfaceElevated,
-    },
-    channelButtonActive: {
-      backgroundColor: theme.colors.accent,
-      borderColor: theme.colors.accent,
-    },
-    channelButtonText: {
-      fontSize: theme.typography.caption.fontSize,
-      color: theme.colors.textSecondary,
-      fontWeight: "600",
-      textAlign: "center",
-    },
-    channelButtonTextActive: {
-      color: theme.colors.white,
     },
     buttonStack: {
       width: "100%",
