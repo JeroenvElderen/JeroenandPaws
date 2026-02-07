@@ -727,39 +727,9 @@ const AppShell = () => {
     let isMounted = true;
 
     const checkPetOnboarding = async () => {
-      if (!session?.email) {
-        if (isMounted) {
-          setInitialRoute("MainTabs");
-          setPetOnboardingReady(true);
-        }
-        return;
-      }
-
-      if (session.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
-        if (isMounted) {
-          setInitialRoute("MainTabs");
-          setPetOnboardingReady(true);
-        }
-        return;
-      }
-
-      setPetOnboardingReady(false);
-
-      try {
-        const data = await fetchJson(
-          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
-        );
-        const hasPets = Array.isArray(data?.pets) && data.pets.length > 0;
-        if (isMounted) {
-          setInitialRoute(hasPets ? "MainTabs" : "PetOnboarding");
-          setPetOnboardingReady(true);
-        }
-      } catch (error) {
-        console.warn("Failed to check pet onboarding", error);
-        if (isMounted) {
-          setInitialRoute("MainTabs");
-          setPetOnboardingReady(true);
-        }
+      if (isMounted) {
+        setInitialRoute("MainTabs");
+        setPetOnboardingReady(Boolean(session?.email));
       }
     };
 

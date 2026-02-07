@@ -215,9 +215,9 @@ const HomeScreen = ({ navigation }) => {
                 {
                   text: "Add pets",
                   onPress: () =>
-                    navigation.navigate("PetsProfile", {
-                      mode: "create",
-                      returnTo: "MainTabs",
+                    navigation.navigate("Profile", {
+                      screen: "PetsProfile",
+                      params: { mode: "create", returnTo: "MainTabs" },
                     }),
                 },
                 { text: "Not now", style: "cancel" },
@@ -236,7 +236,7 @@ const HomeScreen = ({ navigation }) => {
       };
     }, [isJeroenAccount, navigation, session?.email])
   );
-  
+
   useEffect(() => {
     let isMounted = true;
     let timeoutId;
