@@ -17,7 +17,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import HomeScreen from "./src/screens/HomeScreen";
@@ -86,15 +85,32 @@ const tabIcons = {
   Profile: "ellipsis-horizontal",
 };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+const getNotificationsModule = () => {
+  if (Constants.appOwnership === "expo") {
+    return null;
+  }
+  return require("expo-notifications");
+};
+
+const configureNotifications = () => {
+  const Notifications = getNotificationsModule();
+  if (!Notifications) return;
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+};
+
+configureNotifications();
 
 const registerForPushNotifications = async (accentColor) => {
+  const Notifications = getNotificationsModule();
+  if (!Notifications) {
+    return null;
+  }
   if (!Device.isDevice) {
     return null;
   }
