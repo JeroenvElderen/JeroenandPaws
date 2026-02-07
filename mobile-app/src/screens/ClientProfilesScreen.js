@@ -3,13 +3,13 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";

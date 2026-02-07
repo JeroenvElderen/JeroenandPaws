@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
   Pressable,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../components/PrimaryButton";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { buildSessionPayload, resolveClientProfile } from "../utils/session";

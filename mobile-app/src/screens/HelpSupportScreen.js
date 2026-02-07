@@ -2,12 +2,12 @@ import { useMemo } from "react";
 import {
   Linking,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../components/ScreenHeader";
 import { useTheme } from "../context/ThemeContext";
 
