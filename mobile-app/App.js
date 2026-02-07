@@ -225,7 +225,7 @@ const MainTabs = () => {
         .order("created_at", { ascending: false });
 
       if (isJeroenAccount) {
-        query = query.eq("sender", "client");
+        query = query.eq("sender", "client").neq("client_id", OWNER_CLIENT_ID);
       } else {
         query = query.eq("sender", "owner").eq("client_id", session.id);
       }
