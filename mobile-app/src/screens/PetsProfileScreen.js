@@ -13,6 +13,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { fetchJson } from "../api/client";
 import { supabase } from "../api/supabaseClient";
+import PrimaryButton from "../components/PrimaryButton";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
@@ -45,7 +46,25 @@ const PetsProfileScreen = ({ navigation, route }) => {
   const [saveError, setSaveError] = useState("");
   const [openSelectField, setOpenSelectField] = useState(null);
   const selectedPet = route?.params?.pet || null;
-  const isDetailView = Boolean(selectedPet);
+  const isCreating = route?.params?.mode === "create";
+  const isDetailView = Boolean(selectedPet) || isCreating;
+  const returnTo = route?.params?.returnTo;
+
+  const handleReturn = () => {
+    if (returnTo === "MainTabs") {
+      navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+      return;
+    }
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.getParent()?.navigate(returnTo);
+      return;
+    }
+    navigation.goBack();
+  };
 
   const loadPets = useCallback(async () => {
     if (!session?.email) {
@@ -69,6 +88,44 @@ const PetsProfileScreen = ({ navigation, route }) => {
   }, [isDetailView, loadPets]);
 
   useEffect(() => {
+    if (isCreating) {
+      setDraftPet({
+        name: "",
+        breed: "",
+        birthdate: "",
+        age_years: "",
+        weight_kg: "",
+        color: "",
+        microchip_id: "",
+        adoption_date: "",
+        notes: "",
+        gender: "",
+        socialization_dogs: "",
+        socialization_cats: "",
+        socialization_children: "",
+        spayed_neutered: null,
+        house_trained: null,
+        energy_level: "",
+        toilet_break_interval_hours: "",
+        time_alone_max_hours: "",
+        feeding_schedule: "",
+        care_instructions: "",
+        vet_name: "",
+        vet_phone: "",
+        insurance_provider: "",
+        allergies: "",
+        medications: "",
+        medical_notes: "",
+        photo_data_url: "",
+        photo_gallery_urls: [],
+      });
+      setIsEditing(true);
+      setActiveTab(PET_TABS[0]);
+      setSaveError("");
+      setSaveStatus("idle");
+      setOpenSelectField(null);
+      return;
+    }
     if (isDetailView) {
       setDraftPet(selectedPet);
       setIsEditing(false);
@@ -84,7 +141,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
   };
 
   const handleSavePet = async () => {
-    if (!draftPet?.id || !supabase) {
+    if (!supabase || !draftPet) {
       setIsEditing(false);
       return;
     }
@@ -92,6 +149,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
     const isFieldEmpty = (value) =>
       value === null || value === undefined || value === "";
     const missingFields = [
+      { key: "name", label: "Name" },
       { key: "age_years", label: "Age" },
       { key: "weight_kg", label: "Weight (kg)" },
       { key: "adoption_date", label: "Adoption date" },
@@ -108,19 +166,37 @@ const PetsProfileScreen = ({ navigation, route }) => {
     setSaveStatus("saving");
     setSaveError("");
     try {
-      const payload = { ...draftPet, updated_at: new Date().toISOString() };
-      const { data, error } = await supabase
-        .from("pets")
-        .update(payload)
-        .eq("id", draftPet.id)
-        .select("*")
-        .maybeSingle();
+      const timestamp = new Date().toISOString();
+      const { id, ...payload } = draftPet;
+      const basePayload = {
+        ...payload,
+        updated_at: timestamp,
+      };
+      const { data, error } = draftPet?.id
+        ? await supabase
+            .from("pets")
+            .update(basePayload)
+            .eq("id", draftPet.id)
+            .select("*")
+            .maybeSingle()
+        : await supabase
+            .from("pets")
+            .insert({
+              ...basePayload,
+              owner_id: session?.id,
+              created_at: timestamp,
+            })
+            .select("*")
+            .maybeSingle();
       if (error) throw error;
       if (data) {
         setDraftPet(data);
       }
       setSaveStatus("idle");
       setIsEditing(false);
+      if (!draftPet?.id) {
+        handleReturn();
+      }
     } catch (error) {
       console.error("Failed to save pet profile", error);
       setSaveError(error.message || "Unable to save changes.");
@@ -270,17 +346,17 @@ const PetsProfileScreen = ({ navigation, route }) => {
           <View style={styles.detailHeader}>
             <Pressable
               style={styles.headerIconButton}
-              onPress={() => navigation.goBack()}
+              onPress={handleReturn}
             >
               <Text style={styles.headerIcon}>←</Text>
             </Pressable>
             <Text style={styles.headerTitle}>
-              {pet.name || "Pet profile"}
+              {isCreating ? "Add a pet" : pet.name || "Pet profile"}
             </Text>
             <Pressable
               style={styles.headerIconButton}
               onPress={
-                isEditing
+                isEditing || isCreating
                   ? handleSavePet
                   : () => {
                       setIsEditing(true);
@@ -292,7 +368,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
               <Text style={styles.headerActionText}>
                 {saveStatus === "saving"
                   ? "Saving"
-                  : isEditing
+                  : isEditing || isCreating
                   ? "Save"
                   : "Edit"}
               </Text>
@@ -357,6 +433,9 @@ const PetsProfileScreen = ({ navigation, route }) => {
 
           {activeTab === "About" ? (
             <View style={styles.sectionCard}>
+              {renderField("Name *", "name", {
+                placeholder: "Pet name",
+              })}
               {renderField("Breed", "breed")}
               {renderField("Birthdate", "birthdate", {
                 placeholder: "YYYY-MM-DD",
@@ -368,6 +447,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
                 keyboardType: "numeric",
               })}
               {renderField("Color", "color")}
+               {renderField("Gender", "gender")}
               {renderField("Microchip ID", "microchip_id")}
               {renderField("Adoption date *", "adoption_date", {
                 placeholder: "YYYY-MM-DD",
@@ -469,7 +549,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
             <Text style={styles.errorText}>{saveError}</Text>
           ) : null}
 
-          {!isEditing ? (
+          {!isEditing && !isCreating ? (
             <Pressable
               style={styles.editProfileButton}
               onPress={() => setIsEditing(true)}
@@ -483,7 +563,11 @@ const PetsProfileScreen = ({ navigation, route }) => {
               disabled={saveStatus === "saving"}
             >
               <Text style={styles.editProfileText}>
-                {saveStatus === "saving" ? "Saving..." : "Save profile"}
+                {saveStatus === "saving"
+                  ? "Saving..."
+                  : isCreating
+                  ? "Save pet"
+                  : "Save profile"}
               </Text>
             </Pressable>
           )}
@@ -508,7 +592,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
           />
         }
       >
-        <ScreenHeader title="Your pets" onBack={() => navigation.goBack()} />
+        <ScreenHeader title="Your pets" onBack={handleReturn} />
         <View style={styles.header}>
           <Text style={styles.subtitle}>
             {pets.length} {pets.length === 1 ? "pet" : "pets"} in your profile
@@ -517,7 +601,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
         {pets.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
-              No pets saved yet. Add a pet when booking a service.
+              No pets saved yet.
             </Text>
           </View>
         ) : (
@@ -528,7 +612,12 @@ const PetsProfileScreen = ({ navigation, route }) => {
                 styles.petCard,
                 pressed && styles.petCardPressed,
               ]}
-              onPress={() => navigation.push("PetsProfile", { pet })}
+              onPress={() =>
+                navigation.push("PetsProfile", {
+                  pet,
+                  returnTo: returnTo || "Profile",
+                })
+              }
             >
               <View style={styles.petAvatar}>
                 {pet.photo_data_url || pet.photoUrl || pet.photo_url ? (
@@ -555,6 +644,17 @@ const PetsProfileScreen = ({ navigation, route }) => {
             </Pressable>
           ))
         )}
+        <View style={styles.addPetButton}>
+          <PrimaryButton
+            label="Add a pet"
+            onPress={() =>
+              navigation.push("PetsProfile", {
+                mode: "create",
+                returnTo: returnTo || "Profile",
+              })
+            }
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -894,6 +994,9 @@ const createStyles = (theme) =>
     petChevron: {
       fontSize: 22,
       color: theme.colors.textMuted,
+    },
+    addPetButton: {
+      marginTop: theme.spacing.sm,
     },
   });
 

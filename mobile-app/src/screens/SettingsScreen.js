@@ -13,7 +13,7 @@ import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 import { THEME_MODES, THEME_PREFERENCES, useTheme } from "../context/ThemeContext";
 
-const SettingsScreen = ({ navigation }) => {
+const SettingsScreen = ({ navigation, route }) => {
   const { session, setSession } = useSession();
   const { theme, mode, preference, setThemeMode, setThemePreference } =
     useTheme();
@@ -25,6 +25,18 @@ const SettingsScreen = ({ navigation }) => {
   const isSystemTheme = preference === THEME_PREFERENCES.system;
   const isDarkMode = mode === THEME_MODES.dark;
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const returnTo = route?.params?.returnTo;
+  const handleReturn = () => {
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.getParent()?.navigate(returnTo);
+      return;
+    }
+    navigation.goBack();
+  };
 
   useEffect(() => {
     const preferences =
@@ -139,7 +151,7 @@ const SettingsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ScreenHeader title="Settings" onBack={() => navigation.goBack()} />
+        <ScreenHeader title="Settings" onBack={handleReturn} />
         <Text style={styles.sectionTitle}>Appearance</Text>
         <View style={styles.card}>
           <View style={styles.row}>
@@ -398,7 +410,11 @@ const SettingsScreen = ({ navigation }) => {
           <Text style={styles.value}>Manage your card on your next invoice.</Text>
           <Pressable
             style={styles.button}
-            onPress={() => navigation.navigate("PaymentMethods")}
+            onPress={() =>
+              navigation.navigate("PaymentMethods", {
+                returnTo: returnTo || "Profile",
+              })
+            }
           >
             <Text style={styles.buttonText}>Update payment method</Text>
           </Pressable>
@@ -407,7 +423,11 @@ const SettingsScreen = ({ navigation }) => {
           <Text style={styles.value}>Invoices go to {session?.email || "your email"}.</Text>
           <Pressable
             style={styles.button}
-            onPress={() => navigation.navigate("PaymentMethods")}
+            onPress={() =>
+              navigation.navigate("PaymentMethods", {
+                returnTo: returnTo || "Profile",
+              })
+            }
           >
             <Text style={styles.buttonText}>Update billing details</Text>
           </Pressable>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -19,11 +19,34 @@ const AuthScreen = ({ onAuthenticate }) => {
   const isRegistering = mode === "register";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [eircode, setEircode] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isRegistering) {
+      setPhone((current) => (current?.startsWith("+353") ? current : "+353"));
+    } else {
+      setShowPassword(false);
+    }
+  }, [isRegistering]);
+
+  const normalizePhone = (value) => {
+    const trimmed = value.replace(/\s+/g, "");
+    if (!trimmed) return "+353";
+    let normalized = trimmed;
+    if (normalized.startsWith("+353")) {
+      normalized = normalized.slice(4);
+    }
+    if (normalized.startsWith("0")) {
+      normalized = normalized.slice(1);
+    }
+    normalized = normalized.replace(/[^\d]/g, "");
+    return `+353${normalized}`;
+  };
 
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
@@ -255,7 +278,7 @@ const AuthScreen = ({ onAuthenticate }) => {
                 style={styles.input}
                 placeholder="+353..."
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(value) => setPhone(normalizePhone(value))}
                 keyboardType="phone-pad"
               />
               <Text style={styles.label}>Eircode</Text>
@@ -279,13 +302,23 @@ const AuthScreen = ({ onAuthenticate }) => {
             autoCapitalize="none"
           />
           <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder="••••••••"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <Pressable
+              style={styles.passwordToggle}
+              onPress={() => setShowPassword((current) => !current)}
+            >
+              <Text style={styles.passwordToggleText}>
+                {showPassword ? "Hide" : "Show"}
+              </Text>
+            </Pressable>
+          </View>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
         <View style={styles.buttonStack}>
@@ -390,6 +423,29 @@ const createStyles = (theme) =>
       color: theme.colors.textPrimary,
       marginBottom: theme.spacing.sm,
       backgroundColor: theme.colors.surfaceElevated,
+    },
+    passwordRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.sm,
+      gap: theme.spacing.xs,
+    },
+    passwordInput: {
+      flex: 1,
+      marginBottom: 0,
+    },
+    passwordToggle: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.surface,
+    },
+    passwordToggleText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
     },
     buttonStack: {
       width: "100%",

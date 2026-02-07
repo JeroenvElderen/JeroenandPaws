@@ -832,8 +832,20 @@ const BookScreen = ({ navigation, route }) => {
   };
 
   const handleBackPress = () => {
+    const returnTo = route?.params?.returnTo;
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.navigate(returnTo);
+      return;
+    }
     if (route?.params?.returnToProfile) {
-      navigation.navigate("More", { screen: "ProfileOverview" });
+      navigation.navigate("Profile", {
+        screen: "ProfileOverview",
+        params: { returnTo: "Profile" },
+      });
       return;
     }
     navigation.navigate("Home");

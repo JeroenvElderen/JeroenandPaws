@@ -414,7 +414,10 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.headerRight}>
             <Pressable
               onPress={() =>
-                navigation.navigate("Profile", { screen: "ProfileOverview" })
+                navigation.navigate("Profile", {
+                  screen: "ProfileOverview",
+                  params: { returnTo: "Home" },
+                })
               }
             >
               <View style={styles.avatar}>
@@ -534,6 +537,7 @@ const HomeScreen = ({ navigation }) => {
                           navigation.navigate("JeroenPawsCard", {
                             cardId: finishedCard.id,
                             readOnly: true,
+                            returnTo: "Home",
                           });
                           return;
                         }
@@ -546,6 +550,7 @@ const HomeScreen = ({ navigation }) => {
                             startedAt: activeStart,
                             bookingStart: booking?.start_at,
                             bookingEnd: booking?.end_at,
+                            returnTo: "Home",
                           });
                           return;
                         }
@@ -565,6 +570,7 @@ const HomeScreen = ({ navigation }) => {
                           startedAt: startTimestamp,
                           bookingStart: booking?.start_at,
                           bookingEnd: booking?.end_at,
+                          returnTo: "Home",
                         });
                       }}
                     >
@@ -593,7 +599,10 @@ const HomeScreen = ({ navigation }) => {
                         onPress={() =>
                           navigation.navigate("Profile", {
                             screen: "ProfileOverview",
-                            params: { clientId: booking.client_id },
+                            params: {
+                              clientId: booking.client_id,
+                              returnTo: "Home",
+                            },
                           })
                         }
                       >

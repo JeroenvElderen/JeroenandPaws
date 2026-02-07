@@ -138,6 +138,19 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   );
   const serviceTitle = route?.params?.serviceTitle || "Drop-In Visits";
   const [note, setNote] = useState("");
+  
+  const handleReturn = () => {
+    const returnTo = route?.params?.returnTo;
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.getParent()?.navigate(returnTo);
+      return;
+    }
+    navigation.goBack();
+  };
   const [photoCount, setPhotoCount] = useState(0);
   const [cardPhotos, setCardPhotos] = useState([]);
   const [photoUploadStatus, setPhotoUploadStatus] = useState("idle");
@@ -639,7 +652,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
             setCardPhotos([]);
             setCounts(buildActivityCounts(cardPets));
             setCardStartedAt(null);
-            navigation.goBack();
+            handleReturn();
           },
         },
       ]
@@ -654,7 +667,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleReturn}
           >
             <Text style={styles.backIcon}>←</Text>
           </Pressable>
@@ -817,7 +830,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
             style={styles.finishButton}
             onPress={
               finishedAt
-                ? () => navigation.goBack()
+                ? handleReturn
                 : handleFinishVisit
             }
             disabled={finishStatus === "saving"}

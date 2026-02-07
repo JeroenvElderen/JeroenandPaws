@@ -378,6 +378,8 @@ const AppShell = () => {
   const { session, setSession, clientProfiles, setClientProfiles } =
     useSession();
   const [authReady, setAuthReady] = useState(false);
+  const [petOnboardingReady, setPetOnboardingReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState("MainTabs");
   const isDark = mode === THEME_MODES.dark;
   const modalStyles = useMemo(() => createModalStyles(theme), [theme]);
   const navigationTheme = isDark
@@ -721,6 +723,53 @@ const AppShell = () => {
     };
   }, [session?.email, session?.address]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkPetOnboarding = async () => {
+      if (!session?.email) {
+        if (isMounted) {
+          setInitialRoute("MainTabs");
+          setPetOnboardingReady(true);
+        }
+        return;
+      }
+
+      if (session.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
+        if (isMounted) {
+          setInitialRoute("MainTabs");
+          setPetOnboardingReady(true);
+        }
+        return;
+      }
+
+      setPetOnboardingReady(false);
+
+      try {
+        const data = await fetchJson(
+          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+        );
+        const hasPets = Array.isArray(data?.pets) && data.pets.length > 0;
+        if (isMounted) {
+          setInitialRoute(hasPets ? "MainTabs" : "PetOnboarding");
+          setPetOnboardingReady(true);
+        }
+      } catch (error) {
+        console.warn("Failed to check pet onboarding", error);
+        if (isMounted) {
+          setInitialRoute("MainTabs");
+          setPetOnboardingReady(true);
+        }
+      }
+    };
+
+    checkPetOnboarding();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.email]);
+
   if (!authReady) {
     return null;
   }
@@ -767,11 +816,23 @@ const AppShell = () => {
     );
   }
 
+  if (!petOnboardingReady) {
+    return null;
+  }
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={initialRoute}
+      >
         <RootStack.Screen name="MainTabs" component={MainTabs} />
+        <RootStack.Screen
+          name="PetOnboarding"
+          component={PetsProfileScreen}
+          initialParams={{ mode: "create", returnTo: "MainTabs" }}
+        />
         <RootStack.Screen
           name="JeroenPawsCard"
           component={JeroenPawsCardScreen}

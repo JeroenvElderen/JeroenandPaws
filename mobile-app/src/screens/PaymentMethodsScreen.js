@@ -10,12 +10,13 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../api/supabaseClient";
+import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
 
 const REVOLUT_PORTAL_URL = "https://revolut.me/jeroenandpaws";
 
-const PaymentMethodsScreen = () => {
+const PaymentMethodsScreen = ({ navigation, route }) => {
   const { session, setSession } = useSession();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -23,6 +24,18 @@ const PaymentMethodsScreen = () => {
   const [billingAddress, setBillingAddress] = useState("");
   const [billingVat, setBillingVat] = useState("");
   const [status, setStatus] = useState("idle");
+  const returnTo = route?.params?.returnTo;
+  const handleReturn = () => {
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.getParent()?.navigate(returnTo);
+      return;
+    }
+    navigation.goBack();
+  };
 
   useEffect(() => {
     const details =
@@ -73,6 +86,7 @@ const PaymentMethodsScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        <ScreenHeader title="Payment methods" onBack={handleReturn} />
         <Text style={styles.title}>Payment methods</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Primary card</Text>

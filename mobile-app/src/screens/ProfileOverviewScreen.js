@@ -58,6 +58,7 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
   const profilePhotoUrl =
     clientProfile?.profile_photo_url || clientProfile?.profilePhotoUrl || null;
   const contactEmail = clientProfile?.email || session?.email || "—";
+  const returnTo = route?.params?.returnTo;
   const aboutItems = [
     {
       icon: "calendar-month",
@@ -237,8 +238,14 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
         <ScreenHeader
           title="Profile overview"
           onBack={() => {
-            if (route?.params?.returnTo) {
-              navigation.getParent()?.navigate(route.params.returnTo);
+            if (returnTo) {
+              if (returnTo === "Profile") {
+                navigation
+                  .getParent()
+                  ?.navigate("Profile", { screen: "ProfileHome" });
+                return;
+              }
+              navigation.getParent()?.navigate(returnTo);
               return;
             }
             navigation.goBack();
@@ -353,7 +360,12 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
                   styles.petCard,
                   pressed && styles.petCardPressed,
                 ]}
-                onPress={() => navigation.push("PetsProfile", { pet })}
+                onPress={() =>
+                  navigation.push("PetsProfile", {
+                    pet,
+                    returnTo: route?.params?.returnTo || "Profile",
+                  })
+                }
               >
                 <View style={styles.petAvatar}>
                   {petPhoto ? (

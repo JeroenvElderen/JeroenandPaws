@@ -15,9 +15,21 @@ const SUPPORT_EMAIL = "jeroen@jeroenandpaws.com";
 const SUPPORT_PHONE = "+353872473099";
 const SUPPORT_WHATSAPP = "https://wa.me/353872473099";
 
-const HelpSupportScreen = ({ navigation }) => {
+const HelpSupportScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const returnTo = route?.params?.returnTo;
+  const handleReturn = () => {
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.getParent()?.navigate(returnTo);
+      return;
+    }
+    navigation.goBack();
+  };
   const handleEmailPress = async () => {
     const outlookUrl = `ms-outlook://compose?to=${SUPPORT_EMAIL}`;
     const mailUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
@@ -44,7 +56,7 @@ const HelpSupportScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ScreenHeader title="Help & Support" onBack={() => navigation.goBack()} />
+        <ScreenHeader title="Help & Support" onBack={handleReturn} />
         <Pressable style={styles.card} onPress={handleEmailPress}>
           <Text style={styles.cardTitle}>Email us</Text>
           <Text style={styles.cardDescription}>

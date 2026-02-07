@@ -398,7 +398,11 @@ const MessagesScreen = ({ navigation }) => {
   const activeClientId = isOwner ? selectedClientId : selfClientId;
   const canSendMessage = isOwner
     ? Boolean(activeClientId && activeClientId !== OWNER_CLIENT_ID)
-    : Boolean(selfClientId && activeClientId === selfClientId);
+    : Boolean(
+        selfClientId &&
+          activeClientId === selfClientId &&
+          activeClientId !== OWNER_CLIENT_ID
+      );
   const activeClient = useMemo(() => {
     if (!activeClientId) return null;
     if (!isOwner) {
@@ -490,6 +494,9 @@ const MessagesScreen = ({ navigation }) => {
 
   const handleSend = async () => {
     if (!supabase || !canSendMessage || sending) return;
+    if (!isOwner && activeClientId === OWNER_CLIENT_ID) {
+      return;
+    }
     const trimmed = inputValue.trim();
     const payloads = [];
 
@@ -612,6 +619,7 @@ const MessagesScreen = ({ navigation }) => {
                 navigation.navigate("JeroenPawsCard", {
                   cardId: parsed.card_id,
                   readOnly: true,
+                  returnTo: "Messages",
                 });
               }}
             >

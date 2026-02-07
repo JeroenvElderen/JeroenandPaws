@@ -25,10 +25,22 @@ const getInitials = (name) => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const ClientProfilesScreen = ({ navigation }) => {
+const ClientProfilesScreen = ({ navigation, route }) => {
   const { session, clientProfiles, setClientProfiles } = useSession();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const returnTo = route?.params?.returnTo;
+  const handleReturn = () => {
+    if (returnTo) {
+      if (returnTo === "Profile") {
+        navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
+        return;
+      }
+      navigation.getParent()?.navigate(returnTo);
+      return;
+    }
+    navigation.goBack();
+  };
   const [clients, setClients] = useState(clientProfiles);
   const [searchValue, setSearchValue] = useState("");
   const [status, setStatus] = useState("idle");
@@ -112,10 +124,7 @@ const ClientProfilesScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ScreenHeader
-          title="Client profiles"
-          onBack={() => navigation.goBack()}
-        />
+        <ScreenHeader title="Client profiles" onBack={handleReturn} />
         <View style={styles.searchCard}>
           <Text style={styles.searchLabel}>Search clients</Text>
           <TextInput
@@ -146,7 +155,10 @@ const ClientProfilesScreen = ({ navigation }) => {
               pressed && styles.cardPressed,
             ]}
             onPress={() =>
-              navigation.navigate("ProfileOverview", { clientId: client.id })
+              navigation.navigate("ProfileOverview", {
+                clientId: client.id,
+                returnTo: returnTo || "Profile",
+              })
             }
           >
             <View style={styles.avatar}>

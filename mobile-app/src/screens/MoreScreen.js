@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
-import { useTheme } from "../context/ThemeContext";
+import { THEME_MODES, THEME_PREFERENCES, useTheme } from "../context/ThemeContext";
 
 const userItems = [
   {
@@ -44,10 +44,16 @@ const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 
 const MoreScreen = ({ navigation }) => {
   const { session, setSession } = useSession();
-  const { theme } = useTheme();
+  const { theme, mode, preference, setThemeMode, setThemePreference } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isSystemPreference = preference === THEME_PREFERENCES.system;
+
+  const handleSetManualMode = async (nextMode) => {
+    await setThemePreference(THEME_PREFERENCES.manual);
+    await setThemeMode(nextMode);
+  };
 
   const handleLogout = async () => {
     try {
@@ -77,7 +83,9 @@ const MoreScreen = ({ navigation }) => {
                 styles.menuItem,
                 index === userItems.length - 1 && styles.menuItemLast,
               ]}
-              onPress={() => navigation.navigate(item.route)}
+              onPress={() =>
+                navigation.navigate(item.route, { returnTo: "Profile" })
+              }
             >
               <View style={styles.menuLeft}>
                 <MaterialCommunityIcons
@@ -103,7 +111,9 @@ const MoreScreen = ({ navigation }) => {
             <View style={styles.sectionCard}>
               <Pressable
                 style={[styles.menuItem, styles.menuItemLast]}
-                onPress={() => navigation.navigate("ClientProfiles")}
+                onPress={() =>
+                  navigation.navigate("ClientProfiles", { returnTo: "Profile" })
+                }
               >
                 <View style={styles.menuLeft}>
                   <MaterialCommunityIcons
@@ -124,6 +134,75 @@ const MoreScreen = ({ navigation }) => {
             </View>
           </>
         ) : null}
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.sectionCard}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => setThemePreference(THEME_PREFERENCES.system)}
+          >
+            <View style={styles.menuLeft}>
+              <MaterialCommunityIcons
+                name="theme-light-dark"
+                size={20}
+                color={theme.colors.accent}
+                style={styles.menuIcon}
+              />
+              <View>
+                <Text style={styles.menuLabel}>Use device setting</Text>
+                <Text style={styles.menuDescription}>
+                  Follow your phone's light or dark mode.
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.chevron}>
+              {isSystemPreference ? "✓" : "›"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => handleSetManualMode(THEME_MODES.light)}
+          >
+            <View style={styles.menuLeft}>
+              <MaterialCommunityIcons
+                name="white-balance-sunny"
+                size={20}
+                color={theme.colors.accent}
+                style={styles.menuIcon}
+              />
+              <View>
+                <Text style={styles.menuLabel}>Light mode</Text>
+                <Text style={styles.menuDescription}>
+                  Bright background with dark text.
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.chevron}>
+              {!isSystemPreference && mode === THEME_MODES.light ? "✓" : "›"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.menuItem, styles.menuItemLast]}
+            onPress={() => handleSetManualMode(THEME_MODES.dark)}
+          >
+            <View style={styles.menuLeft}>
+              <MaterialCommunityIcons
+                name="weather-night"
+                size={20}
+                color={theme.colors.accent}
+                style={styles.menuIcon}
+              />
+              <View>
+                <Text style={styles.menuLabel}>Dark mode</Text>
+                <Text style={styles.menuDescription}>
+                  Dark background with light text.
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.chevron}>
+              {!isSystemPreference && mode === THEME_MODES.dark ? "✓" : "›"}
+            </Text>
+          </Pressable>
+        </View>
         <View style={styles.sectionCard}>
           <Pressable style={styles.menuItem} onPress={handleLogout}>
             <View style={styles.menuLeft}>
