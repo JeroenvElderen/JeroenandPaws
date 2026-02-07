@@ -24,6 +24,9 @@ const AuthScreen = ({ onAuthenticate }) => {
   const [eircode, setEircode] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingVerification, setPendingVerification] = useState(null);
+  const [verificationChannel, setVerificationChannel] = useState("email");
 
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
@@ -77,10 +80,14 @@ const AuthScreen = ({ onAuthenticate }) => {
 
     try {
       if (isRegistering) {
-        const signUpResult = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password: password.trim(),
+        const recipient =
+          verificationChannel === "sms" ? phone.trim() : normalizedEmail;
+        const signUpResult = await supabase.auth.signInWithOtp({
+          ...(verificationChannel === "sms"
+            ? { phone: recipient }
+            : { email: recipient }),
           options: {
+            shouldCreateUser: true,
             data: {
               full_name: fullName.trim(),
               phone: phone.trim(),
@@ -93,36 +100,15 @@ const AuthScreen = ({ onAuthenticate }) => {
           throw signUpResult.error;
         }
 
-        const user = await resolveSignedUpUser(signUpResult);
-
-        if (!user?.id) {
-          throw new Error(
-            "Account created, but we could not finish your profile setup. Please log in again."
-          );
-        }
-
-        const clientProfile = await resolveClientProfile({
-          supabase,
-          user,
-          fallback: {
-            email: normalizedEmail,
-            fullName: fullName.trim(),
-            phone: phone.trim(),
-            address: eircode.trim(),
-          },
+        setPendingVerification({
+          channel: verificationChannel,
+          recipient,
+          email: normalizedEmail,
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          address: eircode.trim(),
         });
-
-        onAuthenticate(
-          buildSessionPayload({
-            user,
-            client: clientProfile,
-            fallback: {
-              email: normalizedEmail,
-              phone: phone.trim(),
-              address: eircode.trim(),
-            },
-          })
-        );
+        setVerificationCode("");
         setStatus("idle");
         return;
       }
@@ -174,6 +160,104 @@ const AuthScreen = ({ onAuthenticate }) => {
     }
   };
 
+  const handleVerifyCode = async () => {
+    if (!pendingVerification) return;
+    if (!verificationCode.trim()) {
+      setError("Enter the verification code.");
+      return;
+    }
+
+    setStatus("loading");
+    setError("");
+
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp(
+        pendingVerification.channel === "sms"
+          ? {
+              phone: pendingVerification.recipient,
+              token: verificationCode.trim(),
+              type: "sms",
+            }
+          : {
+              email: pendingVerification.recipient,
+              token: verificationCode.trim(),
+              type: "email",
+            }
+      );
+
+      if (verifyError) {
+        throw verifyError;
+      }
+
+      const user = data?.user || (await resolveSignedUpUser({ data })) || null;
+
+      if (!user?.id) {
+        throw new Error("We could not verify your account. Please try again.");
+      }
+
+      const clientProfile = await resolveClientProfile({
+        supabase,
+        user,
+        fallback: {
+          email: pendingVerification.email,
+          fullName: pendingVerification.fullName,
+          phone: pendingVerification.phone,
+          address: pendingVerification.address,
+        },
+      });
+
+      onAuthenticate(
+        buildSessionPayload({
+          user,
+          client: clientProfile,
+          fallback: {
+            email: pendingVerification.email,
+            phone: pendingVerification.phone,
+            address: pendingVerification.address,
+          },
+        })
+      );
+
+      setPendingVerification(null);
+      setVerificationCode("");
+      setStatus("idle");
+    } catch (verifyError) {
+      setError(verifyError.message || "Unable to verify your email.");
+      setStatus("error");
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!pendingVerification) return;
+    setStatus("loading");
+    setError("");
+
+    try {
+      const { error: resendError } = await supabase.auth.signInWithOtp({
+        ...(pendingVerification.channel === "sms"
+          ? { phone: pendingVerification.recipient }
+          : { email: pendingVerification.recipient }),
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+
+      if (resendError) {
+        throw resendError;
+      }
+
+      setStatus("idle");
+      setError(
+        pendingVerification.channel === "sms"
+          ? "Verification code sent. Check your SMS messages."
+          : "Verification code sent. Check your email."
+      );
+    } catch (resendError) {
+      setError(resendError.message || "Unable to resend code.");
+      setStatus("error");
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -215,73 +299,154 @@ const AuthScreen = ({ onAuthenticate }) => {
             </Text>
           </Pressable>
         </View>
-        <View style={styles.form}>
-          {isRegistering ? (
-            <>
-              <Text style={styles.label}>Full name</Text>
+        {pendingVerification ? (
+          <>
+            <View style={styles.form}>
+              <Text style={styles.label}>Verification Code</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Your name"
-                value={fullName}
-                onChangeText={setFullName}
+                placeholder="123456"
+                value={verificationCode}
+                onChangeText={setVerificationCode}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="one-time-code"
               />
-              <Text style={styles.label}>Phone number</Text>
+              <Text style={styles.helperText}>
+                Enter the code sent to {pendingVerification.recipient}.
+              </Text>
+              {pendingVerification.channel === "email" ? (
+                <Text style={styles.helperText}>
+                  Emails come from jeroen@jeroenandpaws.com.
+                </Text>
+              ) : null}
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </View>
+            <View style={styles.buttonStack}>
+              <PrimaryButton
+                label={status === "loading" ? "Verifying..." : "Verify code"}
+                onPress={handleVerifyCode}
+                disabled={status === "loading"}
+              />
+              <PrimaryButton
+                label={
+                  status === "loading" ? "Sending code..." : "Resend code"
+                }
+                variant="outline"
+                onPress={handleResendCode}
+                disabled={status === "loading"}
+              />
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.form}>
+              {isRegistering ? (
+                <>
+                  <Text style={styles.label}>Full name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Your name"
+                    value={fullName}
+                    onChangeText={setFullName}
+                  />
+                  <Text style={styles.label}>Phone number</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="+353..."
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                  />
+                  <View style={styles.channelToggle}>
+                    <Pressable
+                      style={[
+                        styles.channelButton,
+                        verificationChannel === "email" &&
+                          styles.channelButtonActive,
+                      ]}
+                      onPress={() => setVerificationChannel("email")}
+                    >
+                      <Text
+                        style={[
+                          styles.channelButtonText,
+                          verificationChannel === "email" &&
+                            styles.channelButtonTextActive,
+                        ]}
+                      >
+                        Send code by email
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.channelButton,
+                        verificationChannel === "sms" &&
+                          styles.channelButtonActive,
+                      ]}
+                      onPress={() => setVerificationChannel("sms")}
+                    >
+                      <Text
+                        style={[
+                          styles.channelButtonText,
+                          verificationChannel === "sms" &&
+                            styles.channelButtonTextActive,
+                        ]}
+                      >
+                        Send code by SMS
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <Text style={styles.label}>Eircode</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="D02..."
+                    value={eircode}
+                    onChangeText={setEircode}
+                    autoCapitalize="characters"
+                  />
+                </>
+              ) : null}
+              <Text style={styles.label}>Email address</Text>
               <TextInput
                 style={styles.input}
-                placeholder="+353..."
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
-              <Text style={styles.label}>Eircode</Text>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
-                placeholder="D02..."
-                value={eircode}
-                onChangeText={setEircode}
-                autoCapitalize="characters"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
               />
-            </>
-          ) : null}
-          <Text style={styles.label}>Email address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        </View>
-        <View style={styles.buttonStack}>
-          <PrimaryButton
-            label={
-              status === "loading"
-                ? isRegistering
-                  ? "Creating account..."
-                  : "Signing in..."
-                : isRegistering
-                ? "Create account"
-                : "Login"
-            }
-            onPress={handleAuthenticate}
-            disabled={!canSubmit || status === "loading"}
-          />
-          <PrimaryButton
-            label={isRegistering ? "Switch to login" : "Switch to register"}
-            variant="outline"
-            onPress={() => setMode(isRegistering ? "login" : "register")}
-          />
-        </View>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </View>
+            <View style={styles.buttonStack}>
+              <PrimaryButton
+                label={
+                  status === "loading"
+                    ? isRegistering
+                      ? "Creating account..."
+                      : "Signing in..."
+                    : isRegistering
+                    ? "Create account"
+                    : "Login"
+                }
+                onPress={handleAuthenticate}
+                disabled={!canSubmit || status === "loading"}
+              />
+              <PrimaryButton
+                label={isRegistering ? "Switch to login" : "Switch to register"}
+                variant="outline"
+                onPress={() => setMode(isRegistering ? "login" : "register")}
+              />
+            </View>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -365,6 +530,33 @@ const createStyles = (theme) =>
       marginBottom: theme.spacing.sm,
       backgroundColor: theme.colors.surfaceElevated,
     },
+    channelToggle: {
+      flexDirection: "row",
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+    },
+    channelButton: {
+      flex: 1,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.md,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surfaceElevated,
+    },
+    channelButtonActive: {
+      backgroundColor: theme.colors.accent,
+      borderColor: theme.colors.accent,
+    },
+    channelButtonText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    channelButtonTextActive: {
+      color: theme.colors.white,
+    },
     buttonStack: {
       width: "100%",
     },
@@ -372,6 +564,10 @@ const createStyles = (theme) =>
       color: theme.colors.danger,
       fontSize: theme.typography.caption.fontSize,
       marginTop: theme.spacing.xs,
+    },
+    helperText: {
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.caption.fontSize,
     },
   });
 
