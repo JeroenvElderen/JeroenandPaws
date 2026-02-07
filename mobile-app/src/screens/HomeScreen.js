@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -129,6 +130,7 @@ const HomeScreen = ({ navigation }) => {
   const [timeTick, setTimeTick] = useState(Date.now());
   const [refreshing, setRefreshing] = useState(false);
   const [finishedCards, setFinishedCards] = useState({});
+  const hasShownEmptyPetsPrompt = useRef(false);
   const isJeroenAccount =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
   const dateStamp = useMemo(() => formatDateStamp(new Date()), []);
@@ -191,6 +193,50 @@ const HomeScreen = ({ navigation }) => {
     }, [loadBookings, session?.email])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const checkPets = async () => {
+        if (!session?.email || isJeroenAccount) return;
+        if (hasShownEmptyPetsPrompt.current) return;
+        try {
+          const data = await fetchJson(
+            `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+          );
+          if (!isActive) return;
+          const pets = Array.isArray(data?.pets) ? data.pets : [];
+          if (pets.length === 0) {
+            hasShownEmptyPetsPrompt.current = true;
+            Alert.alert(
+              "Add your pets",
+              "You don't have any pets yet. Add a pet to start booking walks and services.",
+              [
+                {
+                  text: "Add pets",
+                  onPress: () =>
+                    navigation.navigate("PetsProfile", {
+                      mode: "create",
+                      returnTo: "MainTabs",
+                    }),
+                },
+                { text: "Not now", style: "cancel" },
+              ]
+            );
+          }
+        } catch (error) {
+          console.error("Failed to check pets", error);
+        }
+      };
+
+      checkPets();
+
+      return () => {
+        isActive = false;
+      };
+    }, [isJeroenAccount, navigation, session?.email])
+  );
+  
   useEffect(() => {
     let isMounted = true;
     let timeoutId;

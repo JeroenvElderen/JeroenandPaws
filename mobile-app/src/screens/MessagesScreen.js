@@ -549,21 +549,32 @@ const MessagesScreen = ({ navigation }) => {
     return (
       <Pressable
         style={({ pressed }) => [
-          styles.inboxCard,
+          styles.inboxRow,
           pressed && styles.cardPressed,
         ]}
         onPress={() => handleSelectClient(item.client_id)}
       >
-        <View style={styles.inboxHeader}>
-          <View>
+        <View style={styles.avatarCircle}>
+          <Ionicons
+            name="person"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
+        </View>
+        <View style={styles.inboxBody}>
+          <View style={styles.inboxTopRow}>
             <Text style={styles.inboxName}>{name}</Text>
-            <Text style={styles.inboxPreview} numberOfLines={2}>
+            <Text style={styles.inboxTime}>{timestamp}</Text>
+          </View>
+          <View style={styles.inboxBottomRow}>
+            <Text style={styles.inboxPreview} numberOfLines={1}>
               {preview}
             </Text>
-          </View>
-          <View style={styles.inboxMeta}>
-            <Text style={styles.inboxTime}>{timestamp}</Text>
-            {item.unread ? <View style={styles.unreadDot} /> : null}
+          {item.unread ? (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>●</Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -672,12 +683,19 @@ const MessagesScreen = ({ navigation }) => {
         >
           <Text style={styles.backButtonIcon}>←</Text>
         </Pressable>
+        <View style={styles.headerAvatar}>
+          <Ionicons
+            name="person"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
+        </View>
         <View style={styles.chatHeaderText}>
           <Text style={styles.chatTitle}>
             {activeClient?.full_name || "Chat"}
           </Text>
           <Text style={styles.chatSubtitle}>
-            {activeClient?.full_name || activeClient?.email || "Jeroen & Paws"}
+            {activeClient?.email || "Online"}
           </Text>
         </View>
         {isOwner && activeClientId ? (
@@ -693,7 +711,7 @@ const MessagesScreen = ({ navigation }) => {
             <Ionicons
               name="person-circle"
               size={28}
-              color={theme.colors.accent}
+              color={theme.colors.success}
             />
           </Pressable>
         ) : (
@@ -712,21 +730,7 @@ const MessagesScreen = ({ navigation }) => {
         >
           <Text style={styles.backButtonIcon}>←</Text>
         </Pressable>
-        <View style={styles.inboxHeaderContent}>
-          <View style={styles.inboxHeaderIcon}>
-            <Ionicons
-              name="mail"
-              size={18}
-              color={theme.colors.textPrimary}
-            />
-          </View>
-          <View>
-            <Text style={styles.inboxHeaderTitle}>Inbox</Text>
-            <Text style={styles.inboxHeaderSubtitle}>
-              Your conversations.
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.inboxHeaderTitle}>Chats</Text>
         <View style={styles.headerSpacer} />
       </View>
     );
@@ -767,11 +771,11 @@ const MessagesScreen = ({ navigation }) => {
         ) : null}
         <View style={styles.inputRow}>
           <Pressable style={styles.attachButton} onPress={handlePickImage}>
-            <Ionicons name="image" size={20} color={theme.colors.accent} />
+            <Ionicons name="image" size={20} color={theme.colors.textMuted} />
           </Pressable>
           <TextInput
             style={styles.input}
-            placeholder="Write a message"
+            placeholder="Message"
             value={inputValue}
             onChangeText={setInputValue}
             multiline
@@ -790,7 +794,7 @@ const MessagesScreen = ({ navigation }) => {
               sending || !canSendMessage || (!inputValue.trim() && !pendingImage)
             }
           >
-            <Text style={styles.sendButtonText}>Send</Text>
+            <Ionicons name="send" size={18} color={theme.colors.white} />
           </Pressable>
         </View>
         {imagePickerError ? (
@@ -856,20 +860,19 @@ const createStyles = (theme) =>
     },
     container: {
       flex: 1,
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.sm,
       backgroundColor: theme.colors.background,
     },
     inboxList: {
       paddingBottom: theme.spacing.lg,
     },
-    inboxCard: {
+    inboxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.radius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      padding: theme.spacing.md,
-      marginTop: theme.spacing.sm,
     },
     cardPressed: {
       opacity: 0.7,
@@ -878,12 +881,34 @@ const createStyles = (theme) =>
       fontSize: theme.typography.body.fontSize,
       fontWeight: "700",
       color: theme.colors.textPrimary,
-      marginBottom: theme.spacing.xs,
     },
     inboxPreview: {
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textSecondary,
-      maxWidth: 220,
+      flex: 1,
+      marginRight: theme.spacing.sm,
+    },
+    avatarCircle: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      marginRight: theme.spacing.md,
+    },
+    inboxBody: {
+      flex: 1,
+    },
+    inboxTopRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    inboxBottomRow: {
+      flexDirection: "row",
+      alignItems: "center",
     },
     inboxMeta: {
       alignItems: "flex-end",
@@ -891,13 +916,25 @@ const createStyles = (theme) =>
     inboxTime: {
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textMuted,
-      marginBottom: theme.spacing.xs,
     },
     unreadDot: {
       width: 10,
       height: 10,
       borderRadius: 5,
       backgroundColor: theme.colors.accent,
+    },
+    unreadBadge: {
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.success,
+      paddingHorizontal: 4,
+    },
+    unreadBadgeText: {
+      fontSize: 10,
+      color: theme.colors.white,
     },
     emptyState: {
       alignItems: "center",
@@ -909,7 +946,7 @@ const createStyles = (theme) =>
     },
     chatContainer: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surfaceElevated,
     },
     chatHeader: {
       flexDirection: "row",
@@ -928,13 +965,6 @@ const createStyles = (theme) =>
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.radius.lg,
-      marginBottom: theme.spacing.sm,
-      shadowColor: theme.shadow.soft.shadowColor,
-      shadowOpacity: theme.shadow.soft.shadowOpacity,
-      shadowRadius: theme.shadow.soft.shadowRadius,
-      shadowOffset: theme.shadow.soft.shadowOffset,
-      elevation: theme.shadow.soft.elevation,
     },
     backButton: {
       width: 38,
@@ -952,23 +982,16 @@ const createStyles = (theme) =>
     },
     chatHeaderText: {
       flex: 1,
-      alignItems: "center",
-      marginLeft: theme.spacing.xs,
+      marginLeft: theme.spacing.sm,
     },
-    inboxHeaderContent: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing.sm,
-      marginLeft: theme.spacing.xs,
-    },
-    inboxHeaderIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+    headerAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.accent,
+      backgroundColor: theme.colors.surfaceAccent,
+      marginLeft: theme.spacing.sm,
     },
     headerSpacer: {
       width: 38,
@@ -989,7 +1012,8 @@ const createStyles = (theme) =>
       color: theme.colors.textPrimary,
     },
     chatSubtitle: {
-      fontSize: theme.typography.caption.fontSize,
+      flex: 1,
+      fontSize: theme.typography.headline.fontSize,
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
@@ -997,15 +1021,12 @@ const createStyles = (theme) =>
       fontSize: theme.typography.body.fontSize,
       fontWeight: "700",
       color: theme.colors.textPrimary,
-    },
-    inboxHeaderSubtitle: {
-      fontSize: theme.typography.caption.fontSize,
-      color: theme.colors.textSecondary,
-      marginTop: 2,
+    textAlign: "center",
     },
     messageList: {
       paddingHorizontal: theme.spacing.md,
       paddingBottom: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
     },
     messageRow: {
       marginBottom: theme.spacing.sm,
@@ -1019,16 +1040,22 @@ const createStyles = (theme) =>
     },
     messageBubble: {
       maxWidth: "78%",
-      padding: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
       borderRadius: theme.radius.md,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
     },
     messageBubbleOwn: {
-      backgroundColor: theme.colors.surfaceAccent,
-      borderTopRightRadius: 4,
+      ackgroundColor: "#DCF8C6",
+      borderTopRightRadius: 6,
     },
     messageBubbleOther: {
       backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 4,
+      borderTopLeftRadius: 6,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
@@ -1040,7 +1067,7 @@ const createStyles = (theme) =>
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
-      marginTop: theme.spacing.xs,
+      marginTop: 6,
       gap: theme.spacing.xs,
     },
     messageTime: {
@@ -1074,10 +1101,10 @@ const createStyles = (theme) =>
     inputWrapper: {
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.sm,
       paddingTop: theme.spacing.xs,
-      paddingBottom: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
     },
     inputRow: {
       flexDirection: "row",
@@ -1095,8 +1122,8 @@ const createStyles = (theme) =>
     input: {
       flex: 1,
       borderWidth: 1,
-      borderColor: theme.colors.accent,
-      borderRadius: theme.radius.lg,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.pill,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
       fontSize: theme.typography.body.fontSize,
@@ -1105,10 +1132,12 @@ const createStyles = (theme) =>
       color: theme.colors.textPrimary,
     },
     sendButton: {
-      backgroundColor: theme.colors.accent,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.success,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
     },
     sendButtonDisabled: {
       opacity: 0.5,
