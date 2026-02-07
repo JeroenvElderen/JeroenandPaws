@@ -166,10 +166,18 @@ const PetsProfileScreen = ({ navigation, route }) => {
     try {
       const timestamp = new Date().toISOString();
       const { id, ...payload } = draftPet;
-      const normalizeDate = (value) => (value === "" ? null : value);
+      const normalizeOptionalValue = (value) => (value === "" ? null : value);
       const normalizedPayload = {
         ...payload,
-        birthdate: normalizeDate(payload?.birthdate),
+       birthdate: normalizeOptionalValue(payload?.birthdate),
+        age_years: normalizeOptionalValue(payload?.age_years),
+        weight_kg: normalizeOptionalValue(payload?.weight_kg),
+        toilet_break_interval_hours: normalizeOptionalValue(
+          payload?.toilet_break_interval_hours
+        ),
+        time_alone_max_hours: normalizeOptionalValue(
+          payload?.time_alone_max_hours
+        ),
       };
       const basePayload = {
         ...normalizedPayload,
