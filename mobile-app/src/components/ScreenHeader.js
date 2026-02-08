@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
 const ScreenHeader = ({ title, onBack }) => {
@@ -8,11 +9,12 @@ const ScreenHeader = ({ title, onBack }) => {
   return (
     <View style={styles.container}>
       {onBack ? (
-        <Pressable
-          style={styles.backButton}
-          onPress={onBack}
-        >
-          <Text style={styles.backIcon}>←</Text>
+        <Pressable style={styles.backButton} onPress={onBack}>
+          <Ionicons
+            name="chevron-back"
+            size={18}
+            color={theme.colors.textPrimary}
+          />
         </Pressable>
       ) : (
         <View style={styles.backPlaceholder} />
@@ -33,9 +35,9 @@ const createStyles = (theme) =>
       paddingVertical: theme.spacing.sm,
       marginBottom: theme.spacing.md,
       borderRadius: theme.radius.xl,
-      backgroundColor: theme.colors.surfaceGlass,
+      backgroundColor: theme.colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
+      borderColor: theme.colors.borderStrong,
       shadowColor: theme.shadow.soft.shadowColor,
       shadowOpacity: theme.shadow.soft.shadowOpacity,
       shadowOffset: theme.shadow.soft.shadowOffset,
@@ -46,24 +48,20 @@ const createStyles = (theme) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: theme.colors.surface,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
-    },
-    backIcon: {
-      fontSize: 18,
-      color: theme.colors.textPrimary,
+      borderColor: theme.colors.borderStrong,
     },
     backPlaceholder: {
       width: 40,
       height: 40,
     },
     title: {
-      fontSize: theme.typography.headline.fontSize,
+      fontSize: 20,
       fontWeight: "700",
-      letterSpacing: theme.typography.headline.letterSpacing,
+      letterSpacing: 0.3,
       color: theme.colors.textPrimary,
     },
   });
