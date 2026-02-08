@@ -1096,13 +1096,8 @@ const BookScreen = ({ navigation, route }) => {
                       a confirmation shortly.
                     </Text>
                     <PrimaryButton label="Pay now" onPress={handlePayNow} />
-                    <PrimaryButton
-                      label="Pay later"
-                      onPress={closeService}
-                      variant="secondary"
-                    />
                   </View>
-                  ) : (
+                ) : (
                   <View>
                     <Text style={styles.formSectionTitle}>Your pets</Text>
                     <Text style={styles.label}>Select existing pets</Text>

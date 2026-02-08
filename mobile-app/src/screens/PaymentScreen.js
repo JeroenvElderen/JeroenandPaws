@@ -12,6 +12,34 @@ const PaymentScreen = ({ navigation, route }) => {
   const [status, setStatus] = useState("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const payload = route?.params?.payload || null;
+   const totalAmount = payload?.amount;
+  const currencyCode = payload?.currency || "EUR";
+  const dateValue = payload?.date;
+  const timeValue = payload?.time;
+  const serviceLabel = payload?.description;
+  const formattedTotal = Number.isFinite(totalAmount)
+    ? new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: currencyCode,
+        maximumFractionDigits: 0,
+      }).format(totalAmount)
+    : null;
+  const formattedDate = (() => {
+    if (!dateValue) return null;
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return dateValue;
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(parsed);
+  })();
+  const summaryItems = [
+    serviceLabel ? { label: "Service", value: serviceLabel } : null,
+    formattedDate ? { label: "Date", value: formattedDate } : null,
+    timeValue ? { label: "Time", value: timeValue } : null,
+    formattedTotal ? { label: "Total", value: formattedTotal } : null,
+  ].filter(Boolean);
 
   const handleBack = () => navigation.goBack();
 
@@ -50,6 +78,17 @@ const PaymentScreen = ({ navigation, route }) => {
             You'll be redirected to the secure Revolut checkout to finish your
             payment.
           </Text>
+          {summaryItems.length ? (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Summary</Text>
+              {summaryItems.map((item) => (
+                <View key={item.label} style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>{item.label}</Text>
+                  <Text style={styles.summaryValue}>{item.value}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <PrimaryButton
             label={status === "loading" ? "Opening payment..." : "Pay now"}
             onPress={handleStartPayment}
@@ -95,6 +134,37 @@ const createStyles = (theme) =>
       fontSize: theme.typography.body.fontSize,
       color: theme.colors.textSecondary,
       marginBottom: theme.spacing.md,
+    },summaryCard: {
+      backgroundColor: theme.colors.background,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    summaryTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.sm,
+    },
+    summaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    summaryLabel: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textSecondary,
+      fontWeight: "600",
+    },
+    summaryValue: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
     },
     errorText: {
       marginTop: theme.spacing.sm,
