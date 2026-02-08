@@ -49,6 +49,15 @@ const MoreScreen = ({ navigation }) => {
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
   const isSystemPreference = preference === THEME_PREFERENCES.system;
+  const displayName = session?.name || session?.user?.user_metadata?.full_name || "Jeroen";
+  const contactEmail = session?.email || session?.user?.email || "hello@jeroenandpaws.com";
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
   const handleSetManualMode = async (nextMode) => {
     await setThemePreference(THEME_PREFERENCES.manual);
@@ -74,6 +83,18 @@ const MoreScreen = ({ navigation }) => {
         contentContainerStyle={styles.container}
       >
         <ScreenHeader title="Profile" />
+        <View style={styles.profileCard}>
+          <View style={styles.profileAvatar}>
+            <Text style={styles.profileInitials}>{initials}</Text>
+          </View>
+          <View style={styles.profileCopy}>
+            <Text style={styles.profileName}>{displayName}</Text>
+            <Text style={styles.profileEmail}>{contactEmail}</Text>
+            <Text style={styles.profileNote}>
+              Manage your account, pets, and preferences.
+            </Text>
+          </View>
+        </View>
         <Text style={styles.sectionTitle}>More</Text>
         <View style={styles.sectionCard}>
           {userItems.map((item, index) => (
@@ -239,6 +260,55 @@ const createStyles = (theme) =>
       padding: theme.spacing.lg,
       paddingBottom: theme.spacing.xxl,
     },
+    profileCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.md,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
+      marginBottom: theme.spacing.lg,
+    },
+    profileAvatar: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    profileInitials: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    profileCopy: {
+      flex: 1,
+    },
+    profileName: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    profileEmail: {
+      fontSize: 13,
+      color: theme.colors.textMuted,
+      marginTop: 2,
+    },
+    profileNote: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginTop: 6,
+    },
     scrollView: {
       backgroundColor: theme.colors.background,
     },
@@ -253,12 +323,17 @@ const createStyles = (theme) =>
       marginBottom: theme.spacing.sm,
     },
     sectionCard: {
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.lg,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
       overflow: "hidden",
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
     },
     menuItem: {
       flexDirection: "row",

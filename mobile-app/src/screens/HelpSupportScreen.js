@@ -102,12 +102,17 @@ const createStyles = (theme) =>
       backgroundColor: theme.colors.background,
     },
     card: {
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.sm,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
     },
     cardTitle: {
       fontSize: theme.typography.body.fontSize,

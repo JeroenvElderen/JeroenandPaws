@@ -374,12 +374,17 @@ const createStyles = (theme) =>
     },
     form: {
       width: "100%",
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
     },
     modeToggle: {
       flexDirection: "row",
@@ -415,7 +420,7 @@ const createStyles = (theme) =>
     },
     input: {
       borderWidth: 1,
-      borderColor: theme.colors.accent,
+      borderColor: theme.colors.borderStrong,
       borderRadius: theme.radius.md,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,

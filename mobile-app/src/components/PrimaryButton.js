@@ -32,9 +32,9 @@ const createStyles = (theme) =>
   StyleSheet.create({
     button: {
       backgroundColor: theme.colors.accent,
-      paddingVertical: theme.spacing.sm + 2,
+      paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.xl,
-      borderRadius: theme.radius.xl,
+      borderRadius: theme.radius.pill,
       alignItems: "center",
       marginVertical: theme.spacing.xs,
       borderWidth: 1,
@@ -44,6 +44,8 @@ const createStyles = (theme) =>
       shadowOffset: theme.shadow.lift.shadowOffset,
       shadowRadius: theme.shadow.lift.shadowRadius,
       elevation: theme.shadow.lift.elevation,
+      minHeight: 52,
+      justifyContent: "center",
     },
     buttonOutline: {
       backgroundColor: "transparent",
