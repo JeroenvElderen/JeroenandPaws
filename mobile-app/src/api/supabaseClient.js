@@ -2,17 +2,21 @@ import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const extraConfig =
+  Constants.expoConfig?.extra ??
+  Constants.manifest?.extra ??
+  Constants.manifest2?.extra ??
+  {};
+
 const supabaseUrl =
-  Constants.expoConfig?.extra?.supabaseUrl ||
-  process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = 
-  Constants.expoConfig?.extra?.supabaseAnonKey ||
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  extraConfig.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey =
+  extraConfig.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey =
-  Constants.expoConfig?.extra?.supabaseServiceRoleKey ||
+  extraConfig.supabaseServiceRoleKey ||
   process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
   process.env.EXPO_PUBLIC_SUPABASE_SERVICE_KEY;
-  const missingConfigMessage =
+const missingConfigMessage =
   "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.";
 
 const createSupabaseClient = () =>
