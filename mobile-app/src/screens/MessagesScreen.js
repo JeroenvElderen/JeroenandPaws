@@ -715,7 +715,11 @@ const MessagesScreen = ({ navigation }) => {
             navigation.navigate("Home");
           }}
         >
-          <Text style={styles.backButtonIcon}>←</Text>
+          <Ionicons
+            name="chevron-back"
+            size={18}
+            color={theme.colors.textPrimary}
+          />
         </Pressable>
         <View style={styles.headerAvatar}>
           <Ionicons
@@ -765,10 +769,19 @@ const MessagesScreen = ({ navigation }) => {
           style={styles.backButton}
           onPress={() => navigation.navigate("Home")}
         >
-          <Text style={styles.backButtonIcon}>←</Text>
+          <Ionicons
+            name="chevron-back"
+            size={18}
+            color={theme.colors.textPrimary}
+          />
         </Pressable>
         <View style={styles.inboxHeaderText}>
           <Text style={styles.inboxHeaderTitle}>Messages</Text>
+          <Text style={styles.inboxHeaderSubtitle}>
+            {inboxItems.length
+              ? `${inboxItems.length} client chats`
+              : "All client conversations"}
+          </Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -1039,35 +1052,43 @@ const createStyles = (theme) =>
     },
     chatContainer: {
       flex: 1,
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: theme.colors.background,
     },
     chatHeader: {
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      borderRadius: theme.radius.xl,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
       shadowColor: theme.shadow.soft.shadowColor,
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 2,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      elevation: theme.shadow.soft.elevation,
     },
     inboxHeader: {
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
       backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      borderRadius: theme.radius.xl,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
       shadowColor: theme.shadow.soft.shadowColor,
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 2,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      elevation: theme.shadow.soft.elevation,
     },
     backButton: {
       width: 38,
@@ -1075,13 +1096,9 @@ const createStyles = (theme) =>
       borderRadius: 19,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.surfaceAccent,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
-    },
-    backButtonIcon: {
-      fontSize: 18,
-      color: theme.colors.textPrimary,
     },
     chatHeaderText: {
       flex: 1,
@@ -1105,7 +1122,7 @@ const createStyles = (theme) =>
       borderRadius: 19,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.surfaceAccent,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
     },
@@ -1228,9 +1245,7 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.md,
     },
     inputWrapper: {
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: theme.colors.background,
       paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.lg,
@@ -1239,6 +1254,16 @@ const createStyles = (theme) =>
       flexDirection: "row",
       alignItems: "flex-end",
       gap: theme.spacing.xs,
+      backgroundColor: theme.colors.surface,
+      padding: theme.spacing.sm,
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
     },
     attachButton: {
       width: 36,
@@ -1250,14 +1275,13 @@ const createStyles = (theme) =>
     },
     input: {
       flex: 1,
-      borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
+      borderWidth: 0,
       borderRadius: theme.radius.lg,
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
       fontSize: theme.typography.body.fontSize,
       maxHeight: 90,
-      backgroundColor: theme.colors.surfaceElevated,
+      backgroundColor: "transparent",
       color: theme.colors.textPrimary,
     },
     sendButton: {

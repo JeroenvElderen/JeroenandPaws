@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../api/supabaseClient";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
@@ -152,6 +153,21 @@ const SettingsScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <ScreenHeader title="Settings" onBack={handleReturn} />
+        <View style={styles.heroCard}>
+          <View style={styles.heroIcon}>
+            <Ionicons
+              name="sparkles"
+              size={18}
+              color={theme.colors.accent}
+            />
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroTitle}>Make it feel like home</Text>
+            <Text style={styles.heroSubtitle}>
+              Tailor your notifications and theme to match your day.
+            </Text>
+          </View>
+        </View>
         <Text style={styles.sectionTitle}>Appearance</Text>
         <View style={styles.card}>
           <View style={styles.row}>
@@ -449,13 +465,58 @@ const createStyles = (theme) =>
       paddingBottom: theme.spacing.xxl,
       backgroundColor: theme.colors.background,
     },
-    card: {
+    heroCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.md,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.xl,
       backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.lg,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
+    },
+    heroIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    heroCopy: {
+      flex: 1,
+    },
+    heroTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    heroSubtitle: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      lineHeight: 18,
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.md,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
     },
     row: {
       flexDirection: "row",

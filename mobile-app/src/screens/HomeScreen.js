@@ -422,6 +422,11 @@ const HomeScreen = ({ navigation }) => {
       (a, b) => new Date(a.start_at || 0) - new Date(b.start_at || 0)
     );
   const upcomingPreview = upcomingBookings;
+  const nextBooking = upcomingBookings[0];
+  const nextStart = nextBooking?.start_at ? new Date(nextBooking.start_at) : null;
+  const nextEnd = nextBooking?.end_at ? new Date(nextBooking.end_at) : null;
+  const nextServiceTitle =
+    nextBooking?.service_title || nextBooking?.services_catalog?.title;
 
   const displayName = session?.name || "Jeroen";
   const firstName = displayName.split(" ").filter(Boolean)[0] || displayName;
@@ -451,45 +456,97 @@ const HomeScreen = ({ navigation }) => {
           />
         }
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Hi {firstName}</Text>
-            <Text style={styles.subtitle}>Your booking overview</Text>
-            <Text style={styles.dateStamp}>{dateStamp}</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Pressable
-              onPress={() =>
-                navigation.navigate("Profile", {
-                  screen: "ProfileOverview",
-                  params: { returnTo: "Home" },
-                })
-              }
-            >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
+        <View style={styles.heroCard}>
+          <View style={styles.heroGlow} />
+          <View style={styles.heroRow}>
+            <View style={styles.heroCopy}>
+              <View style={styles.heroBadge}>
+                <Ionicons
+                  name="sparkles"
+                  size={14}
+                  color={theme.colors.accent}
+                />
+                <Text style={styles.heroBadgeText}>Premium care</Text>
               </View>
-            </Pressable>
+              <Text style={styles.title}>Welcome back, {firstName}</Text>
+              <Text style={styles.subtitle}>
+                Warm, attentive walks designed for every personality.
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Pressable
+                onPress={() =>
+                  navigation.navigate("Profile", {
+                    screen: "ProfileOverview",
+                    params: { returnTo: "Home" },
+                  })
+                }
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+          <View style={styles.heroMetaRow}>
+            <View style={styles.metaPill}>
+              <Ionicons
+                name="calendar-outline"
+                size={14}
+                color={theme.colors.textPrimary}
+              />
+              <Text style={styles.metaText}>{dateStamp}</Text>
+            </View>
+            <View style={styles.metaPill}>
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={theme.colors.textPrimary}
+              />
+              <Text style={styles.metaText}>
+                Updated {lastUpdated ? formatTime(lastUpdated) : "—"}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.updateText}>
-          Updated at {lastUpdated ? formatTime(lastUpdated) : "—"}
-        </Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Upcoming</Text>
+            <Text style={styles.summaryValue}>{upcomingBookings.length}</Text>
+            <Text style={styles.summaryCaption}>
+              booking{upcomingBookings.length === 1 ? "" : "s"}
+            </Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Next visit</Text>
+            <Text style={styles.summaryValue}>
+              {nextStart ? formatDateLabel(nextStart) : "No visits"}
+            </Text>
+            <Text style={styles.summaryCaption}>
+              {nextStart ? formatTimeRange(nextStart, nextEnd) : "Tap to book"}
+            </Text>
+          </View>
+        </View>
 
-        <View style={styles.noticeCard}>
-          <Ionicons
-            name="calendar"
-            size={18}
-            color={theme.colors.textPrimary}
-          />
-          <Text style={styles.noticeText}>
-            {upcomingBookings.length
-              ? `${upcomingBookings.length} upcoming booking${
-                  upcomingBookings.length === 1 ? "" : "s"
-                }`
-              : "No upcoming bookings yet"}
-          </Text>
+        <View style={styles.highlightCard}>
+          <View style={styles.highlightIcon}>
+            <Ionicons
+              name="calendar"
+              size={18}
+              color={theme.colors.accent}
+            />
+          </View>
+          <View>
+            <Text style={styles.highlightTitle}>
+              {nextServiceTitle || "Booking spotlight"}
+            </Text>
+            <Text style={styles.highlightText}>
+              {nextStart
+                ? `Next visit on ${formatDateLabel(nextStart)}.`
+                : "Plan your next service in just a few taps."}
+            </Text>
+          </View>
         </View>
 
         {!isJeroenAccount ? (
@@ -501,7 +558,14 @@ const HomeScreen = ({ navigation }) => {
               ]}
               onPress={() => navigation.navigate("Book")}
             >
-              <View>
+              <View style={styles.quickIcon}>
+                <Ionicons
+                  name="add-circle"
+                  size={22}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <View style={styles.quickCopy}>
                 <Text style={styles.quickLabel}>Book a service</Text>
                 <Text style={styles.quickSubtext}>
                   Send a new request in seconds
@@ -509,10 +573,39 @@ const HomeScreen = ({ navigation }) => {
               </View>
               <Text style={styles.chevron}>›</Text>
             </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.quickCard,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => navigation.navigate("Messages")}
+            >
+              <View style={styles.quickIcon}>
+                <Ionicons
+                  name="chatbubble-ellipses"
+                  size={20}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <View style={styles.quickCopy}>
+                <Text style={styles.quickLabel}>Message Jeroen</Text>
+                <Text style={styles.quickSubtext}>
+                  Ask a question or share details
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
           </View>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Upcoming visits</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Upcoming visits</Text>
+          <Text style={styles.sectionMeta}>
+            {upcomingBookings.length
+              ? `${upcomingBookings.length} scheduled`
+              : "No upcoming bookings yet"}
+          </Text>
+        </View>
         {upcomingPreview.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
@@ -681,16 +774,75 @@ const createStyles = (theme) =>
       paddingBottom: theme.spacing.xxl,
       backgroundColor: theme.colors.background,
     },
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: theme.spacing.sm,
-      padding: theme.spacing.md,
+    heroCard: {
+      padding: theme.spacing.lg,
       borderRadius: theme.radius.xl,
       backgroundColor: theme.colors.surfaceElevated,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.md,
+      overflow: "hidden",
+    },
+    heroGlow: {
+      position: "absolute",
+      top: -80,
+      right: -60,
+      width: 220,
+      height: 220,
+      borderRadius: 999,
+      backgroundColor: theme.colors.accentMuted,
+      opacity: 0.35,
+    },
+    heroRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: theme.spacing.sm,
+    },
+    heroCopy: {
+      flex: 1,
+      gap: 6,
+    },
+    heroBadge: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: theme.colors.surfaceGlass,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 6,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    heroBadgeText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: theme.colors.accent,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+    },
+    heroMetaRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+    },
+    metaPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 8,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    metaText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontWeight: "600",
     },
     headerRight: {
       flexDirection: "row",
@@ -709,11 +861,41 @@ const createStyles = (theme) =>
       lineHeight: 22,
       letterSpacing: 0.2,
     },
-    dateStamp: {
-      fontSize: 13,
+    summaryRow: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    summaryCard: {
+      flex: 1,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
+    },
+    summaryLabel: {
+      fontSize: 12,
+      fontWeight: "600",
       color: theme.colors.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+    },
+    summaryValue: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: 8,
+    },
+    summaryCaption: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
       marginTop: 4,
-      letterSpacing: 0.2,
     },
     avatar: {
       width: 46,
@@ -730,16 +912,10 @@ const createStyles = (theme) =>
       fontWeight: "700",
       color: theme.colors.textPrimary,
     },
-    updateText: {
-      fontSize: 14,
-      color: theme.colors.textMuted,
-      marginBottom: theme.spacing.sm,
-      letterSpacing: 0.2,
-      lineHeight: 20,
-    },
-    noticeCard: {
+    highlightCard: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
+      gap: theme.spacing.sm,
       backgroundColor: theme.colors.surfaceElevated,
       padding: theme.spacing.md,
       borderRadius: theme.radius.lg,
@@ -750,14 +926,26 @@ const createStyles = (theme) =>
       shadowOffset: theme.shadow.soft.shadowOffset,
       shadowRadius: theme.shadow.soft.shadowRadius,
       elevation: theme.shadow.soft.elevation,
-      marginBottom: theme.spacing.sm,
-      gap: 10,
+      marginBottom: theme.spacing.md,
     },
-    noticeText: {
+    highlightIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    highlightTitle: {
       fontSize: 14,
-      color: theme.colors.textPrimary,
       fontWeight: "700",
-      letterSpacing: 0.2,
+      color: theme.colors.textPrimary,
+    },
+    highlightText: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      lineHeight: 18,
     },
     quickActions: {
       gap: 12,
@@ -769,10 +957,21 @@ const createStyles = (theme) =>
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
-      marginBottom: theme.spacing.lg,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    quickIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    quickCopy: {
+      flex: 1,
     },
     cardPressed: {
       transform: [{ scale: 0.99 }],
@@ -792,11 +991,21 @@ const createStyles = (theme) =>
       fontSize: 24,
       color: theme.colors.textMuted,
     },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      marginBottom: theme.spacing.sm,
+    },
     sectionTitle: {
       fontSize: 18,
       fontWeight: "700",
       color: theme.colors.textPrimary,
-      marginBottom: theme.spacing.sm,
+    },
+    sectionMeta: {
+      fontSize: 12,
+      color: theme.colors.textMuted,
+      fontWeight: "600",
     },
     emptyCard: {
       backgroundColor: theme.colors.surfaceElevated,
