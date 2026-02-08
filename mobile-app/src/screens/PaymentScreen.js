@@ -54,9 +54,6 @@ const PaymentScreen = ({ navigation, route }) => {
             label={status === "loading" ? "Opening payment..." : "Pay now"}
             onPress={handleStartPayment}
           />
-          <Pressable style={styles.secondaryButton} onPress={handleBack}>
-            <Text style={styles.secondaryText}>Pay later</Text>
-          </Pressable>
           {errorMessage ? (
             <Text style={styles.errorText}>{errorMessage}</Text>
           ) : null}
@@ -98,15 +95,6 @@ const createStyles = (theme) =>
       fontSize: theme.typography.body.fontSize,
       color: theme.colors.textSecondary,
       marginBottom: theme.spacing.md,
-    },
-    secondaryButton: {
-      marginTop: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      alignItems: "center",
-    },
-    secondaryText: {
-      color: theme.colors.textSecondary,
-      fontWeight: "600",
     },
     errorText: {
       marginTop: theme.spacing.sm,
