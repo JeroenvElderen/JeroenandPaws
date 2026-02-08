@@ -371,7 +371,7 @@ const MainTabs = () => {
       <Tab.Screen
         name="Profile"
         component={ProfileStackScreen}
-        listeners={createTabPressListener()}
+        listeners={createTabPressListener("ProfileHome")}
         options={{
           tabBarIcon: ({ color }) => (
             <TabItem label="More" color={color} icon={tabIcons.Profile} />
