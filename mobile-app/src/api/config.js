@@ -7,8 +7,6 @@ const extraConfig =
   {};
 
 export const API_BASE_URL =
-extraConfig.API_BASE_URL ||
   extraConfig.apiBaseUrl ||
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  process.env.API_BASE_URL ||
   "https://jeroenandpaws.com";

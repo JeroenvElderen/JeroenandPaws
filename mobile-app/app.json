@@ -18,7 +18,6 @@
       "package": "com.jeroenandpaws.app"
     },
     "extra": {
-      "API_BASE_URL": "https://jeroenandpaws.com",
       "apiBaseUrl": "https://jeroenandpaws.com",
       "supabaseUrl": "https://jjsxfzhgyfuigogxzire.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqc3hmemhneWZ1aWdvZ3h6aXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Mjk4NTIsImV4cCI6MjA3OTQwNTg1Mn0.Xz2fq4WuKHBUaoIAv7aSCNGkV1uPDOs6UZL2XPWkU-E",
