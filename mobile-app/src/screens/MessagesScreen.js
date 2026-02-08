@@ -777,6 +777,11 @@ const MessagesScreen = ({ navigation }) => {
         </Pressable>
         <View style={styles.inboxHeaderText}>
           <Text style={styles.inboxHeaderTitle}>Messages</Text>
+          <Text style={styles.inboxHeaderSubtitle}>
+            {inboxItems.length
+              ? `${inboxItems.length} client chats`
+              : "All client conversations"}
+          </Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
