@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchJson } from "../api/client";
+import { API_BASE_URL } from "../api/config";
 import {
   DEFAULT_AVAILABILITY_WINDOW_DAYS,
   fetchAvailability,
