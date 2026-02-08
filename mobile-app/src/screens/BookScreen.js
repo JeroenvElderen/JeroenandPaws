@@ -804,13 +804,24 @@ const BookScreen = ({ navigation, route }) => {
     setPaymentPayload(null);
   };
 
-  const closeService = () => {
+   const closeService = useCallback(() => {
     setSelectedService(null);
     setShowAvailability(false);
     setStatus("idle");
     setError("");
     setPaymentPayload(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (status !== "success" || !paymentPayload) {
+      return;
+    }
+
+    navigation.getParent()?.navigate("Payment", {
+      payload: paymentPayload,
+    });
+    closeService();
+  }, [status, paymentPayload, navigation, closeService]);
 
   const toggleCategory = (category) => {
     setExpandedCategories((current) => ({
