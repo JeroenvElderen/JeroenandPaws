@@ -869,28 +869,40 @@ const BookScreen = ({ navigation, route }) => {
 
     setStatus("submitting");
     setError("");
-    const composedMessage = buildBookingMessage(formState, {
-      serviceLabel,
-      selectedPets,
-      selectedOptions,
-      includeNewDogs: showNewDogForm,
-    });
-    const notesToStore = [
-      formState.preferences,
-      formState.specialNotes,
-      formState.message,
-      selectedOptions.length
-        ? `Add-ons: ${selectedOptions.map((option) => option.label).join(", ")}`
-        : "",
-    ]
-      .map((entry) => entry?.trim())
-      .filter(Boolean)
-      .join("\n\n");
+    
+    let timeoutId;
+    let abortController;
 
     try {
+      const composedMessage = buildBookingMessage(formState, {
+        serviceLabel,
+        selectedPets,
+        selectedOptions,
+        includeNewDogs: showNewDogForm,
+      });
+      const notesToStore = [
+        formState.preferences,
+        formState.specialNotes,
+        formState.message,
+        selectedOptions.length
+          ? `Add-ons: ${selectedOptions
+              .map((option) => option.label)
+              .join(", ")}`
+          : "",
+      ]
+        .map((entry) => entry?.trim())
+        .filter(Boolean)
+        .join("\n\n");
+
+      abortController = new AbortController();
+      timeoutId = setTimeout(() => {
+        abortController.abort();
+      }, 15000);
+
       const response = await fetch(`${API_BASE_URL}/api/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: abortController.signal,
         body: JSON.stringify({
           date: formState.bookingDate,
           time: formState.startTime,
@@ -938,11 +950,22 @@ const BookScreen = ({ navigation, route }) => {
       setSelectedOptionIds([]);
       setShowNewDogForm(false);
     } catch (submissionError) {
+      if (submissionError?.name === "AbortError") {
+        setError(
+          "Booking is taking longer than expected. Please check your connection and try again."
+        );
+        setStatus("error");
+        return;
+      }
       setError(
         submissionError.message ||
           "Unable to send your booking request. Please try again."
       );
       setStatus("error");
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   };
 
