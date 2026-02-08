@@ -29,6 +29,7 @@ import ProfileOverviewScreen from "./src/screens/ProfileOverviewScreen";
 import PetsProfileScreen from "./src/screens/PetsProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import PaymentMethodsScreen from "./src/screens/PaymentMethodsScreen";
+import PaymentScreen from "./src/screens/PaymentScreen";
 import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import ClientProfilesScreen from "./src/screens/ClientProfilesScreen";
@@ -824,6 +825,7 @@ const AppShell = () => {
           name="JeroenPawsCard"
           component={JeroenPawsCardScreen}
         />
+        <RootStack.Screen name="Payment" component={PaymentScreen} />
       </RootStack.Navigator>
       {hasHydrated ? (
         <Modal

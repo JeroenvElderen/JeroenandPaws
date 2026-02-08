@@ -303,6 +303,7 @@ const BookScreen = ({ navigation, route }) => {
   const [showAddonDropdown, setShowAddonDropdown] = useState(false);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [paymentPayload, setPaymentPayload] = useState(null);
   const [availability, setAvailability] = useState(null);
   const [availabilityStatus, setAvailabilityStatus] = useState("idle");
   const [availabilityError, setAvailabilityError] = useState("");
@@ -799,6 +800,7 @@ const BookScreen = ({ navigation, route }) => {
     setShowAvailability(false);
     setStatus("idle");
     setError("");
+    setPaymentPayload(null);
   };
 
   const closeService = () => {
@@ -806,6 +808,7 @@ const BookScreen = ({ navigation, route }) => {
     setShowAvailability(false);
     setStatus("idle");
     setError("");
+    setPaymentPayload(null);
   };
 
   const toggleCategory = (category) => {
@@ -909,6 +912,8 @@ const BookScreen = ({ navigation, route }) => {
         throw new Error(payload?.message || "Failed to send request");
       }
 
+      const responsePayload = await response.json().catch(() => ({}));
+
       if (supabase && session?.id && notesToStore) {
         await supabase
           .from("clients")
@@ -917,6 +922,16 @@ const BookScreen = ({ navigation, route }) => {
       }
 
       setStatus("success");
+      setPaymentPayload({
+        bookingId: responsePayload?.bookingId || responsePayload?.id,
+        amount: totalPrice,
+        currency: "EUR",
+        description: serviceLabel,
+        date: formState.bookingDate,
+        time: formState.startTime,
+        clientEmail: formState.email,
+        clientName: formState.name,
+      });
       setFormState(createInitialState(selectedService, session));
       setSelectedPetIds([]);
       setSelectedOptionIds([]);
@@ -928,6 +943,14 @@ const BookScreen = ({ navigation, route }) => {
       );
       setStatus("error");
     }
+  };
+
+  const handlePayNow = () => {
+    if (!paymentPayload) return;
+    navigation.getParent()?.navigate("Payment", {
+      payload: paymentPayload,
+    });
+    closeService();
   };
 
   return (
@@ -1048,7 +1071,12 @@ const BookScreen = ({ navigation, route }) => {
                       Your booking is reserved and ready for payment. We’ll send
                       a confirmation shortly.
                     </Text>
-                    <PrimaryButton label="Close" onPress={closeService} />
+                    <PrimaryButton label="Pay now" onPress={handlePayNow} />
+                    <PrimaryButton
+                      label="Pay later"
+                      onPress={closeService}
+                      variant="secondary"
+                    />
                   </View>
                   ) : (
                   <View>

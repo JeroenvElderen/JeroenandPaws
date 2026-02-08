@@ -1,6 +1,9 @@
 import { API_BASE_URL } from "./config";
 
-export const fetchJson = async (path, { timeoutMs = 15000 } = {}) => {
+export const fetchJson = async (
+  path,
+  { timeoutMs = 15000, headers, ...fetchOptions } = {}
+) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   let response;
@@ -8,6 +11,11 @@ export const fetchJson = async (path, { timeoutMs = 15000 } = {}) => {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        ...headers,
+      },
+      ...fetchOptions,
     });
   } catch (error) {
     if (error?.name === "AbortError") {
