@@ -374,20 +374,20 @@ const createStyles = (theme) =>
     },
     form: {
       width: "100%",
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
     },
     modeToggle: {
       flexDirection: "row",
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       padding: theme.spacing.xs,
       borderRadius: theme.radius.pill,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.md,
     },
     modeButton: {
@@ -440,7 +440,7 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.md,
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
     },
     passwordToggleText: {
       fontSize: theme.typography.caption.fontSize,

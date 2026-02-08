@@ -290,11 +290,11 @@ const createStyles = (theme) =>
       textAlign: "center",
     },
     calendarCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.xl,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
     },
     monthHeader: {
@@ -369,11 +369,11 @@ const createStyles = (theme) =>
       color: theme.colors.white,
     },
     listCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.xl,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
     },
     listTitle: {
       fontSize: theme.typography.body.fontSize,
