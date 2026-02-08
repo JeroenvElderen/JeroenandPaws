@@ -450,11 +450,11 @@ const createStyles = (theme) =>
       backgroundColor: theme.colors.background,
     },
     card: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.md,
     },
     row: {

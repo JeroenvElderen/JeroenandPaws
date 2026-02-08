@@ -159,11 +159,11 @@ const createStyles = (theme) =>
       textAlign: "center",
     },
     card: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.sm,
     },
     label: {

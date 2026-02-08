@@ -253,10 +253,10 @@ const createStyles = (theme) =>
       marginBottom: theme.spacing.sm,
     },
     sectionCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
       overflow: "hidden",
     },

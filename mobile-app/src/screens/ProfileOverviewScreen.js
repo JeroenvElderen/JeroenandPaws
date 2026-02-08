@@ -472,10 +472,10 @@ const createStyles = (theme) =>
       marginBottom: theme.spacing.sm,
     },
     sectionCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
       overflow: "hidden",
     },
@@ -505,11 +505,11 @@ const createStyles = (theme) =>
       marginTop: theme.spacing.xs,
     },
     emptyCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.lg,
     },
     emptyText: {
@@ -519,11 +519,11 @@ const createStyles = (theme) =>
     petCard: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.sm,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.sm,
     },
     petCardPressed: {

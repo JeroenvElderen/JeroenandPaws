@@ -690,11 +690,11 @@ const createStyles = (theme) =>
       width: 42,
       height: 42,
       borderRadius: 21,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
     },
     headerIcon: {
       fontSize: 18,
@@ -766,9 +766,9 @@ const createStyles = (theme) =>
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.xs,
       borderRadius: theme.radius.md,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
     },
     tabPillActive: {
       backgroundColor: theme.colors.surfaceAccent,
@@ -793,11 +793,11 @@ const createStyles = (theme) =>
       color: theme.colors.textSecondary,
     },
     emptyCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.md,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
     },
     emptyText: {
       fontSize: theme.typography.body.fontSize,
@@ -811,11 +811,11 @@ const createStyles = (theme) =>
       marginBottom: theme.spacing.xs,
     },
     sectionCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.md,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.md,
     },
     detailRow: {
@@ -844,7 +844,7 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.md,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
@@ -862,7 +862,7 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.md,
       borderWidth: 1,
       borderColor: theme.colors.accent,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       overflow: "hidden",
     },
     selectOption: {
@@ -883,7 +883,7 @@ const createStyles = (theme) =>
       paddingVertical: theme.spacing.xs,
       fontSize: theme.typography.body.fontSize,
       color: theme.colors.textPrimary,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
     },
     textArea: {
       minHeight: 80,
@@ -941,7 +941,7 @@ const createStyles = (theme) =>
       borderColor: theme.colors.borderStrong,
       paddingVertical: theme.spacing.sm,
       alignItems: "center",
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       marginBottom: theme.spacing.sm,
     },
     editProfileText: {
@@ -957,11 +957,11 @@ const createStyles = (theme) =>
     petCard: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.md,
       padding: theme.spacing.sm,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.sm,
     },
     petCardPressed: {
