@@ -183,11 +183,12 @@ const createTabPressListener =
   ({ navigation, route }) => ({
     tabPress: () => {
       const nestedState = route.state;
-      if (nestedState?.index > 0) {
-        navigation.navigate(
-          route.name,
-          targetScreen ? { screen: targetScreen } : undefined,
-        );
+      const needsReset =
+        targetScreen &&
+        (nestedState?.index > 0 ||
+          nestedState?.routes?.[0]?.name !== targetScreen);
+      if (needsReset) {
+        navigation.navigate(route.name, { screen: targetScreen });
       }
     },
   });
