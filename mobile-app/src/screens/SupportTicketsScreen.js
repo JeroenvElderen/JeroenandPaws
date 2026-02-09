@@ -97,14 +97,31 @@ const SupportTicketsScreen = ({ navigation, route }) => {
     setErrorMessage("");
     setFormStatus("saving");
     try {
-      const { error } = await supabase.from("support_tickets").insert({
-        client_id: session.id,
-        subject: subject.trim(),
-        description: details.trim(),
-        status: "open",
-        priority: "normal",
-      });
+      const { data: ticketData, error } = await supabase
+        .from("support_tickets")
+        .insert({
+          client_id: session.id,
+          subject: subject.trim(),
+          description: details.trim(),
+          status: "open",
+          priority: "normal",
+        })
+        .select("*")
+        .single();
       if (error) throw error;
+
+      if (ticketData?.id) {
+        const { error: messageError } = await supabase
+          .from("support_ticket_messages")
+          .insert({
+            ticket_id: ticketData.id,
+            sender: isOwner ? "owner" : "client",
+            body: details.trim(),
+          });
+        if (messageError) {
+          console.warn("Failed to add ticket message", messageError);
+        }
+      }
       setSubject("");
       setDetails("");
       setFormStatus("idle");
@@ -122,6 +139,10 @@ const SupportTicketsScreen = ({ navigation, route }) => {
         <ScreenHeader title="Support tickets" onBack={handleReturn} />
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Open a new ticket</Text>
+          <Text style={styles.formSubtitle}>
+            Messages for tickets stay inside this thread so you can track the
+            entire request in one place.
+          </Text>
           <TextInput
             style={styles.input}
             placeholder="Subject"
@@ -160,31 +181,35 @@ const SupportTicketsScreen = ({ navigation, route }) => {
           </View>
         ) : null}
         {tickets.map((ticket) => (
-          <View key={ticket.id} style={styles.ticketCard}>
-            <View style={styles.ticketHeader}>
-              <Text style={styles.ticketSubject}>{ticket.subject}</Text>
-              <View style={styles.statusPill}>
-                <Text style={styles.statusText}>
-                  {(ticket.status || "open").toUpperCase()}
-                </Text>
+            <Pressable
+              key={ticket.id}
+              style={styles.ticketCard}
+              onPress={() =>
+                navigation.navigate("SupportTicketDetail", {
+                  ticketId: ticket.id,
+                  returnTo: "SupportTickets",
+                })
+              }
+            >
+              <View style={styles.ticketHeader}>
+                <Text style={styles.ticketSubject}>{ticket.subject}</Text>
+                <View style={styles.statusPill}>
+                  <Text style={styles.statusText}>
+                    {(ticket.status || "open").toUpperCase()}
+                  </Text>
+                </View>
               </View>
-            </View>
             <Text style={styles.ticketBody} numberOfLines={2}>
-              {ticket.description || "No description provided."}
-            </Text>
-            <View style={styles.ticketFooter}>
-              <Text style={styles.ticketMeta}>
-                {formatTicketDate(ticket.created_at)}
+                {ticket.description || "No description provided."}
               </Text>
-              <Pressable
-                onPress={() => navigation.navigate("Messages")}
-                style={styles.ticketLink}
-              >
-                <Text style={styles.ticketLinkText}>Chat with us</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))}
+              <View style={styles.ticketFooter}>
+                <Text style={styles.ticketMeta}>
+                  {formatTicketDate(ticket.created_at)}
+                </Text>
+                <Text style={styles.ticketLinkText}>Open conversation</Text>
+              </View>
+            </Pressable>
+          ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -219,6 +244,11 @@ const createStyles = (theme) =>
       fontSize: theme.typography.body.fontSize,
       fontWeight: "700",
       color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.sm,
+    },
+    formSubtitle: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
       marginBottom: theme.spacing.sm,
     },
     input: {

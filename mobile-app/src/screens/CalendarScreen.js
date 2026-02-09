@@ -345,6 +345,19 @@ const CalendarScreen = ({ navigation }) => {
                       );
                     })}
                   </View>
+                  <Pressable
+                    style={styles.galleryButton}
+                    onPress={() =>
+                      navigation.navigate("BookingGallery", {
+                        bookingId: booking.id,
+                        bookingTitle: serviceTitle || "Booking",
+                      })
+                    }
+                  >
+                    <Text style={styles.galleryButtonText}>
+                      View booking gallery
+                    </Text>
+                  </Pressable>
                 </View>
               <Text style={styles.bookingStatus}>
                   {booking.status || "Scheduled"}
@@ -552,6 +565,21 @@ const createStyles = (theme) =>
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.accentSoft,
       fontWeight: "600",
+    },
+    galleryButton: {
+      alignSelf: "flex-start",
+      marginTop: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      backgroundColor: theme.colors.surfaceAccent,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    galleryButtonText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
     },
     statusTimeline: {
       flexDirection: "row",

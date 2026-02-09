@@ -1,7 +1,7 @@
 # Jeroen & Paws Product Ideas
 
 ## 50 things to add
-1. In-app receipt history with downloadable PDFs
+1. ✅ In-app receipt history with downloadable PDFs
 2. ✅ Booking status timeline (requested → confirmed → paid → completed)
 3. ✅ Push notification preferences per category
 4. Pet vaccination record uploader
@@ -14,12 +14,12 @@
 11. Grooming style photo reference per pet
 12. ✅ Walking route live tracking
 13. Live ETA for pick-up/drop-off
-14. Photo gallery per booking
+14. ✅ Photo gallery per booking
 15. Family sharing (multiple guardians)
 16. ✅ Calendar sync (Google/Apple/outlook)
 17. In-app chat attachments
 18. ✅ Emergency contact card for pets
-19. Loyalty points / rewards wallet
+19. ✅ Loyalty points / rewards wallet
 20. Promo code input & validation
 21. In-app invoices with VAT details
 22. ✅ Service package bundles
