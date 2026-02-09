@@ -36,10 +36,56 @@ const buildDescription = (payload) => {
     .join("\n");
 };
 
+const resolveDateValue = (value) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.getTime();
+};
+
+const buildCustomFields = (payload, fieldIds, overrides = {}) => {
+  const fields = [
+    {
+      id: fieldIds.briefProblemDescription,
+      value: payload.briefProblemDescription?.trim(),
+    },
+    {
+      id: fieldIds.detailedProblemDescription,
+      value: payload.detailedProblemDescription?.trim(),
+    },
+    { id: fieldIds.ticketCategory, value: payload.ticketCategory },
+    { id: fieldIds.resolution, value: payload.resolution },
+    {
+      id: fieldIds.ticketNumber,
+      value: overrides.ticketNumber ?? payload.ticketNumber,
+    },
+    {
+      id: fieldIds.submissions,
+      value: resolveDateValue(payload.submissionDate),
+    },
+    { id: fieldIds.emailAddress, value: payload.emailAddress },
+    { id: fieldIds.assigneeEmail, value: payload.assigneeEmail },
+  ];
+
+  return fields.filter(
+    ({ id, value }) => Boolean(id) && value !== undefined && value !== ""
+  );
+};
+
 const resolveConfig = () => {
   const token = process.env.CLICKUP_API_TOKEN || process.env.CLICKUP_TOKEN;
   const listId = process.env.CLICKUP_LIST_ID;
   const assigneeId = process.env.CLICKUP_ASSIGNEE_ID;
+const customFieldIds = {
+    assigneeEmail: process.env.CLICKUP_FIELD_ASSIGNEE,
+    briefProblemDescription: process.env.CLICKUP_FIELD_BRIEF_DESCRIPTION,
+    detailedProblemDescription: process.env.CLICKUP_FIELD_DETAILED_DESCRIPTION,
+    ticketCategory: process.env.CLICKUP_FIELD_TICKET_CATEGORY,
+    resolution: process.env.CLICKUP_FIELD_RESOLUTION,
+    ticketNumber: process.env.CLICKUP_FIELD_TICKET_NUMBER,
+    submissions: process.env.CLICKUP_FIELD_SUBMISSIONS,
+    emailAddress: process.env.CLICKUP_FIELD_EMAIL_ADDRESS,
+  };
 
   if (!token) {
     throw new Error("Missing CLICKUP_API_TOKEN env var");
@@ -48,7 +94,7 @@ const resolveConfig = () => {
     throw new Error("Missing CLICKUP_LIST_ID env var");
   }
 
-  return { token, listId, assigneeId };
+  return { token, listId, assigneeId, customFieldIds };
 };
 
 const resolveDueDate = (value) => {
@@ -82,9 +128,10 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const { token, listId, assigneeId } = resolveConfig();
+    const { token, listId, assigneeId, customFieldIds } = resolveConfig();
     const description = buildDescription(payload);
     const dueDate = resolveDueDate(payload.dueDate);
+    const customFields = buildCustomFields(payload, customFieldIds);
 
     const response = await fetch(
       `https://api.clickup.com/api/v2/list/${listId}/task`,
@@ -103,6 +150,7 @@ module.exports = async (req, res) => {
             ? { due_date: dueDate, due_date_time: true }
             : {}),
           ...(assigneeId ? { assignees: [Number(assigneeId)] } : {}),
+          ...(customFields.length ? { custom_fields: customFields } : {}),
         }),
       }
     );
@@ -125,6 +173,26 @@ module.exports = async (req, res) => {
     const clickupTaskId = clickupTask?.id || "";
     const clickupTaskCustomId = clickupTask?.custom_id || "";
 
+    const ticketNumberValue = clickupTaskCustomId || clickupTaskId || "";
+    const ticketNumberUpdate = buildCustomFields(
+      payload,
+      customFieldIds,
+      { ticketNumber: ticketNumberValue }
+    ).filter(({ id }) => id === customFieldIds.ticketNumber);
+
+    if (ticketNumberUpdate.length && ticketNumberValue) {
+      await fetch(`https://api.clickup.com/api/v2/task/${clickupTaskId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ custom_fields: ticketNumberUpdate }),
+      }).catch((updateError) => {
+        console.warn("Failed to update ClickUp ticket number", updateError);
+      });
+    }
+    
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
