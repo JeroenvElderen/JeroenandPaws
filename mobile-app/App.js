@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   View,
+  AppState,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -48,6 +49,13 @@ import {
   prefetchAvailability,
 } from "./src/api/availabilityCache";
 import { getTabBarStyle } from "./src/utils/tabBar";
+import {
+  clearPaymentReminderId,
+  clearPendingPayment,
+  getPaymentReminderId,
+  getPendingPayment,
+  storePaymentReminderId,
+} from "./src/utils/paymentReminder";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -106,6 +114,35 @@ const configureNotifications = () => {
 };
 
 configureNotifications();
+
+const PAYMENT_REMINDER_SECONDS = 60 * 30;
+const PAYMENT_REMINDER_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+const buildPaymentReminderBody = (payload) => {
+  const serviceLabel = payload?.description;
+  const amount = payload?.amount;
+  const currency = payload?.currency || "EUR";
+  const formattedTotal = Number.isFinite(amount)
+    ? new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+      }).format(amount)
+    : null;
+  if (serviceLabel && formattedTotal) {
+    return `${serviceLabel} is still reserved. Complete your ${formattedTotal} payment.`;
+  }
+  if (serviceLabel) {
+    return `${serviceLabel} is still reserved. Complete your payment.`;
+  }
+  if (formattedTotal) {
+    return `Complete your ${formattedTotal} payment to confirm your booking.`;
+  }
+  return "Complete your payment to confirm your booking.";
+};
+
+const isPaidStatus = (status) =>
+  typeof status === "string" && status.toLowerCase().includes("paid");
 
 const registerForPushNotifications = async (accentColor) => {
   const Notifications = getNotificationsModule();
@@ -583,6 +620,110 @@ const AppShell = () => {
     };
   }, [session?.user, setSession, theme.colors.accent]);
 
+  useEffect(() => {
+    const Notifications = getNotificationsModule();
+    if (!Notifications) {
+      return undefined;
+    }
+    let isMounted = true;
+
+    const cancelScheduledReminder = async () => {
+      const reminderId = await getPaymentReminderId();
+      if (reminderId) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(reminderId);
+        } catch (error) {
+          console.warn("Failed to cancel payment reminder", error);
+        }
+      }
+      await clearPaymentReminderId();
+    };
+
+    const scheduleReminder = async (payloadRecord) => {
+      if (!payloadRecord?.payload) {
+        await cancelScheduledReminder();
+        return;
+      }
+      await cancelScheduledReminder();
+      try {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Payment reminder",
+            body: buildPaymentReminderBody(payloadRecord.payload),
+          },
+          trigger: { seconds: PAYMENT_REMINDER_SECONDS },
+        });
+        await storePaymentReminderId(id);
+      } catch (error) {
+        console.warn("Failed to schedule payment reminder", error);
+      }
+    };
+
+    const refreshPendingPayment = async () => {
+      const pendingPayment = await getPendingPayment();
+      if (!pendingPayment) {
+        await cancelScheduledReminder();
+        return;
+      }
+
+      const savedAtMs = new Date(pendingPayment.savedAt || 0).getTime();
+      if (
+        Number.isFinite(savedAtMs) &&
+        Date.now() - savedAtMs > PAYMENT_REMINDER_EXPIRY_MS
+      ) {
+        await clearPendingPayment();
+        await cancelScheduledReminder();
+        return;
+      }
+
+      if (!supabase || !pendingPayment.payload?.bookingId) {
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("bookings")
+          .select("status")
+          .eq("id", pendingPayment.payload.bookingId)
+          .maybeSingle();
+        if (!error && isPaidStatus(data?.status)) {
+          await clearPendingPayment();
+          await cancelScheduledReminder();
+        }
+      } catch (error) {
+        console.warn("Failed to check payment status", error);
+      }
+    };
+
+    const handleAppStateChange = async (nextState) => {
+      if (!isMounted) return;
+      if (nextState === "active") {
+        await refreshPendingPayment();
+        return;
+      }
+      if (nextState === "background" || nextState === "inactive") {
+        const pendingPayment = await getPendingPayment();
+        if (!pendingPayment) {
+          await cancelScheduledReminder();
+          return;
+        }
+        await scheduleReminder(pendingPayment);
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange,
+    );
+
+    refreshPendingPayment();
+
+    return () => {
+      isMounted = false;
+      subscription?.remove();
+    };
+  }, [session?.id]);
+  
   useEffect(() => {
     let isMounted = true;
 

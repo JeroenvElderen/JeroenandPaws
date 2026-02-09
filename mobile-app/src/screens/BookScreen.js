@@ -27,6 +27,7 @@ import { supabase } from "../api/supabaseClient";
 import PrimaryButton from "../components/PrimaryButton";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
+import { savePendingPayment } from "../utils/paymentReminder";
 
 const CATEGORY_ORDER = [
   "Daily strolls",
@@ -946,7 +947,7 @@ const BookScreen = ({ navigation, route }) => {
       }
 
       setStatus("success");
-      setPaymentPayload({
+      const nextPaymentPayload = {
         bookingId: responsePayload?.bookingId || responsePayload?.id,
         amount: totalPrice,
         currency: "EUR",
@@ -955,7 +956,9 @@ const BookScreen = ({ navigation, route }) => {
         time: formState.startTime,
         clientEmail: formState.email,
         clientName: formState.name,
-      });
+      };
+      setPaymentPayload(nextPaymentPayload);
+      await savePendingPayment(nextPaymentPayload);
       setFormState(createInitialState(selectedService, session));
       setSelectedPetIds([]);
       setSelectedOptionIds([]);
