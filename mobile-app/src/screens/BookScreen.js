@@ -1870,7 +1870,7 @@ const BookScreen = ({ navigation, route }) => {
             </View>
             {status !== "success" ? (
               <View style={styles.summaryBar}>
-                <View style={styles.summaryHeader}>
+               {/* <View style={styles.summaryHeader}>
                   <View>
                     <Text style={styles.summaryTitle}>Booking summary</Text>
                     {draftSaved ? (
@@ -1959,7 +1959,7 @@ const BookScreen = ({ navigation, route }) => {
                     </Text>
                   </View>
                 </View>
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                {error ? <Text style={styles.errorText}>{error}</Text> : null} */}
                 <View style={styles.summaryActions}>
                   <PrimaryButton
                     label="Save draft"
