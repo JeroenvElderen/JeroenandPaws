@@ -3,7 +3,7 @@
 ## 50 things to add
 1. In-app receipt history with downloadable PDFs
 2. Booking status timeline (requested → confirmed → paid → completed)
-3. Push notification preferences per category
+3. ✅ Push notification preferences per category
 4. Pet vaccination record uploader
 5. Pet weight & measurements tracker
 6. Favorite services list
@@ -12,7 +12,7 @@
 9. Tip/thank-you option post-service
 10. Service notes for each booking
 11. Grooming style photo reference per pet
-12. Walking route live tracking
+12. ✅ Walking route live tracking
 13. Live ETA for pick-up/drop-off
 14. Photo gallery per booking
 15. Family sharing (multiple guardians)
@@ -44,7 +44,7 @@
 41. Subscription billing (monthly plan)
 42. Dog walking group roster visibility
 43. Photo release consent toggle
-44. Contactless handoff instructions
+44. ✅ Contactless handoff instructions
 45. In-app support ticketing
 46. Service-specific pricing breakdown
 47. Pre-paid balance wallet

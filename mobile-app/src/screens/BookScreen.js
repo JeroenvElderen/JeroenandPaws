@@ -152,6 +152,7 @@ const createInitialState = (service, session) => ({
   preferences: "",
   specialNotes: "",
   message: "",
+  contactlessHandoff: "",
 });
 
 const formatCurrency = (amount) =>
@@ -278,6 +279,8 @@ const buildBookingMessage = (
     state.address && `Eircode: ${state.address}`,
     state.preferences && `Routine & preferences: ${state.preferences}`,
     state.specialNotes && `Notes or medications: ${state.specialNotes}`,
+    state.contactlessHandoff &&
+      `Contactless handoff: ${state.contactlessHandoff}`,
     selectedOptions.length
       ? `Add-ons: ${selectedOptions.map((option) => option.label).join(", ")}`
       : null,
@@ -895,6 +898,7 @@ const BookScreen = ({ navigation, route }) => {
       const notesToStore = [
         formState.preferences,
         formState.specialNotes,
+        formState.contactlessHandoff,
         formState.message,
         selectedOptions.length
           ? `Add-ons: ${selectedOptions
@@ -1577,6 +1581,18 @@ const BookScreen = ({ navigation, route }) => {
                         handleChange("specialNotes", value)
                       }
                     />
+                    <Text style={styles.label}>
+                      Contactless handoff instructions
+                    </Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder="Gate code, key location, drop-off preferences"
+                      value={formState.contactlessHandoff}
+                      multiline
+                      onChangeText={(value) =>
+                        handleChange("contactlessHandoff", value)
+                      }
+                    />
                     <Text style={styles.label}>Anything else?</Text>
                     <TextInput
                       style={[styles.input, styles.textArea]}
@@ -1621,6 +1637,11 @@ const BookScreen = ({ navigation, route }) => {
                       }`
                     : ""}
                 </Text>
+                {formState.contactlessHandoff ? (
+                  <Text style={styles.summaryLine}>
+                    Contactless: {formState.contactlessHandoff}
+                  </Text>
+                ) : null}
                 {selectedOptions.length ? (
                   <Text style={styles.summaryLine}>
                     Add-ons:{" "}

@@ -111,6 +111,44 @@ const buildStaticMapUrl = (coords) => {
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=15&size=640x320&markers=${lat},${lon},red-pushpin`;
 };
 
+const toRadians = (value) => (value * Math.PI) / 180;
+
+const calculateDistanceMeters = (pointA, pointB) => {
+  if (!pointA || !pointB) return 0;
+  const earthRadius = 6371000;
+  const lat1 = toRadians(pointA.latitude);
+  const lat2 = toRadians(pointB.latitude);
+  const deltaLat = toRadians(pointB.latitude - pointA.latitude);
+  const deltaLon = toRadians(pointB.longitude - pointA.longitude);
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLon / 2) *
+      Math.sin(deltaLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadius * c;
+};
+
+const formatDistance = (meters) => {
+  if (!Number.isFinite(meters)) return "0 m";
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(2)} km`;
+  }
+  return `${Math.round(meters)} m`;
+};
+
+const formatRelativeUpdate = (timestamp) => {
+  if (!timestamp) return "Waiting for GPS signal";
+  const diffSeconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (diffSeconds < 10) return "Updated just now";
+  if (diffSeconds < 60) return `Updated ${diffSeconds}s ago`;
+  const minutes = Math.floor(diffSeconds / 60);
+  if (minutes < 60) return `Updated ${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `Updated ${hours}h ago`;
+};
+
 const JeroenPawsCardScreen = ({ navigation, route }) => {
   const { session } = useSession();
   const { theme } = useTheme();
@@ -163,6 +201,9 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const locationSubscriptionRef = useRef(null);
+  const [routePoints, setRoutePoints] = useState([]);
+  const [distanceMeters, setDistanceMeters] = useState(0);
+  const [lastLocationTimestamp, setLastLocationTimestamp] = useState(null);
   const [loadedCardId, setLoadedCardId] = useState(null);
   const isReadOnly = Boolean(route?.params?.readOnly || route?.params?.cardId);
   const [cardStartedAt, setCardStartedAt] = useState(
@@ -245,6 +286,15 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
         });
         if (isMounted) {
           setLocation(current.coords);
+          setRoutePoints([
+            {
+              latitude: current.coords.latitude,
+              longitude: current.coords.longitude,
+              timestamp: Date.now(),
+            },
+          ]);
+          setDistanceMeters(0);
+          setLastLocationTimestamp(Date.now());
         }
         const subscription = await Location.watchPositionAsync(
           {
@@ -255,6 +305,24 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
           (update) => {
             if (!isMounted) return;
             setLocation(update.coords);
+            setLastLocationTimestamp(Date.now());
+            setRoutePoints((prev) => {
+              const lastPoint = prev[prev.length - 1];
+              const nextPoint = {
+                latitude: update.coords.latitude,
+                longitude: update.coords.longitude,
+                timestamp: Date.now(),
+              };
+              if (lastPoint) {
+                const increment = calculateDistanceMeters(lastPoint, nextPoint);
+                if (increment >= 2) {
+                  setDistanceMeters((currentDistance) => currentDistance + increment);
+                  return [...prev, nextPoint];
+                }
+                return prev;
+              }
+              return [nextPoint];
+            });
           }
         );
         locationSubscriptionRef.current = subscription;
@@ -652,6 +720,9 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
             setCardPhotos([]);
             setCounts(buildActivityCounts(cardPets));
             setCardStartedAt(null);
+            setRoutePoints([]);
+            setDistanceMeters(0);
+            setLastLocationTimestamp(null);
             handleReturn();
           },
         },
@@ -660,6 +731,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   };
 
   const mapUrl = buildStaticMapUrl(location);
+  const trackingStatus = isOwner && !isReadOnly;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -712,6 +784,47 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
               </Text>
             </Pressable>
           ) : null}
+        </View>
+        <View style={styles.trackingCard}>
+          <View style={styles.trackingHeader}>
+            <Text style={styles.trackingTitle}>Walking route live tracking</Text>
+            <View
+              style={[
+                styles.trackingPill,
+                trackingStatus
+                  ? styles.trackingPillActive
+                  : styles.trackingPillMuted,
+              ]}
+            >
+              <Text style={styles.trackingPillText}>
+                {trackingStatus ? "Live" : "Paused"}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.trackingHelper}>
+            {locationError ||
+              "We update the route while the visit is active so guardians can follow along."}
+          </Text>
+          <View style={styles.trackingStats}>
+            <View style={styles.trackingStat}>
+              <Text style={styles.trackingStatLabel}>Distance</Text>
+              <Text style={styles.trackingStatValue}>
+                {formatDistance(distanceMeters)}
+              </Text>
+            </View>
+            <View style={styles.trackingStat}>
+              <Text style={styles.trackingStatLabel}>Last update</Text>
+              <Text style={styles.trackingStatValue}>
+                {formatRelativeUpdate(lastLocationTimestamp)}
+              </Text>
+            </View>
+            <View style={styles.trackingStat}>
+              <Text style={styles.trackingStatLabel}>Route points</Text>
+              <Text style={styles.trackingStatValue}>
+                {routePoints.length}
+              </Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.timerCard}>
@@ -944,6 +1057,71 @@ const createStyles = (theme) =>
       color: theme.colors.textSecondary,
       fontSize: theme.typography.caption.fontSize,
       marginBottom: theme.spacing.xs,
+    },
+    trackingCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.md,
+    },
+    trackingHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.xs,
+    },
+    trackingTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      flex: 1,
+      marginRight: theme.spacing.sm,
+    },
+    trackingPill: {
+      paddingVertical: 4,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radius.full,
+    },
+    trackingPillActive: {
+      backgroundColor: theme.colors.accent,
+    },
+    trackingPillMuted: {
+      backgroundColor: theme.colors.borderStrong,
+    },
+    trackingPillText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: theme.colors.white,
+    },
+    trackingHelper: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.sm,
+    },
+    trackingStats: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+    },
+    trackingStat: {
+      flexBasis: "30%",
+      backgroundColor: theme.colors.surfaceElevated,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    trackingStatLabel: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    trackingStatValue: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+      marginTop: 4,
     },
     routeBadge: {
       backgroundColor: theme.colors.accent,
