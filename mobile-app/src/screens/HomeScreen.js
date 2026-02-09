@@ -78,6 +78,28 @@ const formatPetsLabel = (pets) => {
   return "Pets";
 };
 
+const BOOKING_STATUS_STEPS = [
+  "Requested",
+  "Confirmed",
+  "Paid",
+  "Completed",
+];
+
+const resolveBookingStepIndex = (status) => {
+  const normalized = (status || "").toLowerCase();
+  if (
+    normalized.includes("complete") ||
+    normalized.includes("finished") ||
+    normalized.includes("done")
+  ) {
+    return 3;
+  }
+  if (normalized.includes("paid")) return 2;
+  if (normalized.includes("confirm")) return 1;
+  if (normalized.includes("request") || normalized.includes("pending")) return 0;
+  return 0;
+};
+
 const startOfDay = (value = new Date()) => {
   const date = new Date(value);
   date.setHours(0, 0, 0, 0);
@@ -629,6 +651,9 @@ const HomeScreen = ({ navigation }) => {
               hasActiveCard && activeStart
                 ? Math.max(timeTick - activeStart, 0)
                 : 0;
+            const statusStepIndex = resolveBookingStepIndex(
+              finishedCard ? "completed" : booking?.status
+            );
 
             return (
               <View
@@ -656,6 +681,40 @@ const HomeScreen = ({ navigation }) => {
                         : booking.status || "Scheduled"}
                     </Text>
                   </View>
+                </View>
+                <View style={styles.statusTimeline}>
+                  {BOOKING_STATUS_STEPS.map((step, index) => {
+                    const isComplete = index <= statusStepIndex;
+                    const isLast = index === BOOKING_STATUS_STEPS.length - 1;
+                    return (
+                      <View key={step} style={styles.statusStep}>
+                        <View style={styles.statusIndicator}>
+                          <View
+                            style={[
+                              styles.statusDot,
+                              isComplete && styles.statusDotActive,
+                            ]}
+                          />
+                          {!isLast ? (
+                            <View
+                              style={[
+                                styles.statusLine,
+                                isComplete && styles.statusLineActive,
+                              ]}
+                            />
+                          ) : null}
+                        </View>
+                        <Text
+                          style={[
+                            styles.statusLabel,
+                            isComplete && styles.statusLabelActive,
+                          ]}
+                        >
+                          {step}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
                 {isJeroenAccount || canViewCard ? (
                   <View style={styles.cardFooter}>
@@ -1070,6 +1129,49 @@ const createStyles = (theme) =>
       color: theme.colors.accentSoft,
       fontWeight: "600",
       fontSize: 12,
+    },
+    statusTimeline: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+    },
+    statusStep: {
+      flex: 1,
+      alignItems: "center",
+    },
+    statusIndicator: {
+      flexDirection: "row",
+      alignItems: "center",
+      width: "100%",
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.border,
+    },
+    statusDotActive: {
+      backgroundColor: theme.colors.accent,
+    },
+    statusLine: {
+      flex: 1,
+      height: 2,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: 4,
+    },
+    statusLineActive: {
+      backgroundColor: theme.colors.accent,
+    },
+    statusLabel: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      textAlign: "center",
+    },
+    statusLabelActive: {
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
     },
     cardFooter: {
       borderTopWidth: 1,

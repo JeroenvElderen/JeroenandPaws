@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../components/ScreenHeader";
+import PrimaryButton from "../components/PrimaryButton";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
@@ -98,6 +99,17 @@ const WalletScreen = ({ navigation, route }) => {
             Use your balance to pay for upcoming services instantly.
           </Text>
         </View>
+        <View style={styles.topUpCard}>
+          <Text style={styles.topUpTitle}>Add money to your wallet</Text>
+          <Text style={styles.topUpBody}>
+            Top-ups are available on request. Send your preferred amount and we
+            will add it to your balance for future bookings.
+          </Text>
+          <PrimaryButton
+            label="Request a top-up"
+            onPress={() => navigation.navigate("Messages")}
+          />
+        </View>
         <Text style={styles.sectionTitle}>Recent activity</Text>
         {status === "loading" ? (
           <ActivityIndicator color={theme.colors.accent} />
@@ -179,6 +191,25 @@ const createStyles = (theme) =>
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textMuted,
       marginTop: theme.spacing.sm,
+    },
+    topUpCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.lg,
+    },
+    topUpTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    topUpBody: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.sm,
     },
     sectionTitle: {
       fontSize: theme.typography.body.fontSize,

@@ -2,13 +2,13 @@
 
 ## 50 things to add
 1. In-app receipt history with downloadable PDFs
-2. Booking status timeline (requested → confirmed → paid → completed)
+2. ✅ Booking status timeline (requested → confirmed → paid → completed)
 3. ✅ Push notification preferences per category
 4. Pet vaccination record uploader
 5. Pet weight & measurements tracker
 6. Favorite services list
 7. Repeat booking wizard with presets
-8. Custom add-ons per service (dynamic)
+8. ✅ Custom add-ons per service (dynamic)
 9. Tip/thank-you option post-service
 10. Service notes for each booking
 11. Grooming style photo reference per pet
@@ -16,9 +16,9 @@
 13. Live ETA for pick-up/drop-off
 14. Photo gallery per booking
 15. Family sharing (multiple guardians)
-16. Calendar sync (Google/Apple/outlook)
+16. ✅ Calendar sync (Google/Apple/outlook)
 17. In-app chat attachments
-18. Emergency contact card for pets
+18. ✅ Emergency contact card for pets
 19. Loyalty points / rewards wallet
 20. Promo code input & validation
 21. In-app invoices with VAT details
@@ -31,7 +31,7 @@
 28. Saved addresses (home, work, etc.)
 29. Service-specific intake forms
 30. Quiet hours / do-not-disturb settings
-31. Staff profiles with specialties
+31. ✅ Staff profiles with specialties
 32. “Meet & greet” appointment scheduling
 33. Service area map with boundaries
 34. Client feedback/rating after booking

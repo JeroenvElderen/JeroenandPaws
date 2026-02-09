@@ -112,6 +112,9 @@ const PetsProfileScreen = ({ navigation, route }) => {
         vet_name: "",
         vet_phone: "",
         insurance_provider: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        emergency_contact_relationship: "",
         allergies: "",
         medications: "",
         medical_notes: "",
@@ -518,6 +521,23 @@ const PetsProfileScreen = ({ navigation, route }) => {
               {renderField("Veterinary info", "vet_name")}
               {renderField("Vet phone", "vet_phone")}
               {renderField("Insurance provider", "insurance_provider")}
+              <Text style={styles.sectionSubTitle}>Emergency contact</Text>
+              <View style={styles.nestedCard}>
+                {renderField(
+                  "Contact name",
+                  "emergency_contact_name",
+                  { placeholder: "Name" }
+                )}
+                {renderField("Phone", "emergency_contact_phone", {
+                  keyboardType: "phone-pad",
+                  placeholder: "+353",
+                })}
+                {renderField(
+                  "Relationship",
+                  "emergency_contact_relationship",
+                  { placeholder: "Friend, family, neighbour" }
+                )}
+              </View>
               {renderField("Allergies", "allergies")}
               {renderField("Medications", "medications")}
               {renderField("Medical notes", "medical_notes", {
@@ -810,6 +830,14 @@ const createStyles = (theme) =>
       marginTop: theme.spacing.sm,
       marginBottom: theme.spacing.xs,
     },
+    sectionSubTitle: {
+      fontSize: theme.typography.caption.fontSize,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      color: theme.colors.textMuted,
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
+    },
     sectionCard: {
       backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.md,
@@ -817,6 +845,14 @@ const createStyles = (theme) =>
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.md,
+    },
+    nestedCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.sm,
     },
     detailRow: {
       paddingVertical: theme.spacing.xs,

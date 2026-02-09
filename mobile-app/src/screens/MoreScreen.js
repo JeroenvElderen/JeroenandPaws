@@ -64,6 +64,13 @@ const MoreScreen = ({ navigation }) => {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+  const staffProfiles = [
+    {
+      name: "Jeroen",
+      role: "Founder & Pet Care Specialist",
+      specialties: ["Senior care", "Puppy routines", "Behaviour support"],
+    },
+  ];
 
   const handleSetManualMode = async (nextMode) => {
     await setThemePreference(THEME_PREFERENCES.manual);
@@ -100,6 +107,31 @@ const MoreScreen = ({ navigation }) => {
               Manage your account, pets, and preferences.
             </Text>
           </View>
+        </View>
+        <Text style={styles.sectionTitle}>Your care team</Text>
+        <View style={styles.sectionCard}>
+          {staffProfiles.map((staff, index) => (
+            <View
+              key={staff.name}
+              style={[
+                styles.staffRow,
+                index === staffProfiles.length - 1 && styles.staffRowLast,
+              ]}
+            >
+              <View>
+                <Text style={styles.staffName}>{staff.name}</Text>
+                <Text style={styles.staffRole}>{staff.role}</Text>
+                <View style={styles.staffSpecialties}>
+                  {staff.specialties.map((specialty) => (
+                    <View key={specialty} style={styles.staffChip}>
+                      <Text style={styles.staffChipText}>{specialty}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <Text style={styles.staffNote}>Solo team</Text>
+            </View>
+          ))}
         </View>
         <Text style={styles.sectionTitle}>More</Text>
         <View style={styles.sectionCard}>
@@ -340,6 +372,48 @@ const createStyles = (theme) =>
       shadowOffset: theme.shadow.soft.shadowOffset,
       shadowRadius: theme.shadow.soft.shadowRadius,
       elevation: theme.shadow.soft.elevation,
+    },
+    staffRow: {
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    staffRowLast: {
+      borderBottomWidth: 0,
+    },
+    staffName: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      fontWeight: "700",
+    },
+    staffRole: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    staffSpecialties: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.sm,
+    },
+    staffChip: {
+      backgroundColor: theme.colors.surfaceAccent,
+      borderRadius: 999,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+    },
+    staffChipText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.accentSoft,
+      fontWeight: "600",
+    },
+    staffNote: {
+      marginTop: theme.spacing.sm,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      fontWeight: "600",
     },
     menuItem: {
       flexDirection: "row",

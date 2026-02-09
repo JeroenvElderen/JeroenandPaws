@@ -33,7 +33,29 @@ const buildDateKey = (year, monthIndex, day) => {
   return `${year}-${month}-${dayValue}`;
 };
 
-const CalendarScreen = () => {
+const BOOKING_STATUS_STEPS = [
+  "Requested",
+  "Confirmed",
+  "Paid",
+  "Completed",
+];
+
+const resolveBookingStepIndex = (status) => {
+  const normalized = (status || "").toLowerCase();
+  if (
+    normalized.includes("complete") ||
+    normalized.includes("finished") ||
+    normalized.includes("done")
+  ) {
+    return 3;
+  }
+  if (normalized.includes("paid")) return 2;
+  if (normalized.includes("confirm")) return 1;
+  if (normalized.includes("request") || normalized.includes("pending")) return 0;
+  return 0;
+};
+
+const CalendarScreen = ({ navigation }) => {
   const { session } = useSession();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -167,6 +189,37 @@ const CalendarScreen = () => {
         }
       >
         <Text style={styles.title}>Calendar</Text>
+        <View style={styles.syncCard}>
+          <Text style={styles.syncTitle}>Calendar sync</Text>
+          <Text style={styles.syncSubtitle}>
+            Keep bookings visible in Google, Apple, or Outlook. Send your
+            preferred calendar email and we will connect the feed.
+          </Text>
+          {[
+            { key: "google", label: "Google Calendar" },
+            { key: "apple", label: "Apple Calendar" },
+            { key: "outlook", label: "Outlook" },
+          ].map((provider, index, all) => (
+            <View
+              key={provider.key}
+              style={[
+                styles.syncRow,
+                index === all.length - 1 && styles.syncRowLast,
+              ]}
+            >
+              <View>
+                <Text style={styles.syncProvider}>{provider.label}</Text>
+                <Text style={styles.syncStatus}>Not connected</Text>
+              </View>
+              <Pressable
+                style={styles.syncAction}
+                onPress={() => navigation.navigate("Messages")}
+              >
+                <Text style={styles.syncActionText}>Request sync</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
         <View style={styles.calendarCard}>
           <View style={styles.monthHeader}>
             <Pressable style={styles.monthButton} onPress={goToPreviousMonth}>
@@ -242,10 +295,11 @@ const CalendarScreen = () => {
             const end = booking?.end_at ? new Date(booking.end_at) : null;
             const serviceTitle =
               booking?.service_title || booking?.services_catalog?.title;
+            const statusStepIndex = resolveBookingStepIndex(booking?.status);
 
               return (
               <View key={booking.id} style={styles.bookingRow}>
-                <View>
+                <View style={styles.bookingCopy}>
                   <Text style={styles.bookingDate}>
                     {start ? formatDateLabel(start) : "Date TBD"}
                   </Text>
@@ -257,6 +311,40 @@ const CalendarScreen = () => {
                       ? `${formatTime(start)} – ${formatTime(end)}`
                       : "Time TBD"}
                   </Text>
+                  <View style={styles.statusTimeline}>
+                    {BOOKING_STATUS_STEPS.map((step, index) => {
+                      const isComplete = index <= statusStepIndex;
+                      const isLast = index === BOOKING_STATUS_STEPS.length - 1;
+                      return (
+                        <View key={step} style={styles.statusStep}>
+                          <View style={styles.statusIndicator}>
+                            <View
+                              style={[
+                                styles.statusDot,
+                                isComplete && styles.statusDotActive,
+                              ]}
+                            />
+                            {!isLast ? (
+                              <View
+                                style={[
+                                  styles.statusLine,
+                                  isComplete && styles.statusLineActive,
+                                ]}
+                              />
+                            ) : null}
+                          </View>
+                          <Text
+                            style={[
+                              styles.statusLabel,
+                              isComplete && styles.statusLabelActive,
+                            ]}
+                          >
+                            {step}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
               <Text style={styles.bookingStatus}>
                   {booking.status || "Scheduled"}
@@ -288,6 +376,58 @@ const createStyles = (theme) =>
       color: theme.colors.textPrimary,
       marginBottom: theme.spacing.md,
       textAlign: "center",
+    },
+    syncCard: {
+      backgroundColor: theme.colors.surfaceElevated,
+      borderRadius: theme.radius.xl,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.lg,
+    },
+    syncTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    syncSubtitle: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.md,
+    },
+    syncRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    syncRowLast: {
+      borderBottomWidth: 0,
+      paddingBottom: 0,
+    },
+    syncProvider: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    syncStatus: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      marginTop: 2,
+    },
+    syncAction: {
+      backgroundColor: theme.colors.surfaceAccent,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: 999,
+    },
+    syncActionText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.accentSoft,
+      fontWeight: "600",
     },
     calendarCard: {
       backgroundColor: theme.colors.surfaceElevated,
@@ -384,10 +524,14 @@ const createStyles = (theme) =>
     bookingRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      alignItems: "center",
+      alignItems: "flex-start",
       paddingVertical: theme.spacing.xs,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
+    },
+    bookingCopy: {
+      flex: 1,
+      paddingRight: theme.spacing.sm,
     },
     bookingDate: {
       fontSize: theme.typography.body.fontSize,
@@ -407,6 +551,48 @@ const createStyles = (theme) =>
     bookingStatus: {
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.accentSoft,
+      fontWeight: "600",
+    },
+    statusTimeline: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginTop: theme.spacing.sm,
+    },
+    statusStep: {
+      flex: 1,
+      alignItems: "center",
+    },
+    statusIndicator: {
+      flexDirection: "row",
+      alignItems: "center",
+      width: "100%",
+    },
+    statusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.border,
+    },
+    statusDotActive: {
+      backgroundColor: theme.colors.accent,
+    },
+    statusLine: {
+      flex: 1,
+      height: 2,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: 3,
+    },
+    statusLineActive: {
+      backgroundColor: theme.colors.accent,
+    },
+    statusLabel: {
+      marginTop: theme.spacing.xs,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      textAlign: "center",
+    },
+    statusLabelActive: {
+      color: theme.colors.textPrimary,
       fontWeight: "600",
     },
     emptyText: {

@@ -83,6 +83,77 @@ const normalizeAddons = (addons = []) =>
     })
     .filter((addon) => addon.label);
 
+    const buildServiceAddonLookup = (service) => {
+  if (!service) return { addonIds: new Set(), meta: {} };
+  const addonIds = new Set();
+  const meta = {
+    id: service?.id ? String(service.id) : "",
+    slug: service?.slug ? String(service.slug) : "",
+    title: service?.title ? String(service.title).toLowerCase() : "",
+    category: service?.category ? String(service.category).toLowerCase() : "",
+  };
+
+  const rawAddons =
+    service?.addons ||
+    service?.addon_ids ||
+    service?.addonIds ||
+    service?.add_ons ||
+    [];
+
+  if (Array.isArray(rawAddons)) {
+    rawAddons.forEach((addon) => {
+      if (!addon) return;
+      if (typeof addon === "object") {
+        const resolvedId =
+          addon.id ?? addon.value ?? addon.slug ?? addon.addon_id;
+        if (resolvedId !== undefined && resolvedId !== null) {
+          addonIds.add(String(resolvedId));
+        }
+        return;
+      }
+      addonIds.add(String(addon));
+    });
+  }
+
+  return { addonIds, meta };
+};
+
+const resolveServiceAddons = (service, addons) => {
+  if (!addons?.length) return [];
+  if (!service) return addons;
+
+  const { addonIds, meta } = buildServiceAddonLookup(service);
+
+  const matchesServiceMeta = (addon) => {
+    const rawServiceIds = addon?.service_ids || addon?.serviceIds || [];
+    const serviceIds = Array.isArray(rawServiceIds)
+      ? rawServiceIds.map((value) => String(value))
+      : [];
+    const addonServiceId = addon?.service_id ?? addon?.serviceId;
+    const addonServiceSlug = addon?.service_slug ?? addon?.serviceSlug;
+    const addonCategory = addon?.category || addon?.service_category;
+
+    return (
+      (addonServiceId && String(addonServiceId) === meta.id) ||
+      (addonServiceSlug && String(addonServiceSlug) === meta.slug) ||
+      (serviceIds.length && serviceIds.includes(meta.id)) ||
+      (serviceIds.length && meta.slug && serviceIds.includes(meta.slug)) ||
+      (serviceIds.length && meta.title && serviceIds.includes(meta.title)) ||
+      (addonCategory &&
+        meta.category &&
+        String(addonCategory).toLowerCase() === meta.category)
+    );
+  };
+
+  if (addonIds.size > 0) {
+    const filtered = addons.filter((addon) => addonIds.has(String(addon.id)));
+    return filtered.length ? filtered : addons;
+  }
+
+  const matched = addons.filter((addon) => matchesServiceMeta(addon));
+  return matched.length ? matched : addons;
+};
+
 const createDog = () => ({
   name: "",
   breed: "",
@@ -369,6 +440,19 @@ const BookScreen = ({ navigation, route }) => {
     loadAddons();
   }, [loadAddons]);
 
+  const serviceAddons = useMemo(
+    () => resolveServiceAddons(selectedService, availableAddons),
+    [selectedService, availableAddons]
+  );
+
+  useEffect(() => {
+    setSelectedOptionIds((current) =>
+      current.filter((optionId) =>
+        serviceAddons.some((addon) => addon.id === optionId)
+      )
+    );
+  }, [serviceAddons]);
+
   useEffect(() => {
     if (!categories.length) {
       return;
@@ -644,7 +728,7 @@ const BookScreen = ({ navigation, route }) => {
   const selectedPets = existingPets.filter((pet) =>
     selectedPetIds.includes(pet.id)
   );
-  const selectedOptions = availableAddons.filter((option) =>
+  const selectedOptions = serviceAddons.filter((option) =>
     selectedOptionIds.includes(option.id)
   );
   const basePrice = parsePriceValue(
@@ -1533,8 +1617,10 @@ const BookScreen = ({ navigation, route }) => {
                       </View>
                     ) : null}
 
-                    <Text style={styles.formSectionTitle}>Additional options</Text>
-                    {availableAddons.length ? (
+                    <Text style={styles.formSectionTitle}>
+                      Custom add-ons
+                    </Text>
+                    {serviceAddons.length ? (
                       <View>
                         <Pressable
                           style={styles.dropdown}
@@ -1543,7 +1629,7 @@ const BookScreen = ({ navigation, route }) => {
                           <Text style={styles.dropdownValue}>
                             {selectedOptions.length
                               ? selectedOptions.map((option) => option.label).join(", ")
-                              : "Select add-ons"}
+                              : "Select add-ons for this service"}
                           </Text>
                           <Ionicons
                             name={showAddonDropdown ? "chevron-up" : "chevron-down"}
@@ -1553,7 +1639,7 @@ const BookScreen = ({ navigation, route }) => {
                         </Pressable>
                         {showAddonDropdown ? (
                           <View style={styles.dropdownList}>
-                            {availableAddons.map((option, optionIndex) => (
+                            {serviceAddons.map((option, optionIndex) => (
                               <Pressable
                                 key={`${option.id || option.label || optionIndex}`}
                                 style={styles.dropdownItem}
@@ -1574,7 +1660,7 @@ const BookScreen = ({ navigation, route }) => {
                       </View>
                     ) : (
                       <Text style={styles.helperText}>
-                        No add-ons available right now.
+                        No add-ons available for this service right now.
                       </Text>
                     )}
 
