@@ -16,13 +16,13 @@
 13. Live ETA for pick-up/drop-off
 14. Photo gallery per booking
 15. Family sharing (multiple guardians)
-16. Calendar sync (Google/Apple)
+16. Calendar sync (Google/Apple/outlook)
 17. In-app chat attachments
 18. Emergency contact card for pets
 19. Loyalty points / rewards wallet
 20. Promo code input & validation
 21. In-app invoices with VAT details
-22. Service package bundles
+22. ✅ Service package bundles
 23. Gift cards purchase + redemption
 24. Pet allergy & medication panel
 25. Service cancellations with reason selector
@@ -45,9 +45,9 @@
 42. Dog walking group roster visibility
 43. Photo release consent toggle
 44. ✅ Contactless handoff instructions
-45. In-app support ticketing
+45. ✅ In-app support ticketing
 46. Service-specific pricing breakdown
-47. Pre-paid balance wallet
+47. ✅ Pre-paid balance wallet
 48. Client profile completion meter
 49. Personalized recommendations
 50. Referral tracking + credits

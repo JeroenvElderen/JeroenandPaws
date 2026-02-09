@@ -34,6 +34,9 @@ import PaymentScreen from "./src/screens/PaymentScreen";
 import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import ClientProfilesScreen from "./src/screens/ClientProfilesScreen";
+import SupportTicketsScreen from "./src/screens/SupportTicketsScreen";
+import WalletScreen from "./src/screens/WalletScreen";
+import ServiceBundlesScreen from "./src/screens/ServiceBundlesScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 import {
   ThemeProvider,
@@ -212,6 +215,11 @@ const ProfileStackScreen = () => {
         component={PaymentMethodsScreen}
       />
       <ProfileStack.Screen name="HelpSupport" component={HelpSupportScreen} />
+      <ProfileStack.Screen
+        name="SupportTickets"
+        component={SupportTicketsScreen}
+      />
+      <ProfileStack.Screen name="Wallet" component={WalletScreen} />
     </ProfileStack.Navigator>
   );
 };
@@ -723,7 +731,7 @@ const AppShell = () => {
       subscription?.remove();
     };
   }, [session?.id]);
-  
+
   useEffect(() => {
     let isMounted = true;
 
@@ -965,6 +973,10 @@ const AppShell = () => {
         <RootStack.Screen
           name="JeroenPawsCard"
           component={JeroenPawsCardScreen}
+        />
+        <RootStack.Screen
+          name="ServiceBundles"
+          component={ServiceBundlesScreen}
         />
         <RootStack.Screen name="Payment" component={PaymentScreen} />
       </RootStack.Navigator>

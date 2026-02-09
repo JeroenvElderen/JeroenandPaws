@@ -57,6 +57,19 @@ const HelpSupportScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <ScreenHeader title="Help & Support" onBack={handleReturn} />
+        <Pressable
+          style={styles.card}
+          onPress={() =>
+            navigation.navigate("SupportTickets", {
+              returnTo: "HelpSupport",
+            })
+          }
+        >
+          <Text style={styles.cardTitle}>Support tickets</Text>
+          <Text style={styles.cardDescription}>
+            Track open requests and raise a new ticket.
+          </Text>
+        </Pressable>
         <Pressable style={styles.card} onPress={handleEmailPress}>
           <Text style={styles.cardTitle}>Email us</Text>
           <Text style={styles.cardDescription}>

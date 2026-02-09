@@ -994,6 +994,9 @@ const BookScreen = ({ navigation, route }) => {
     });
     closeService();
   };
+  const handleViewBundles = () => {
+    navigation.getParent()?.navigate("ServiceBundles");
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -1024,6 +1027,21 @@ const BookScreen = ({ navigation, route }) => {
         <Text style={styles.subtitle}>
           Tap a category to explore services and book instantly.
         </Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.bundleCard,
+            pressed && styles.cardPressed,
+          ]}
+          onPress={handleViewBundles}
+        >
+          <View style={styles.bundleCopy}>
+            <Text style={styles.bundleTitle}>Service package bundles</Text>
+            <Text style={styles.bundleDescription}>
+              Save when you pre-pay for multi-visit packages.
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
 
         {categories.map((group) => {
           const isExpanded = expandedCategories[group.category];
@@ -1849,6 +1867,36 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
     textAlign: "center",
     marginBottom: 12,
+  },
+  bundleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: theme.colors.surface,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSoft,
+    marginBottom: 16,
+    shadowColor: theme.shadow.soft.shadowColor,
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  bundleCopy: {
+    flex: 1,
+    marginRight: 12,
+  },
+  bundleTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  bundleDescription: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
   },
   categorySection: {
     marginBottom: 8,

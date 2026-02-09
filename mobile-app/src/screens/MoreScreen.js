@@ -27,6 +27,12 @@ const userItems = [
     route: "PetsProfile",
   },
   {
+    label: "Wallet",
+    icon: "wallet",
+    description: "View your pre-paid balance",
+    route: "Wallet",
+  },
+  {
     label: "Settings",
     icon: "cog",
     description: "Notifications and preferences",

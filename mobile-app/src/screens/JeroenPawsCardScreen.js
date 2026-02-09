@@ -180,6 +180,13 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
   const handleReturn = () => {
     const returnTo = route?.params?.returnTo;
     if (returnTo) {
+      if (returnTo === "Home") {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "MainTabs", params: { screen: "Home" } }],
+        });
+        return;
+      }
       if (returnTo === "Profile") {
         navigation.getParent()?.navigate("Profile", { screen: "ProfileHome" });
         return;
