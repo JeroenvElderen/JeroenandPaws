@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -14,8 +15,15 @@ import PrimaryButton from "../components/PrimaryButton";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
+import {
+  DEFAULT_AUTO_RELOAD,
+  loadAutoReloadSettings,
+  saveAutoReloadSettings,
+} from "../utils/walletAutoReload";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const AUTO_RELOAD_THRESHOLDS = [1000, 1500, 2500];
+const AUTO_RELOAD_TOPUPS = [2500, 5000, 7500];
 
 const formatCurrency = (amount, currency = "EUR") =>
   new Intl.NumberFormat("en-GB", {
@@ -37,6 +45,10 @@ const WalletScreen = ({ navigation, route }) => {
   const [referrals, setReferrals] = useState([]);
   const [referralCredits, setReferralCredits] = useState([]);
   const [status, setStatus] = useState("idle");
+  const [autoReloadSettings, setAutoReloadSettings] = useState(
+    DEFAULT_AUTO_RELOAD
+  );
+  const [autoReloadStatus, setAutoReloadStatus] = useState("idle");
   const returnTo = route?.params?.returnTo;
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -144,6 +156,34 @@ const WalletScreen = ({ navigation, route }) => {
     loadWallet();
   }, [loadWallet]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadSettings = async () => {
+      if (!session?.id) return;
+      setAutoReloadStatus("loading");
+      const settings = await loadAutoReloadSettings(session.id);
+      if (!isMounted) return;
+      setAutoReloadSettings(settings);
+      setAutoReloadStatus("ready");
+    };
+    loadSettings();
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.id]);
+
+  const updateAutoReloadSettings = async (updates) => {
+    if (!session?.id) return;
+    const nextSettings = {
+      ...autoReloadSettings,
+      ...updates,
+    };
+    setAutoReloadSettings(nextSettings);
+    setAutoReloadStatus("saving");
+    await saveAutoReloadSettings(session.id, nextSettings);
+    setAutoReloadStatus("ready");
+  };
+
   const balanceCents = wallet?.balance_cents || 0;
   const currency = wallet?.currency || "EUR";
   const referralCreditsCents = referralCredits.reduce(
@@ -186,6 +226,86 @@ const WalletScreen = ({ navigation, route }) => {
             onPress={() => navigation.navigate("Messages")}
             variant="secondary"
           />
+        </View>
+        <View style={styles.autoReloadCard}>
+          <View style={styles.autoReloadHeader}>
+            <Text style={styles.autoReloadTitle}>Auto-reload</Text>
+            <Switch
+              value={autoReloadSettings.enabled}
+              onValueChange={(value) =>
+                updateAutoReloadSettings({ enabled: value })
+              }
+            />
+          </View>
+          <Text style={styles.autoReloadBody}>
+            Keep your wallet topped up automatically when your balance drops
+            below the set threshold.
+          </Text>
+          <Text style={styles.autoReloadLabel}>Reload threshold</Text>
+          <View style={styles.autoReloadOptions}>
+            {AUTO_RELOAD_THRESHOLDS.map((amount) => (
+              <Pressable
+                key={`threshold-${amount}`}
+                style={[
+                  styles.autoReloadChip,
+                  autoReloadSettings.threshold_cents === amount &&
+                    styles.autoReloadChipActive,
+                ]}
+                onPress={() =>
+                  updateAutoReloadSettings({ threshold_cents: amount })
+                }
+              >
+                <Text
+                  style={[
+                    styles.autoReloadChipText,
+                    autoReloadSettings.threshold_cents === amount &&
+                      styles.autoReloadChipTextActive,
+                  ]}
+                >
+                  {formatCurrency(amount / 100, currency)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.autoReloadLabel}>Reload amount</Text>
+          <View style={styles.autoReloadOptions}>
+            {AUTO_RELOAD_TOPUPS.map((amount) => (
+              <Pressable
+                key={`topup-${amount}`}
+                style={[
+                  styles.autoReloadChip,
+                  autoReloadSettings.top_up_cents === amount &&
+                    styles.autoReloadChipActive,
+                ]}
+                onPress={() =>
+                  updateAutoReloadSettings({ top_up_cents: amount })
+                }
+              >
+                <Text
+                  style={[
+                    styles.autoReloadChipText,
+                    autoReloadSettings.top_up_cents === amount &&
+                      styles.autoReloadChipTextActive,
+                  ]}
+                >
+                  {formatCurrency(amount / 100, currency)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.autoReloadFooter}>
+            <Text style={styles.autoReloadNote}>
+              Charging {autoReloadSettings.payment_method_label}.
+            </Text>
+            <Text style={styles.autoReloadNote}>
+              {autoReloadSettings.enabled
+                ? "Auto-reload is active."
+                : "Auto-reload is paused."}
+            </Text>
+            {autoReloadStatus === "saving" ? (
+              <Text style={styles.autoReloadNote}>Saving settings…</Text>
+            ) : null}
+          </View>
         </View>
         <View style={styles.rewardsCard}>
           <Text style={styles.rewardsTitle}>Rewards wallet</Text>
@@ -409,6 +529,70 @@ const createStyles = (theme) =>
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textSecondary,
       marginBottom: theme.spacing.sm,
+    },
+    autoReloadCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.lg,
+    },
+    autoReloadHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: theme.spacing.xs,
+    },
+    autoReloadTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    autoReloadBody: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.md,
+    },
+    autoReloadLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      marginBottom: theme.spacing.xs,
+    },
+    autoReloadOptions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    autoReloadChip: {
+      paddingVertical: 6,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.surfaceElevated,
+    },
+    autoReloadChipActive: {
+      backgroundColor: theme.colors.accent,
+      borderColor: theme.colors.accent,
+    },
+    autoReloadChipText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    autoReloadChipTextActive: {
+      color: theme.colors.white,
+    },
+    autoReloadFooter: {
+      gap: 4,
+    },
+    autoReloadNote: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
     },
     rewardsCard: {
       backgroundColor: theme.colors.surface,

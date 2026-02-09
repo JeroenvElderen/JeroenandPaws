@@ -23,7 +23,7 @@
 20. Groomer notes/history per pet
 21. Auto-suggest rebook based on typical interval
 22. Split payments between guardians
-23. Wallet top-up with auto-reload
+23. ✅ Wallet top-up with auto-reload
 24. Waitlist auto-offer when a slot opens
 25. In-app tipping presets with custom amounts
 26. Caregiver favorites list plus block list
@@ -37,7 +37,7 @@
 34. Emergency pickup authorization contacts
 35. Chat translation for multilingual support
 36. Time window selection instead of exact time
-37. Seasonal add-on bundles (e.g., winter coat care)
+37. ✅ Seasonal add-on bundles (e.g., winter coat care)
 38. In-app store for pet products
 39. Pickup/dropoff ETA sharing link
 40. QR code check-in at visit
@@ -54,9 +54,9 @@
 51. App-wide announcements banner
 52. Saved search filters for providers
 53. Provider availability heatmap
-54. One-tap call to support
-55. Offline access to pet profiles
-56. Customizable home dashboard widgets
+54. ✅ One-tap call to support
+55. ✅ Offline access to pet profiles
+56. ✅ Customizable home dashboard widgets
 57. Multi-currency pricing for travelers
 58. Carbon offset option per trip
 59. Pet birthday reminders with offers
@@ -65,6 +65,11 @@
 62. AI-powered service recommendations
 63. Booking deposit option
 64. Provider response time indicators
+65. Home header theme picker with custom gradients
+66. Saved home layouts per pet (switchable dashboards)
+67. Voice notes for pet care instructions
+68. Auto-generated post-visit summary highlights
+69. Smart reschedule suggestions during peak times
 
 ## 50 things to adjust
 1. Reduce steps in booking flow (fewer screens)

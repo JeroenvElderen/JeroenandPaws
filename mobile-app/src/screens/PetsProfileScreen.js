@@ -17,6 +17,11 @@ import PrimaryButton from "../components/PrimaryButton";
 import ScreenHeader from "../components/ScreenHeader";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
+import {
+  loadCachedPets,
+  saveCachedPets,
+  upsertCachedPet,
+} from "../utils/petProfilesCache";
 
 const getInitials = (name) => {
   if (!name) return "JP";
@@ -45,6 +50,10 @@ const PetsProfileScreen = ({ navigation, route }) => {
   const [saveStatus, setSaveStatus] = useState("idle");
   const [saveError, setSaveError] = useState("");
   const [openSelectField, setOpenSelectField] = useState(null);
+  const [offlineState, setOfflineState] = useState({
+    isOffline: false,
+    updatedAt: null,
+  });
   const selectedPet = route?.params?.pet || null;
   const isCreating = route?.params?.mode === "create";
   const isDetailView = Boolean(selectedPet) || isCreating;
@@ -66,20 +75,53 @@ const PetsProfileScreen = ({ navigation, route }) => {
     navigation.goBack();
   };
 
-  const loadPets = useCallback(async () => {
-    if (!session?.email) {
-      return;
-    }
+  const loadPets = useCallback(
+    async ({ allowCache = true } = {}) => {
+      if (!session?.email) {
+        return;
+      }
 
-    try {
-      const data = await fetchJson(
-        `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
-      );
-      setPets(Array.isArray(data?.pets) ? data.pets : []);
-    } catch (error) {
-      console.error("Failed to load pets", error);
-    }
-  }, [session?.email]);
+      if (allowCache) {
+        const cached = await loadCachedPets(session.email);
+        if (cached?.pets) {
+          setPets(cached.pets);
+          setOfflineState({
+            isOffline: false,
+            updatedAt: cached.updatedAt || null,
+          });
+        }
+      }
+
+      try {
+        const data = await fetchJson(
+          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+        );
+        const nextPets = Array.isArray(data?.pets) ? data.pets : [];
+        setPets(nextPets);
+        setOfflineState({
+          isOffline: false,
+          updatedAt: new Date().toISOString(),
+        });
+        await saveCachedPets(session.email, nextPets);
+      } catch (error) {
+        console.error("Failed to load pets", error);
+        const cached = await loadCachedPets(session.email);
+        if (cached?.pets) {
+          setPets(cached.pets);
+          setOfflineState({
+            isOffline: true,
+            updatedAt: cached.updatedAt || null,
+          });
+        } else {
+          setOfflineState({
+            isOffline: true,
+            updatedAt: null,
+          });
+        }
+      }
+    },
+    [session?.email]
+  );
 
   useEffect(() => {
     if (!isDetailView) {
@@ -205,6 +247,12 @@ const PetsProfileScreen = ({ navigation, route }) => {
       if (error) throw error;
       if (data) {
         setDraftPet(data);
+        if (session?.email) {
+          const updatedPets = await upsertCachedPet(session.email, data);
+          if (updatedPets) {
+            setPets(updatedPets);
+          }
+        }
       }
       setSaveStatus("idle");
       setIsEditing(false);
@@ -613,7 +661,7 @@ const PetsProfileScreen = ({ navigation, route }) => {
             refreshing={refreshing}
             onRefresh={async () => {
               setRefreshing(true);
-              await loadPets();
+              await loadPets({ allowCache: false });
               setRefreshing(false);
             }}
             tintColor={theme.colors.accent}
@@ -626,6 +674,37 @@ const PetsProfileScreen = ({ navigation, route }) => {
             {pets.length} {pets.length === 1 ? "pet" : "pets"} in your profile
           </Text>
         </View>
+        {offlineState.updatedAt ? (
+          <View
+            style={[
+              styles.offlineBanner,
+              offlineState.isOffline && styles.offlineBannerWarning,
+            ]}
+          >
+            <Text
+              style={[
+                styles.offlineBannerText,
+                offlineState.isOffline && styles.offlineBannerTextWarning,
+              ]}
+            >
+              {offlineState.isOffline
+                ? `Offline mode: showing cached profiles from ${new Date(
+                    offlineState.updatedAt
+                  ).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                  })}.`
+                : `Last updated ${new Date(
+                    offlineState.updatedAt
+                  ).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}.`}
+            </Text>
+          </View>
+        ) : null}
         {pets.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
@@ -733,6 +812,27 @@ const createStyles = (theme) =>
     header: {
       alignItems: "center",
       marginBottom: theme.spacing.lg,
+    },
+    offlineBanner: {
+      backgroundColor: theme.colors.surfaceElevated,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.sm,
+    },
+    offlineBannerWarning: {
+      borderColor: theme.colors.accent,
+      backgroundColor: theme.colors.accentMuted,
+    },
+    offlineBannerText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+    },
+    offlineBannerTextWarning: {
+      color: theme.colors.accent,
+      fontWeight: "600",
     },
     petDetailHeader: {
       alignItems: "center",

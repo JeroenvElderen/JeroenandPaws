@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,9 +24,51 @@ import {
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { loadActiveCards, saveActiveCards } from "../utils/activeCards";
+import {
+  DEFAULT_HOME_LAYOUT,
+  loadHomeLayout,
+  saveHomeLayout,
+} from "../utils/homeWidgets";
+import {
+  loadCachedPets,
+  saveCachedPets,
+} from "../utils/petProfilesCache";
 import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const SUPPORT_PHONE = "+353872473099";
+const DEFAULT_WIDGETS = ["wallet", "pets", "support", "bundles"];
+const DEFAULT_SECTIONS = [
+  "hero",
+  "summary",
+  "highlight",
+  "widgets",
+  "quickActions",
+  "upcoming",
+];
+const HEADER_STYLES = [
+  {
+    id: "classic",
+    label: "Classic",
+    titleSize: 28,
+    showBadge: true,
+    showMeta: true,
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    titleSize: 22,
+    showBadge: false,
+    showMeta: false,
+  },
+  {
+    id: "bold",
+    label: "Bold",
+    titleSize: 32,
+    showBadge: true,
+    showMeta: true,
+  },
+];
 
 const formatDateLabel = (date) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -51,6 +96,13 @@ const formatTimeRange = (start, end) => {
   if (!start || !end) return "Time TBD";
   return `${formatTime(start)} – ${formatTime(end)}`;
 };
+
+const formatCurrency = (amount, currency = "EUR") =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
 
 const formatElapsedTime = (totalMs) => {
   if (!Number.isFinite(totalMs) || totalMs < 0) return "00:00:00";
@@ -152,6 +204,21 @@ const HomeScreen = ({ navigation }) => {
   const [timeTick, setTimeTick] = useState(Date.now());
   const [refreshing, setRefreshing] = useState(false);
   const [finishedCards, setFinishedCards] = useState({});
+  const [widgetIds, setWidgetIds] = useState(DEFAULT_WIDGETS);
+  const [sectionIds, setSectionIds] = useState(DEFAULT_SECTIONS);
+  const [customWidgets, setCustomWidgets] = useState([]);
+  const [headerStyle, setHeaderStyle] = useState("classic");
+  const [widgetsLoaded, setWidgetsLoaded] = useState(false);
+  const [showWidgetSettings, setShowWidgetSettings] = useState(false);
+  const [walletSummary, setWalletSummary] = useState(null);
+  const [petsSummary, setPetsSummary] = useState({ count: 0, updatedAt: null });
+  const [petsOffline, setPetsOffline] = useState(false);
+  const [customForm, setCustomForm] = useState({
+    title: "",
+    body: "",
+    action: "",
+    cta: "",
+  });
   const hasShownEmptyPetsPrompt = useRef(false);
   const isJeroenAccount =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -207,6 +274,51 @@ const HomeScreen = ({ navigation }) => {
     saveActiveCards(session.email, activeRoverCards);
   }, [activeCardsLoaded, activeRoverCards, isJeroenAccount, session?.email]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadWidgets = async () => {
+      if (!session?.email) {
+        setWidgetsLoaded(true);
+        return;
+      }
+      const stored = await loadHomeLayout(session.email, {
+        ...DEFAULT_HOME_LAYOUT,
+        widgetIds: DEFAULT_WIDGETS,
+        sectionIds: DEFAULT_SECTIONS,
+        headerStyle: "classic",
+      });
+      if (!isMounted) return;
+      setWidgetIds(stored.widgetIds || DEFAULT_WIDGETS);
+      setSectionIds(stored.sectionIds || DEFAULT_SECTIONS);
+      setCustomWidgets(
+        Array.isArray(stored.customWidgets) ? stored.customWidgets : []
+      );
+      setHeaderStyle(stored.headerStyle || "classic");
+      setWidgetsLoaded(true);
+    };
+    loadWidgets();
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.email]);
+
+  useEffect(() => {
+    if (!widgetsLoaded || !session?.email) return;
+    saveHomeLayout(session.email, {
+      widgetIds,
+      sectionIds,
+      customWidgets,
+      headerStyle,
+    });
+  }, [
+    customWidgets,
+    headerStyle,
+    sectionIds,
+    widgetIds,
+    widgetsLoaded,
+    session?.email,
+  ]);
+
   useFocusEffect(
     useCallback(() => {
       if (session?.email) {
@@ -214,6 +326,62 @@ const HomeScreen = ({ navigation }) => {
       }
     }, [loadBookings, session?.email])
   );
+
+  const loadWalletSummary = useCallback(async () => {
+    if (!supabase || !session?.id) {
+      setWalletSummary(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("client_id", session.id)
+        .maybeSingle();
+      if (error) throw error;
+      setWalletSummary(data || null);
+    } catch (error) {
+      console.error("Failed to load wallet summary", error);
+    }
+  }, [session?.id]);
+
+  const loadPetsSummary = useCallback(
+    async ({ allowCache = true } = {}) => {
+      if (!session?.email) return;
+      if (allowCache) {
+        const cached = await loadCachedPets(session.email);
+        if (cached?.pets) {
+          setPetsSummary({
+            count: cached.pets.length,
+            updatedAt: cached.updatedAt || null,
+          });
+        }
+      }
+      try {
+        const data = await fetchJson(
+          `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`
+        );
+        const pets = Array.isArray(data?.pets) ? data.pets : [];
+        setPetsSummary({
+          count: pets.length,
+          updatedAt: new Date().toISOString(),
+        });
+        setPetsOffline(false);
+        await saveCachedPets(session.email, pets);
+      } catch (error) {
+        console.error("Failed to load pet summary", error);
+        setPetsOffline(true);
+      }
+    },
+    [session?.email]
+  );
+
+  useEffect(() => {
+    if (session?.email) {
+      loadWalletSummary();
+      loadPetsSummary();
+    }
+  }, [loadPetsSummary, loadWalletSummary, session?.email]);
 
   useFocusEffect(
     useCallback(() => {
@@ -459,6 +627,219 @@ const HomeScreen = ({ navigation }) => {
     .join("")
     .toUpperCase();
 
+    const toggleWidget = (widgetId) => {
+    setWidgetIds((prev) =>
+      prev.includes(widgetId)
+        ? prev.filter((id) => id !== widgetId)
+        : [...prev, widgetId]
+    );
+  };
+
+  const toggleSection = (sectionId) => {
+    setSectionIds((prev) =>
+      prev.includes(sectionId)
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId]
+    );
+  };
+
+  const handleWidgetPress = (widget) => {
+    if (widget.action === "call-support") {
+      Linking.openURL(`tel:${SUPPORT_PHONE}`);
+      return;
+    }
+    if (widget.action === "link" && widget.actionValue) {
+      Linking.openURL(widget.actionValue);
+      return;
+    }
+    if (widget.action === "profile" && widget.actionValue) {
+      navigation.navigate("Profile", {
+        screen: widget.actionValue,
+        params: { returnTo: "Home" },
+      });
+      return;
+    }
+    if (widget.action === "screen" && widget.actionValue) {
+      navigation.navigate(
+        widget.actionValue,
+        widget.actionParams || { returnTo: "Home" }
+      );
+    }
+  };
+
+  const handleAddCustomWidget = () => {
+    if (!customForm.title || !customForm.action) return;
+    const newWidget = {
+      id: `custom-${Date.now()}`,
+      title: customForm.title,
+      body: customForm.body || "Custom shortcut",
+      cta: customForm.cta || "Open",
+      action: "link",
+      actionValue: customForm.action,
+      icon: "sparkles-outline",
+    };
+    setCustomWidgets((prev) => [...prev, newWidget]);
+    setWidgetIds((prev) => [...prev, newWidget.id]);
+    setCustomForm({ title: "", body: "", action: "", cta: "" });
+  };
+
+  const handleRemoveCustomWidget = (widgetId) => {
+    setCustomWidgets((prev) => prev.filter((widget) => widget.id !== widgetId));
+    setWidgetIds((prev) => prev.filter((id) => id !== widgetId));
+  };
+
+  const widgets = useMemo(() => {
+    const baseWidgets = [
+      {
+        id: "wallet",
+        title: "Wallet balance",
+        body: walletSummary
+          ? formatCurrency(
+              (walletSummary.balance_cents || 0) / 100,
+              walletSummary.currency || "EUR"
+            )
+          : "Link a wallet to see your balance.",
+        cta: "View wallet",
+        action: "screen",
+        actionValue: "Wallet",
+        icon: "cash-outline",
+      },
+      {
+        id: "pets",
+        title: "Pet profiles",
+        body: `${petsSummary.count} pet${
+          petsSummary.count === 1 ? "" : "s"
+        } saved${petsOffline ? " (offline)" : ""}.`,
+        cta: "View pets",
+        action: "profile",
+        actionValue: "PetsProfile",
+        icon: "paw-outline",
+      },
+      {
+        id: "support",
+        title: "Call support",
+        body: "One-tap call for urgent help.",
+        cta: "Call now",
+        action: "call-support",
+        icon: "call-outline",
+      },
+      {
+        id: "bundles",
+        title: "Seasonal add-ons",
+        body: "Explore limited-time care bundles.",
+        cta: "Browse bundles",
+        action: "screen",
+        actionValue: "ServiceBundles",
+        icon: "leaf-outline",
+      },
+      {
+        id: "messages",
+        title: "Inbox",
+        body: "Stay in sync with updates.",
+        cta: "Open messages",
+        action: "screen",
+        actionValue: "Messages",
+        icon: "chatbubble-ellipses-outline",
+      },
+      {
+        id: "book",
+        title: "Book a service",
+        body: "Plan your next visit.",
+        cta: "Book now",
+        action: "screen",
+        actionValue: "Book",
+        icon: "calendar-outline",
+      },
+    ];
+
+    const ownerWidgets = isJeroenAccount
+      ? [
+          {
+            id: "clients",
+            title: "Client profiles",
+            body: "View all client accounts and pets.",
+            cta: "Open clients",
+            action: "screen",
+            actionValue: "ClientProfiles",
+            icon: "people-outline",
+          },
+          {
+            id: "all-pets",
+            title: "All pets",
+            body: "Browse pets across your client list.",
+            cta: "View pets",
+            action: "screen",
+            actionValue: "ClientProfiles",
+            icon: "paw-outline",
+          },
+          {
+            id: "support-tickets",
+            title: "Support tickets",
+            body: "Check open support requests.",
+            cta: "Review tickets",
+            action: "screen",
+            actionValue: "SupportTickets",
+            icon: "help-circle-outline",
+          },
+        ]
+      : [];
+
+    const custom = customWidgets.map((widget) => ({
+      ...widget,
+      action: widget.action || "link",
+      actionValue: widget.actionValue || widget.action,
+      isCustom: true,
+    }));
+
+    return [...baseWidgets, ...ownerWidgets, ...custom];
+  }, [
+    customWidgets,
+    isJeroenAccount,
+    petsOffline,
+    petsSummary.count,
+    walletSummary,
+  ]);
+
+  const sectionChoices = useMemo(
+    () => [
+      {
+        id: "hero",
+        title: "Welcome hero",
+        description: "Greeting, badge, and profile access.",
+      },
+      {
+        id: "summary",
+        title: "Summary cards",
+        description: "Upcoming count and next visit details.",
+      },
+      {
+        id: "highlight",
+        title: "Booking spotlight",
+        description: "Highlight your next booking.",
+      },
+      {
+        id: "widgets",
+        title: "Dashboard widgets",
+        description: "Quick shortcuts and custom tiles.",
+      },
+      {
+        id: "quickActions",
+        title: "Quick actions",
+        description: "Book and message shortcuts.",
+      },
+      {
+        id: "upcoming",
+        title: "Upcoming visits",
+        description: "Your scheduled services list.",
+      },
+    ],
+    []
+  );
+
+  const activeHeaderStyle =
+    HEADER_STYLES.find((style) => style.id === headerStyle) ||
+    HEADER_STYLES[0];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -471,6 +852,8 @@ const HomeScreen = ({ navigation }) => {
               await Promise.all([
                 loadBookings(),
                 loadFinishedCards(),
+                loadWalletSummary(),
+                loadPetsSummary({ allowCache: false }),
               ]);
               setRefreshing(false);
             }}
@@ -478,100 +861,311 @@ const HomeScreen = ({ navigation }) => {
           />
         }
       >
-        <View style={styles.heroCard}>
-          <View style={styles.heroGlow} />
-          <View style={styles.heroRow}>
-            <View style={styles.heroCopy}>
-              <View style={styles.heroBadge}>
-                <Ionicons
-                  name="sparkles"
-                  size={14}
-                  color={theme.colors.accent}
-                />
-                <Text style={styles.heroBadgeText}>Premium care</Text>
+        {sectionIds.includes("hero") ? (
+          <View style={styles.heroCard}>
+            <View style={styles.heroGlow} />
+            <View style={styles.heroRow}>
+              <View style={styles.heroCopy}>
+                {activeHeaderStyle.showBadge ? (
+                  <View style={styles.heroBadge}>
+                    <Ionicons
+                      name="sparkles"
+                      size={14}
+                      color={theme.colors.accent}
+                    />
+                    <Text style={styles.heroBadgeText}>Premium care</Text>
+                  </View>
+                ) : null}
+                <Text
+                  style={[
+                    styles.title,
+                    { fontSize: activeHeaderStyle.titleSize },
+                  ]}
+                >
+                  Welcome back, {firstName}
+                </Text>
+                <Text style={styles.subtitle}>
+                  Warm, attentive walks designed for every personality.
+                </Text>
               </View>
-              <Text style={styles.title}>Welcome back, {firstName}</Text>
-              <Text style={styles.subtitle}>
-                Warm, attentive walks designed for every personality.
+              <View style={styles.headerRight}>
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate("Profile", {
+                      screen: "ProfileOverview",
+                      params: { returnTo: "Home" },
+                    })
+                  }
+                >
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initials}</Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+            {activeHeaderStyle.showMeta ? (
+              <View style={styles.heroMetaRow}>
+                <View style={styles.metaPill}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={14}
+                    color={theme.colors.textPrimary}
+                  />
+                  <Text style={styles.metaText}>{dateStamp}</Text>
+                </View>
+              <View style={styles.metaPill}>
+                  <Ionicons
+                    name="time-outline"
+                    size={14}
+                    color={theme.colors.textPrimary}
+                  />
+                  <Text style={styles.metaText}>
+                    Updated {lastUpdated ? formatTime(lastUpdated) : "—"}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {sectionIds.includes("summary") ? (
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Upcoming</Text>
+              <Text style={styles.summaryValue}>{upcomingBookings.length}</Text>
+              <Text style={styles.summaryCaption}>
+                booking{upcomingBookings.length === 1 ? "" : "s"}
               </Text>
             </View>
-            <View style={styles.headerRight}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Next visit</Text>
+              <Text style={styles.summaryValue}>
+                {nextStart ? formatDateLabel(nextStart) : "No visits"}
+              </Text>
+              <Text style={styles.summaryCaption}>
+                {nextStart ? formatTimeRange(nextStart, nextEnd) : "Tap to book"}
+              </Text>
+            </View>
+          </View>
+          ) : null}
+
+        {sectionIds.includes("highlight") ? (
+          <View style={styles.highlightCard}>
+            <View style={styles.highlightIcon}>
+              <Ionicons
+                name="calendar"
+                size={18}
+                color={theme.colors.accent}
+              />
+            </View>
+            <View>
+              <Text style={styles.highlightTitle}>
+                {nextServiceTitle || "Booking spotlight"}
+              </Text>
+              <Text style={styles.highlightText}>
+                {nextStart
+                  ? `Next visit on ${formatDateLabel(nextStart)}.`
+                  : "Plan your next service in just a few taps."}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.personalizeCard}>
+          <View style={styles.personalizeCopy}>
+            <Text style={styles.personalizeTitle}>Make home your own</Text>
+            <Text style={styles.personalizeBody}>
+              Toggle sections, add shortcuts, and build a dashboard that feels
+              personal.
+            </Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.personalizeButton,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => setShowWidgetSettings((current) => !current)}
+          >
+            <Text style={styles.personalizeButtonText}>
+              {showWidgetSettings ? "Close editor" : "Customize"}
+            </Text>
+          </Pressable>
+        </View>
+
+        {showWidgetSettings ? (
+          <View style={styles.widgetSettings}>
+            <Text style={styles.widgetSettingsTitle}>Home layout</Text>
+            {sectionChoices.map((section) => (
+              <View key={section.id} style={styles.widgetSettingRow}>
+                <View style={styles.widgetSettingCopy}>
+                  <Text style={styles.widgetSettingTitle}>
+                    {section.title}
+                  </Text>
+                  <Text style={styles.widgetSettingBody}>
+                    {section.description}
+                  </Text>
+                </View>
+                <Switch
+                  value={sectionIds.includes(section.id)}
+                  onValueChange={() => toggleSection(section.id)}
+                />
+              </View>
+            ))}
+            <Text style={styles.widgetSettingsTitle}>Header style</Text>
+            <View style={styles.widgetOptionsRow}>
+              {HEADER_STYLES.map((style) => (
+                <Pressable
+                  key={style.id}
+                  style={[
+                    styles.widgetOption,
+                    headerStyle === style.id && styles.widgetOptionActive,
+                  ]}
+                  onPress={() => setHeaderStyle(style.id)}
+                >
+                  <Text
+                    style={[
+                      styles.widgetOptionText,
+                      headerStyle === style.id && styles.widgetOptionTextActive,
+                    ]}
+                  >
+                    {style.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.widgetSettingsTitle}>Dashboard widgets</Text>
+            {widgets.map((widget) => (
+              <View key={widget.id} style={styles.widgetSettingRow}>
+                <View style={styles.widgetSettingCopy}>
+                  <Text style={styles.widgetSettingTitle}>
+                    {widget.title}
+                  </Text>
+                  <Text style={styles.widgetSettingBody}>
+                    {widget.cta}
+                  </Text>
+                </View>
+                <View style={styles.widgetSettingActions}>
+                  {widget.isCustom ? (
+                    <Pressable
+                      style={styles.widgetRemoveButton}
+                      onPress={() => handleRemoveCustomWidget(widget.id)}
+                    >
+                      <Text style={styles.widgetRemoveText}>Remove</Text>
+                    </Pressable>
+                  ) : null}
+                  <Switch
+                    value={widgetIds.includes(widget.id)}
+                    onValueChange={() => toggleWidget(widget.id)}
+                  />
+                </View>
+              </View>
+            ))}
+
+            <Text style={styles.widgetSettingsTitle}>
+              Add a custom shortcut
+            </Text>
+            <Text style={styles.widgetSettingsHint}>
+              Use tel:, mailto:, https://, or any deep link URL.
+            </Text>
+            <TextInput
+              style={styles.widgetInput}
+              placeholder="Title"
+              value={customForm.title}
+              onChangeText={(value) =>
+                setCustomForm((prev) => ({ ...prev, title: value }))
+              }
+            />
+            <TextInput
+              style={styles.widgetInput}
+              placeholder="Description (optional)"
+              value={customForm.body}
+              onChangeText={(value) =>
+                setCustomForm((prev) => ({ ...prev, body: value }))
+              }
+            />
+            <TextInput
+              style={styles.widgetInput}
+              placeholder="Action link (tel:, https://)"
+              value={customForm.action}
+              onChangeText={(value) =>
+                setCustomForm((prev) => ({ ...prev, action: value }))
+              }
+            />
+            <TextInput
+              style={styles.widgetInput}
+              placeholder="CTA label (optional)"
+              value={customForm.cta}
+              onChangeText={(value) =>
+                setCustomForm((prev) => ({ ...prev, cta: value }))
+              }
+            />
+            <Pressable
+              style={({ pressed }) => [
+                styles.widgetAddButton,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={handleAddCustomWidget}
+              disabled={!customForm.title || !customForm.action}
+            >
+              <Text style={styles.widgetAddButtonText}>Add shortcut</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {sectionIds.includes("widgets") ? (
+          <>
+            <View style={styles.widgetHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Dashboard widgets</Text>
+                <Text style={styles.sectionMeta}>
+                  Personalize your home overview
+                </Text>
+              </View>
               <Pressable
+                style={({ pressed }) => [
+                  styles.widgetCustomizeButton,
+                  pressed && styles.cardPressed,
+                ]}
                 onPress={() =>
-                  navigation.navigate("Profile", {
-                    screen: "ProfileOverview",
-                    params: { returnTo: "Home" },
-                  })
+                  setShowWidgetSettings((current) => !current)
                 }
               >
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </View>
+                <Text style={styles.widgetCustomizeText}>
+                  {showWidgetSettings ? "Done" : "Customize"}
+                </Text>
               </Pressable>
             </View>
-          </View>
-          <View style={styles.heroMetaRow}>
-            <View style={styles.metaPill}>
-              <Ionicons
-                name="calendar-outline"
-                size={14}
-                color={theme.colors.textPrimary}
-              />
-              <Text style={styles.metaText}>{dateStamp}</Text>
+
+            <View style={styles.widgetGrid}>
+              {widgets
+                .filter((widget) => widgetIds.includes(widget.id))
+                .map((widget) => (
+                  <Pressable
+                    key={widget.id}
+                    style={({ pressed }) => [
+                      styles.widgetCard,
+                      pressed && styles.cardPressed,
+                    ]}
+                    onPress={() => handleWidgetPress(widget)}
+                  >
+                    <View style={styles.widgetIcon}>
+                      <Ionicons
+                        name={widget.icon}
+                        size={20}
+                        color={theme.colors.accent}
+                      />
+                    </View>
+                    <Text style={styles.widgetTitle}>{widget.title}</Text>
+                    <Text style={styles.widgetBody}>{widget.body}</Text>
+                    <Text style={styles.widgetCta}>{widget.cta}</Text>
+                  </Pressable>
+                ))}
             </View>
-            <View style={styles.metaPill}>
-              <Ionicons
-                name="time-outline"
-                size={14}
-                color={theme.colors.textPrimary}
-              />
-              <Text style={styles.metaText}>
-                Updated {lastUpdated ? formatTime(lastUpdated) : "—"}
-              </Text>
-            </View>
-          </View>
-        </View>
+          </>
+        ) : null}
 
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Upcoming</Text>
-            <Text style={styles.summaryValue}>{upcomingBookings.length}</Text>
-            <Text style={styles.summaryCaption}>
-              booking{upcomingBookings.length === 1 ? "" : "s"}
-            </Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Next visit</Text>
-            <Text style={styles.summaryValue}>
-              {nextStart ? formatDateLabel(nextStart) : "No visits"}
-            </Text>
-            <Text style={styles.summaryCaption}>
-              {nextStart ? formatTimeRange(nextStart, nextEnd) : "Tap to book"}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.highlightCard}>
-          <View style={styles.highlightIcon}>
-            <Ionicons
-              name="calendar"
-              size={18}
-              color={theme.colors.accent}
-            />
-          </View>
-          <View>
-            <Text style={styles.highlightTitle}>
-              {nextServiceTitle || "Booking spotlight"}
-            </Text>
-            <Text style={styles.highlightText}>
-              {nextStart
-                ? `Next visit on ${formatDateLabel(nextStart)}.`
-                : "Plan your next service in just a few taps."}
-            </Text>
-          </View>
-        </View>
-
-        {!isJeroenAccount ? (
+        {sectionIds.includes("quickActions") ? (
           <View style={styles.quickActions}>
             <Pressable
               style={({ pressed }) => [
@@ -620,201 +1214,209 @@ const HomeScreen = ({ navigation }) => {
           </View>
         ) : null}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Upcoming visits</Text>
-          <Text style={styles.sectionMeta}>
-            {upcomingBookings.length
-              ? `${upcomingBookings.length} scheduled`
-              : "No upcoming bookings yet"}
-          </Text>
-        </View>
-        {upcomingPreview.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Upcoming bookings will show here once they are confirmed.
-            </Text>
-          </View>
-        ) : (
-          upcomingPreview.map((booking) => {
-            const start = booking?.start_at ? new Date(booking.start_at) : null;
-            const end = booking?.end_at ? new Date(booking.end_at) : null;
-            const serviceTitle =
-              booking?.service_title || booking?.services_catalog?.title;
-            const petList = resolveBookingPets(booking);
-            const petsLabel = formatPetsLabel(petList);
-            const bookingId = booking?.id ?? booking?.start_at ?? serviceTitle;
-            const finishedCard = finishedCards[booking?.id];
-            const hasActiveCard = Boolean(activeRoverCards[bookingId]);
-            const activeStart = activeRoverCards[bookingId];
-            const canViewCard = Boolean(finishedCard?.id);
-            const elapsedMs =
-              hasActiveCard && activeStart
-                ? Math.max(timeTick - activeStart, 0)
-                : 0;
-            const statusStepIndex = resolveBookingStepIndex(
-              finishedCard ? "completed" : booking?.status
-            );
+        {sectionIds.includes("upcoming") ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Upcoming visits</Text>
+              <Text style={styles.sectionMeta}>
+                {upcomingBookings.length
+                  ? `${upcomingBookings.length} scheduled`
+                  : "No upcoming bookings yet"}
+              </Text>
+            </View>
+            {upcomingPreview.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>
+                  Upcoming bookings will show here once they are confirmed.
+                </Text>
+              </View>
+            ) : (
+              upcomingPreview.map((booking) => {
+                const start = booking?.start_at
+                  ? new Date(booking.start_at)
+                  : null;
+                const end = booking?.end_at ? new Date(booking.end_at) : null;
+                const serviceTitle =
+                  booking?.service_title || booking?.services_catalog?.title;
+                const petList = resolveBookingPets(booking);
+                const petsLabel = formatPetsLabel(petList);
+                const bookingId =
+                  booking?.id ?? booking?.start_at ?? serviceTitle;
+                const finishedCard = finishedCards[booking?.id];
+                const hasActiveCard = Boolean(activeRoverCards[bookingId]);
+                const activeStart = activeRoverCards[bookingId];
+                const canViewCard = Boolean(finishedCard?.id);
+                const elapsedMs =
+                  hasActiveCard && activeStart
+                    ? Math.max(timeTick - activeStart, 0)
+                    : 0;
+                const statusStepIndex = resolveBookingStepIndex(
+                  finishedCard ? "completed" : booking?.status
+                );
 
             return (
-              <View
-                key={bookingId}
-                style={[
-                  styles.card,
-                  isJeroenAccount && styles.cardJeroen,
-                  hasActiveCard && styles.cardJeroenActive,
-                ]}
-              >
-                <View style={styles.cardRow}>
-                  <View>
-                    <Text style={styles.cardTime}>
-                      {formatTimeRange(start, end)}
-                    </Text>
-                    <Text style={styles.cardTitle}>
-                      {serviceTitle || "Service"}
-                    </Text>
-                    <Text style={styles.cardMeta}>{petsLabel}</Text>
-                  </View>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusBadgeText}>
-                      {finishedCard
-                        ? "Finished"
-                        : booking.status || "Scheduled"}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.statusTimeline}>
-                  {BOOKING_STATUS_STEPS.map((step, index) => {
-                    const isComplete = index <= statusStepIndex;
-                    const isLast = index === BOOKING_STATUS_STEPS.length - 1;
-                    return (
-                      <View key={step} style={styles.statusStep}>
-                        <View style={styles.statusIndicator}>
-                          <View
-                            style={[
-                              styles.statusDot,
-                              isComplete && styles.statusDotActive,
-                            ]}
-                          />
-                          {!isLast ? (
-                            <View
-                              style={[
-                                styles.statusLine,
-                                isComplete && styles.statusLineActive,
-                              ]}
-                            />
-                          ) : null}
-                        </View>
-                        <Text
-                          style={[
-                            styles.statusLabel,
-                            isComplete && styles.statusLabelActive,
-                          ]}
-                        >
-                          {step}
+                  <View
+                    key={bookingId}
+                    style={[
+                      styles.card,
+                      isJeroenAccount && styles.cardJeroen,
+                      hasActiveCard && styles.cardJeroenActive,
+                    ]}
+                  >
+                    <View style={styles.cardRow}>
+                      <View>
+                        <Text style={styles.cardTime}>
+                          {formatTimeRange(start, end)}
+                        </Text>
+                        <Text style={styles.cardTitle}>
+                          {serviceTitle || "Service"}
+                        </Text>
+                        <Text style={styles.cardMeta}>{petsLabel}</Text>
+                      </View>
+                      <View style={styles.statusBadge}>
+                        <Text style={styles.statusBadgeText}>
+                          {finishedCard
+                            ? "Finished"
+                            : booking.status || "Scheduled"}
                         </Text>
                       </View>
-                    );
-                  })}
-                </View>
-                {isJeroenAccount || canViewCard ? (
-                  <View style={styles.cardFooter}>
-                    {isJeroenAccount && hasActiveCard ? (
-                      <Text style={styles.cardTimerText}>
-                        Timer {formatElapsedTime(elapsedMs)}
-                      </Text>
-                    ) : null}
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.cardButton,
-                        (hasActiveCard || finishedCard) &&
-                          styles.cardButtonActive,
-                        pressed && styles.cardPressed,
-                      ]}
-                      onPress={() => {
-                        if (finishedCard?.id) {
-                          navigation.navigate("JeroenPawsCard", {
-                            cardId: finishedCard.id,
-                            readOnly: true,
-                            returnTo: "Home",
-                          });
-                          return;
-                        }
-                        if (hasActiveCard) {
-                          navigation.navigate("JeroenPawsCard", {
-                            bookingId,
-                            serviceTitle,
-                            pets: petList,
-                            clientId: booking?.client_id,
-                            startedAt: activeStart,
-                            bookingStart: booking?.start_at,
-                            bookingEnd: booking?.end_at,
-                            returnTo: "Home",
-                          });
-                          return;
-                        }
-                        if (!isJeroenAccount) {
-                          return;
-                        }
-                        const startTimestamp = Date.now();
-                        setActiveRoverCards((prev) => ({
-                          ...prev,
-                          [bookingId]: startTimestamp,
-                        }));
-                        navigation.navigate("JeroenPawsCard", {
-                          bookingId,
-                          serviceTitle,
-                          pets: petList,
-                          clientId: booking?.client_id,
-                          startedAt: startTimestamp,
-                          bookingStart: booking?.start_at,
-                          bookingEnd: booking?.end_at,
-                          returnTo: "Home",
-                        });
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.cardButtonText,
-                          (hasActiveCard || finishedCard) &&
-                            styles.cardButtonTextActive,
-                        ]}
-                      >
-                        {finishedCard
-                          ? "Open Jeroen & Paws Card"
-                          : hasActiveCard
-                          ? "Open Jeroen & Paws Card"
-                          : isJeroenAccount
-                          ? "Start Jeroen & Paws Card"
-                          : "View Jeroen & Paws Card"}
-                      </Text>
-                    </Pressable>
-                    {isJeroenAccount && booking?.client_id ? (
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.cardButton,
-                          pressed && styles.cardPressed,
-                        ]}
-                        onPress={() =>
-                          navigation.navigate("Profile", {
-                            screen: "ProfileOverview",
-                            params: {
-                              clientId: booking.client_id,
+                    </View>
+                    <View style={styles.statusTimeline}>
+                      {BOOKING_STATUS_STEPS.map((step, index) => {
+                        const isComplete = index <= statusStepIndex;
+                        const isLast =
+                          index === BOOKING_STATUS_STEPS.length - 1;
+                        return (
+                          <View key={step} style={styles.statusStep}>
+                            <View style={styles.statusIndicator}>
+                              <View
+                                style={[
+                                  styles.statusDot,
+                                  isComplete && styles.statusDotActive,
+                                ]}
+                              />
+                              {!isLast ? (
+                                <View
+                                  style={[
+                                    styles.statusLine,
+                                    isComplete && styles.statusLineActive,
+                                  ]}
+                                />
+                              ) : null}
+                            </View>
+                            <Text
+                              style={[
+                                styles.statusLabel,
+                                isComplete && styles.statusLabelActive,
+                              ]}
+                            >
+                              {step}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                    {isJeroenAccount || canViewCard ? (
+                      <View style={styles.cardFooter}>
+                        {isJeroenAccount && hasActiveCard ? (
+                          <Text style={styles.cardTimerText}>
+                            Timer {formatElapsedTime(elapsedMs)}
+                          </Text>
+                        ) : null}
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.cardButton,
+                            (hasActiveCard || finishedCard) &&
+                              styles.cardButtonActive,
+                            pressed && styles.cardPressed,
+                          ]}
+                          onPress={() => {
+                            if (finishedCard?.id) {
+                              navigation.navigate("JeroenPawsCard", {
+                                cardId: finishedCard.id,
+                                readOnly: true,
+                                returnTo: "Home",
+                              });
+                              return;
+                            }
+                            if (hasActiveCard) {
+                              navigation.navigate("JeroenPawsCard", {
+                                bookingId,
+                                serviceTitle,
+                                pets: petList,
+                                clientId: booking?.client_id,
+                                startedAt: activeStart,
+                                bookingStart: booking?.start_at,
+                                bookingEnd: booking?.end_at,
+                                returnTo: "Home",
+                              });
+                              return;
+                            }
+                            if (!isJeroenAccount) {
+                              return;
+                            }
+                            const startTimestamp = Date.now();
+                            setActiveRoverCards((prev) => ({
+                              ...prev,
+                              [bookingId]: startTimestamp,
+                            }));
+                            navigation.navigate("JeroenPawsCard", {
+                              bookingId,
+                              serviceTitle,
+                              pets: petList,
+                              clientId: booking?.client_id,
+                              startedAt: startTimestamp,
+                              bookingStart: booking?.start_at,
+                              bookingEnd: booking?.end_at,
                               returnTo: "Home",
-                            },
-                          })
-                        }
-                      >
-                        <Text style={styles.cardButtonText}>
-                          View client profile
-                        </Text>
-                      </Pressable>
+                            });
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.cardButtonText,
+                              (hasActiveCard || finishedCard) &&
+                                styles.cardButtonTextActive,
+                            ]}
+                          >
+                            {finishedCard
+                              ? "Open Jeroen & Paws Card"
+                              : hasActiveCard
+                              ? "Open Jeroen & Paws Card"
+                              : isJeroenAccount
+                              ? "Start Jeroen & Paws Card"
+                              : "View Jeroen & Paws Card"}
+                          </Text>
+                        </Pressable>
+                        {isJeroenAccount && booking?.client_id ? (
+                          <Pressable
+                            style={({ pressed }) => [
+                              styles.cardButton,
+                              pressed && styles.cardPressed,
+                            ]}
+                            onPress={() =>
+                              navigation.navigate("Profile", {
+                                screen: "ProfileOverview",
+                                params: {
+                                  clientId: booking.client_id,
+                                  returnTo: "Home",
+                                },
+                              })
+                            }
+                          >
+                            <Text style={styles.cardButtonText}>
+                              View client profile
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
                     ) : null}
                   </View>
-                ) : null}
-              </View>
-            );
-          })
-        )}
+                );
+              })
+            )}
+          </>
+        ) : null}
 
       </ScrollView>
     </SafeAreaView>
@@ -1005,6 +1607,210 @@ const createStyles = (theme) =>
       color: theme.colors.textSecondary,
       marginTop: 4,
       lineHeight: 18,
+    },
+    personalizeCard: {
+      backgroundColor: theme.colors.surfaceElevated,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.md,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.sm,
+    },
+    personalizeCopy: {
+      flex: 1,
+    },
+    personalizeTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: 4,
+    },
+    personalizeBody: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    personalizeButton: {
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingVertical: 8,
+      paddingHorizontal: theme.spacing.sm,
+      backgroundColor: theme.colors.surface,
+    },
+    personalizeButtonText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    widgetHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    widgetCustomizeButton: {
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingVertical: 6,
+      paddingHorizontal: theme.spacing.sm,
+      backgroundColor: theme.colors.surfaceElevated,
+    },
+    widgetCustomizeText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+    },
+    widgetGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    widgetCard: {
+      flexBasis: "48%",
+      backgroundColor: theme.colors.surfaceElevated,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    widgetIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surfaceAccent,
+      marginBottom: theme.spacing.sm,
+    },
+    widgetTitle: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginBottom: 4,
+    },
+    widgetBody: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.sm,
+    },
+    widgetCta: {
+      fontSize: 12,
+      color: theme.colors.accent,
+      fontWeight: "600",
+    },
+    widgetSettings: {
+      backgroundColor: theme.colors.surfaceElevated,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    widgetSettingsTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: theme.spacing.sm,
+    },
+    widgetSettingsHint: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.xs,
+    },
+    widgetOptionsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+    },
+    widgetOption: {
+      paddingVertical: 6,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.surface,
+    },
+    widgetOptionActive: {
+      backgroundColor: theme.colors.accent,
+      borderColor: theme.colors.accent,
+    },
+    widgetOptionText: {
+      fontSize: 12,
+      color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    widgetOptionTextActive: {
+      color: theme.colors.white,
+    },
+    widgetSettingRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    widgetSettingCopy: {
+      flex: 1,
+    },
+    widgetSettingTitle: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    widgetSettingBody: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    widgetSettingActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
+    },
+    widgetRemoveButton: {
+      paddingVertical: 4,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.surface,
+    },
+    widgetRemoveText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontWeight: "600",
+    },
+    widgetInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: theme.radius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      fontSize: 13,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.textPrimary,
+    },
+    widgetAddButton: {
+      borderRadius: theme.radius.pill,
+      paddingVertical: theme.spacing.sm,
+      alignItems: "center",
+      backgroundColor: theme.colors.accent,
+      marginTop: theme.spacing.xs,
+    },
+    widgetAddButtonText: {
+      fontSize: 13,
+      color: theme.colors.white,
+      fontWeight: "700",
     },
     quickActions: {
       gap: 12,
