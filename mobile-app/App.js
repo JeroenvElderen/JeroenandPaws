@@ -69,6 +69,8 @@ const ProfileStack = createNativeStackNavigator();
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const OWNER_CLIENT_ID = "94cab38a-1f08-498b-8efa-7ed8f561926f";
 
+const TAB_ICON_SIZE = 22;
+
 const TabItem = ({
   label,
   color,
@@ -79,7 +81,7 @@ const TabItem = ({
 }) => (
   <View style={styles.tabItem}>
     <View style={styles.tabIconWrapper}>
-      <Ionicons name={icon} size={20} color={color} />
+      <Ionicons name={icon} size={TAB_ICON_SIZE} color={color} />
       {badgeCount > 0 ? (
         <View style={[styles.tabBadge, badgeStyle]}>
           <Text style={[styles.tabBadgeText, badgeTextStyle]}>
@@ -1053,20 +1055,20 @@ const styles = StyleSheet.create({
   },
   tabBadge: {
     position: "absolute",
-    top: -6,
-    right: -12,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 4,
+    top: -7,
+    right: -14,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
     backgroundColor: "#E5484D",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#FFFFFF",
   },
   tabBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
     color: "#FFFFFF",
   },

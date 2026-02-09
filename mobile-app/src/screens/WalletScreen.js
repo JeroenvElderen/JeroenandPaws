@@ -32,6 +32,13 @@ const formatCurrency = (amount, currency = "EUR") =>
     maximumFractionDigits: 0,
   }).format(amount);
 
+const formatStatusLabel = (value) => {
+  if (!value) return "Pending";
+  return String(value)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+};
+
 const WalletScreen = ({ navigation, route }) => {
   const { session } = useSession();
   const { theme } = useTheme();
@@ -381,7 +388,7 @@ const WalletScreen = ({ navigation, route }) => {
                     </Text>
                   </View>
                   <Text style={styles.referralItemStatus}>
-                    {referral?.status || "Pending"}
+                    Status: {formatStatusLabel(referral?.status)}
                   </Text>
                 </View>
               ))}

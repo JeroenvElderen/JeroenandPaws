@@ -500,12 +500,15 @@ const createStyles = (theme) =>
       borderRadius: 16,
       alignItems: "center",
       justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "transparent",
     },
     dayBooked: {
       backgroundColor: theme.colors.surfaceAccent,
     },
     daySelected: {
-      backgroundColor: theme.colors.accent,
+      backgroundColor: theme.colors.accentDeep,
+      borderColor: theme.colors.accentDeep,
     },
     dayPressed: {
       opacity: 0.85,

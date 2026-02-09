@@ -39,7 +39,7 @@ const userItems = [
     route: "Settings",
   },
   {
-    label: "Help Centre & Support",
+    label: "Help & support",
     icon: "lifebuoy",
     description: "Email, call, or WhatsApp",
     route: "HelpSupport",

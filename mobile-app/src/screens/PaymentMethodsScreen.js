@@ -91,7 +91,7 @@ const PaymentMethodsScreen = ({ navigation, route }) => {
         <View style={styles.card}>
           <Text style={styles.label}>Primary card</Text>
           <Text style={styles.value}>
-            Manage your saved card through Revolut checkout.
+            Manage your card during Revolut checkout.
           </Text>
           <Pressable style={styles.button} onPress={handleUpdatePayment}>
             <Text style={styles.buttonText}>Update payment method</Text>
@@ -130,7 +130,7 @@ const PaymentMethodsScreen = ({ navigation, route }) => {
           </Pressable>
           {status === "error" ? (
             <Text style={styles.errorText}>
-              We could not save your billing details.
+              We couldn't save your billing details. Try again in a moment.
             </Text>
           ) : null}
         </View>

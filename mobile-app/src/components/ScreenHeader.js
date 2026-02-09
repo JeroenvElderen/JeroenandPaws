@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
-const ScreenHeader = ({ title, onBack }) => {
+const ScreenHeader = ({ title, onBack, backLabel = "Back" }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   return (
@@ -15,6 +15,7 @@ const ScreenHeader = ({ title, onBack }) => {
             size={18}
             color={theme.colors.textPrimary}
           />
+          <Text style={styles.backLabel}>{backLabel}</Text>
         </Pressable>
       ) : (
         <View style={styles.backPlaceholder} />
@@ -45,18 +46,26 @@ const createStyles = (theme) =>
       elevation: theme.shadow.soft.elevation,
     },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      minWidth: 56,
+      height: 44,
+      borderRadius: 22,
       backgroundColor: theme.colors.surface,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
+      flexDirection: "row",
+      paddingHorizontal: 8,
+      gap: 2,
     },
     backPlaceholder: {
-      width: 40,
-      height: 40,
+      width: 56,
+      height: 44,
+    },
+    backLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
     },
     title: {
       fontSize: 20,

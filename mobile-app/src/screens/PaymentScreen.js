@@ -75,8 +75,7 @@ const PaymentScreen = ({ navigation, route }) => {
         <View style={styles.card}>
           <Text style={styles.title}>Complete your payment</Text>
           <Text style={styles.subtitle}>
-            You'll be redirected to the secure Revolut checkout to finish your
-            payment.
+            You'll be redirected to Revolut checkout to finish payment.
           </Text>
           {summaryItems.length ? (
             <View style={styles.summaryCard}>
@@ -89,9 +88,12 @@ const PaymentScreen = ({ navigation, route }) => {
               ))}
             </View>
           ) : null}
+          </View>
+        <View style={styles.footer}>
           <PrimaryButton
             label={status === "loading" ? "Opening payment..." : "Pay now"}
             onPress={handleStartPayment}
+            disabled={status === "loading"}
           />
           {errorMessage ? (
             <Text style={styles.errorText}>{errorMessage}</Text>
@@ -111,13 +113,14 @@ const createStyles = (theme) =>
     container: {
       flex: 1,
       padding: theme.spacing.lg,
+      justifyContent: "space-between",
     },
     card: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.lg,
       borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
+      borderColor: theme.colors.border,
       shadowColor: theme.shadow.soft.shadowColor,
       shadowOpacity: theme.shadow.soft.shadowOpacity,
       shadowOffset: theme.shadow.soft.shadowOffset,
@@ -134,7 +137,8 @@ const createStyles = (theme) =>
       fontSize: theme.typography.body.fontSize,
       color: theme.colors.textSecondary,
       marginBottom: theme.spacing.md,
-    },summaryCard: {
+    },
+    summaryCard: {
       backgroundColor: theme.colors.background,
       borderRadius: theme.radius.md,
       padding: theme.spacing.md,
@@ -170,6 +174,9 @@ const createStyles = (theme) =>
       marginTop: theme.spacing.sm,
       color: theme.colors.danger,
       fontSize: theme.typography.caption.fontSize,
+    },
+    footer: {
+      paddingBottom: theme.spacing.lg,
     },
   });
 

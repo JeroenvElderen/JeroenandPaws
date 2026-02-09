@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
   Dimensions,
+  LayoutAnimation,
   Modal,
   Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchJson } from "../api/client";
 import { API_BASE_URL } from "../api/config";
 import {
@@ -55,6 +59,8 @@ const CALENDAR_CARD_PADDING = 18;
 const CALENDAR_PAGE_WIDTH =
   Dimensions.get("window").width -
   (CALENDAR_CARD_HORIZONTAL_MARGIN * 2 + CALENDAR_CARD_PADDING * 2);
+const COMPACT_HEIGHT_THRESHOLD = 720;
+const BOOKING_DRAFT_KEY = "booking:draft";
 
 const parsePriceValue = (value) => {
   if (value === null || value === undefined) return 0;
@@ -83,7 +89,7 @@ const normalizeAddons = (addons = []) =>
     })
     .filter((addon) => addon.label);
 
-    const buildServiceAddonLookup = (service) => {
+const buildServiceAddonLookup = (service) => {
   if (!service) return { addonIds: new Set(), meta: {} };
   const addonIds = new Set();
   const meta = {
@@ -363,7 +369,10 @@ const buildBookingMessage = (
 
 const BookScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useMemo(
+    () => createStyles(theme, isCompactHeight),
+    [theme, isCompactHeight]
+  );
   const { session } = useSession();
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
@@ -395,9 +404,22 @@ const BookScreen = ({ navigation, route }) => {
   );
   const [showCalendar, setShowCalendar] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [debouncedAddress, setDebouncedAddress] = useState(
     (session?.address || "").trim()
   );
+  const formScrollRef = useRef(null);
+  const isCompactHeight =
+    Dimensions.get("window").height < COMPACT_HEIGHT_THRESHOLD;
+
+  useEffect(() => {
+    if (
+      Platform.OS === "android" &&
+      UIManager.setLayoutAnimationEnabledExperimental
+    ) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
 
   useEffect(() => {
     const trimmedAddress = (formState.address || "").trim();
@@ -763,6 +785,30 @@ const BookScreen = ({ navigation, route }) => {
     slot.available &&
     slot.reachable !== false
   );
+  const resolveWindowForSlot = (time) => {
+    if (!time) return null;
+    const [hours, minutes] = String(time).split(":").map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    const totalMinutes = hours * 60 + minutes;
+    return (
+      TIME_WINDOWS.find(
+        (window) =>
+          totalMinutes >= window.startHour * 60 &&
+          totalMinutes <= window.endHour * 60
+      ) || null
+    );
+  };
+  const nextAvailableSlot = useMemo(() => {
+    for (const day of availableDates) {
+      const nextSlot = (day?.slots || []).find(
+        (slot) => slot.available && slot.reachable !== false
+      );
+      if (nextSlot) {
+        return { date: day.date, time: nextSlot.time };
+      }
+    }
+    return null;
+  }, [availableDates]);
   const calendarMonths = useMemo(() => {
     const months = [];
     const startMonth = new Date(
@@ -856,11 +902,30 @@ const BookScreen = ({ navigation, route }) => {
       setSelectedSlot(null);
     }
     if (formState.timeWindow) {
-        setShowAvailability(true);
-      }
+      setShowAvailability(true);
+    }
     setShowCalendar(false);
   };
 
+  const handleUseNextAvailable = () => {
+    if (!nextAvailableSlot) {
+      return;
+    }
+    const resolvedWindow = resolveWindowForSlot(nextAvailableSlot.time);
+    handleChange("bookingDate", nextAvailableSlot.date);
+    handleChange("startTime", nextAvailableSlot.time);
+    handleChange(
+      "endTime",
+      addMinutesToTime(nextAvailableSlot.time, durationMinutes)
+    );
+    if (resolvedWindow) {
+      handleChange("timeWindow", resolvedWindow.id);
+    }
+    setSelectedDay(nextAvailableSlot.date);
+    setSelectedSlot(nextAvailableSlot.time);
+    setShowAvailability(true);
+  };
+  
   const handleDogChange = (index, field, value) => {
     setFormState((current) => {
       const updatedDogs = [...(current.dogs || [])];
@@ -879,6 +944,7 @@ const BookScreen = ({ navigation, route }) => {
     setSelectedOptionIds([]);
     setSelectedPetIds([]);
     setShowNewDogForm(false);
+    setDraftSaved(false);
     setShowAddonDropdown(false);
     setActiveAgeDropdown(null);
     setActiveSizeDropdown(null);
@@ -893,13 +959,19 @@ const BookScreen = ({ navigation, route }) => {
     setPaymentPayload(null);
   };
 
-   const closeService = useCallback(() => {
+  const closeService = useCallback(() => {
     setSelectedService(null);
     setShowAvailability(false);
     setStatus("idle");
     setError("");
     setPaymentPayload(null);
   }, []);
+
+  useEffect(() => {
+    if (status === "success") {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+  }, [status]);
 
   useEffect(() => {
     if (status !== "success" || !paymentPayload) {
@@ -911,6 +983,35 @@ const BookScreen = ({ navigation, route }) => {
     });
     closeService();
   }, [status, paymentPayload, navigation, closeService]);
+
+  useEffect(() => {
+    if (!selectedService) return;
+    let isActive = true;
+    const loadDraft = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(BOOKING_DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        const matchesService =
+          !draft?.serviceId ||
+          String(draft.serviceId) === String(selectedService?.id);
+        if (!matchesService || !isActive) return;
+        setFormState((current) => ({ ...current, ...(draft.formState || {}) }));
+        setSelectedPetIds(Array.isArray(draft.selectedPetIds) ? draft.selectedPetIds : []);
+        setSelectedOptionIds(
+          Array.isArray(draft.selectedOptionIds) ? draft.selectedOptionIds : []
+        );
+        setShowNewDogForm(Boolean(draft.showNewDogForm));
+        setDraftSaved(Boolean(draft.savedAt));
+      } catch (draftError) {
+        console.error("Failed to load booking draft", draftError);
+      }
+    };
+    loadDraft();
+    return () => {
+      isActive = false;
+    };
+  }, [selectedService]);
 
   const toggleCategory = (category) => {
     setExpandedCategories((current) => ({
@@ -963,7 +1064,7 @@ const BookScreen = ({ navigation, route }) => {
       (formState.scheduleType === "repeat_weekly" &&
         formState.repeatDays.length === 0)
     ) {
-      setError("Please complete the required fields before booking.");
+      setError("Add the required details to continue with booking.");
       return;
     }
 
@@ -1062,7 +1163,7 @@ const BookScreen = ({ navigation, route }) => {
       }
       setError(
         submissionError.message ||
-          "Unable to send your booking request. Please try again."
+          "Unable to send your booking request. Check your connection and try again."
       );
       setStatus("error");
     } finally {
@@ -1070,6 +1171,33 @@ const BookScreen = ({ navigation, route }) => {
         clearTimeout(timeoutId);
       }
     }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!selectedService) return;
+    const draftPayload = {
+      serviceId: selectedService?.id ?? null,
+      serviceTitle: serviceLabel,
+      formState,
+      selectedPetIds,
+      selectedOptionIds,
+      showNewDogForm,
+      savedAt: new Date().toISOString(),
+    };
+    try {
+      await AsyncStorage.setItem(
+        BOOKING_DRAFT_KEY,
+        JSON.stringify(draftPayload)
+      );
+      setDraftSaved(true);
+    } catch (draftError) {
+      console.error("Failed to save booking draft", draftError);
+      setError("Couldn't save your draft. Please try again.");
+    }
+  };
+
+  const handleEditDetails = () => {
+    formScrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   const handlePayNow = () => {
@@ -1207,14 +1335,27 @@ const BookScreen = ({ navigation, route }) => {
                 <Text style={styles.closeButtonText}>✕</Text>
               </Pressable>
             </View>
+            <View style={styles.pricePreview}>
+              <View>
+                <Text style={styles.pricePreviewLabel}>Estimated total</Text>
+                <Text style={styles.pricePreviewValue}>
+                  {formatCurrency(totalPrice)}
+                </Text>
+              </View>
+              <Text style={styles.pricePreviewNote}>
+                Includes pets + add-ons
+              </Text>
+            </View>
             <View style={styles.modalBody}>
-              <ScrollView contentContainerStyle={styles.formContent}>
+              <ScrollView
+                ref={formScrollRef}
+                contentContainerStyle={styles.formContent}
+              >
                 {status === "success" ? (
                   <View style={styles.successCard}>
                     <Text style={styles.successTitle}>Booking confirmed!</Text>
                     <Text style={styles.successText}>
-                      Your booking is reserved and ready for payment. We’ll send
-                      a confirmation shortly.
+                      Reserved and ready for payment. We’ll message you shortly.
                     </Text>
                     <PrimaryButton label="Pay now" onPress={handlePayNow} />
                   </View>
@@ -1542,6 +1683,23 @@ const BookScreen = ({ navigation, route }) => {
                         );
                       })}
                     </View>
+                    {nextAvailableSlot ? (
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.nextSlotButton,
+                          pressed && styles.cardPressed,
+                        ]}
+                        onPress={handleUseNextAvailable}
+                      >
+                        <Text style={styles.nextSlotLabel}>
+                          Use next available slot
+                        </Text>
+                        <Text style={styles.nextSlotValue}>
+                          {formatDateLabel(nextAvailableSlot.date)} ·{" "}
+                          {nextAvailableSlot.time}
+                        </Text>
+                      </Pressable>
+                    ) : null}
                     {showAvailability ? (
                       <View style={styles.availabilityCard}>
                         {availabilityStatus === "loading" ? (
@@ -1713,15 +1871,22 @@ const BookScreen = ({ navigation, route }) => {
             {status !== "success" ? (
               <View style={styles.summaryBar}>
                 <View style={styles.summaryHeader}>
-                  <Text style={styles.summaryTitle}>Booking summary</Text>
-                  <Text style={styles.summaryTotal}>
-                    {formatCurrency(totalPrice)}
-                  </Text>
+                  <View>
+                    <Text style={styles.summaryTitle}>Booking summary</Text>
+                    {draftSaved ? (
+                      <Text style={styles.summaryHelper}>
+                        Draft saved · ready when you are
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Pressable
+                    style={styles.summaryEdit}
+                    onPress={handleEditDetails}
+                  >
+                    <Text style={styles.summaryEditText}>Edit details</Text>
+                  </Pressable>
                 </View>
                 <Text style={styles.summaryLine}>Service: {serviceLabel}</Text>
-                <Text style={styles.summaryLine}>
-                  Price: {formatCurrency(basePrice)}
-                </Text>
                 <Text style={styles.summaryLine}>
                   Pets:{" "}
                   {selectedPets.length
@@ -1795,13 +1960,21 @@ const BookScreen = ({ navigation, route }) => {
                   </View>
                 </View>
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                <PrimaryButton
-                  label={
-                    status === "submitting" ? "Booking..." : "Book & pay"
-                  }
-                  onPress={handleSubmit}
-                  disabled={status === "submitting"}
-                />
+                <View style={styles.summaryActions}>
+                  <PrimaryButton
+                    label="Save draft"
+                    variant="secondary"
+                    onPress={handleSaveDraft}
+                    disabled={status === "submitting"}
+                  />
+                  <PrimaryButton
+                    label={
+                      status === "submitting" ? "Booking..." : "Book & pay"
+                    }
+                    onPress={handleSubmit}
+                    disabled={status === "submitting"}
+                  />
+                </View>
               </View>
             ) : null}
           </View>
@@ -1933,7 +2106,7 @@ const BookScreen = ({ navigation, route }) => {
   );
 };
 
-const createStyles = (theme) => StyleSheet.create({
+const createStyles = (theme, isCompactHeight) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -1982,10 +2155,10 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: theme.colors.surface,
-    padding: 16,
-    borderRadius: 18,
+    padding: 18,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.borderSoft,
+    borderColor: theme.colors.border,
     marginBottom: 16,
     shadowColor: theme.shadow.soft.shadowColor,
     shadowOpacity: 0.2,
@@ -2016,15 +2189,15 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: theme.colors.surfaceElevated,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.border,
     shadowColor: theme.shadow.soft.shadowColor,
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 2,
-    marginBottom: 8,
+    shadowOpacity: theme.shadow.soft.shadowOpacity,
+    shadowOffset: theme.shadow.soft.shadowOffset,
+    shadowRadius: theme.shadow.soft.shadowRadius,
+    elevation: theme.shadow.soft.elevation,
+    marginBottom: 10,
   },
   categoryLeft: {
     flexDirection: "row",
@@ -2053,16 +2226,17 @@ const createStyles = (theme) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.colors.surfaceElevated,
-    padding: 16,
-    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.border,
     shadowColor: theme.shadow.soft.shadowColor,
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 2,
-    marginBottom: 8,
+    shadowOpacity: theme.shadow.soft.shadowOpacity,
+    shadowOffset: theme.shadow.soft.shadowOffset,
+    shadowRadius: theme.shadow.soft.shadowRadius,
+    elevation: theme.shadow.soft.elevation,
+    marginBottom: 10,
     marginLeft: 8,
   },
   cardPressed: {
@@ -2102,8 +2276,8 @@ const createStyles = (theme) => StyleSheet.create({
   },
   modalCard: {
     backgroundColor: theme.colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
     height: "92%",
   },
   modalBody: {
@@ -2115,7 +2289,8 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.surfaceAccent,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceGlass,
   },
   modalTitle: {
     fontSize: 18,
@@ -2128,28 +2303,53 @@ const createStyles = (theme) => StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: theme.colors.surfaceElevated,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: theme.colors.borderSoft,
+    borderColor: theme.colors.border,
   },
   closeButtonText: {
     fontSize: 16,
     color: theme.colors.textPrimary,
   },
+  pricePreview: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: theme.colors.surfaceElevated,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pricePreviewLabel: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontWeight: "600",
+  },
+  pricePreviewValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+    marginTop: 2,
+  },
+  pricePreviewNote: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
   formContent: {
     padding: 20,
-    paddingBottom: 180,
+    paddingBottom: 200,
   },
   formSectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: theme.colors.textPrimary,
-    marginTop: 8,
+    color: theme.colors.accentDeep,
+    marginTop: 10,
     marginBottom: 10,
   },
   label: {
@@ -2160,26 +2360,26 @@ const createStyles = (theme) => StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: theme.colors.accent,
-    borderRadius: 14,
+    borderColor: theme.colors.borderStrong,
+    borderRadius: theme.radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: isCompactHeight ? 8 : 10,
     fontSize: 14,
     color: theme.colors.textPrimary,
-    marginBottom: 12,
+    marginBottom: isCompactHeight ? 8 : 12,
     backgroundColor: theme.colors.surfaceElevated,
   },
   dropdown: {
     borderWidth: 1,
-    borderColor: theme.colors.accent,
-    borderRadius: 14,
+    borderColor: theme.colors.borderStrong,
+    borderRadius: theme.radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: isCompactHeight ? 8 : 10,
     backgroundColor: theme.colors.surfaceElevated,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: isCompactHeight ? 8 : 12,
     gap: 8,
   },
   dropdownValue: {
@@ -2189,10 +2389,10 @@ const createStyles = (theme) => StyleSheet.create({
   },
   dropdownList: {
     borderWidth: 1,
-    borderColor: theme.colors.accent,
-    borderRadius: 14,
+    borderColor: theme.colors.borderStrong,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surfaceElevated,
-    marginBottom: 12,
+    marginBottom: isCompactHeight ? 8 : 12,
     overflow: "hidden",
   },
   dropdownItem: {
@@ -2238,12 +2438,12 @@ const createStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.surfaceElevated,
   },
   dateChipActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+    ackgroundColor: theme.colors.accentDeep,
+    borderColor: theme.colors.accentDeep,
   },
   dateChipText: {
     color: theme.colors.textSecondary,
@@ -2264,12 +2464,12 @@ const createStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.surfaceElevated,
   },
   timeChipActive: {
-    borderColor: theme.colors.surfaceAccent,
-    backgroundColor: theme.colors.surfaceElevated,
+    borderColor: theme.colors.accentDeep,
+    backgroundColor: theme.colors.accentDeep,
   },
   timeChipDisabled: {
     backgroundColor: theme.colors.surfaceAccent,
@@ -2301,8 +2501,8 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceElevated,
   },
   countChipActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentDeep,
+    borderColor: theme.colors.accentDeep,
   },
   countChipText: {
     color: theme.colors.textSecondary,
@@ -2316,12 +2516,12 @@ const createStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.surfaceElevated,
   },
   petChipActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentDeep,
+    borderColor: theme.colors.accentDeep,
   },
   petChipText: {
     color: theme.colors.textSecondary,
@@ -2367,8 +2567,8 @@ const createStyles = (theme) => StyleSheet.create({
     gap: 6,
   },
   scheduleTypeCardActive: {
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.accentDeep,
+    backgroundColor: theme.colors.accentMuted,
   },
   scheduleTypeIcon: {
     marginBottom: 2,
@@ -2414,8 +2614,8 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
-    borderRadius: 16,
+    borderColor: theme.colors.borderStrong,
+    borderRadius: theme.radius.lg,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 16,
@@ -2432,17 +2632,36 @@ const createStyles = (theme) => StyleSheet.create({
     gap: 10,
     marginBottom: 12,
   },
+  nextSlotButton: {
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.surfaceElevated,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  nextSlotLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  nextSlotValue: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
   timeWindowChip: {
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.surfaceElevated,
   },
   timeWindowChipActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentDeep,
+    borderColor: theme.colors.accentDeep,
   },
   timeWindowText: {
     color: theme.colors.textSecondary,
@@ -2453,25 +2672,25 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.white,
   },
   availabilityCard: {
-    borderRadius: 18,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.borderStrong,
     padding: 12,
     backgroundColor: theme.colors.surfaceElevated,
     marginBottom: 12,
   },
   dogCard: {
     backgroundColor: theme.colors.surfaceElevated,
-    borderRadius: 16,
+    borderRadius: theme.radius.lg,
     padding: 14,
     borderWidth: 1,
-    borderColor: theme.colors.surfaceAccent,
+    borderColor: theme.colors.borderSoft,
     marginBottom: 12,
   },
   dogTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: theme.colors.surfaceAccent,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   inlineInputs: {
@@ -2486,7 +2705,7 @@ const createStyles = (theme) => StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.surfaceAccent,
+    borderTopColor: theme.colors.border,
     backgroundColor: theme.colors.background,
   },
   summaryHeader: {
@@ -2500,15 +2719,32 @@ const createStyles = (theme) => StyleSheet.create({
     fontWeight: "700",
     color: theme.colors.textPrimary,
   },
-  summaryTotal: {
-    fontSize: 16,
-    fontWeight: "700",
+  summaryHelper: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  summaryEdit: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSoft,
+  },
+  summaryEditText: {
+    fontSize: 12,
+    fontWeight: "600",
     color: theme.colors.textPrimary,
   },
   summaryLine: {
     fontSize: 13,
     color: theme.colors.textSecondary,
     marginBottom: 4,
+  },
+  summaryActions: {
+    marginTop: 8,
+    gap: 8,
   },
   summaryTotals: {
     marginTop: 10,
@@ -2622,8 +2858,8 @@ const createStyles = (theme) => StyleSheet.create({
     borderColor: "transparent",
   },
   daySelected: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accentSoft,
+    backgroundColor: theme.colors.accentDeep,
+    borderColor: theme.colors.accentDeep,
   },
   dayPressed: {
     opacity: 0.85,

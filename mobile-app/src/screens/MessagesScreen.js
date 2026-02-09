@@ -81,6 +81,10 @@ const MessagesScreen = ({ navigation }) => {
   const [sending, setSending] = useState(false);
   const [imagePickerError, setImagePickerError] = useState("");
   const listRef = useRef(null);
+  const skeletonRows = useMemo(
+    () => Array.from({ length: 5 }, (_, index) => index),
+    []
+  );
   const isOwner = useMemo(() => {
     const normalizedEmail = session?.email?.toLowerCase();
     const ownerEmail = OWNER_EMAIL.toLowerCase();
@@ -788,14 +792,25 @@ const MessagesScreen = ({ navigation }) => {
     );
   };
 
+  const renderInboxSkeleton = () => (
+    <View style={styles.skeletonList}>
+      {skeletonRows.map((row) => (
+        <View key={`skeleton-${row}`} style={styles.skeletonRow}>
+          <View style={styles.skeletonAvatar} />
+          <View style={styles.skeletonLines}>
+            <View style={styles.skeletonLineShort} />
+            <View style={styles.skeletonLineLong} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
   const renderChat = () => (
     <View style={styles.chatContainer}>
       {renderChatHeader()}
       {loadingChat ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator size="small" color={theme.colors.accent} />
-          <Text style={styles.loadingText}>Loading chat…</Text>
-        </View>
+       renderInboxSkeleton()
       ) : (
         <FlatList
           ref={listRef}
@@ -804,6 +819,10 @@ const MessagesScreen = ({ navigation }) => {
           renderItem={renderMessageItem}
           contentContainerStyle={styles.messageList}
           keyboardShouldPersistTaps="handled"
+          removeClippedSubviews
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={7}
         />
       )}
       <View style={styles.inputWrapper}>
@@ -867,10 +886,7 @@ const MessagesScreen = ({ navigation }) => {
           <View style={styles.container}>
             {renderInboxHeader()}
             {loadingInbox ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator size="small" color={theme.colors.accent} />
-                <Text style={styles.loadingText}>Loading messages…</Text>
-              </View>
+              renderInboxSkeleton()
             ) : inboxItems.length === 0 ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIcon}>
@@ -881,6 +897,9 @@ const MessagesScreen = ({ navigation }) => {
                   />
                 </View>
                 <Text style={styles.emptyText}>No conversations yet.</Text>
+                <Text style={styles.emptySubtext}>
+                  Start a chat to get help or share care notes.
+                </Text>
               </View>
             ) : (
               <FlatList
@@ -888,6 +907,13 @@ const MessagesScreen = ({ navigation }) => {
                 keyExtractor={(item) => item.id}
                 renderItem={renderInboxItem}
                 contentContainerStyle={styles.inboxList}
+                ItemSeparatorComponent={() => (
+                  <View style={styles.listSeparator} />
+                )}
+                removeClippedSubviews
+                initialNumToRender={12}
+                maxToRenderPerBatch={12}
+                windowSize={7}
               />
             )}
           </View>
@@ -1010,8 +1036,10 @@ const createStyles = (theme) =>
       borderRadius: 11,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.accent,
+      backgroundColor: theme.colors.accentDeep,
       paddingHorizontal: theme.spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.colors.white,
     },
     unreadBadgeText: {
       fontSize: 10,
@@ -1049,6 +1077,44 @@ const createStyles = (theme) =>
       color: theme.colors.textMuted,
       fontSize: theme.typography.caption.fontSize,
       textAlign: "center",
+    },
+    listSeparator: {
+      height: 1,
+      backgroundColor: theme.colors.borderSoft,
+      marginLeft: 72,
+      marginVertical: theme.spacing.xs,
+    },
+    skeletonList: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    skeletonRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.md,
+    },
+    skeletonAvatar: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    skeletonLines: {
+      flex: 1,
+      gap: theme.spacing.xs,
+    },
+    skeletonLineShort: {
+      width: "45%",
+      height: 10,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    skeletonLineLong: {
+      width: "70%",
+      height: 10,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surfaceAccent,
     },
     chatContainer: {
       flex: 1,

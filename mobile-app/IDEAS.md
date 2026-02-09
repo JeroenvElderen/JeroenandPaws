@@ -73,52 +73,52 @@
 
 ## 50 things to adjust
 1. Reduce steps in booking flow (fewer screens)
-2. Increase contrast in light mode buttons
-3. Make CTAs sticky at bottom
-4. Improve spacing in service cards
-5. Shorten booking confirmation copy
-6. Standardize icon sizes across tabs
-7. Use consistent corner radius on cards
-8. Improve empty states with guidance
-9. Add loading skeletons for lists
-10. Make calendar selection more obvious
-11. Improve text hierarchy in settings
-12. Clarify payment status labels
-13. Add subtle animation for success states
+2. ✅ Increase contrast in light mode buttons
+3. ✅ Make CTAs sticky at bottom
+4. ✅ Improve spacing in service cards
+5. ✅ Shorten booking confirmation copy
+6. ✅ Standardize icon sizes across tabs
+7. ✅ Use consistent corner radius on cards
+8. ✅ Improve empty states with guidance
+9. ✅ Add loading skeletons for lists
+10. ✅ Make calendar selection more obvious
+11. ✅ Improve text hierarchy in settings
+12. ✅ Clarify payment status labels
+13. ✅ Add subtle animation for success states
 14. Simplify profile menu structure
-15. Make error messages action-oriented
-16. Reduce form field spacing on small screens
-17. Add inline validation for phone/email
-18. Highlight next booking more prominently
+15. ✅ Make error messages action-oriented
+16. ✅ Reduce form field spacing on small screens
+17. ✅ Add inline validation for phone/email
+18. ✅ Highlight next booking more prominently
 19. Make filters stick on scroll
-20. Show total price earlier in booking flow
-21. Improve messages unread badge visibility
-22. Add “last updated” in data sections
-23. Use brand colors for section headers
-24. Add separators in long lists
-25. Improve list scrolling performance
-26. Consolidate duplicate info in summary cards
-27. Provide clearer back navigation label
-28. Unify modal header styles
+20. ✅ Show total price earlier in booking flow
+21. ✅ Improve messages unread badge visibility
+22. ✅ Add “last updated” in data sections
+23. ✅ Use brand colors for section headers
+24. ✅ Add separators in long lists
+25. ✅ Improve list scrolling performance
+26. ✅ Consolidate duplicate info in summary cards
+27. ✅ Provide clearer back navigation label
+28. ✅ Unify modal header styles
 29. Add contextual help tooltips
-30. Improve readability of muted text
+30. ✅ Improve readability of muted text
 31. Add support for larger fonts (accessibility)
-32. Increase touch targets for small icons
+32. ✅ Increase touch targets for small icons
 33. Add haptics on key actions
-34. Revisit tab bar height for smaller devices
+34. ✅ Revisit tab bar height for smaller devices
 35. Better align calendar dots/markers
 36. Use consistent capitalization for labels
-37. Simplify “payment methods” copy
+37. ✅ Simplify “payment methods” copy
 38. Tighten hero card padding
-39. Reduce shadow intensity in light mode
+39. ✅ Reduce shadow intensity in light mode
 40. Improve navigation transition speed
-41. Add glanceable booking badge (status)
+41. ✅ Add glanceable booking badge (status)
 42. Normalize date/time formats across screens
-43. Add inline “edit” actions on summary cards
-44. Improve pet list chips contrast
-45. Make “Pay now” more prominent when pending
-46. Add “save draft” for booking flow
-47. Improve toggle/checkbox styling
-48. Add secondary action for support
-49. Standardize border colors across cards
-50. Simplify onboarding prompts
+43. ✅ Add inline “edit” actions on summary cards
+44. ✅ Improve pet list chips contrast
+45. ✅ Make “Pay now” more prominent when pending
+46. ✅ Add “save draft” for booking flow
+47. ✅ Improve toggle/checkbox styling
+48. ✅ Add secondary action for support
+49. ✅ Standardize border colors across cards
+50. ✅ Simplify onboarding prompts

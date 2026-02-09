@@ -2,7 +2,13 @@ import { useMemo } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 
-const PrimaryButton = ({ label, onPress, variant = "primary" }) => {
+const PrimaryButton = ({
+  label,
+  onPress,
+  variant = "primary",
+  disabled = false,
+  accessibilityLabel,
+}) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   return (
@@ -11,15 +17,20 @@ const PrimaryButton = ({ label, onPress, variant = "primary" }) => {
         styles.button,
         variant === "outline" && styles.buttonOutline,
         variant === "secondary" && styles.buttonSecondary,
-        pressed && styles.buttonPressed,
+        disabled && styles.buttonDisabled,
+        pressed && !disabled && styles.buttonPressed,
       ]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || label}
+      disabled={disabled}
     >
       <Text
         style={[
           styles.text,
           variant === "outline" && styles.textOutline,
           variant === "secondary" && styles.textSecondary,
+          disabled && styles.textDisabled,
         ]}
       >
         {label}
@@ -31,7 +42,7 @@ const PrimaryButton = ({ label, onPress, variant = "primary" }) => {
 const createStyles = (theme) =>
   StyleSheet.create({
     button: {
-      backgroundColor: theme.colors.accent,
+      backgroundColor: theme.colors.accentDeep,
       paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.xl,
       borderRadius: theme.radius.pill,
@@ -61,6 +72,12 @@ const createStyles = (theme) =>
       shadowRadius: theme.shadow.soft.shadowRadius,
       elevation: theme.shadow.soft.elevation,
     },
+    buttonDisabled: {
+      backgroundColor: theme.colors.surfaceAccent,
+      borderColor: theme.colors.borderSoft,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
     buttonPressed: {
       opacity: 0.9,
       transform: [{ scale: 0.98 }],
@@ -76,6 +93,10 @@ const createStyles = (theme) =>
     },
     textSecondary: {
       color: theme.colors.textPrimary,
+      fontWeight: "600",
+    },
+    textDisabled: {
+      color: theme.colors.textMuted,
       fontWeight: "600",
     },
   });

@@ -1222,11 +1222,12 @@ const HomeScreen = ({ navigation }) => {
             {upcomingPreview.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>
-                  Upcoming bookings will show here once they are confirmed.
+                  Upcoming bookings will appear once confirmed. Tap Book to
+                  schedule your next visit.
                 </Text>
               </View>
             ) : (
-              upcomingPreview.map((booking) => {
+              upcomingPreview.map((booking, index) => {
                 const start = booking?.start_at
                   ? new Date(booking.start_at)
                   : null;
@@ -1236,6 +1237,7 @@ const HomeScreen = ({ navigation }) => {
                 const petList = resolveBookingPets(booking);
                 const petsLabel = formatPetsLabel(petList);
                 const isMultiPet = petList.length > 1;
+                const isNextBooking = index === 0;
                 const bookingId =
                   booking?.id ?? booking?.start_at ?? serviceTitle;
                 const finishedCard = finishedCards[booking?.id];
@@ -1257,6 +1259,7 @@ const HomeScreen = ({ navigation }) => {
                       styles.card,
                       isJeroenAccount && styles.cardJeroen,
                       hasActiveCard && styles.cardJeroenActive,
+                      isNextBooking && styles.nextBookingCard,
                     ]}
                   >
                     <View style={styles.cardRow}>
@@ -1289,6 +1292,13 @@ const HomeScreen = ({ navigation }) => {
                         </Text>
                       </View>
                     </View>
+                    {isNextBooking ? (
+                      <View style={styles.nextBookingBadge}>
+                        <Text style={styles.nextBookingBadgeText}>
+                          Next booking
+                        </Text>
+                      </View>
+                    ) : null}
                     <View style={styles.statusTimeline}>
                       {BOOKING_STATUS_STEPS.map((step, index) => {
                         const isComplete = index <= statusStepIndex;
@@ -2200,7 +2210,7 @@ const createStyles = (theme) =>
     sectionTitle: {
       fontSize: 18,
       fontWeight: "700",
-      color: theme.colors.textPrimary,
+      color: theme.colors.accentDeep,
     },
     sectionMeta: {
       fontSize: 12,
@@ -2212,7 +2222,7 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
+      orderColor: theme.colors.border,
     },
     emptyText: {
       fontSize: 14,
@@ -2223,20 +2233,39 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.xl,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
+      borderColor: theme.colors.border,
       marginBottom: theme.spacing.md,
+    },
+    nextBookingCard: {
+      borderColor: theme.colors.accentDeep,
+      borderWidth: 2,
+      backgroundColor: theme.colors.surface,
     },
     cardJeroen: {
       borderColor: theme.colors.borderStrong,
     },
     cardJeroenActive: {
       borderWidth: 2,
-      borderColor: theme.colors.accent,
+      borderColor: theme.colors.accentDeep,
       shadowColor: theme.shadow.soft.shadowColor,
       shadowOpacity: theme.shadow.soft.shadowOpacity,
       shadowOffset: theme.shadow.soft.shadowOffset,
       shadowRadius: theme.shadow.soft.shadowRadius,
       elevation: theme.shadow.soft.elevation,
+    },
+    nextBookingBadge: {
+      alignSelf: "flex-start",
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.accentDeep,
+      marginBottom: theme.spacing.sm,
+    },
+    nextBookingBadgeText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: theme.colors.white,
+      letterSpacing: 0.3,
     },
     cardRow: {
       flexDirection: "row",
@@ -2282,13 +2311,13 @@ const createStyles = (theme) =>
       marginTop: 4,
     },
     statusBadge: {
-      backgroundColor: theme.colors.surfaceAccent,
+      backgroundColor: theme.colors.accentDeep,
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 6,
     },
     statusBadgeText: {
-      color: theme.colors.accentSoft,
+      color: theme.colors.white,
       fontWeight: "600",
       fontSize: 12,
     },

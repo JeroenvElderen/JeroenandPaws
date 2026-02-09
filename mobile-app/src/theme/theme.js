@@ -30,24 +30,24 @@ const baseTokens = {
   shadow: {
     soft: {
       shadowColor: "#000000",
-      shadowOpacity: 0.18,
+      shadowOpacity: 0.14,
       shadowOffset: { width: 0, height: 10 },
-      shadowRadius: 18,
+      shadowRadius: 16,
       elevation: 6,
     },
     lift: {
       shadowColor: "#000000",
-      shadowOpacity: 0.22,
+      shadowOpacity: 0.18,
       shadowOffset: { width: 0, height: 14 },
-      shadowRadius: 26,
-      elevation: 10,
+      shadowRadius: 22,
+      elevation: 8,
     },
     glow: {
       shadowColor: "#8f2bff",
       shadowOpacity: 0.2,
       shadowOffset: { width: 0, height: 8 },
-      shadowRadius: 16,
-      elevation: 6,
+      shadowRadius: 14,
+      elevation: 5,
     },
   },
 };
@@ -58,15 +58,15 @@ const lightColors = {
   surfaceElevated: "#efe6ff",
   surfaceAccent: "#e3d6ff",
   surfaceGlass: "rgba(247, 241, 255, 0.88)",
-  border: "#ddd0ff",
-  borderStrong: "#c4afff",
-  borderSoft: "#f5f0ff",
+  border: "#d4c4ff",
+  borderStrong: "#b7a0ff",
+  borderSoft: "#efe8ff",
   textPrimary: "#140c2b",
   textSecondary: "#3a2c5c",
-  textMuted: "#665488",
-  accent: "#7c45f3",
-  accentSoft: "#a987ff",
-  accentDeep: "#5a2fd1",
+  textMuted: "#574272",
+  accent: "#6b2de3",
+  accentSoft: "#b18cff",
+  accentDeep: "#4d1ab3",
   accentMuted: "#efe6ff",
   success: "#2ecc71",
   danger: "#d33a3a",
@@ -94,7 +94,29 @@ const darkColors = {
   white: "#ffffff",
 };
 
+const lightShadow = {
+  soft: {
+    ...baseTokens.shadow.soft,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  lift: {
+    ...baseTokens.shadow.lift,
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  glow: {
+    ...baseTokens.shadow.glow,
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+};
+
 export const createTheme = (mode = THEME_MODES.light) => ({
   colors: mode === THEME_MODES.light ? lightColors : darkColors,
   ...baseTokens,
+  shadow: mode === THEME_MODES.light ? lightShadow : baseTokens.shadow,
 });

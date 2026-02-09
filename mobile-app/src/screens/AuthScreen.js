@@ -61,6 +61,19 @@ const AuthScreen = ({ onAuthenticate }) => {
     return Boolean(password.trim());
   }, [email, password, fullName, phone, eircode, isRegistering]);
 
+  const emailError = useMemo(() => {
+    if (!email.trim()) return "";
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    return isValid ? "" : "Enter a valid email address.";
+  }, [email]);
+
+  const phoneError = useMemo(() => {
+    if (!isRegistering) return "";
+    if (!phone.trim()) return "";
+    const digits = phone.replace(/[^\d]/g, "");
+    return digits.length >= 11 ? "" : "Enter a valid Irish mobile number.";
+  }, [isRegistering, phone]);
+
   const resolveSignedUpUser = async (signUpResult) => {
     const signUpUser =
       signUpResult.data?.user || signUpResult.data?.session?.user || null;
@@ -227,7 +240,7 @@ const AuthScreen = ({ onAuthenticate }) => {
       <View style={styles.container}>
         <Text style={styles.title}>Welcome to Jeroen & Paws</Text>
         <Text style={styles.subtitle}>
-          Log in or register to manage your bookings and messages.
+          Sign in to manage bookings, messages, and care updates.
         </Text>
         <View style={styles.modeToggle}>
           <Pressable
@@ -275,12 +288,15 @@ const AuthScreen = ({ onAuthenticate }) => {
               />
               <Text style={styles.label}>Phone number</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, phoneError && styles.inputError]}
                 placeholder="+353..."
                 value={phone}
                 onChangeText={(value) => setPhone(normalizePhone(value))}
                 keyboardType="phone-pad"
               />
+              {phoneError ? (
+                <Text style={styles.helperError}>{phoneError}</Text>
+              ) : null}
               <Text style={styles.label}>Eircode</Text>
 
               <TextInput
@@ -294,13 +310,16 @@ const AuthScreen = ({ onAuthenticate }) => {
           ) : null}
           <Text style={styles.label}>Email address</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, emailError && styles.inputError]}
             placeholder="you@example.com"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          {emailError ? (
+            <Text style={styles.helperError}>{emailError}</Text>
+          ) : null}
           <Text style={styles.label}>Password</Text>
           <View style={styles.passwordRow}>
             <TextInput
@@ -428,6 +447,15 @@ const createStyles = (theme) =>
       color: theme.colors.textPrimary,
       marginBottom: theme.spacing.sm,
       backgroundColor: theme.colors.surfaceElevated,
+    },
+    inputError: {
+      borderColor: theme.colors.danger,
+    },
+    helperError: {
+      color: theme.colors.danger,
+      fontSize: theme.typography.caption.fontSize,
+      marginTop: -theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
     },
     passwordRow: {
       flexDirection: "row",

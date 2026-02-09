@@ -67,10 +67,25 @@ const SettingsScreen = ({ navigation, route }) => {
   );
   const [keepMessages, setKeepMessages] = useState(false);
   const [status, setStatus] = useState("idle");
+  const [lastUpdated, setLastUpdated] = useState(null);
   const isSystemTheme = preference === THEME_PREFERENCES.system;
   const isDarkMode = mode === THEME_MODES.dark;
   const styles = useMemo(() => createStyles(theme), [theme]);
   const returnTo = route?.params?.returnTo;
+  const switchTrackColor = {
+    false: theme.colors.borderStrong,
+    true: theme.colors.accentDeep,
+  };
+  const resolveSwitchThumb = (value) =>
+    value ? theme.colors.white : theme.colors.surfaceAccent;
+  const lastUpdatedLabel = lastUpdated
+    ? new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "numeric",
+        month: "short",
+      }).format(lastUpdated)
+    : null;
   const handleReturn = () => {
     if (returnTo) {
       if (returnTo === "Profile") {
@@ -132,6 +147,7 @@ const SettingsScreen = ({ navigation, route }) => {
         : current
     );
     void updatePreferences(next);
+    setLastUpdated(new Date());
   };
 
   const updatePreferences = async (next) => {
@@ -173,6 +189,7 @@ const SettingsScreen = ({ navigation, route }) => {
             }
           : current
       );
+      setLastUpdated(new Date());
     } catch (updateError) {
       console.error("Failed to update preferences", updateError);
       setStatus("error");
@@ -215,9 +232,10 @@ const SettingsScreen = ({ navigation, route }) => {
                 ...(current.client || {}),
                 keep_messages: value,
               },
-            }
+          }
           : current
       );
+      setLastUpdated(new Date());
     } catch (updateError) {
       console.error("Failed to update message retention", updateError);
       setStatus("error");
@@ -259,13 +277,8 @@ const SettingsScreen = ({ navigation, route }) => {
                   value ? THEME_PREFERENCES.system : THEME_PREFERENCES.manual
                 )
               }
-              trackColor={{
-                false: theme.colors.borderStrong,
-                true: theme.colors.accent,
-              }}
-              thumbColor={
-                isSystemTheme ? theme.colors.white : theme.colors.surfaceAccent
-              }
+              trackColor={switchTrackColor}
+              thumbColor={resolveSwitchThumb(isSystemTheme)}
             />
           </View>
           <View style={[styles.row, styles.rowLast]}>
@@ -281,13 +294,8 @@ const SettingsScreen = ({ navigation, route }) => {
                 setThemeMode(value ? THEME_MODES.dark : THEME_MODES.light)
               }
               disabled={isSystemTheme}
-              trackColor={{
-                false: theme.colors.borderStrong,
-                true: theme.colors.accent,
-              }}
-              thumbColor={
-                isDarkMode ? theme.colors.white : theme.colors.surfaceAccent
-              }
+              trackColor={switchTrackColor}
+              thumbColor={resolveSwitchThumb(isDarkMode)}
             />
           </View>
         </View>
@@ -305,15 +313,8 @@ const SettingsScreen = ({ navigation, route }) => {
                   buildNotificationPreferences({ push: value })
                 );                
               }}
-              trackColor={{
-                false: theme.colors.borderStrong,
-                true: theme.colors.accent,
-              }}
-              thumbColor={
-                notificationsEnabled
-                  ? theme.colors.white
-                  : theme.colors.surfaceAccent
-              }
+              trackColor={switchTrackColor}
+              thumbColor={resolveSwitchThumb(notificationsEnabled)}
             />
           </View>
           <View style={styles.row}>
@@ -329,13 +330,8 @@ const SettingsScreen = ({ navigation, route }) => {
                   buildNotificationPreferences({ email: value })
                 );
               }}
-              trackColor={{
-                false: theme.colors.borderStrong,
-                true: theme.colors.accent,
-              }}
-              thumbColor={
-                emailUpdates ? theme.colors.white : theme.colors.surfaceAccent
-              }
+              trackColor={switchTrackColor}
+              thumbColor={resolveSwitchThumb(emailUpdates)}
             />
           </View>
           <View style={[styles.row, styles.rowLast]}>
@@ -351,13 +347,8 @@ const SettingsScreen = ({ navigation, route }) => {
                   buildNotificationPreferences({ sms: value })
                 );
               }}
-              trackColor={{
-                false: theme.colors.borderStrong,
-                true: theme.colors.accent,
-              }}
-              thumbColor={
-                smsAlerts ? theme.colors.white : theme.colors.surfaceAccent
-              }
+              trackColor={switchTrackColor}
+              thumbColor={resolveSwitchThumb(smsAlerts)}
             />
           </View>
           {status === "error" ? (
@@ -397,15 +388,8 @@ const SettingsScreen = ({ navigation, route }) => {
                     );
                   }}
                   disabled={!notificationsEnabled}
-                  trackColor={{
-                    false: theme.colors.borderStrong,
-                    true: theme.colors.accent,
-                  }}
-                  thumbColor={
-                    pushCategories[category.key]
-                      ? theme.colors.white
-                      : theme.colors.surfaceAccent
-                  }
+                  trackColor={switchTrackColor}
+                  thumbColor={resolveSwitchThumb(pushCategories[category.key])}
                 />
               </View>
             );
@@ -416,6 +400,11 @@ const SettingsScreen = ({ navigation, route }) => {
             </Text>
           ) : null}
         </View>
+        {lastUpdatedLabel ? (
+          <Text style={styles.lastUpdated}>
+            Last updated {lastUpdatedLabel}
+          </Text>
+        ) : null}
 
         <Text style={styles.sectionTitle}>Messages</Text>
         <View style={styles.card}>
@@ -450,13 +439,8 @@ const SettingsScreen = ({ navigation, route }) => {
                 );
                 void updateMessageRetention(value);
               }}
-              trackColor={{
-                false: theme.colors.border,
-                true: theme.colors.accentSoft,
-              }}
-              thumbColor={
-                keepMessages ? theme.colors.accent : theme.colors.surface
-              }
+              trackColor={switchTrackColor}
+              thumbColor={resolveSwitchThumb(keepMessages)}
             />
           </View>
         </View>
@@ -464,7 +448,9 @@ const SettingsScreen = ({ navigation, route }) => {
         <Text style={styles.sectionTitle}>Payment methods</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Primary card</Text>
-          <Text style={styles.value}>Manage your card on your next invoice.</Text>
+          <Text style={styles.value}>
+            Manage cards during your next payment.
+          </Text>
           <Pressable
             style={styles.button}
             onPress={() =>
@@ -551,7 +537,7 @@ const createStyles = (theme) =>
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
+      borderColor: theme.colors.border,
       marginBottom: theme.spacing.md,
       shadowColor: theme.shadow.soft.shadowColor,
       shadowOpacity: theme.shadow.soft.shadowOpacity,
@@ -560,9 +546,9 @@ const createStyles = (theme) =>
       elevation: theme.shadow.soft.elevation,
     },
     subsectionTitle: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: "700",
-      color: theme.colors.textPrimary,
+      color: theme.colors.accentDeep,
       marginBottom: theme.spacing.xs,
     },
     row: {
@@ -593,14 +579,19 @@ const createStyles = (theme) =>
     },
     helperText: {
       fontSize: theme.typography.caption.fontSize,
-      color: theme.colors.textSecondary,
+      color: theme.colors.textMuted,
       marginTop: theme.spacing.xs,
     },
     sectionTitle: {
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: "700",
-      color: theme.colors.textPrimary,
+      color: theme.colors.accentDeep,
       marginBottom: theme.spacing.sm,
+    },
+    lastUpdated: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textMuted,
+      marginBottom: theme.spacing.md,
     },
     value: {
       fontSize: theme.typography.caption.fontSize,
