@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchJson } from "../api/client";
 import { DEFAULT_AVAILABILITY_WINDOW_DAYS } from "../api/availability";
 import {
@@ -38,14 +39,8 @@ import { useTheme } from "../context/ThemeContext";
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const SUPPORT_PHONE = "+353872473099";
 const DEFAULT_WIDGETS = ["wallet", "pets", "support", "bundles"];
-const DEFAULT_SECTIONS = [
-  "hero",
-  "summary",
-  "highlight",
-  "widgets",
-  "quickActions",
-  "upcoming",
-];
+const DEFAULT_SECTIONS = ["hero", "summary", "upcoming"];
+const DASHBOARD_PROFILE_KEY = "home-dashboard-profile";
 const HEADER_STYLES = [
   {
     id: "classic",
@@ -67,6 +62,15 @@ const HEADER_STYLES = [
     titleSize: 32,
     showBadge: true,
     showMeta: true,
+  },
+];
+
+const ANNOUNCEMENTS = [
+  {
+    id: "consent-forms",
+    title: "Digital consent forms are live",
+    body: "Review treatment approvals and medical notes before each visit.",
+    cta: "Review forms",
   },
 ];
 
@@ -128,6 +132,36 @@ const formatPetsLabel = (pets) => {
   if (typeof pets === "string") return pets;
   if (typeof pets === "object") return pets.name || "Pets";
   return "Pets";
+};
+
+const resolvePetId = (pet, index = 0) =>
+  (
+    pet?.id ||
+    pet?.pet_id ||
+    pet?.uuid ||
+    pet?.slug ||
+    pet?.name ||
+    `pet-${index}`
+  ).toString();
+
+const resolvePetPreferences = (pet) => {
+  const temperament =
+    pet?.temperament || pet?.energy_level || pet?.personality;
+  const handling =
+    pet?.handling ||
+    pet?.handling_notes ||
+    pet?.care_instructions ||
+    pet?.notes;
+  const preferences = [];
+  preferences.push({
+    label: "Temperament",
+    value: temperament || "Gentle & curious",
+  });
+  preferences.push({
+    label: "Handling",
+    value: handling || "Standard handling",
+  });
+  return preferences;
 };
 
 const BOOKING_STATUS_STEPS = [
@@ -213,12 +247,14 @@ const HomeScreen = ({ navigation }) => {
   const [walletSummary, setWalletSummary] = useState(null);
   const [petsSummary, setPetsSummary] = useState({ count: 0, updatedAt: null });
   const [petsOffline, setPetsOffline] = useState(false);
+  const [petProfiles, setPetProfiles] = useState([]);
   const [customForm, setCustomForm] = useState({
     title: "",
     body: "",
     action: "",
     cta: "",
   });
+  const [layoutProfileId, setLayoutProfileId] = useState("all");
   const hasShownEmptyPetsPrompt = useRef(false);
   const isJeroenAccount =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -276,17 +312,50 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     let isMounted = true;
+    const loadDashboardProfile = async () => {
+      if (!session?.email) return;
+      try {
+        const stored = await AsyncStorage.getItem(
+          `${DASHBOARD_PROFILE_KEY}:${session.email.toLowerCase()}`
+        );
+        if (!isMounted) return;
+        if (stored) {
+          setLayoutProfileId(stored);
+        }
+      } catch (error) {
+        console.warn("Unable to load dashboard profile", error);
+      }
+    };
+    loadDashboardProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.email]);
+
+  useEffect(() => {
+    if (!session?.email) return;
+    AsyncStorage.setItem(
+      `${DASHBOARD_PROFILE_KEY}:${session.email.toLowerCase()}`,
+      layoutProfileId
+    ).catch((error) =>
+      console.warn("Unable to save dashboard profile", error)
+    );
+  }, [layoutProfileId, session?.email]);
+
+  useEffect(() => {
+    let isMounted = true;
     const loadWidgets = async () => {
       if (!session?.email) {
         setWidgetsLoaded(true);
         return;
       }
+      setWidgetsLoaded(false);
       const stored = await loadHomeLayout(session.email, {
         ...DEFAULT_HOME_LAYOUT,
         widgetIds: DEFAULT_WIDGETS,
         sectionIds: DEFAULT_SECTIONS,
         headerStyle: "classic",
-      });
+      }, layoutProfileId === "all" ? null : layoutProfileId);
       if (!isMounted) return;
       setWidgetIds(stored.widgetIds || DEFAULT_WIDGETS);
       setSectionIds(stored.sectionIds || DEFAULT_SECTIONS);
@@ -300,7 +369,7 @@ const HomeScreen = ({ navigation }) => {
     return () => {
       isMounted = false;
     };
-  }, [session?.email]);
+  }, [layoutProfileId, session?.email]);
 
   useEffect(() => {
     if (!widgetsLoaded || !session?.email) return;
@@ -309,13 +378,14 @@ const HomeScreen = ({ navigation }) => {
       sectionIds,
       customWidgets,
       headerStyle,
-    });
+    }, layoutProfileId === "all" ? null : layoutProfileId);
   }, [
     customWidgets,
     headerStyle,
     sectionIds,
     widgetIds,
     widgetsLoaded,
+    layoutProfileId,
     session?.email,
   ]);
 
@@ -355,6 +425,7 @@ const HomeScreen = ({ navigation }) => {
             count: cached.pets.length,
             updatedAt: cached.updatedAt || null,
           });
+          setPetProfiles(cached.pets);
         }
       }
       try {
@@ -366,6 +437,7 @@ const HomeScreen = ({ navigation }) => {
           count: pets.length,
           updatedAt: new Date().toISOString(),
         });
+        setPetProfiles(pets);
         setPetsOffline(false);
         await saveCachedPets(session.email, pets);
       } catch (error) {
@@ -800,8 +872,75 @@ const HomeScreen = ({ navigation }) => {
     walletSummary,
   ]);
 
+  const petDashboardOptions = useMemo(() => {
+    const options = [
+      {
+        id: "all",
+        label: "All pets",
+      },
+    ];
+    petProfiles.forEach((pet, index) => {
+      options.push({
+        id: resolvePetId(pet, index),
+        label: pet?.name || `Pet ${index + 1}`,
+      });
+    });
+    return options;
+  }, [petProfiles]);
+
+  const activeDashboardLabel =
+    petDashboardOptions.find((option) => option.id === layoutProfileId)?.label ||
+    "All pets";
+
+  const careHighlights = useMemo(
+    () => [
+      {
+        id: "multi-pet",
+        title: "Multi-pet booking",
+        body: "Reserve one time slot for all of your pets together.",
+        cta: "Book multiple pets",
+        action: () => navigation.navigate("Book", { mode: "multi-pet" }),
+      },
+      {
+        id: "consent",
+        title: "Digital consent forms",
+        body: "Approve treatments and medications before each visit.",
+        cta: "Review consent forms",
+        action: () =>
+          navigation.navigate("Profile", {
+            screen: "ProfileOverview",
+            params: { returnTo: "Home", focus: "consent-forms" },
+          }),
+      },
+      {
+        id: "preferences",
+        title: "Saved service preferences",
+        body: "Store temperament and handling notes per pet.",
+        cta: "Edit pet preferences",
+        action: () =>
+          navigation.navigate("Profile", {
+            screen: "PetsProfile",
+            params: { returnTo: "Home" },
+          }),
+      },
+      {
+        id: "dashboards",
+        title: "Switchable home layouts",
+        body: "Save a home layout per pet and toggle dashboards instantly.",
+        cta: "Manage layouts",
+        action: () => setShowWidgetSettings(true),
+      },
+    ],
+    [navigation]
+  );
+
   const sectionChoices = useMemo(
     () => [
+      {
+        id: "announcements",
+        title: "Announcements banner",
+        description: "App-wide updates and service notes.",
+      },
       {
         id: "hero",
         title: "Welcome hero",
@@ -811,6 +950,11 @@ const HomeScreen = ({ navigation }) => {
         id: "summary",
         title: "Summary cards",
         description: "Upcoming count and next visit details.",
+      },
+      {
+        id: "careHub",
+        title: "Pet care hub",
+        description: "Multi-pet booking, consent forms, and preferences.",
       },
       {
         id: "highlight",
@@ -903,6 +1047,25 @@ const HomeScreen = ({ navigation }) => {
                 </Pressable>
               </View>
             </View>
+            <View style={styles.heroActions}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.metaPill,
+                  styles.metaAction,
+                  pressed && styles.cardPressed,
+                ]}
+                onPress={() => setShowWidgetSettings((current) => !current)}
+              >
+                <Ionicons
+                  name="options-outline"
+                  size={14}
+                  color={theme.colors.accent}
+                />
+                <Text style={styles.metaActionText}>
+                  {showWidgetSettings ? "Close editor" : "Customize"}
+                </Text>
+              </Pressable>
+            </View>
             {activeHeaderStyle.showMeta ? (
               <View style={styles.heroMetaRow}>
                 <View style={styles.metaPill}>
@@ -913,7 +1076,7 @@ const HomeScreen = ({ navigation }) => {
                   />
                   <Text style={styles.metaText}>{dateStamp}</Text>
                 </View>
-              <View style={styles.metaPill}>
+                <View style={styles.metaPill}>
                   <Ionicons
                     name="time-outline"
                     size={14}
@@ -925,6 +1088,42 @@ const HomeScreen = ({ navigation }) => {
                 </View>
               </View>
             ) : null}
+          </View>
+        ) : null}
+
+        {sectionIds.includes("announcements") ? (
+          <View style={styles.announcementCard}>
+            <View style={styles.announcementIcon}>
+              <Ionicons
+                name="megaphone-outline"
+                size={18}
+                color={theme.colors.accent}
+              />
+            </View>
+            <View style={styles.announcementCopy}>
+              <Text style={styles.announcementTitle}>
+                {ANNOUNCEMENTS[0].title}
+              </Text>
+              <Text style={styles.announcementBody}>
+                {ANNOUNCEMENTS[0].body}
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.announcementButton,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() =>
+                navigation.navigate("Profile", {
+                  screen: "ProfileOverview",
+                  params: { returnTo: "Home", focus: "consent-forms" },
+                })
+              }
+            >
+              <Text style={styles.announcementButtonText}>
+                {ANNOUNCEMENTS[0].cta}
+              </Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -948,6 +1147,67 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
           ) : null}
+
+        {sectionIds.includes("careHub") ? (
+          <View style={styles.careHub}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Pet care hub</Text>
+              <Text style={styles.sectionMeta}>
+                Multi-pet booking, consent forms, and preferences.
+              </Text>
+            </View>
+            <View style={styles.careGrid}>
+              {careHighlights.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={({ pressed }) => [
+                    styles.careCard,
+                    pressed && styles.cardPressed,
+                  ]}
+                  onPress={item.action}
+                >
+                  <Text style={styles.careTitle}>{item.title}</Text>
+                  <Text style={styles.careBody}>{item.body}</Text>
+                  <Text style={styles.careCta}>{item.cta}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.preferencesCard}>
+              <Text style={styles.preferencesTitle}>
+                Saved service preferences
+              </Text>
+              {petProfiles.length ? (
+                petProfiles.slice(0, 3).map((pet, index) => (
+                  <View
+                    key={resolvePetId(pet, index)}
+                    style={styles.preferencesRow}
+                  >
+                    <Text style={styles.preferencesName}>
+                      {pet?.name || `Pet ${index + 1}`}
+                    </Text>
+                    <View style={styles.preferenceTags}>
+                      {resolvePetPreferences(pet).map((pref) => (
+                        <View
+                          key={`${pref.label}-${pref.value}`}
+                          style={styles.preferenceTag}
+                        >
+                          <Text style={styles.preferenceTagText}>
+                            {pref.label}: {pref.value}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.preferencesEmpty}>
+                  Add temperament and handling notes in pet profiles to see them
+                  here.
+                </Text>
+              )}
+            </View>
+          </View>
+        ) : null}
 
         {sectionIds.includes("upcoming") ? (
           <>
@@ -975,6 +1235,7 @@ const HomeScreen = ({ navigation }) => {
                   booking?.service_title || booking?.services_catalog?.title;
                 const petList = resolveBookingPets(booking);
                 const petsLabel = formatPetsLabel(petList);
+                const isMultiPet = petList.length > 1;
                 const bookingId =
                   booking?.id ?? booking?.start_at ?? serviceTitle;
                 const finishedCard = finishedCards[booking?.id];
@@ -1003,9 +1264,21 @@ const HomeScreen = ({ navigation }) => {
                         <Text style={styles.cardTime}>
                           {formatTimeRange(start, end)}
                         </Text>
-                        <Text style={styles.cardTitle}>
-                          {serviceTitle || "Service"}
-                        </Text>
+                        <View style={styles.cardTitleRow}>
+                          <Text style={styles.cardTitle}>
+                            {serviceTitle || "Service"}
+                          </Text>
+                          {isMultiPet ? (
+                            <View style={styles.multiPetBadge}>
+                              <Ionicons
+                                name="paw"
+                                size={12}
+                                color={theme.colors.accent}
+                              />
+                              <Text style={styles.multiPetText}>Multi-pet</Text>
+                            </View>
+                          ) : null}
+                        </View>
                         <Text style={styles.cardMeta}>{petsLabel}</Text>
                       </View>
                       <View style={styles.statusBadge}>
@@ -1256,31 +1529,37 @@ const HomeScreen = ({ navigation }) => {
           </View>
         ) : null}
 
+
         
-
-        <View style={styles.personalizeCard}>
-          <View style={styles.personalizeCopy}>
-            <Text style={styles.personalizeTitle}>Make home your own</Text>
-            <Text style={styles.personalizeBody}>
-              Toggle sections, add shortcuts, and build a dashboard that feels
-              personal.
-            </Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [
-              styles.personalizeButton,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => setShowWidgetSettings((current) => !current)}
-          >
-            <Text style={styles.personalizeButtonText}>
-              {showWidgetSettings ? "Close editor" : "Customize"}
-            </Text>
-          </Pressable>
-        </View>
-
         {showWidgetSettings ? (
           <View style={styles.widgetSettings}>
+            <Text style={styles.widgetSettingsTitle}>Dashboard profile</Text>
+            <Text style={styles.widgetSettingsHint}>
+              Layouts are saved per pet. Active: {activeDashboardLabel}
+            </Text>
+            <View style={styles.profileChips}>
+              {petDashboardOptions.map((option) => (
+                <Pressable
+                  key={option.id}
+                  style={({ pressed }) => [
+                    styles.profileChip,
+                    layoutProfileId === option.id && styles.profileChipActive,
+                    pressed && styles.cardPressed,
+                  ]}
+                  onPress={() => setLayoutProfileId(option.id)}
+                >
+                  <Text
+                    style={[
+                      styles.profileChipText,
+                      layoutProfileId === option.id &&
+                        styles.profileChipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
             <Text style={styles.widgetSettingsTitle}>Home layout</Text>
             {sectionChoices.map((section) => (
               <View key={section.id} style={styles.widgetSettingRow}>
@@ -1422,6 +1701,10 @@ const createStyles = (theme) =>
       gap: theme.spacing.sm,
       marginTop: theme.spacing.md,
     },
+    heroActions: {
+      flexDirection: "row",
+      marginTop: theme.spacing.sm,
+    },
     metaPill: {
       flexDirection: "row",
       alignItems: "center",
@@ -1541,43 +1824,136 @@ const createStyles = (theme) =>
       marginTop: 4,
       lineHeight: 18,
     },
-    personalizeCard: {
+    metaAction: {
+      borderColor: theme.colors.accentMuted,
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    metaActionText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: theme.colors.accent,
+    },
+    announcementCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      padding: theme.spacing.md,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      marginBottom: theme.spacing.md,
+    },
+    announcementIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.colors.surfaceAccent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    announcementCopy: {
+      flex: 1,
+    },
+    announcementTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    announcementBody: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      lineHeight: 16,
+    },
+    announcementButton: {
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.accent,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 6,
+      backgroundColor: theme.colors.surface,
+    },
+    announcementButtonText: {
+      fontSize: 12,
+      color: theme.colors.accent,
+      fontWeight: "700",
+    },
+    careHub: {
+      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    careGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+    },
+    careCard: {
+      flexBasis: "48%",
       backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
-      marginBottom: theme.spacing.md,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: theme.spacing.sm,
     },
-    personalizeCopy: {
-      flex: 1,
-    },
-    personalizeTitle: {
-      fontSize: 15,
+    careTitle: {
+      fontSize: 13,
       fontWeight: "700",
       color: theme.colors.textPrimary,
       marginBottom: 4,
     },
-    personalizeBody: {
+    careBody: {
       fontSize: 12,
       color: theme.colors.textSecondary,
+      lineHeight: 16,
+      marginBottom: theme.spacing.sm,
     },
-    personalizeButton: {
-      borderRadius: theme.radius.pill,
-      borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
-      paddingVertical: 8,
-      paddingHorizontal: theme.spacing.sm,
-      backgroundColor: theme.colors.surface,
-    },
-    personalizeButtonText: {
+    careCta: {
       fontSize: 12,
+      color: theme.colors.accent,
+      fontWeight: "600",
+    },
+    preferencesCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      gap: theme.spacing.sm,
+    },
+    preferencesTitle: {
+      fontSize: 13,
       fontWeight: "700",
       color: theme.colors.textPrimary,
+    },
+    preferencesRow: {
+      gap: 6,
+    },
+    preferencesName: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    preferenceTags: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    preferenceTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.surfaceAccent,
+    },
+    preferenceTagText: {
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+      fontWeight: "600",
+    },
+    preferencesEmpty: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      lineHeight: 16,
     },
     widgetHeader: {
       flexDirection: "row",
@@ -1659,6 +2035,32 @@ const createStyles = (theme) =>
       fontSize: 12,
       color: theme.colors.textSecondary,
       marginBottom: theme.spacing.xs,
+    },
+    profileChips: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+    },
+    profileChip: {
+      paddingVertical: 6,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radius.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.surface,
+    },
+    profileChipActive: {
+      backgroundColor: theme.colors.accent,
+      borderColor: theme.colors.accent,
+    },
+    profileChipText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    profileChipTextActive: {
+      color: theme.colors.white,
     },
     widgetOptionsRow: {
       flexDirection: "row",
@@ -1852,6 +2254,27 @@ const createStyles = (theme) =>
       color: theme.colors.textSecondary,
       marginTop: 4,
       fontWeight: "600",
+    },
+    cardTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
+    },
+    multiPetBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    multiPetText: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: theme.colors.accent,
     },
     cardMeta: {
       fontSize: 14,

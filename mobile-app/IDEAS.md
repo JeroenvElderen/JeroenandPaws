@@ -15,11 +15,11 @@
 12. ✅ Contactless handoff instructions
 13. ✅ In-app support ticketing
 14. ✅ Pre-paid balance wallet
-15. Multi-pet booking for the same time slot
+15. ✅ Multi-pet booking for the same time slot
 16. Real-time sitter/groomer location on day-of
 17. Pet profile health badge (vaccinated/needs update)
-18. Digital consent forms for treatments
-19. Saved service preferences per pet (temperament, handling)
+18. ✅ Digital consent forms for treatments
+19. ✅ Saved service preferences per pet (temperament, handling)
 20. Groomer notes/history per pet
 21. Auto-suggest rebook based on typical interval
 22. Split payments between guardians
@@ -51,7 +51,7 @@
 48. Push notification snooze schedule
 49. Lost pet alert broadcast
 50. Neighborhood-based service recommendations
-51. App-wide announcements banner
+51. ✅ App-wide announcements banner
 52. Saved search filters for providers
 53. Provider availability heatmap
 54. ✅ One-tap call to support
@@ -66,7 +66,7 @@
 63. Booking deposit option
 64. Provider response time indicators
 65. Home header theme picker with custom gradients
-66. Saved home layouts per pet (switchable dashboards)
+66. ✅ Saved home layouts per pet (switchable dashboards)
 67. Voice notes for pet care instructions
 68. Auto-generated post-visit summary highlights
 69. Smart reschedule suggestions during peak times

@@ -1,7 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const getStorageKey = (email) =>
-  `home-widgets:${(email || "").trim().toLowerCase()}`;
+const normalizeProfileId = (profileId) =>
+  (profileId || "").toString().trim().toLowerCase();
+
+const getStorageKey = (email, profileId) => {
+  const baseKey = `home-widgets:${(email || "").trim().toLowerCase()}`;
+  const normalizedProfileId = normalizeProfileId(profileId);
+  if (!normalizedProfileId) {
+    return baseKey;
+  }
+  return `${baseKey}:${normalizedProfileId}`;
+};
 
 export const DEFAULT_HOME_LAYOUT = {
   widgetIds: [],
@@ -10,10 +19,14 @@ export const DEFAULT_HOME_LAYOUT = {
   headerStyle: "classic",
 };
 
-export const loadHomeLayout = async (email, fallback = DEFAULT_HOME_LAYOUT) => {
+export const loadHomeLayout = async (
+  email,
+  fallback = DEFAULT_HOME_LAYOUT,
+  profileId
+) => {
   if (!email) return fallback;
   try {
-    const raw = await AsyncStorage.getItem(getStorageKey(email));
+    const raw = await AsyncStorage.getItem(getStorageKey(email, profileId));
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
@@ -32,7 +45,7 @@ export const loadHomeLayout = async (email, fallback = DEFAULT_HOME_LAYOUT) => {
   }
 };
 
-export const saveHomeLayout = async (email, layout) => {
+export const saveHomeLayout = async (email, layout, profileId) => {
   if (!email) return;
   const payload = {
     ...DEFAULT_HOME_LAYOUT,
@@ -40,7 +53,7 @@ export const saveHomeLayout = async (email, layout) => {
   };
   try {
     await AsyncStorage.setItem(
-      getStorageKey(email),
+      getStorageKey(email, profileId),
       JSON.stringify(payload)
     );
   } catch (error) {
