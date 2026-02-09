@@ -745,6 +745,7 @@ const BookScreen = ({ navigation, route }) => {
   const newDogCount = showNewDogForm ? Number(formState.dogCount) || 0 : 0;
   const petCount = Math.max(selectedPetCount + newDogCount, 1);
   const additionalPetCount = Math.max(petCount - 1, 0);
+  const additionalPetPrice = basePrice * additionalPetCount * 0.5;
   const petsSubtotal =
     basePrice * (1 + additionalPetCount * 0.5);
   const totalPrice = petsSubtotal + optionsTotal;
@@ -1722,9 +1723,6 @@ const BookScreen = ({ navigation, route }) => {
                   Price: {formatCurrency(basePrice)}
                 </Text>
                 <Text style={styles.summaryLine}>
-                  Total: {formatCurrency(totalPrice)}
-                </Text>
-                <Text style={styles.summaryLine}>
                   Pets:{" "}
                   {selectedPets.length
                     ? selectedPets.map((pet) => pet.name).join(", ")
@@ -1753,6 +1751,25 @@ const BookScreen = ({ navigation, route }) => {
                   </Text>
                 ) : null}
                 <View style={styles.summaryTotals}>
+                  <Text style={styles.summaryBreakdownTitle}>
+                    Pricing breakdown
+                  </Text>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Base service</Text>
+                    <Text style={styles.summaryValue}>
+                      {formatCurrency(basePrice)}
+                    </Text>
+                  </View>
+                  {additionalPetCount > 0 ? (
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>
+                        Additional pets ({additionalPetCount})
+                      </Text>
+                      <Text style={styles.summaryValue}>
+                        {formatCurrency(additionalPetPrice)}
+                      </Text>
+                    </View>
+                  ) : null}
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Pets ({petCount})</Text>
                     <Text style={styles.summaryValue}>
@@ -1768,6 +1785,12 @@ const BookScreen = ({ navigation, route }) => {
                     <Text style={styles.summaryLabel}>Add-ons</Text>
                     <Text style={styles.summaryValue}>
                       {formatCurrency(optionsTotal)}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Total</Text>
+                    <Text style={styles.summaryValue}>
+                      {formatCurrency(totalPrice)}
                     </Text>
                   </View>
                 </View>
@@ -2489,6 +2512,12 @@ const createStyles = (theme) => StyleSheet.create({
   },
   summaryTotals: {
     marginTop: 10,
+    marginBottom: 6,
+  },
+  summaryBreakdownTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   summaryRow: {

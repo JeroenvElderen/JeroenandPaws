@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../components/ScreenHeader";
 import PrimaryButton from "../components/PrimaryButton";
+import { fetchJson } from "../api/client";
 import { supabase, supabaseAdmin } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
@@ -97,6 +98,29 @@ const SupportTicketsScreen = ({ navigation, route }) => {
     setErrorMessage("");
     setFormStatus("saving");
     try {
+        const clickupPayload = await fetchJson("/api/clickup/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          briefProblemDescription: subject.trim(),
+          detailedProblemDescription: details.trim(),
+          emailAddress: session?.email || "",
+          ticketCategory: "Mobile app",
+          submissionDate: new Date().toISOString(),
+          priority: "Normal",
+          status: "open",
+          assigneeEmail: isOwner ? session?.email || "" : "",
+        }),
+      });
+      const clickupTaskUrl =
+        clickupPayload?.clickup_task_url ||
+        clickupPayload?.clickupTaskUrl ||
+        clickupPayload?.url ||
+        "";
+      if (!clickupTaskUrl) {
+        throw new Error("ClickUp ticket could not be created.");
+      }
+
       const { data: ticketData, error } = await supabase
         .from("support_tickets")
         .insert({
@@ -105,6 +129,7 @@ const SupportTicketsScreen = ({ navigation, route }) => {
           description: details.trim(),
           status: "open",
           priority: "normal",
+          clickup_task_url: clickupTaskUrl || null,
         })
         .select("*")
         .single();
@@ -128,7 +153,9 @@ const SupportTicketsScreen = ({ navigation, route }) => {
       loadTickets();
     } catch (saveError) {
       console.error("Failed to create ticket", saveError);
-      setErrorMessage("Unable to submit your ticket right now.");
+      setErrorMessage(
+        saveError?.message || "Unable to submit your ticket right now."
+      );
       setFormStatus("error");
     }
   };

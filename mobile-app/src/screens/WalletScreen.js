@@ -33,6 +33,9 @@ const WalletScreen = ({ navigation, route }) => {
   const [receipts, setReceipts] = useState([]);
   const [loyaltyWallet, setLoyaltyWallet] = useState(null);
   const [loyaltyTransactions, setLoyaltyTransactions] = useState([]);
+  const [referralCode, setReferralCode] = useState(null);
+  const [referrals, setReferrals] = useState([]);
+  const [referralCredits, setReferralCredits] = useState([]);
   const [status, setStatus] = useState("idle");
   const returnTo = route?.params?.returnTo;
   const isOwner =
@@ -66,6 +69,9 @@ const WalletScreen = ({ navigation, route }) => {
         receiptResponse,
         loyaltyResponse,
         loyaltyTransactionResponse,
+        referralCodeResponse,
+        referralResponse,
+        referralCreditsResponse,
       ] = await Promise.all([
         activeClient
           .from("wallets")
@@ -92,6 +98,21 @@ const WalletScreen = ({ navigation, route }) => {
           .select("*")
           .eq("client_id", session.id)
           .order("created_at", { ascending: false }),
+        activeClient
+          .from("referral_codes")
+          .select("*")
+          .eq("client_id", session.id)
+          .maybeSingle(),
+        activeClient
+          .from("referrals")
+          .select("*")
+          .eq("referrer_id", session.id)
+          .order("created_at", { ascending: false }),
+        activeClient
+          .from("referral_credits")
+          .select("*")
+          .eq("client_id", session.id)
+          .order("created_at", { ascending: false }),
       ]);
 
       if (walletResponse.error) throw walletResponse.error;
@@ -100,12 +121,18 @@ const WalletScreen = ({ navigation, route }) => {
       if (loyaltyResponse.error) throw loyaltyResponse.error;
       if (loyaltyTransactionResponse.error)
         throw loyaltyTransactionResponse.error;
+      if (referralCodeResponse.error) throw referralCodeResponse.error;
+      if (referralResponse.error) throw referralResponse.error;
+      if (referralCreditsResponse.error) throw referralCreditsResponse.error;
 
       setWallet(walletResponse.data || null);
       setTransactions(transactionResponse.data || []);
       setReceipts(receiptResponse.data || []);
       setLoyaltyWallet(loyaltyResponse.data || null);
       setLoyaltyTransactions(loyaltyTransactionResponse.data || []);
+      setReferralCode(referralCodeResponse.data || null);
+      setReferrals(referralResponse.data || []);
+      setReferralCredits(referralCreditsResponse.data || []);
       setStatus("ready");
     } catch (loadError) {
       console.error("Failed to load wallet", loadError);
@@ -119,6 +146,15 @@ const WalletScreen = ({ navigation, route }) => {
 
   const balanceCents = wallet?.balance_cents || 0;
   const currency = wallet?.currency || "EUR";
+  const referralCreditsCents = referralCredits.reduce(
+    (sum, credit) => sum + (credit?.credits_cents || 0),
+    0
+  );
+  const referralCurrency =
+    referralCredits.find((credit) => credit?.currency)?.currency || "EUR";
+  const referralSuccessCount = referrals.filter(
+    (referral) => (referral?.status || "").toLowerCase() === "completed"
+  ).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -175,6 +211,66 @@ const WalletScreen = ({ navigation, route }) => {
               ))}
             </View>
           ) : null}
+        </View>
+        <View style={styles.referralCard}>
+          <Text style={styles.referralTitle}>Referral credits</Text>
+          <Text style={styles.referralBalance}>
+            {formatCurrency(referralCreditsCents / 100, referralCurrency)}
+          </Text>
+          <Text style={styles.referralBody}>
+            Share your code and earn credits when a friend completes their
+            first booking.
+          </Text>
+          <View style={styles.referralRow}>
+            <View>
+              <Text style={styles.referralLabel}>Your code</Text>
+              <Text style={styles.referralCode}>
+                {referralCode?.code ||
+                  referralCode?.referral_code ||
+                  "Invite code pending"}
+              </Text>
+            </View>
+            <View style={styles.referralStat}>
+              <Text style={styles.referralStatValue}>
+                {referralSuccessCount}
+              </Text>
+              <Text style={styles.referralStatLabel}>Completed</Text>
+            </View>
+            <View style={styles.referralStat}>
+              <Text style={styles.referralStatValue}>{referrals.length}</Text>
+              <Text style={styles.referralStatLabel}>Invites</Text>
+            </View>
+          </View>
+          {referrals.length ? (
+            <View style={styles.referralList}>
+              {referrals.slice(0, 3).map((referral) => (
+                <View key={referral.id} style={styles.referralItem}>
+                  <View>
+                    <Text style={styles.referralItemTitle}>
+                      {referral?.referred_name ||
+                        referral?.referred_email ||
+                        "New referral"}
+                    </Text>
+                    <Text style={styles.referralItemMeta}>
+                      {referral?.created_at
+                        ? new Date(referral.created_at).toLocaleDateString(
+                            "en-GB",
+                            { day: "numeric", month: "short" }
+                          )
+                        : "Pending"}
+                    </Text>
+                  </View>
+                  <Text style={styles.referralItemStatus}>
+                    {referral?.status || "Pending"}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.referralEmpty}>
+              No referrals yet. Share your code to start earning credits.
+            </Text>
+          )}
         </View>
         <Text style={styles.sectionTitle}>Receipts</Text>
         {receipts.length === 0 ? (
@@ -341,6 +437,99 @@ const createStyles = (theme) =>
     rewardsList: {
       marginTop: theme.spacing.md,
       gap: theme.spacing.sm,
+    },
+    referralCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      shadowColor: theme.shadow.soft.shadowColor,
+      shadowOpacity: theme.shadow.soft.shadowOpacity,
+      shadowOffset: theme.shadow.soft.shadowOffset,
+      shadowRadius: theme.shadow.soft.shadowRadius,
+      elevation: theme.shadow.soft.elevation,
+    },
+    referralTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    referralBalance: {
+      fontSize: theme.typography.title.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: theme.spacing.xs,
+    },
+    referralBody: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: theme.spacing.xs,
+    },
+    referralRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      marginTop: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    referralLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    referralCode: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+      marginTop: 2,
+    },
+    referralStat: {
+      alignItems: "flex-end",
+    },
+    referralStatValue: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    referralStatLabel: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    referralList: {
+      marginTop: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    referralItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: theme.spacing.sm,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    referralItemTitle: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+    },
+    referralItemMeta: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    referralItemStatus: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textSecondary,
+      textTransform: "capitalize",
+    },
+    referralEmpty: {
+      marginTop: theme.spacing.md,
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
     },
     rewardRow: {
       flexDirection: "row",

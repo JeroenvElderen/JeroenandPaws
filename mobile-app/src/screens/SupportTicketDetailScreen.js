@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -34,7 +35,6 @@ const SupportTicketDetailScreen = ({ navigation, route }) => {
   const [inputValue, setInputValue] = useState("");
   const [status, setStatus] = useState("idle");
   const [saving, setSaving] = useState(false);
-  const [clickupUrl, setClickupUrl] = useState("");
   const ticketId = route?.params?.ticketId || ticket?.id;
   const isOwner =
     session?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
@@ -60,7 +60,6 @@ const SupportTicketDetailScreen = ({ navigation, route }) => {
         .maybeSingle();
       if (error) throw error;
       setTicket(data || null);
-      setClickupUrl(data?.clickup_task_url || "");
     } catch (error) {
       console.error("Failed to load support ticket", error);
     }
@@ -156,24 +155,8 @@ const SupportTicketDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleSaveClickup = async () => {
-    if (!supabase || !ticketId || !isOwner) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("support_tickets")
-        .update({ clickup_task_url: clickupUrl.trim() || null })
-        .eq("id", ticketId);
-      if (error) throw error;
-      loadTicket();
-    } catch (error) {
-      console.error("Failed to update ClickUp link", error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const isClosed = (ticket?.status || "").toLowerCase() === "closed";
+  const clickupLink = ticket?.clickup_task_url || "";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -204,28 +187,24 @@ const SupportTicketDetailScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        {isOwner ? (
-          <View style={styles.clickupCard}>
-            <Text style={styles.clickupTitle}>ClickUp task link</Text>
-            <Text style={styles.clickupSubtitle}>
-              Connect this ticket to a ClickUp task. Messaging in ClickUp can be
-              synced here once the integration is connected.
+        <View style={styles.clickupCard}>
+          <Text style={styles.clickupTitle}>ClickUp task</Text>
+          <Text style={styles.clickupSubtitle}>
+            Every support ticket is automatically created in ClickUp.
+          </Text>
+          {clickupLink ? (
+            <Pressable
+              style={styles.clickupLinkButton}
+              onPress={() => Linking.openURL(clickupLink)}
+            >
+              <Text style={styles.clickupLinkText}>Open ClickUp task</Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.clickupPending}>
+              Waiting for the ClickUp task link.
             </Text>
-            <TextInput
-              style={styles.clickupInput}
-              placeholder="Paste ClickUp task URL"
-              placeholderTextColor={theme.colors.textMuted}
-              value={clickupUrl}
-              onChangeText={setClickupUrl}
-              autoCapitalize="none"
-            />
-            <PrimaryButton
-              label={saving ? "Saving..." : "Save ClickUp link"}
-              onPress={handleSaveClickup}
-              disabled={saving}
-            />
-          </View>
-        ) : null}
+            )}
+        </View>
 
         <Text style={styles.sectionTitle}>Conversation</Text>
         {status === "loading" ? (
@@ -357,16 +336,23 @@ const createStyles = (theme) =>
       color: theme.colors.textSecondary,
       marginBottom: theme.spacing.sm,
     },
-    clickupInput: {
-      borderWidth: 1,
-      borderColor: theme.colors.borderSoft,
-      borderRadius: theme.radius.md,
+    clickupLinkButton: {
+      alignSelf: "flex-start",
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      fontSize: theme.typography.body.fontSize,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surfaceAccent,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    clickupLinkText: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
       color: theme.colors.textPrimary,
-      backgroundColor: theme.colors.background,
-      marginBottom: theme.spacing.sm,
+    },
+    clickupPending: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
     },
     sectionTitle: {
       fontSize: theme.typography.body.fontSize,

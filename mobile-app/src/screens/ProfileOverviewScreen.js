@@ -88,6 +88,37 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
       value: location,
     },
   ];
+  const completionItems = [
+    {
+      label: "Profile photo",
+      complete: Boolean(profilePhotoUrl),
+    },
+    {
+      label: "Full name",
+      complete: Boolean(clientProfile?.full_name || session?.name),
+    },
+    {
+      label: "Email",
+      complete: Boolean(contactEmail && contactEmail !== "—"),
+    },
+    {
+      label: "Phone number",
+      complete: Boolean(clientProfile?.phone_number || session?.phone),
+    },
+    {
+      label: "Address",
+      complete: Boolean(location && location !== "Add your area"),
+    },
+    {
+      label: "Pet profile",
+      complete: pets.length > 0,
+    },
+  ];
+  const completedCount = completionItems.filter((item) => item.complete).length;
+  const completionPercent = Math.round(
+    (completedCount / completionItems.length) * 100
+  );
+  const missingItems = completionItems.filter((item) => !item.complete);
 
   const loadProfile = useCallback(async () => {
     const activeClient =
@@ -291,6 +322,42 @@ const ProfileOverviewScreen = ({ navigation, route }) => {
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Profile completion</Text>
+        <View style={styles.sectionCard}>
+          <View style={styles.completionHeader}>
+            <Text style={styles.completionTitle}>
+              {completionPercent}% complete
+            </Text>
+            <Text style={styles.completionMeta}>
+              {completedCount}/{completionItems.length} tasks done
+            </Text>
+          </View>
+          <View style={styles.completionTrack}>
+            <View
+              style={[
+                styles.completionFill,
+                { width: `${completionPercent}%` },
+              ]}
+            />
+          </View>
+          {missingItems.length ? (
+            <View style={styles.missingList}>
+              <Text style={styles.missingTitle}>Next to finish</Text>
+              <View style={styles.missingPills}>
+                {missingItems.map((item) => (
+                  <View key={item.label} style={styles.missingPill}>
+                    <Text style={styles.missingPillText}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.completionCongrats}>
+              You have completed your profile. Great work!
+            </Text>
+          )}
+        </View>
+
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.sectionCard}>
           {aboutItems.map((item, index) => (
@@ -472,6 +539,69 @@ const createStyles = (theme) =>
       gap: theme.spacing.xs,
     },
     locationText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    completionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.md,
+    },
+    completionTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: "700",
+      color: theme.colors.textPrimary,
+    },
+    completionMeta: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    completionTrack: {
+      height: 10,
+      borderRadius: 999,
+      backgroundColor: theme.colors.surfaceAccent,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+      overflow: "hidden",
+    },
+    completionFill: {
+      height: "100%",
+      borderRadius: 999,
+      backgroundColor: theme.colors.accent,
+    },
+    missingList: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
+    },
+    missingTitle: {
+      fontSize: theme.typography.caption.fontSize,
+      fontWeight: "600",
+      color: theme.colors.textPrimary,
+      marginBottom: theme.spacing.xs,
+    },
+    missingPills: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.spacing.xs,
+    },
+    missingPill: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: 999,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSoft,
+    },
+    missingPillText: {
+      fontSize: theme.typography.caption.fontSize,
+      color: theme.colors.textSecondary,
+    },
+    completionCongrats: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textSecondary,
     },
