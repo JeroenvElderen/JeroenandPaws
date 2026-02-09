@@ -34,6 +34,7 @@ import PaymentScreen from "./src/screens/PaymentScreen";
 import HelpSupportScreen from "./src/screens/HelpSupportScreen";
 import JeroenPawsCardScreen from "./src/screens/JeroenPawsCardScreen";
 import ClientProfilesScreen from "./src/screens/ClientProfilesScreen";
+import AllPetsScreen from "./src/screens/AllPetsScreen";
 import SupportTicketsScreen from "./src/screens/SupportTicketsScreen";
 import SupportTicketDetailScreen from "./src/screens/SupportTicketDetailScreen";
 import WalletScreen from "./src/screens/WalletScreen";
@@ -210,6 +211,7 @@ const ProfileStackScreen = () => {
         name="ClientProfiles"
         component={ClientProfilesScreen}
       />
+      <ProfileStack.Screen name="AllPets" component={AllPetsScreen} />
       <ProfileStack.Screen name="PetsProfile" component={PetsProfileScreen} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
       <ProfileStack.Screen

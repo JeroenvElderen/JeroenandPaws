@@ -949,271 +949,6 @@ const HomeScreen = ({ navigation }) => {
           </View>
           ) : null}
 
-        {sectionIds.includes("highlight") ? (
-          <View style={styles.highlightCard}>
-            <View style={styles.highlightIcon}>
-              <Ionicons
-                name="calendar"
-                size={18}
-                color={theme.colors.accent}
-              />
-            </View>
-            <View>
-              <Text style={styles.highlightTitle}>
-                {nextServiceTitle || "Booking spotlight"}
-              </Text>
-              <Text style={styles.highlightText}>
-                {nextStart
-                  ? `Next visit on ${formatDateLabel(nextStart)}.`
-                  : "Plan your next service in just a few taps."}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        <View style={styles.personalizeCard}>
-          <View style={styles.personalizeCopy}>
-            <Text style={styles.personalizeTitle}>Make home your own</Text>
-            <Text style={styles.personalizeBody}>
-              Toggle sections, add shortcuts, and build a dashboard that feels
-              personal.
-            </Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [
-              styles.personalizeButton,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => setShowWidgetSettings((current) => !current)}
-          >
-            <Text style={styles.personalizeButtonText}>
-              {showWidgetSettings ? "Close editor" : "Customize"}
-            </Text>
-          </Pressable>
-        </View>
-
-        {showWidgetSettings ? (
-          <View style={styles.widgetSettings}>
-            <Text style={styles.widgetSettingsTitle}>Home layout</Text>
-            {sectionChoices.map((section) => (
-              <View key={section.id} style={styles.widgetSettingRow}>
-                <View style={styles.widgetSettingCopy}>
-                  <Text style={styles.widgetSettingTitle}>
-                    {section.title}
-                  </Text>
-                  <Text style={styles.widgetSettingBody}>
-                    {section.description}
-                  </Text>
-                </View>
-                <Switch
-                  value={sectionIds.includes(section.id)}
-                  onValueChange={() => toggleSection(section.id)}
-                />
-              </View>
-            ))}
-            <Text style={styles.widgetSettingsTitle}>Header style</Text>
-            <View style={styles.widgetOptionsRow}>
-              {HEADER_STYLES.map((style) => (
-                <Pressable
-                  key={style.id}
-                  style={[
-                    styles.widgetOption,
-                    headerStyle === style.id && styles.widgetOptionActive,
-                  ]}
-                  onPress={() => setHeaderStyle(style.id)}
-                >
-                  <Text
-                    style={[
-                      styles.widgetOptionText,
-                      headerStyle === style.id && styles.widgetOptionTextActive,
-                    ]}
-                  >
-                    {style.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.widgetSettingsTitle}>Dashboard widgets</Text>
-            {widgets.map((widget) => (
-              <View key={widget.id} style={styles.widgetSettingRow}>
-                <View style={styles.widgetSettingCopy}>
-                  <Text style={styles.widgetSettingTitle}>
-                    {widget.title}
-                  </Text>
-                  <Text style={styles.widgetSettingBody}>
-                    {widget.cta}
-                  </Text>
-                </View>
-                <View style={styles.widgetSettingActions}>
-                  {widget.isCustom ? (
-                    <Pressable
-                      style={styles.widgetRemoveButton}
-                      onPress={() => handleRemoveCustomWidget(widget.id)}
-                    >
-                      <Text style={styles.widgetRemoveText}>Remove</Text>
-                    </Pressable>
-                  ) : null}
-                  <Switch
-                    value={widgetIds.includes(widget.id)}
-                    onValueChange={() => toggleWidget(widget.id)}
-                  />
-                </View>
-              </View>
-            ))}
-
-            <Text style={styles.widgetSettingsTitle}>
-              Add a custom shortcut
-            </Text>
-            <Text style={styles.widgetSettingsHint}>
-              Use tel:, mailto:, https://, or any deep link URL.
-            </Text>
-            <TextInput
-              style={styles.widgetInput}
-              placeholder="Title"
-              value={customForm.title}
-              onChangeText={(value) =>
-                setCustomForm((prev) => ({ ...prev, title: value }))
-              }
-            />
-            <TextInput
-              style={styles.widgetInput}
-              placeholder="Description (optional)"
-              value={customForm.body}
-              onChangeText={(value) =>
-                setCustomForm((prev) => ({ ...prev, body: value }))
-              }
-            />
-            <TextInput
-              style={styles.widgetInput}
-              placeholder="Action link (tel:, https://)"
-              value={customForm.action}
-              onChangeText={(value) =>
-                setCustomForm((prev) => ({ ...prev, action: value }))
-              }
-            />
-            <TextInput
-              style={styles.widgetInput}
-              placeholder="CTA label (optional)"
-              value={customForm.cta}
-              onChangeText={(value) =>
-                setCustomForm((prev) => ({ ...prev, cta: value }))
-              }
-            />
-            <Pressable
-              style={({ pressed }) => [
-                styles.widgetAddButton,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={handleAddCustomWidget}
-              disabled={!customForm.title || !customForm.action}
-            >
-              <Text style={styles.widgetAddButtonText}>Add shortcut</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {sectionIds.includes("widgets") ? (
-          <>
-            <View style={styles.widgetHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>Dashboard widgets</Text>
-                <Text style={styles.sectionMeta}>
-                  Personalize your home overview
-                </Text>
-              </View>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.widgetCustomizeButton,
-                  pressed && styles.cardPressed,
-                ]}
-                onPress={() =>
-                  setShowWidgetSettings((current) => !current)
-                }
-              >
-                <Text style={styles.widgetCustomizeText}>
-                  {showWidgetSettings ? "Done" : "Customize"}
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.widgetGrid}>
-              {widgets
-                .filter((widget) => widgetIds.includes(widget.id))
-                .map((widget) => (
-                  <Pressable
-                    key={widget.id}
-                    style={({ pressed }) => [
-                      styles.widgetCard,
-                      pressed && styles.cardPressed,
-                    ]}
-                    onPress={() => handleWidgetPress(widget)}
-                  >
-                    <View style={styles.widgetIcon}>
-                      <Ionicons
-                        name={widget.icon}
-                        size={20}
-                        color={theme.colors.accent}
-                      />
-                    </View>
-                    <Text style={styles.widgetTitle}>{widget.title}</Text>
-                    <Text style={styles.widgetBody}>{widget.body}</Text>
-                    <Text style={styles.widgetCta}>{widget.cta}</Text>
-                  </Pressable>
-                ))}
-            </View>
-          </>
-        ) : null}
-
-        {sectionIds.includes("quickActions") ? (
-          <View style={styles.quickActions}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.quickCard,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() => navigation.navigate("Book")}
-            >
-              <View style={styles.quickIcon}>
-                <Ionicons
-                  name="add-circle"
-                  size={22}
-                  color={theme.colors.accent}
-                />
-              </View>
-              <View style={styles.quickCopy}>
-                <Text style={styles.quickLabel}>Book a service</Text>
-                <Text style={styles.quickSubtext}>
-                  Send a new request in seconds
-                </Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.quickCard,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() => navigation.navigate("Messages")}
-            >
-              <View style={styles.quickIcon}>
-                <Ionicons
-                  name="chatbubble-ellipses"
-                  size={20}
-                  color={theme.colors.accent}
-                />
-              </View>
-              <View style={styles.quickCopy}>
-                <Text style={styles.quickLabel}>Message Jeroen</Text>
-                <Text style={styles.quickSubtext}>
-                  Ask a question or share details
-                </Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
         {sectionIds.includes("upcoming") ? (
           <>
             <View style={styles.sectionHeader}>
@@ -1416,6 +1151,204 @@ const HomeScreen = ({ navigation }) => {
               })
             )}
           </>
+        ) : null}
+
+        {sectionIds.includes("highlight") ? (
+          <View style={styles.highlightCard}>
+            <View style={styles.highlightIcon}>
+              <Ionicons
+                name="calendar"
+                size={18}
+                color={theme.colors.accent}
+              />
+            </View>
+            <View>
+              <Text style={styles.highlightTitle}>
+                {nextServiceTitle || "Booking spotlight"}
+              </Text>
+              <Text style={styles.highlightText}>
+                {nextStart
+                  ? `Next visit on ${formatDateLabel(nextStart)}.`
+                  : "Plan your next service in just a few taps."}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        
+
+        {sectionIds.includes("widgets") ? (
+          <>
+            <View style={styles.widgetGrid}>
+              {widgets
+                .filter((widget) => widgetIds.includes(widget.id))
+                .map((widget) => (
+                  <Pressable
+                    key={widget.id}
+                    style={({ pressed }) => [
+                      styles.widgetCard,
+                      pressed && styles.cardPressed,
+                    ]}
+                    onPress={() => handleWidgetPress(widget)}
+                  >
+                    <View style={styles.widgetIcon}>
+                      <Ionicons
+                        name={widget.icon}
+                        size={20}
+                        color={theme.colors.accent}
+                      />
+                    </View>
+                    <Text style={styles.widgetTitle}>{widget.title}</Text>
+                    <Text style={styles.widgetBody}>{widget.body}</Text>
+                    <Text style={styles.widgetCta}>{widget.cta}</Text>
+                  </Pressable>
+                ))}
+            </View>
+          </>
+        ) : null}
+
+        {sectionIds.includes("quickActions") ? (
+          <View style={styles.quickActions}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.quickCard,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => navigation.navigate("Book")}
+            >
+              <View style={styles.quickIcon}>
+                <Ionicons
+                  name="add-circle"
+                  size={22}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <View style={styles.quickCopy}>
+                <Text style={styles.quickLabel}>Book a service</Text>
+                <Text style={styles.quickSubtext}>
+                  Send a new request in seconds
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.quickCard,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => navigation.navigate("Messages")}
+            >
+              <View style={styles.quickIcon}>
+                <Ionicons
+                  name="chatbubble-ellipses"
+                  size={20}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <View style={styles.quickCopy}>
+                <Text style={styles.quickLabel}>Message Jeroen</Text>
+                <Text style={styles.quickSubtext}>
+                  Ask a question or share details
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        
+
+        <View style={styles.personalizeCard}>
+          <View style={styles.personalizeCopy}>
+            <Text style={styles.personalizeTitle}>Make home your own</Text>
+            <Text style={styles.personalizeBody}>
+              Toggle sections, add shortcuts, and build a dashboard that feels
+              personal.
+            </Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.personalizeButton,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => setShowWidgetSettings((current) => !current)}
+          >
+            <Text style={styles.personalizeButtonText}>
+              {showWidgetSettings ? "Close editor" : "Customize"}
+            </Text>
+          </Pressable>
+        </View>
+
+        {showWidgetSettings ? (
+          <View style={styles.widgetSettings}>
+            <Text style={styles.widgetSettingsTitle}>Home layout</Text>
+            {sectionChoices.map((section) => (
+              <View key={section.id} style={styles.widgetSettingRow}>
+                <View style={styles.widgetSettingCopy}>
+                  <Text style={styles.widgetSettingTitle}>
+                    {section.title}
+                  </Text>
+                  <Text style={styles.widgetSettingBody}>
+                    {section.description}
+                  </Text>
+                </View>
+                <Switch
+                  value={sectionIds.includes(section.id)}
+                  onValueChange={() => toggleSection(section.id)}
+                />
+              </View>
+            ))}
+            <Text style={styles.widgetSettingsTitle}>Header style</Text>
+            <View style={styles.widgetOptionsRow}>
+              {HEADER_STYLES.map((style) => (
+                <Pressable
+                  key={style.id}
+                  style={[
+                    styles.widgetOption,
+                    headerStyle === style.id && styles.widgetOptionActive,
+                  ]}
+                  onPress={() => setHeaderStyle(style.id)}
+                >
+                  <Text
+                    style={[
+                      styles.widgetOptionText,
+                      headerStyle === style.id && styles.widgetOptionTextActive,
+                    ]}
+                  >
+                    {style.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.widgetSettingsTitle}>Dashboard widgets</Text>
+            {widgets.map((widget) => (
+              <View key={widget.id} style={styles.widgetSettingRow}>
+                <View style={styles.widgetSettingCopy}>
+                  <Text style={styles.widgetSettingTitle}>
+                    {widget.title}
+                  </Text>
+                  <Text style={styles.widgetSettingBody}>
+                    {widget.cta}
+                  </Text>
+                </View>
+                <View style={styles.widgetSettingActions}>
+                  {widget.isCustom ? (
+                    <Pressable
+                      style={styles.widgetRemoveButton}
+                      onPress={() => handleRemoveCustomWidget(widget.id)}
+                    >
+                      <Text style={styles.widgetRemoveText}>Remove</Text>
+                    </Pressable>
+                  ) : null}
+                  <Switch
+                    value={widgetIds.includes(widget.id)}
+                    onValueChange={() => toggleWidget(widget.id)}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
         ) : null}
 
       </ScrollView>
