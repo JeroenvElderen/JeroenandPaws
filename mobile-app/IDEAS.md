@@ -1,56 +1,70 @@
 # Jeroen & Paws Product Ideas
 
-## 50 things to add
+## Completed ideas + 50 new ideas to add
 1. ✅ In-app receipt history with downloadable PDFs
 2. ✅ Booking status timeline (requested → confirmed → paid → completed)
 3. ✅ Push notification preferences per category
-4. Pet vaccination record uploader
-5. Pet weight & measurements tracker
-6. Favorite services list
-7. Repeat booking wizard with presets
-8. ✅ Custom add-ons per service (dynamic)
-9. Tip/thank-you option post-service
-10. Service notes for each booking
-11. Grooming style photo reference per pet
-12. ✅ Walking route live tracking
-13. Live ETA for pick-up/drop-off
-14. ✅ Photo gallery per booking
-15. Family sharing (multiple guardians)
-16. ✅ Calendar sync (Google/Apple/outlook)
-17. In-app chat attachments
-18. ✅ Emergency contact card for pets
-19. ✅ Loyalty points / rewards wallet
-20. Promo code input & validation
-21. In-app invoices with VAT details
-22. ✅ Service package bundles
-23. Gift cards purchase + redemption
-24. Pet allergy & medication panel
-25. Service cancellations with reason selector
-26. Quick rebook button on completed bookings
-27. Waitlist for fully booked days
-28. Saved addresses (home, work, etc.)
-29. Service-specific intake forms
-30. Quiet hours / do-not-disturb settings
-31. ✅ Staff profiles with specialties
-32. “Meet & greet” appointment scheduling
-33. Service area map with boundaries
-34. Client feedback/rating after booking
-35. Offline mode for last 3 bookings
-36. Reminder checklist before appointment
-37. Custom notification sounds per event
-38. Pet feeding schedule reminders
-39. Live activity notes during service
-40. Emergency vet info per pet
-41. Subscription billing (monthly plan)
-42. Dog walking group roster visibility
-43. Photo release consent toggle
-44. ✅ Contactless handoff instructions
-45. ✅ In-app support ticketing
-46. Service-specific pricing breakdown
-47. ✅ Pre-paid balance wallet
-48. Client profile completion meter
-49. Personalized recommendations
-50. Referral tracking + credits
+4. ✅ Custom add-ons per service (dynamic)
+5. ✅ Walking route live tracking
+6. ✅ Photo gallery per booking
+7. ✅ Calendar sync (Google/Apple/outlook)
+8. ✅ Emergency contact card for pets
+9. ✅ Loyalty points / rewards wallet
+10. ✅ Service package bundles
+11. ✅ Staff profiles with specialties
+12. ✅ Contactless handoff instructions
+13. ✅ In-app support ticketing
+14. ✅ Pre-paid balance wallet
+15. Multi-pet booking for the same time slot
+16. Real-time sitter/groomer location on day-of
+17. Pet profile health badge (vaccinated/needs update)
+18. Digital consent forms for treatments
+19. Saved service preferences per pet (temperament, handling)
+20. Groomer notes/history per pet
+21. Auto-suggest rebook based on typical interval
+22. Split payments between guardians
+23. Wallet top-up with auto-reload
+24. Waitlist auto-offer when a slot opens
+25. In-app tipping presets with custom amounts
+26. Caregiver favorites list plus block list
+27. Photo tagging per pet/service
+28. Video updates during service
+29. Two-way calendar conflict detection
+30. Booking cost estimator before selecting a provider
+31. In-app ID verification for caregivers
+32. Accessibility mode with a larger UI toggle
+33. Pet insurance info storage
+34. Emergency pickup authorization contacts
+35. Chat translation for multilingual support
+36. Time window selection instead of exact time
+37. Seasonal add-on bundles (e.g., winter coat care)
+38. In-app store for pet products
+39. Pickup/dropoff ETA sharing link
+40. QR code check-in at visit
+41. Rewards tiers with status badges
+42. Community pet event listings
+43. Service review history in profile
+44. Expense tracker for pet care
+45. Allergy-safe product preferences
+46. Handover checklist confirmation
+47. Behavior notes template prompts
+48. Push notification snooze schedule
+49. Lost pet alert broadcast
+50. Neighborhood-based service recommendations
+51. App-wide announcements banner
+52. Saved search filters for providers
+53. Provider availability heatmap
+54. One-tap call to support
+55. Offline access to pet profiles
+56. Customizable home dashboard widgets
+57. Multi-currency pricing for travelers
+58. Carbon offset option per trip
+59. Pet birthday reminders with offers
+60. Temporary access codes for home entry
+61. Medication dosage schedule with alerts
+62. AI-powered service recommendations
+63. Booking deposit option
+64. Provider response time indicators
 
 ## 50 things to adjust
 1. Reduce steps in booking flow (fewer screens)
