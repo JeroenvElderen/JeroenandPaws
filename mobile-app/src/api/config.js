@@ -11,7 +11,7 @@ const resolvedApiBaseUrl =
   extraConfig.API_BASE_URL ||
   process.env.EXPO_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
-  "https:www//jeroenandpaws.com";
+  "https://www.jeroenandpaws.com";
 
 if (typeof __DEV__ !== "undefined" && __DEV__) {
   const source =

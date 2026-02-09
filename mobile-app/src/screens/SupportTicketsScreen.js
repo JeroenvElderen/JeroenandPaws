@@ -17,6 +17,7 @@ import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const CLICKUP_ASSIGNEE_EMAIL = "jeroen.vanelderen@hotmail.com";
 
 const formatTicketDate = (value) => {
   if (!value) return "—";
@@ -98,6 +99,7 @@ const SupportTicketsScreen = ({ navigation, route }) => {
     setErrorMessage("");
     setFormStatus("saving");
     try {
+        const submissionDate = new Date().toISOString();
         const clickupPayload = await fetchJson("/api/clickup/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,16 +108,28 @@ const SupportTicketsScreen = ({ navigation, route }) => {
           detailedProblemDescription: details.trim(),
           emailAddress: session?.email || "",
           ticketCategory: "Mobile app",
-          submissionDate: new Date().toISOString(),
+          resolution: "",
+          ticketNumber: "",
+          submissionDate,
           priority: "Normal",
           status: "open",
-          assigneeEmail: isOwner ? session?.email || "" : "",
+          dueDate: "",
+          attachments: [],
+          assigneeEmail: CLICKUP_ASSIGNEE_EMAIL,
         }),
       });
       const clickupTaskUrl =
         clickupPayload?.clickup_task_url ||
         clickupPayload?.clickupTaskUrl ||
         clickupPayload?.url ||
+        "";
+    const clickupTaskId =
+        clickupPayload?.clickup_task_id ||
+        clickupPayload?.clickupTaskId ||
+        "";
+      const clickupTaskCustomId =
+        clickupPayload?.clickup_task_custom_id ||
+        clickupPayload?.clickupTaskCustomId ||
         "";
       if (!clickupTaskUrl) {
         throw new Error("ClickUp ticket could not be created.");
@@ -130,6 +144,18 @@ const SupportTicketsScreen = ({ navigation, route }) => {
           status: "open",
           priority: "normal",
           clickup_task_url: clickupTaskUrl || null,
+          clickup_task_id: clickupTaskId || null,
+          clickup_task_custom_id: clickupTaskCustomId || null,
+          ticket_category: "Mobile app",
+          resolution: "",
+          ticket_number: clickupTaskCustomId || clickupTaskId || null,
+          submission_date: submissionDate,
+          due_date: null,
+          email_address: session?.email || null,
+          assignee_email: CLICKUP_ASSIGNEE_EMAIL,
+          attachments: [],
+          brief_problem_description: subject.trim(),
+          detailed_problem_description: details.trim(),
         })
         .select("*")
         .single();
