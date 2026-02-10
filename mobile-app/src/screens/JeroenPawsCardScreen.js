@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { supabase } from "../api/supabaseClient";
@@ -104,11 +105,31 @@ const formatElapsedTime = (totalMs) => {
   ].join(":");
 };
 
-const buildStaticMapUrl = (coords) => {
-  if (!coords) return null;
-  const lat = coords.latitude.toFixed(5);
-  const lon = coords.longitude.toFixed(5);
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=15&size=640x320&markers=${lat},${lon},red-pushpin`;
+const extraConfig =
+  Constants.expoConfig?.extra ??
+  Constants.manifest?.extra ??
+  Constants.manifest2?.extra ??
+  {};
+const MAPBOX_TOKEN =
+  extraConfig.mapboxToken || process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+
+const buildStaticMapUrl = (coords, points = []) => {
+  if (!coords || !MAPBOX_TOKEN) return null;
+  const centerLat = coords.latitude.toFixed(5);
+  const centerLon = coords.longitude.toFixed(5);
+  const clampedPoints = points.slice(-80);
+  const pathOverlay = clampedPoints.length
+    ? `path-4+4D8EFF-0.55(${clampedPoints
+        .map((point) => `${point.longitude.toFixed(5)},${point.latitude.toFixed(5)}`)
+        .join(",")})`
+    : null;
+  const overlays = [
+    pathOverlay,
+    `pin-s+f97316(${centerLon},${centerLat})`,
+  ]
+    .filter(Boolean)
+    .join(",");
+  return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays}/${centerLon},${centerLat},15,0/900x420?access_token=${MAPBOX_TOKEN}`;
 };
 
 const toRadians = (value) => (value * Math.PI) / 180;
@@ -737,12 +758,16 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
     );
   };
 
-  const mapUrl = buildStaticMapUrl(location);
+  const mapUrl = buildStaticMapUrl(location, routePoints);
   const trackingStatus = isOwner && !isReadOnly;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator
+        indicatorStyle={theme.isDark ? "white" : "black"}
+      >
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
@@ -767,7 +792,7 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
           ) : (
             <View style={styles.mapPlaceholder}>
               <Text style={styles.mapPlaceholderText}>
-                {locationError || "Fetching live map..."}
+                {locationError || (MAPBOX_TOKEN ? "Fetching live map..." : "Map preview unavailable offline.")}
               </Text>
               {walkCompleted ? (
                 <View style={styles.routeBadge}>
@@ -808,10 +833,10 @@ const JeroenPawsCardScreen = ({ navigation, route }) => {
               </Text>
             </View>
           </View>
-          <Text style={styles.trackingHelper}>
-            {locationError ||
-              "We update the route while the visit is active so guardians can follow along."}
-          </Text>
+            <Text style={styles.trackingHelper}>
+              {locationError ||
+                "Live location is shared while the visit is active so route progress follows your walk in real-time."}
+            </Text>
           <View style={styles.trackingStats}>
             <View style={styles.trackingStat}>
               <Text style={styles.trackingStatLabel}>Distance</Text>

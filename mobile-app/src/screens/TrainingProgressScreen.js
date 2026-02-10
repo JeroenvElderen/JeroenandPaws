@@ -10,18 +10,53 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
+const TRAINING_CACHE_KEY = "training-progress-cache-v1";
 
 const DEFAULT_SKILLS = [
   { key: "lead_walking", label: "Lead walking", progress: 0, sessions: 0 },
   { key: "recall", label: "Recall", progress: 0, sessions: 0 },
   { key: "social_confidence", label: "Social confidence", progress: 0, sessions: 0 },
   { key: "calm_greetings", label: "Calm greetings", progress: 0, sessions: 0 },
+];
+
+const TRAINING_TIPS_LIBRARY = [
+  {
+    id: "focus-foundation",
+    title: "Focus foundation",
+    category: "Daily basics",
+    tips: [
+      "Practice 3 short check-in sessions per day before meals.",
+      "Reward eye contact quickly with a calm marker word.",
+      "End before frustration—keep sessions under 4 minutes.",
+    ],
+  },
+  {
+    id: "loose-lead",
+    title: "Loose lead walking",
+    category: "Walk routine",
+    tips: [
+      "Start in a quiet area and reward every 3–4 steps of slack lead.",
+      "If pulling starts, pause and reset instead of tugging back.",
+      "Use a consistent side to reduce confusion.",
+    ],
+  },
+  {
+    id: "recall-games",
+    title: "Recall games",
+    category: "Confidence",
+    tips: [
+      "Use exciting voice + jackpot treats for every successful return.",
+      "Call once, then move away to encourage chase-back behaviour.",
+      "Train in long-line setups before moving to open areas.",
+    ],
+  },
 ];
 
 const toProgressRows = (rows) => {
@@ -90,6 +125,10 @@ const TrainingProgressScreen = ({ navigation, route }) => {
         const nextPets = Array.isArray(data) ? data : [];
         if (!isMounted) return;
         setPets(nextPets);
+        await AsyncStorage.setItem(
+          `${TRAINING_CACHE_KEY}:pets:${clientId}`,
+          JSON.stringify({ payload: nextPets, updatedAt: Date.now() }),
+        );
         setSelectedPetId((current) => {
           if (current && nextPets.some((pet) => pet.id === current)) return current;
           return nextPets[0]?.id || "";
@@ -97,8 +136,11 @@ const TrainingProgressScreen = ({ navigation, route }) => {
       } catch (error) {
         console.warn("Failed to load pets for training progress", error);
         if (isMounted) {
-          setPets([]);
-          setSelectedPetId("");
+          const fallbackRaw = await AsyncStorage.getItem(`${TRAINING_CACHE_KEY}:pets:${clientId}`);
+          const fallback = fallbackRaw ? JSON.parse(fallbackRaw) : null;
+          const cachedPets = Array.isArray(fallback?.payload) ? fallback.payload : [];
+          setPets(cachedPets);
+          setSelectedPetId(cachedPets[0]?.id || "");
         }
       } finally {
         if (isMounted) {
@@ -132,10 +174,17 @@ const TrainingProgressScreen = ({ navigation, route }) => {
         throw error;
       }
 
-      setSkills(toProgressRows(data));
+      const nextSkills = toProgressRows(data);
+      setSkills(nextSkills);
+      await AsyncStorage.setItem(
+        `${TRAINING_CACHE_KEY}:skills:${selectedPetId}`,
+        JSON.stringify({ payload: nextSkills, updatedAt: Date.now() }),
+      );
     } catch (error) {
       console.warn("Failed to load training progress", error);
-      setSkills(DEFAULT_SKILLS);
+      const cachedRaw = await AsyncStorage.getItem(`${TRAINING_CACHE_KEY}:skills:${selectedPetId}`);
+      const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
+      setSkills(Array.isArray(cached?.payload) ? cached.payload : DEFAULT_SKILLS);
     } finally {
       setIsLoading(false);
     }
@@ -195,7 +244,11 @@ const TrainingProgressScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator
+        indicatorStyle={theme.isDark ? "white" : "black"}
+      >
         <ScreenHeader title="Training progress" onBack={handleBack} />
         <Text style={styles.subtitle}>
           {isOwner
@@ -209,7 +262,12 @@ const TrainingProgressScreen = ({ navigation, route }) => {
           {!isLoadingPets && pets.length === 0 ? (
             <Text style={styles.noPetsText}>No pets found yet for this profile.</Text>
           ) : null}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.petChips}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+            indicatorStyle={theme.isDark ? "white" : "black"}
+            contentContainerStyle={styles.petChips}
+          >
             {pets.map((pet) => {
               const isSelected = pet.id === selectedPetId;
               return (
@@ -293,6 +351,25 @@ const TrainingProgressScreen = ({ navigation, route }) => {
             ))
           : null}
 
+        <View style={styles.tipsCard}>
+          <Text style={styles.tipsTitle}>In-app training tips library</Text>
+          <Text style={styles.tipsSubtitle}>
+            Quick bite-sized guidance for sessions at home and during walks.
+          </Text>
+          {TRAINING_TIPS_LIBRARY.map((section, index) => (
+            <View key={section.id} style={styles.tipSection}>
+              <Text style={styles.tipCategory}>{section.category}</Text>
+              <Text style={styles.tipTitle}>{section.title}</Text>
+              {section.tips.map((tip) => (
+                <Text key={tip} style={styles.tipItem}>• {tip}</Text>
+              ))}
+              {index < TRAINING_TIPS_LIBRARY.length - 1 ? (
+                <View style={styles.tipDivider} />
+              ) : null}
+            </View>
+          ))}
+        </View>
+
         {isOwner && selectedPetId ? (
           <Pressable
             style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed]}
@@ -371,6 +448,26 @@ const createStyles = (theme) =>
       paddingVertical: 8,
       color: theme.colors.textPrimary,
       backgroundColor: theme.colors.surface,
+    },
+    tipsCard: {
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      padding: 14,
+      gap: 8,
+      marginTop: 6,
+    },
+    tipsTitle: { color: theme.colors.textPrimary, fontWeight: "700", fontSize: 16 },
+    tipsSubtitle: { color: theme.colors.textSecondary, fontSize: 13, marginBottom: 4 },
+    tipSection: { gap: 4 },
+    tipCategory: { color: theme.colors.accent, fontWeight: "600", fontSize: 12 },
+    tipTitle: { color: theme.colors.textPrimary, fontWeight: "700" },
+    tipItem: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 18 },
+    tipDivider: {
+      height: 1,
+      backgroundColor: theme.colors.borderSoft,
+      marginTop: 10,
     },
     saveButton: {
       borderRadius: theme.radius.lg,

@@ -76,7 +76,11 @@ const mapImageUrl = getMapboxStaticUrl();
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator
+        indicatorStyle={theme.isDark ? "white" : "black"}
+      >
         <ScreenHeader title="Pet-friendly map" onBack={handleBack} />
         {mapImageUrl ? (
           <View style={styles.mapCard}>
@@ -91,20 +95,22 @@ const mapImageUrl = getMapboxStaticUrl();
             <Text style={styles.mapSubtitle}>Set EXPO_PUBLIC_MAPBOX_TOKEN to render all locations on the map.</Text>
           </View>
         )}
-        {LOCATIONS.map((location) => (
-          <Pressable
-            key={location.name}
-            style={({ pressed }) => [styles.locationCard, pressed && styles.locationCardPressed]}
-            onPress={() => openMaps(location.mapsQuery)}
-          >
-            <View>
-              <Text style={styles.locationName}>{location.name}</Text>
-              <Text style={styles.locationMeta}>
-                {location.type} · {location.distance}
-              </Text>
-            </View>
-            <MaterialCommunityIcons name="arrow-top-right" size={20} color={theme.colors.textSecondary} />
-          </Pressable>
+        {LOCATIONS.map((location, index) => (
+          <View key={location.name}>
+            <Pressable
+              style={({ pressed }) => [styles.locationCard, pressed && styles.locationCardPressed]}
+              onPress={() => openMaps(location.mapsQuery)}
+            >
+              <View>
+                <Text style={styles.locationName}>{location.name}</Text>
+                <Text style={styles.locationMeta}>
+                  {location.type} · {location.distance}
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="arrow-top-right" size={20} color={theme.colors.textSecondary} />
+            </Pressable>
+            {index < LOCATIONS.length - 1 ? <View style={styles.listDivider} /> : null}
+          </View>
         ))}
       </ScrollView>
     </SafeAreaView>
@@ -166,6 +172,12 @@ const createStyles = (theme) =>
     locationCardPressed: { opacity: 0.8 },
     locationName: { color: theme.colors.textPrimary, fontWeight: "700", fontSize: 15 },
     locationMeta: { color: theme.colors.textSecondary, marginTop: 2 },
+    listDivider: {
+      height: 1,
+      backgroundColor: theme.colors.borderSoft,
+      marginVertical: 6,
+      marginHorizontal: 4,
+    },
   });
 
 export default PetFriendlyMapScreen;

@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import {
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -127,6 +128,9 @@ configureNotifications();
 
 const PAYMENT_REMINDER_SECONDS = 60 * 30;
 const PAYMENT_REMINDER_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const BOOTSTRAP_CACHE_KEY = "app-bootstrap-cache-v1";
+const LOADING_LOGO_LIGHT = require("./logo1.svg");
+const LOADING_LOGO_DARK = require("./logo3.svg");
 
 const buildPaymentReminderBody = (payload) => {
   const serviceLabel = payload?.description;
@@ -387,6 +391,8 @@ const MainTabs = () => {
           justifyContent: "center",
           alignItems: "center",
         },
+        animationEnabled: true,
+        animation: "fade",
       }}
     >
       <Tab.Screen
@@ -465,6 +471,7 @@ const AppShell = () => {
   const [petOnboardingReady, setPetOnboardingReady] = useState(false);
   const [initialRoute, setInitialRoute] = useState("MainTabs");
   const [pendingPaymentPrompt, setPendingPaymentPrompt] = useState(null);
+  const [bootstrapReady, setBootstrapReady] = useState(false);
   const navigationRef = useRef(null);
   const isDark = mode === THEME_MODES.dark;
   const modalStyles = useMemo(() => createModalStyles(theme), [theme]);
@@ -953,6 +960,70 @@ const AppShell = () => {
     };
   }, [session?.email, session?.address]);
 
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const preloadAppData = async () => {
+      try {
+        const jobs = [
+          fetchJson("/api/services", { timeoutMs: 30000 }).then((payload) =>
+            AsyncStorage.setItem(
+              `${BOOTSTRAP_CACHE_KEY}:services`,
+              JSON.stringify({ payload, updatedAt: Date.now() }),
+            ),
+          ),
+          fetchJson("/api/addons", { timeoutMs: 30000 }).then((payload) =>
+            AsyncStorage.setItem(
+              `${BOOTSTRAP_CACHE_KEY}:addons`,
+              JSON.stringify({ payload, updatedAt: Date.now() }),
+            ),
+          ),
+        ];
+
+        if (supabase && session?.id) {
+          jobs.push(
+            supabase
+              .from("pets")
+              .select("id, name, breed, owner_id, created_at")
+              .eq("owner_id", session.id)
+              .then(({ data }) =>
+                AsyncStorage.setItem(
+                  `${BOOTSTRAP_CACHE_KEY}:pets:${session.id}`,
+                  JSON.stringify({ payload: data || [], updatedAt: Date.now() }),
+                ),
+              ),
+          );
+          jobs.push(
+            supabase
+              .from("service_bundles")
+              .select("*")
+              .then(({ data }) =>
+                AsyncStorage.setItem(
+                  `${BOOTSTRAP_CACHE_KEY}:bundles`,
+                  JSON.stringify({ payload: data || [], updatedAt: Date.now() }),
+                ),
+              ),
+          );
+        }
+
+        await Promise.allSettled(jobs);
+      } catch (error) {
+        console.warn("Failed to preload app data", error);
+      } finally {
+        if (isMounted) {
+          setBootstrapReady(true);
+        }
+      }
+    };
+
+    preloadAppData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.id]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -970,8 +1041,19 @@ const AppShell = () => {
     };
   }, [session?.email]);
 
-  if (!authReady) {
-    return null;
+  if (!authReady || !bootstrapReady) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Image
+          source={isDark ? LOADING_LOGO_DARK : LOADING_LOGO_LIGHT}
+          style={styles.loadingLogo}
+          resizeMode="contain"
+        />
+        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+          Loading your app experience…
+        </Text>
+      </View>
+    );
   }
 
   if (!session?.email) {
@@ -1157,6 +1239,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  loadingScreen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0c081f",
+    gap: 12,
+  },
+  loadingLogo: {
+    width: 180,
+    height: 180,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 
