@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchJson } from "../api/client";
 import { supabase } from "../api/supabaseClient";
 import PrimaryButton from "../components/PrimaryButton";
@@ -681,6 +682,11 @@ const PetsProfileScreen = ({ navigation, route }) => {
               offlineState.isOffline && styles.offlineBannerWarning,
             ]}
           >
+            <MaterialCommunityIcons
+              name={offlineState.isOffline ? "cloud-off-outline" : "check-decagram-outline"}
+              size={16}
+              color={offlineState.isOffline ? theme.colors.accent : theme.colors.success}
+            />
             <Text
               style={[
                 styles.offlineBannerText,
@@ -816,10 +822,14 @@ const createStyles = (theme) =>
     offlineBanner: {
       backgroundColor: theme.colors.surfaceElevated,
       borderRadius: theme.radius.md,
-      padding: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.borderSoft,
       marginBottom: theme.spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
     },
     offlineBannerWarning: {
       borderColor: theme.colors.accent,
@@ -828,11 +838,11 @@ const createStyles = (theme) =>
     offlineBannerText: {
       fontSize: theme.typography.caption.fontSize,
       color: theme.colors.textSecondary,
-      textAlign: "center",
+      textAlign: "left",
     },
     offlineBannerTextWarning: {
       color: theme.colors.accent,
-      fontWeight: "600",
+      fontWeight: "700",
     },
     petDetailHeader: {
       alignItems: "center",
@@ -1088,7 +1098,7 @@ const createStyles = (theme) =>
     errorText: {
       color: theme.colors.danger,
       marginBottom: theme.spacing.sm,
-      textAlign: "center",
+      textAlign: "left",
     },
     petCard: {
       flexDirection: "row",

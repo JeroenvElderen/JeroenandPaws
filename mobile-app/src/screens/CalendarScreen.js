@@ -586,22 +586,24 @@ const createStyles = (theme) =>
     },
     statusTimeline: {
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
       marginTop: theme.spacing.sm,
     },
     statusStep: {
       flex: 1,
       alignItems: "center",
+      minWidth: 0,
     },
     statusIndicator: {
       flexDirection: "row",
       alignItems: "center",
       width: "100%",
+      justifyContent: "center",
     },
     statusDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
       backgroundColor: theme.colors.border,
     },
     statusDotActive: {
@@ -611,7 +613,7 @@ const createStyles = (theme) =>
       flex: 1,
       height: 2,
       backgroundColor: theme.colors.border,
-      marginHorizontal: 3,
+      marginHorizontal: 4,
     },
     statusLineActive: {
       backgroundColor: theme.colors.accent,

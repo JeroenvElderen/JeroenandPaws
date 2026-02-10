@@ -2323,18 +2323,20 @@ const createStyles = (theme) =>
     },
     statusTimeline: {
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
       marginTop: theme.spacing.xs,
       marginBottom: theme.spacing.sm,
     },
     statusStep: {
       flex: 1,
       alignItems: "center",
+      minWidth: 0,
     },
     statusIndicator: {
       flexDirection: "row",
       alignItems: "center",
       width: "100%",
+      justifyContent: "center",
     },
     statusDot: {
       width: 8,

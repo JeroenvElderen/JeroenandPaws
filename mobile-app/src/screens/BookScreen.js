@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchJson } from "../api/client";
 import { API_BASE_URL } from "../api/config";
 import {
@@ -60,7 +59,6 @@ const CALENDAR_PAGE_WIDTH =
   Dimensions.get("window").width -
   (CALENDAR_CARD_HORIZONTAL_MARGIN * 2 + CALENDAR_CARD_PADDING * 2);
 const COMPACT_HEIGHT_THRESHOLD = 720;
-const BOOKING_DRAFT_KEY = "booking:draft";
 
 const parsePriceValue = (value) => {
   if (value === null || value === undefined) return 0;
@@ -394,7 +392,6 @@ const BookScreen = ({ navigation, route }) => {
   const [availabilityError, setAvailabilityError] = useState("");
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [showAvailability, setShowAvailability] = useState(false);
   const [activeAgeDropdown, setActiveAgeDropdown] = useState(null);
   const [activeSizeDropdown, setActiveSizeDropdown] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
@@ -404,7 +401,6 @@ const BookScreen = ({ navigation, route }) => {
   );
   const [showCalendar, setShowCalendar] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [draftSaved, setDraftSaved] = useState(false);
   const [debouncedAddress, setDebouncedAddress] = useState(
     (session?.address || "").trim()
   );
@@ -512,7 +508,7 @@ const BookScreen = ({ navigation, route }) => {
     let isMounted = true;
 
     const loadAvailability = async () => {
-      if (!selectedService || !showAvailability) {
+      if (!selectedService) {
         setAvailability(null);
         setAvailabilityStatus("idle");
         setAvailabilityError("");
@@ -593,7 +589,7 @@ const BookScreen = ({ navigation, route }) => {
     return () => {
       isMounted = false;
     };
-  }, [selectedService, debouncedAddress, formState.bookingDate, showAvailability]);
+  }, [selectedService, debouncedAddress, formState.bookingDate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -766,10 +762,26 @@ const BookScreen = ({ navigation, route }) => {
   const selectedPetCount = selectedPets.length;
   const newDogCount = showNewDogForm ? Number(formState.dogCount) || 0 : 0;
   const petCount = Math.max(selectedPetCount + newDogCount, 1);
-  const additionalPetCount = Math.max(petCount - 1, 0);
-  const additionalPetPrice = basePrice * additionalPetCount * 0.5;
+  const additionalPetBreakdown = Array.from(
+    { length: Math.max(petCount - 1, 0) },
+    (_, index) => {
+      const petNumber = index + 2;
+      const discountRate = petNumber >= 3 ? 0.6 : 0.5;
+      const charge = basePrice * (1 - discountRate);
+      return {
+        petNumber,
+        discountRate,
+        charge,
+        saved: basePrice * discountRate,
+      };
+    }
+  );
   const petsSubtotal =
-    basePrice * (1 + additionalPetCount * 0.5);
+    basePrice + additionalPetBreakdown.reduce((sum, pet) => sum + pet.charge, 0);
+  const multiPetDiscountTotal = additionalPetBreakdown.reduce(
+    (sum, pet) => sum + pet.saved,
+    0
+  );
   const totalPrice = petsSubtotal + optionsTotal;
   const availableDates = availability?.dates || [];
   const selectedDateEntry =
@@ -882,7 +894,6 @@ const BookScreen = ({ navigation, route }) => {
       handleOpenCalendar();
       return;
     }
-    setShowAvailability(true);
   };
 
   const handleOpenCalendar = () => {
@@ -902,8 +913,7 @@ const BookScreen = ({ navigation, route }) => {
       setSelectedSlot(null);
     }
     if (formState.timeWindow) {
-      setShowAvailability(true);
-    }
+      }
     setShowCalendar(false);
   };
 
@@ -923,7 +933,6 @@ const BookScreen = ({ navigation, route }) => {
     }
     setSelectedDay(nextAvailableSlot.date);
     setSelectedSlot(nextAvailableSlot.time);
-    setShowAvailability(true);
   };
   
   const handleDogChange = (index, field, value) => {
@@ -943,8 +952,6 @@ const BookScreen = ({ navigation, route }) => {
     setFormState(createInitialState(service, session));
     setSelectedOptionIds([]);
     setSelectedPetIds([]);
-    setShowNewDogForm(false);
-    setDraftSaved(false);
     setShowAddonDropdown(false);
     setActiveAgeDropdown(null);
     setActiveSizeDropdown(null);
@@ -953,7 +960,6 @@ const BookScreen = ({ navigation, route }) => {
     setAvailabilityError("");
     setSelectedDay(null);
     setSelectedSlot(null);
-    setShowAvailability(false);
     setStatus("idle");
     setError("");
     setPaymentPayload(null);
@@ -961,7 +967,6 @@ const BookScreen = ({ navigation, route }) => {
 
   const closeService = useCallback(() => {
     setSelectedService(null);
-    setShowAvailability(false);
     setStatus("idle");
     setError("");
     setPaymentPayload(null);
@@ -983,35 +988,6 @@ const BookScreen = ({ navigation, route }) => {
     });
     closeService();
   }, [status, paymentPayload, navigation, closeService]);
-
-  useEffect(() => {
-    if (!selectedService) return;
-    let isActive = true;
-    const loadDraft = async () => {
-      try {
-        const raw = await AsyncStorage.getItem(BOOKING_DRAFT_KEY);
-        if (!raw) return;
-        const draft = JSON.parse(raw);
-        const matchesService =
-          !draft?.serviceId ||
-          String(draft.serviceId) === String(selectedService?.id);
-        if (!matchesService || !isActive) return;
-        setFormState((current) => ({ ...current, ...(draft.formState || {}) }));
-        setSelectedPetIds(Array.isArray(draft.selectedPetIds) ? draft.selectedPetIds : []);
-        setSelectedOptionIds(
-          Array.isArray(draft.selectedOptionIds) ? draft.selectedOptionIds : []
-        );
-        setShowNewDogForm(Boolean(draft.showNewDogForm));
-        setDraftSaved(Boolean(draft.savedAt));
-      } catch (draftError) {
-        console.error("Failed to load booking draft", draftError);
-      }
-    };
-    loadDraft();
-    return () => {
-      isActive = false;
-    };
-  }, [selectedService]);
 
   const toggleCategory = (category) => {
     setExpandedCategories((current) => ({
@@ -1171,33 +1147,6 @@ const BookScreen = ({ navigation, route }) => {
         clearTimeout(timeoutId);
       }
     }
-  };
-
-  const handleSaveDraft = async () => {
-    if (!selectedService) return;
-    const draftPayload = {
-      serviceId: selectedService?.id ?? null,
-      serviceTitle: serviceLabel,
-      formState,
-      selectedPetIds,
-      selectedOptionIds,
-      showNewDogForm,
-      savedAt: new Date().toISOString(),
-    };
-    try {
-      await AsyncStorage.setItem(
-        BOOKING_DRAFT_KEY,
-        JSON.stringify(draftPayload)
-      );
-      setDraftSaved(true);
-    } catch (draftError) {
-      console.error("Failed to save booking draft", draftError);
-      setError("Couldn't save your draft. Please try again.");
-    }
-  };
-
-  const handleEditDetails = () => {
-    formScrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   const handlePayNow = () => {
@@ -1700,8 +1649,7 @@ const BookScreen = ({ navigation, route }) => {
                         </Text>
                       </Pressable>
                     ) : null}
-                    {showAvailability ? (
-                      <View style={styles.availabilityCard}>
+                    <View style={styles.availabilityCard}>
                         {availabilityStatus === "loading" ? (
                           <Text style={styles.helperText}>
                             Loading availability...
@@ -1709,6 +1657,10 @@ const BookScreen = ({ navigation, route }) => {
                         ) : availabilityError ? (
                           <Text style={styles.errorText}>
                             {availabilityError}
+                          </Text>
+                        ) : !formState.timeWindow || !formState.bookingDate ? (
+                          <Text style={styles.helperText}>
+                            Pick a date and time window to load available slots.
                           </Text>
                         ) : (
                           <>
@@ -1774,7 +1726,6 @@ const BookScreen = ({ navigation, route }) => {
                           </>
                         )}
                       </View>
-                    ) : null}
 
                     <Text style={styles.formSectionTitle}>
                       Custom add-ons
@@ -1870,106 +1821,16 @@ const BookScreen = ({ navigation, route }) => {
             </View>
             {status !== "success" ? (
               <View style={styles.summaryBar}>
-               {/* <View style={styles.summaryHeader}>
-                  <View>
-                    <Text style={styles.summaryTitle}>Booking summary</Text>
-                    {draftSaved ? (
-                      <Text style={styles.summaryHelper}>
-                        Draft saved · ready when you are
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Pressable
-                    style={styles.summaryEdit}
-                    onPress={handleEditDetails}
-                  >
-                    <Text style={styles.summaryEditText}>Edit details</Text>
-                  </Pressable>
-                </View>
-                <Text style={styles.summaryLine}>Service: {serviceLabel}</Text>
-                <Text style={styles.summaryLine}>
-                  Pets:{" "}
-                  {selectedPets.length
-                    ? selectedPets.map((pet) => pet.name).join(", ")
-                    : showNewDogForm
-                    ? `New dog x${formState.dogCount}`
-                    : "Select pets"}
-                </Text>
-                <Text style={styles.summaryLine}>
-                  Date:{" "}
-                  {formState.bookingDate || "Select date"}
-                  {formState.startTime
-                    ? ` · ${formState.startTime}${
-                        formState.endTime ? `–${formState.endTime}` : ""
-                      }`
-                    : ""}
-                </Text>
-                {formState.contactlessHandoff ? (
-                  <Text style={styles.summaryLine}>
-                    Contactless: {formState.contactlessHandoff}
+               {multiPetDiscountTotal > 0 ? (
+                  <Text style={styles.summaryNote}>
+                    Multi-pet savings applied: {formatCurrency(multiPetDiscountTotal)}
                   </Text>
                 ) : null}
-                {selectedOptions.length ? (
-                  <Text style={styles.summaryLine}>
-                    Add-ons:{" "}
-                    {selectedOptions.map((option) => option.label).join(", ")}
-                  </Text>
-                ) : null}
-                <View style={styles.summaryTotals}>
-                  <Text style={styles.summaryBreakdownTitle}>
-                    Pricing breakdown
-                  </Text>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Base service</Text>
-                    <Text style={styles.summaryValue}>
-                      {formatCurrency(basePrice)}
-                    </Text>
-                  </View>
-                  {additionalPetCount > 0 ? (
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>
-                        Additional pets ({additionalPetCount})
-                      </Text>
-                      <Text style={styles.summaryValue}>
-                        {formatCurrency(additionalPetPrice)}
-                      </Text>
-                    </View>
-                  ) : null}
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Pets ({petCount})</Text>
-                    <Text style={styles.summaryValue}>
-                      {formatCurrency(petsSubtotal)}
-                    </Text>
-                  </View>
-                  {petCount > 1 ? (
-                    <Text style={styles.summaryNote}>
-                      Additional pets are 50% off.
-                    </Text>
-                  ) : null}
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Add-ons</Text>
-                    <Text style={styles.summaryValue}>
-                      {formatCurrency(optionsTotal)}
-                    </Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Total</Text>
-                    <Text style={styles.summaryValue}>
-                      {formatCurrency(totalPrice)}
-                    </Text>
-                  </View>
-                </View>
-                {error ? <Text style={styles.errorText}>{error}</Text> : null} */}
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 <View style={styles.summaryActions}>
                   <PrimaryButton
-                    label="Save draft"
-                    variant="secondary"
-                    onPress={handleSaveDraft}
-                    disabled={status === "submitting"}
-                  />
-                  <PrimaryButton
                     label={
-                      status === "submitting" ? "Booking..." : "Book & pay"
+                      status === "submitting" ? "Booking..." : `Book & pay · ${formatCurrency(totalPrice)}`
                     }
                     onPress={handleSubmit}
                     disabled={status === "submitting"}
@@ -2442,7 +2303,7 @@ const createStyles = (theme, isCompactHeight) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceElevated,
   },
   dateChipActive: {
-    ackgroundColor: theme.colors.accentDeep,
+    backgroundColor: theme.colors.accentDeep,
     borderColor: theme.colors.accentDeep,
   },
   dateChipText: {
@@ -2701,12 +2562,22 @@ const createStyles = (theme, isCompactHeight) => StyleSheet.create({
     flex: 1,
   },
   summaryBar: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 12,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceGlass,
+    shadowColor: theme.shadow.soft.shadowColor,
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 14,
+    elevation: 6,
   },
   summaryHeader: {
     flexDirection: "row",
@@ -2743,7 +2614,7 @@ const createStyles = (theme, isCompactHeight) => StyleSheet.create({
     marginBottom: 4,
   },
   summaryActions: {
-    marginTop: 8,
+    marginTop: 6,
     gap: 8,
   },
   summaryTotals: {

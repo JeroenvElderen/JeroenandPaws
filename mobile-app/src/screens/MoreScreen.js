@@ -13,7 +13,7 @@ import { supabase } from "../api/supabaseClient";
 import { useSession } from "../context/SessionContext";
 import { THEME_MODES, THEME_PREFERENCES, useTheme } from "../context/ThemeContext";
 
-const userItems = [
+const quickAccessItems = [
   {
     label: "Profile",
     icon: "card-account-details",
@@ -26,6 +26,21 @@ const userItems = [
     description: "Manage pet profiles",
     route: "PetsProfile",
   },
+  {
+    label: "Training progress",
+    icon: "chart-line",
+    description: "Track progress by skill",
+    route: "TrainingProgress",
+  },
+  {
+    label: "Pet-friendly map",
+    icon: "map-marker-radius",
+    description: "Find nearby places for your pets",
+    route: "PetFriendlyMap",
+  },
+];
+
+const accountItems = [
   {
     label: "Wallet",
     icon: "wallet",
@@ -135,12 +150,43 @@ const MoreScreen = ({ navigation }) => {
         </View>
         <Text style={styles.sectionTitle}>More</Text>
         <View style={styles.sectionCard}>
-          {userItems.map((item, index) => (
+          {quickAccessItems.map((item, index) => (
             <Pressable
               key={item.label}
               style={[
                 styles.menuItem,
-                index === userItems.length - 1 && styles.menuItemLast,
+                index === quickAccessItems.length - 1 && styles.menuItemLast,
+              ]}
+              onPress={() =>
+                navigation.navigate(item.route, { returnTo: "Profile" })
+              }
+            >
+              <View style={styles.menuLeft}>
+                <MaterialCommunityIcons
+                  name={item.icon}
+                  size={20}
+                  color={theme.colors.accent}
+                  style={styles.menuIcon}
+                />
+                <View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Text style={styles.menuDescription}>
+                    {item.description}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.sectionTitle}>Account</Text>
+        <View style={styles.sectionCard}>
+          {accountItems.map((item, index) => (
+            <Pressable
+              key={item.label}
+              style={[
+                styles.menuItem,
+                index === accountItems.length - 1 && styles.menuItemLast,
               ]}
               onPress={() =>
                 navigation.navigate(item.route, { returnTo: "Profile" })

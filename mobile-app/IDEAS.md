@@ -25,6 +25,9 @@
 22. Offline access to pet profiles
 23. Customizable home dashboard widgets
 24. Saved home layouts per pet (switchable dashboards)
+25. Training progress tracker by skill
+26. Pet-friendly locations map
+27. Multi-pet discount rules
 
 ## Ideas backlog (including 50 new ideas)
 1. Real-time sitter/groomer location on day-of
@@ -85,7 +88,7 @@
 56. Smart home integration for door access
 57. Incident report flow with photo uploads
 58. Community Q&A for pet care tips
-59. Training progress tracker by skill
+59. Service prep checklist before each booking
 60. Nutritional plan storage per pet
 61. Pet microchip registry quick link
 62. Round-up donations to shelters
@@ -94,7 +97,7 @@
 65. Before/after service photo slider
 66. Dynamic pricing alerts for peak times
 67. Travel mode with timezone-aware bookings
-68. Pet-friendly locations map
+68. eighborhood dog-park crowd level indicator
 69. Caregiver coverage network for backups
 70. Automated thank-you notes post-service
 71. Referral tracking dashboard
@@ -115,7 +118,7 @@
 86. Care plan templates by pet type
 87. Medication refill reminders
 88. Favorite toys list to personalize care
-89. Multi-pet discount rules
+89. Loyalty streak bonuses for recurring weekly bookings
 90. Provider availability alerts by area
 91. Service satisfaction survey flow
 92. Digital key vault integrations
@@ -163,10 +166,16 @@
 37. Add secondary action for support
 38. Standardize border colors across cards
 39. Simplify onboarding prompts
+40. Reduce steps in booking flow (fewer screens)
+41. Simplify profile menu structure
+42. Better align calendar dots/markers
+43. Improve navigation transition speed
+44. Improve offline banner styling
+45. Improve the book & pay to be floating and remove save draft
 
 ## Things to adjust
-1. Reduce steps in booking flow (fewer screens)
-2. Simplify profile menu structure
+1. Add quick-repeat presets for frequently booked services
+2. Add grouped quick actions at top of profile
 3. Make filters stick on scroll
 4. Add contextual help tooltips
 5. Add support for larger fonts (accessibility)
@@ -174,7 +183,7 @@
 7. Better align calendar dots/markers
 8. Use consistent capitalization for labels
 9. Tighten hero card padding
-10. Improve navigation transition speed
+10. Add subtle page fade during tab switches
 11. Normalize date/time formats across screens
 12. Reduce header height on long lists
 13. Align icon baselines across navigation items
@@ -201,7 +210,7 @@
 34. Improve visibility of selected filters
 35. Reduce vertical padding on dense lists
 36. Standardize badge shapes across screens
-37. Improve offline banner styling
+37. Add retry action directly inside offline banners
 38. Add spacing for grouped radio buttons
 39. Ensure icons are aligned in menus
 40. Improve clarity of secondary button styles
@@ -226,3 +235,4 @@
 59. Improve visibility of calendar disabled dates
 60. Add consistent spacing in receipt details
 61. Harmonize spacing around section actions
+62. Add persistent floating price summary in long booking forms

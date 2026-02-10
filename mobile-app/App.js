@@ -40,6 +40,8 @@ import SupportTicketDetailScreen from "./src/screens/SupportTicketDetailScreen";
 import WalletScreen from "./src/screens/WalletScreen";
 import ServiceBundlesScreen from "./src/screens/ServiceBundlesScreen";
 import BookingGalleryScreen from "./src/screens/BookingGalleryScreen";
+import TrainingProgressScreen from "./src/screens/TrainingProgressScreen";
+import PetFriendlyMapScreen from "./src/screens/PetFriendlyMapScreen";
 import { SessionProvider, useSession } from "./src/context/SessionContext";
 import {
   ThemeProvider,
@@ -202,6 +204,8 @@ const ProfileStackScreen = () => {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: theme.colors.background },
+        animation: "slide_from_right",
+        animationDuration: 140,
       }}
     >
       <ProfileStack.Screen name="ProfileHome" component={MoreScreen} />
@@ -230,6 +234,14 @@ const ProfileStackScreen = () => {
         component={SupportTicketDetailScreen}
       />
       <ProfileStack.Screen name="Wallet" component={WalletScreen} />
+      <ProfileStack.Screen
+        name="TrainingProgress"
+        component={TrainingProgressScreen}
+      />
+      <ProfileStack.Screen
+        name="PetFriendlyMap"
+        component={PetFriendlyMapScreen}
+      />
     </ProfileStack.Navigator>
   );
 };
@@ -971,7 +983,11 @@ const AppShell = () => {
     <NavigationContainer theme={navigationTheme}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootStack.Navigator
-        screenOptions={{ headerShown: false }}
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          animationDuration: 140,
+        }}
         initialRouteName={initialRoute}
       >
         <RootStack.Screen name="MainTabs" component={MainTabs} />
