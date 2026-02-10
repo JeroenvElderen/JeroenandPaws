@@ -38,6 +38,21 @@ import { useTheme } from "../context/ThemeContext";
 
 const OWNER_EMAIL = "jeroen@jeroenandpaws.com";
 const SUPPORT_PHONE = "+353872473099";
+const PROFILE_STACK_ROUTES = new Set([
+  "ProfileHome",
+  "ProfileOverview",
+  "ClientProfiles",
+  "AllPets",
+  "PetsProfile",
+  "Settings",
+  "PaymentMethods",
+  "HelpSupport",
+  "SupportTickets",
+  "SupportTicketDetail",
+  "Wallet",
+  "TrainingProgress",
+  "PetFriendlyMap",
+]);
 const DEFAULT_WIDGETS = ["wallet", "pets", "support", "bundles"];
 const DEFAULT_SECTIONS = ["hero", "summary", "upcoming"];
 const DASHBOARD_PROFILE_KEY = "home-dashboard-profile";
@@ -732,6 +747,13 @@ const HomeScreen = ({ navigation }) => {
       return;
     }
     if (widget.action === "screen" && widget.actionValue) {
+      if (PROFILE_STACK_ROUTES.has(widget.actionValue)) {
+        navigation.navigate("Profile", {
+          screen: widget.actionValue,
+          params: widget.actionParams || { returnTo: "Home" },
+        });
+        return;
+      }
       navigation.navigate(
         widget.actionValue,
         widget.actionParams || { returnTo: "Home" }
@@ -841,7 +863,7 @@ const HomeScreen = ({ navigation }) => {
             body: "Browse pets across your client list.",
             cta: "View pets",
             action: "screen",
-            actionValue: "ClientProfiles",
+            actionValue: "AllPets",
             icon: "paw-outline",
           },
           {
