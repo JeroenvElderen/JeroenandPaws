@@ -28,6 +28,8 @@
 25. Training progress tracker by skill
 26. Pet-friendly locations map
 27. Multi-pet discount rules
+28. Pet-specific training tracker assignment
+29. Mapbox static map preview in pet-friendly map
 
 ## Ideas backlog (including 50 new ideas)
 1. Real-time sitter/groomer location on day-of
@@ -172,6 +174,9 @@
 43. Improve navigation transition speed
 44. Improve offline banner styling
 45. Improve the book & pay to be floating and remove save draft
+46. Standardize header back button to arrow-only (no text)
+47. Remove duplicate appearance section from More screen
+48. Add pending booking payment modal (pay now or cancel)
 
 ## Things to adjust
 1. Add quick-repeat presets for frequently booked services
@@ -180,59 +185,58 @@
 4. Add contextual help tooltips
 5. Add support for larger fonts (accessibility)
 6. Add haptics on key actions
-7. Better align calendar dots/markers
-8. Use consistent capitalization for labels
-9. Tighten hero card padding
-10. Add subtle page fade during tab switches
-11. Normalize date/time formats across screens
-12. Reduce header height on long lists
-13. Align icon baselines across navigation items
-14. Consolidate duplicate settings labels
-15. Increase spacing between grouped toggles
-16. Add helper text for optional fields
-17. Improve scroll indicator visibility
-18. Add keyboard-aware padding in forms
-19. Use consistent action verbs on buttons
-20. Reduce tap delay on booking confirmation
-21. Improve focus states for accessibility
-22. Shorten error toast duration
-23. Add inline loading states for buttons
-24. Make card shadows consistent in dark mode
-25. Align section headers with content margins
-26. Improve contrast on disabled inputs
-27. Reduce redundant confirmation dialogs
-28. Add empty state action buttons
-29. Harmonize typography sizes between screens
-30. Optimize image placeholders to reduce layout shift
-31. Add subtle divider between list sections
-32. Add consistent spacing above footers
-33. Use consistent label casing in forms
-34. Improve visibility of selected filters
-35. Reduce vertical padding on dense lists
-36. Standardize badge shapes across screens
-37. Add retry action directly inside offline banners
-38. Add spacing for grouped radio buttons
-39. Ensure icons are aligned in menus
-40. Improve clarity of secondary button styles
-41. Reduce repeated tooltips in onboarding
-42. Improve alignment of price breakdown rows
-43. Add helper text for date pickers
-44. Adjust modal width for larger devices
-45. Improve contrast of inactive tabs
-46. Add progress indicator to multi-step flows
-47. Improve focus order for accessibility
-48. Reduce spacing between related action buttons
-49. Harmonize spacing in notification settings
-50. Standardize divider thickness
-51. Add consistent spacing in profile cards
-52. Improve readability of system banners
-53. Add tactile feedback for slider controls
-54. Reduce clutter in booking summary screen
-55. Improve alignment of avatar stacks
-56. Add subtle highlight for active cards
-57. Standardize empty state illustration sizes
-58. Simplify copy in subscription upsells
-59. Improve visibility of calendar disabled dates
-60. Add consistent spacing in receipt details
-61. Harmonize spacing around section actions
-62. Add persistent floating price summary in long booking forms
+7. Use consistent capitalization for labels
+8. Tighten hero card padding
+9. Add subtle page fade during tab switches
+10. Normalize date/time formats across screens
+11. Reduce header height on long lists
+12. Align icon baselines across navigation items
+13. Consolidate duplicate settings labels
+14. Increase spacing between grouped toggles
+15. Add helper text for optional fields
+16. Improve scroll indicator visibility
+17. Add keyboard-aware padding in forms
+18. Use consistent action verbs on buttons
+19. Reduce tap delay on booking confirmation
+20. Improve focus states for accessibility
+21. Shorten error toast duration
+22. Add inline loading states for buttons
+23. Make card shadows consistent in dark mode
+24. Align section headers with content margins
+25. Improve contrast on disabled inputs
+26. Reduce redundant confirmation dialogs
+27. Add empty state action buttons
+28. Harmonize typography sizes between screens
+29. Optimize image placeholders to reduce layout shift
+30. Add subtle divider between list sections
+31. Add consistent spacing above footers
+32. Use consistent label casing in forms
+33. Improve visibility of selected filters
+34. Reduce vertical padding on dense lists
+35. Standardize badge shapes across screens
+36. Add retry action directly inside offline banners
+37. Add spacing for grouped radio buttons
+38. Ensure icons are aligned in menus
+39. Improve clarity of secondary button styles
+40. Reduce repeated tooltips in onboarding
+41. Improve alignment of price breakdown rows
+42. Add helper text for date pickers
+43. Adjust modal width for larger devices
+44. Improve contrast of inactive tabs
+45. Add progress indicator to multi-step flows
+46. Improve focus order for accessibility
+47. Reduce spacing between related action buttons
+48. Harmonize spacing in notification settings
+49. Standardize divider thickness
+50. Add consistent spacing in profile cards
+51. Improve readability of system banners
+52. Add tactile feedback for slider controls
+53. Reduce clutter in booking summary screen
+54. Improve alignment of avatar stacks
+55. Add subtle highlight for active cards
+56. Standardize empty state illustration sizes
+57. Simplify copy in subscription upsells
+58. Improve visibility of calendar disabled dates
+59. Add consistent spacing in receipt details
+60. Harmonize spacing around section actions
+61. Add persistent floating price summary in long booking forms

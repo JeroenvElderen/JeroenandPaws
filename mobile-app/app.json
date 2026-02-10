@@ -18,6 +18,7 @@
       "package": "com.jeroenandpaws.app"
     },
     "extra": {
+      "mapboxToken": "pk.eyJ1IjoiamVyb2VudmFuZWxkZXJlbiIsImEiOiJjbWMwa2M0cWswMm9jMnFzNjI3Z2I4YnV4In0.qUqeNUDYMBf3E54ouOd2Jg",
       "apiBaseUrl": "https://www.jeroenandpaws.com",
       "supabaseUrl": "https://jjsxfzhgyfuigogxzire.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqc3hmemhneWZ1aWdvZ3h6aXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Mjk4NTIsImV4cCI6MjA3OTQwNTg1Mn0.Xz2fq4WuKHBUaoIAv7aSCNGkV1uPDOs6UZL2XPWkU-E",

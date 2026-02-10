@@ -3,19 +3,24 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
-const ScreenHeader = ({ title, onBack, backLabel = "Back" }) => {
+const ScreenHeader = ({ title, onBack }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  
   return (
     <View style={styles.container}>
       {onBack ? (
-        <Pressable style={styles.backButton} onPress={onBack}>
+        <Pressable
+          style={styles.backButton}
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="Previous screen"
+        >
           <Ionicons
             name="chevron-back"
-            size={18}
+            size={20}
             color={theme.colors.textPrimary}
           />
-          <Text style={styles.backLabel}>{backLabel}</Text>
         </Pressable>
       ) : (
         <View style={styles.backPlaceholder} />
@@ -46,7 +51,7 @@ const createStyles = (theme) =>
       elevation: theme.shadow.soft.elevation,
     },
     backButton: {
-      minWidth: 56,
+      width: 44,
       height: 44,
       borderRadius: 22,
       backgroundColor: theme.colors.surface,
@@ -54,18 +59,10 @@ const createStyles = (theme) =>
       justifyContent: "center",
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
-      flexDirection: "row",
-      paddingHorizontal: 8,
-      gap: 2,
     },
     backPlaceholder: {
-      width: 56,
+      width: 44,
       height: 44,
-    },
-    backLabel: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: theme.colors.textPrimary,
     },
     title: {
       fontSize: 20,

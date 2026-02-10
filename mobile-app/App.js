@@ -16,7 +16,7 @@ import {
   AppState,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -455,7 +455,6 @@ const AppShell = () => {
   const {
     theme,
     mode,
-    preference,
     hasHydrated,
     needsThemeChoice,
     completeThemeChoice,
@@ -465,6 +464,8 @@ const AppShell = () => {
   const [authReady, setAuthReady] = useState(false);
   const [petOnboardingReady, setPetOnboardingReady] = useState(false);
   const [initialRoute, setInitialRoute] = useState("MainTabs");
+  const [pendingPaymentPrompt, setPendingPaymentPrompt] = useState(null);
+  const navigationRef = useRef(null);
   const isDark = mode === THEME_MODES.dark;
   const modalStyles = useMemo(() => createModalStyles(theme), [theme]);
   const navigationTheme = isDark
@@ -692,6 +693,9 @@ const AppShell = () => {
     const refreshPendingPayment = async () => {
       const pendingPayment = await getPendingPayment();
       if (!pendingPayment) {
+        if (isMounted) {
+          setPendingPaymentPrompt(null);
+        }
         await cancelScheduledReminder();
         return;
       }
@@ -702,8 +706,15 @@ const AppShell = () => {
         Date.now() - savedAtMs > PAYMENT_REMINDER_EXPIRY_MS
       ) {
         await clearPendingPayment();
+        if (isMounted) {
+          setPendingPaymentPrompt(null);
+        }
         await cancelScheduledReminder();
         return;
+      }
+
+      if (isMounted) {
+        setPendingPaymentPrompt(pendingPayment.payload);
       }
 
       if (!supabase || !pendingPayment.payload?.bookingId) {
@@ -718,6 +729,9 @@ const AppShell = () => {
           .maybeSingle();
         if (!error && isPaidStatus(data?.status)) {
           await clearPendingPayment();
+          if (isMounted) {
+            setPendingPaymentPrompt(null);
+          }
           await cancelScheduledReminder();
         }
       } catch (error) {
@@ -753,6 +767,33 @@ const AppShell = () => {
       subscription?.remove();
     };
   }, [session?.id]);
+
+  const handleOpenPendingPayment = async () => {
+    const payload = pendingPaymentPrompt;
+    if (!payload) return;
+    setPendingPaymentPrompt(null);
+    navigationRef.current?.navigate("Payment", { payload });
+  };
+
+  const handleCancelPendingPayment = async () => {
+    const payload = pendingPaymentPrompt;
+    if (!payload) return;
+
+    try {
+      if (supabase && payload.bookingId) {
+        await supabase
+          .from("bookings")
+          .update({ status: "cancelled" })
+          .eq("id", payload.bookingId);
+      }
+      await clearPendingPayment();
+      await clearPaymentReminderId();
+    } catch (error) {
+      console.warn("Failed to cancel pending booking payment", error);
+    } finally {
+      setPendingPaymentPrompt(null);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -980,7 +1021,7 @@ const AppShell = () => {
   }
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={navigationTheme} ref={navigationRef}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootStack.Navigator
         screenOptions={{
@@ -1038,6 +1079,35 @@ const AppShell = () => {
                 <Text style={modalStyles.modalButtonTextOutline}>
                   Choose in app
                 </Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+      {pendingPaymentPrompt ? (
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          statusBarTranslucent
+        >
+          <View style={modalStyles.modalOverlay}>
+            <View style={modalStyles.modalCard}>
+              <Text style={modalStyles.modalTitle}>Complete your booking payment</Text>
+              <Text style={modalStyles.modalBody}>
+                You still have an unpaid booking. Would you like to pay now or cancel it?
+              </Text>
+              <Pressable
+                style={modalStyles.modalButton}
+                onPress={handleOpenPendingPayment}
+              >
+                <Text style={modalStyles.modalButtonText}>Pay now</Text>
+              </Pressable>
+              <Pressable
+                style={modalStyles.modalButtonOutline}
+                onPress={handleCancelPendingPayment}
+              >
+                <Text style={modalStyles.modalButtonTextOutline}>Cancel booking</Text>
               </Pressable>
             </View>
           </View>
