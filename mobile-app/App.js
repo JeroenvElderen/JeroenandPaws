@@ -50,7 +50,11 @@ import {
   THEME_PREFERENCES,
   useTheme,
 } from "./src/context/ThemeContext";
-import { fetchJson } from "./src/api/client";
+import {
+  clearFetchJsonCache,
+  fetchJson,
+  primeFetchJsonCache,
+} from "./src/api/client";
 import { supabase, supabaseAdmin } from "./src/api/supabaseClient";
 import { buildSessionPayload, resolveClientProfile } from "./src/utils/session";
 import {
@@ -129,6 +133,7 @@ configureNotifications();
 const PAYMENT_REMINDER_SECONDS = 60 * 30;
 const PAYMENT_REMINDER_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 const BOOTSTRAP_CACHE_KEY = "app-bootstrap-cache-v1";
+const BOARDING_EIRCODE = "A98H940";
 const LOADING_LOGO_LIGHT = require("./logo1.svg");
 const LOADING_LOGO_DARK = require("./logo3.svg");
 
@@ -537,6 +542,7 @@ const AppShell = () => {
         async (_event, authSession) => {
           if (!isMounted) return;
           if (!authSession?.user) {
+            clearFetchJsonCache();
             setSession(null);
             return;
           }
@@ -965,43 +971,140 @@ const AppShell = () => {
     let isMounted = true;
 
     const preloadAppData = async () => {
+      if (isMounted) {
+        setBootstrapReady(false);
+      }
+
+      const cacheBootstrapPayload = async (cacheKey, payload) => {
+        await AsyncStorage.setItem(
+          cacheKey,
+          JSON.stringify({ payload, updatedAt: Date.now() }),
+        );
+      };
+      
       try {
         const jobs = [
-          fetchJson("/api/services", { timeoutMs: 30000 }).then((payload) =>
-            AsyncStorage.setItem(
-              `${BOOTSTRAP_CACHE_KEY}:services`,
-              JSON.stringify({ payload, updatedAt: Date.now() }),
-            ),
+          fetchJson("/api/services", { timeoutMs: 30000, forceRefresh: true }).then(
+            async (payload) => {
+              primeFetchJsonCache("/api/services", payload);
+              await cacheBootstrapPayload(`${BOOTSTRAP_CACHE_KEY}:services`, payload);
+            },
           ),
-          fetchJson("/api/addons", { timeoutMs: 30000 }).then((payload) =>
-            AsyncStorage.setItem(
-              `${BOOTSTRAP_CACHE_KEY}:addons`,
-              JSON.stringify({ payload, updatedAt: Date.now() }),
-            ),
+          fetchJson("/api/addons", { timeoutMs: 30000, forceRefresh: true }).then(
+            async (payload) => {
+              primeFetchJsonCache("/api/addons", payload);
+              await cacheBootstrapPayload(`${BOOTSTRAP_CACHE_KEY}:addons`, payload);
+            },
           ),
         ];
 
-        if (supabase && session?.id) {
+        if (session?.email) {
+          jobs.push(
+            fetchJson(
+              `/api/client-bookings?email=${encodeURIComponent(session.email)}`,
+              { timeoutMs: 30000, forceRefresh: true },
+            ).then((payload) =>
+              primeFetchJsonCache(
+                `/api/client-bookings?email=${encodeURIComponent(session.email)}`,
+                payload,
+              ),
+            ),
+          );
+          jobs.push(
+            fetchJson(`/api/pets?ownerEmail=${encodeURIComponent(session.email)}`, {
+              timeoutMs: 30000,
+              forceRefresh: true,
+            }).then((payload) =>
+              primeFetchJsonCache(
+                `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`,
+                payload,
+              ),
+            ),
+          );
+        }
+
+        const availabilityAddresses = [
+          session?.address,
+          session?.client?.address,
+          BOARDING_EIRCODE,
+        ]
+          .map((value) => String(value || "").trim())
+          .filter(Boolean);
+
+        const uniqueAddresses = [...new Set(availabilityAddresses)];
+
+        if (uniqueAddresses.length) {
+          const servicesPayload = await fetchJson("/api/services", {
+            timeoutMs: 30000,
+          });
+          const services = Array.isArray(servicesPayload?.services)
+            ? servicesPayload.services
+            : [];
+          const defaultDurationMinutes = 60;
+          const durationMinutesSet = new Set([defaultDurationMinutes]);
+          services.forEach((service) => {
+            const duration = Number(
+              service?.duration_minutes ||
+                service?.durationMinutes ||
+                defaultDurationMinutes,
+            );
+            if (Number.isFinite(duration) && duration > 0) {
+              durationMinutesSet.add(duration);
+            }
+          });
+
+          const availabilityWindowDays = [21, 42, 63];
+          uniqueAddresses.forEach((clientAddress) => {
+            availabilityWindowDays.forEach((windowDays) => {
+              Array.from(durationMinutesSet).forEach((durationMinutes) => {
+                jobs.push(
+                  prefetchAvailability({
+                    durationMinutes,
+                    windowDays,
+                    clientAddress,
+                    timeoutMs: AVAILABILITY_TIMEOUT_MS,
+                  }),
+                );
+              });
+            });
+          });
+        }
+
+        if (supabase && session?.id && session?.email) {
           jobs.push(
             supabase
               .from("pets")
               .select("id, name, breed, owner_id, created_at")
               .eq("owner_id", session.id)
-              .then(({ data }) =>
-                AsyncStorage.setItem(
+              .then(({ data }) => {
+                const payload = { pets: data || [] };
+                primeFetchJsonCache(
+                  `/api/pets?ownerEmail=${encodeURIComponent(session.email)}`,
+                  payload,
+                );
+                return cacheBootstrapPayload(
                   `${BOOTSTRAP_CACHE_KEY}:pets:${session.id}`,
-                  JSON.stringify({ payload: data || [], updatedAt: Date.now() }),
-                ),
-              ),
+                  data || [],
+                );
+              }),
           );
           jobs.push(
             supabase
               .from("service_bundles")
               .select("*")
               .then(({ data }) =>
-                AsyncStorage.setItem(
-                  `${BOOTSTRAP_CACHE_KEY}:bundles`,
-                  JSON.stringify({ payload: data || [], updatedAt: Date.now() }),
+                cacheBootstrapPayload(`${BOOTSTRAP_CACHE_KEY}:bundles`, data || []),
+              ),
+          );
+          jobs.push(
+            supabase
+              .from("seasonal_addon_bundles")
+              .select("*")
+              .eq("is_active", true)
+              .then(({ data }) =>
+                cacheBootstrapPayload(
+                  `${BOOTSTRAP_CACHE_KEY}:seasonal-bundles`,
+                  data || [],
                 ),
               ),
           );
@@ -1022,7 +1125,7 @@ const AppShell = () => {
     return () => {
       isMounted = false;
     };
-  }, [session?.id]);
+  }, [session?.email, session?.id]);
 
   useEffect(() => {
     let isMounted = true;

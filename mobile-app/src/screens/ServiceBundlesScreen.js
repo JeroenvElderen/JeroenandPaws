@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScreenHeader from "../components/ScreenHeader";
 import { supabase } from "../api/supabaseClient";
@@ -17,6 +18,20 @@ const formatCurrency = (amount, currency = "EUR") =>
     currency,
     maximumFractionDigits: 0,
   }).format(amount);
+
+const BOOTSTRAP_CACHE_KEY = "app-bootstrap-cache-v1";
+
+const readBootstrapPayload = async (key) => {
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.payload ?? null;
+  } catch (error) {
+    console.warn("Failed to read bootstrap cache", error);
+    return null;
+  }
+};
 
 const ServiceBundlesScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -41,8 +56,10 @@ const ServiceBundlesScreen = ({ navigation, route }) => {
       setSeasonalBundles([]);
       return;
     }
-    setStatus("loading");
-    setSeasonalStatus("loading");
+    setStatus((current) => (bundles.length ? current : "loading"));
+    setSeasonalStatus((current) =>
+      seasonalBundles.length ? current : "loading",
+    );
     try {
       const [bundleResponse, seasonalResponse] = await Promise.all([
         supabase
@@ -66,6 +83,38 @@ const ServiceBundlesScreen = ({ navigation, route }) => {
       setStatus("error");
       setSeasonalStatus("error");
     }
+  }, [bundles.length, seasonalBundles.length]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateBootstrapData = async () => {
+      const [cachedBundles, cachedSeasonalBundles] = await Promise.all([
+        readBootstrapPayload(`${BOOTSTRAP_CACHE_KEY}:bundles`),
+        readBootstrapPayload(`${BOOTSTRAP_CACHE_KEY}:seasonal-bundles`),
+      ]);
+
+      if (!isMounted) return;
+
+      if (Array.isArray(cachedBundles) && cachedBundles.length) {
+        setBundles(cachedBundles);
+        setStatus("ready");
+      }
+
+      if (
+        Array.isArray(cachedSeasonalBundles) &&
+        cachedSeasonalBundles.length
+      ) {
+        setSeasonalBundles(cachedSeasonalBundles);
+        setSeasonalStatus("ready");
+      }
+    };
+
+    hydrateBootstrapData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -113,9 +162,7 @@ const ServiceBundlesScreen = ({ navigation, route }) => {
         ))}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Seasonal add-ons</Text>
-          <Text style={styles.sectionMeta}>
-            Limited-time care bundles
-          </Text>
+          <Text style={styles.sectionMeta}>Limited-time care bundles</Text>
         </View>
         {seasonalStatus === "loading" ? (
           <ActivityIndicator color={theme.colors.accent} />
@@ -132,10 +179,7 @@ const ServiceBundlesScreen = ({ navigation, route }) => {
           <View key={bundle.id} style={styles.bundleCard}>
             <Text style={styles.bundleTitle}>{bundle.title}</Text>
             <Text style={styles.bundlePrice}>
-              {formatCurrency(
-                (bundle.price_cents || 0) / 100,
-                bundle.currency
-              )}
+              {formatCurrency((bundle.price_cents || 0) / 100, bundle.currency)}
             </Text>
             <Text style={styles.bundleDescription}>
               {bundle.description || "Seasonal care add-on bundle."}
@@ -153,16 +197,17 @@ const ServiceBundlesScreen = ({ navigation, route }) => {
             {bundle.available_from || bundle.available_until ? (
               <Text style={styles.bundleMeta}>
                 {bundle.available_from
-                  ? `From ${new Date(
-                      bundle.available_from
-                    ).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                    })}`
+                  ? `From ${new Date(bundle.available_from).toLocaleDateString(
+                      "en-GB",
+                      {
+                        day: "numeric",
+                        month: "short",
+                      },
+                    )}`
                   : "Available now"}
                 {bundle.available_until
                   ? ` · Until ${new Date(
-                      bundle.available_until
+                      bundle.available_until,
                     ).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",
