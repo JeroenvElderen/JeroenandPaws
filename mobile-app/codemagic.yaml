@@ -1,0 +1,53 @@
+workflows:
+  ios-app-store:
+    name: iOS App Store (Apple ID)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      vars:
+        BUNDLE_ID: "com.jeroenandpaws.app"
+        XCODE_WORKSPACE: "ios/JeroenPaws.xcworkspace"
+        XCODE_SCHEME: "JeroenPaws"
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install JavaScript dependencies
+        script: |
+          cd mobile-app
+          npm ci
+      - name: Install CocoaPods dependencies
+        script: |
+          cd mobile-app/ios
+          pod install
+      - name: Verify iOS workspace and scheme
+        script: |
+          cd mobile-app
+          test -d ios
+          test -f "$XCODE_WORKSPACE/contents.xcworkspacedata"
+          xcodebuild -list -workspace "$XCODE_WORKSPACE"
+      - name: Set up code signing (automatic)
+        script: |
+          cd mobile-app
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          xcode-project use-profiles
+      - name: Build signed IPA for App Store
+        script: |
+          cd mobile-app
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --archive-xcargs "CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=373AP2MG3N"
+    publishing:
+      app_store_connect:
+        auth: apple_id
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testers
