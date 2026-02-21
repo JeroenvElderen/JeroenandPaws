@@ -19,7 +19,6 @@ import {
   prefetchAvailability,
 } from "../availabilityCache";
 import ChatOrFormModal from "../ChatOrFormModal";
-import BookingForm from "../components/BookingForm";
 import BookingErrorBanner from "./BookingErrorBanner";
 import BookingFormStage from "./BookingFormStage";
 import BookingHeader from "./BookingHeader";
@@ -1925,6 +1924,9 @@ const BookingModal = ({ service, onClose }) => {
                 {currentStep === "time" && (
                   <TimeStepCard
                     selectedDay={selectedDayWithTravel.day}
+                    selectedDate={selectedDate}
+                    availabilityMap={availabilityMap}
+                    onDaySelection={handleDaySelection}
                     isDayAvailableForService={isDayAvailableForService}
                     selectedTime={selectedTime}
                     onTimeSelection={handleTimeSelection}
@@ -2160,8 +2162,8 @@ const BookingModal = ({ service, onClose }) => {
                       </div>
                     )}
                     {(customerMode === "new" || isAuthenticated) && (
-                      <BookingForm
-                        {...bookingFormProps}
+                      <BookingFormStage
+                        bookingFormProps={bookingFormProps}
                         visibleStage="customer"
                         onContinue={() => goToStepAndScroll("pet")}
                       />

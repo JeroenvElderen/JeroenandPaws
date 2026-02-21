@@ -116,6 +116,68 @@ const PricingCalendarStyles = () => (
   font-weight: 800;
 }
   
+
+
+.outlook-week-board {
+  border: 1px solid rgba(124, 93, 242, 0.35);
+  background: rgba(38, 24, 66, 0.55);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.outlook-week-board__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.outlook-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.outlook-day-column {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.16);
+  padding: 8px;
+}
+.outlook-day-column.is-selected {
+  border-color: rgba(124, 93, 242, 0.8);
+  box-shadow: 0 0 0 1px rgba(124, 93, 242, 0.5) inset;
+}
+.outlook-day-head {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(124, 93, 242, 0.2);
+  color: #f3eaff;
+  padding: 6px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+.outlook-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.outlook-slot {
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #f2ecff;
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 12px;
+}
+.outlook-slot.active {
+  background: linear-gradient(145deg, #6e4bd8, #7c5df2);
+  color: #0c061a;
+  border-color: transparent;
+}
   `}</style>
 );
 
