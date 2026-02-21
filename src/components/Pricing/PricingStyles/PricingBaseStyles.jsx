@@ -432,6 +432,129 @@ const PricingBaseStyles = () => (
           flex-direction: column;
           gap: 8px;
         }
+
+        /* Outlook-inspired booking editor theme */
+        .booking-overlay {
+          background: rgba(7, 8, 12, 0.82);
+          backdrop-filter: blur(4px);
+        }
+        .booking-modal {
+          background: #202124;
+          border: 1px solid #373a40;
+          border-radius: 8px;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+          color: #e3e3e3;
+        }
+        .booking-hero {
+          padding: 14px 18px;
+          border-bottom: 1px solid #373a40;
+          background: #111214;
+        }
+        .booking-hero .eyebrow {
+          color: #b38cff;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .booking-hero h3 {
+          margin: 4px 0;
+          font-size: 35px;
+          line-height: 1.2;
+          color: #d2d2d2;
+          font-weight: 700;
+        }
+        .booking-body {
+          padding: 14px;
+          background: #202124;
+        }
+        .step-card,
+        .calendar-card,
+        .times-card {
+          border-radius: 4px;
+          border: 1px solid #3a3d42;
+          background: #26282c;
+        }
+        .step-toolbar {
+          border-bottom: 1px solid #3a3d42;
+          padding-bottom: 8px;
+        }
+        .ghost-button {
+          background: #2b2e34;
+          color: #d9d9d9;
+          border: 1px solid #4a4e55;
+        }
+        .ghost-button.active,
+        .ghost-button:hover {
+          background: #31353c;
+          border-color: #8e63ff;
+        }
+        .button.w-button {
+          background: #7e57c2;
+          border: 1px solid #8e63ff;
+          color: #ffffff;
+          border-radius: 4px;
+        }
+        .button.w-button:hover {
+          background: #8a63d7;
+        }
+        .booking-wayfinding {
+          background: #191b1f;
+          border: 1px solid #34373d;
+        }
+        .step-chip {
+          border-radius: 8px;
+          background: #2b2f35;
+          border: 1px solid #454a52;
+          color: #d4d4d4;
+        }
+        .step-chip.active {
+          background: #7e57c2;
+          color: #fff;
+          box-shadow: none;
+        }
+        .summary-chip {
+          background: #262a31;
+          border: 1px solid #464a52;
+        }
+        .outlook-form-layout {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .outlook-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .outlook-section-card {
+          border: 1px solid #3f434b;
+          background: #2a2d33;
+          border-radius: 4px;
+          padding: 12px;
+        }
+        .outlook-section-card h4 {
+          margin: 0 0 8px;
+          color: #b9bbbe;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .outlook-summary-grid .full-width,
+        .outlook-form-layout .full-width {
+          grid-column: 1 / -1;
+        }
+        .outlook-form-layout .input-group input,
+        .outlook-form-layout .input-group textarea,
+        .outlook-form-layout .input-group select {
+          background: #1f2126;
+          border: 1px solid #494e56;
+          border-radius: 4px;
+          color: #f3f3f3;
+        }
+        .summary-value {
+          color: #f3f3f3;
+        }
   `}</style>
 );
 
