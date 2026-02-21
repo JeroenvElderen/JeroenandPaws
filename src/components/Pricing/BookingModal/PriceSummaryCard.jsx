@@ -34,6 +34,11 @@ const PriceSummaryCard = ({ pricing, formatCurrency, parsePriceValue }) => {
             {formatCurrency(pricing.thirdDogDiscount)})
           </li>
         )}
+        {pricing.durationMultiplier && pricing.durationMultiplier !== 1 && (
+          <li>
+            Duration adjustment: ×{pricing.durationMultiplier.toFixed(2)}
+          </li>
+        )}
         {pricing.selectedAddons.map((addon) => (
           <li key={addon.id || addon.value}>
             + {addon.label}: {formatCurrency(parsePriceValue(addon.price))}

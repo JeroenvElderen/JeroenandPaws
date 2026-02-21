@@ -271,6 +271,34 @@ const PricingControlStyles = () => (
   border-color: rgba(124, 93, 242, 0.6);
   background: rgba(124, 93, 242, 0.18);
 }
+
+.slot-editor {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.slot-editor__header h5 {
+  margin: 0;
+}
+
+.slot-editor__header p {
+  margin: 4px 0 0;
+}
+
+.slot-editor__grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.slot-editor__grid .full-width {
+  grid-column: 1 / -1;
+}
+
   `}</style>
 );
 

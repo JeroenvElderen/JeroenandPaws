@@ -17,6 +17,14 @@ const TimeStepCard = ({
   travelAnchor,
   isTravelValidationPending,
   travelNote,
+  selectedEndTime,
+  onEndTimeChange,
+  durationMinutes,
+  onDurationChange,
+  minDurationMinutes,
+  category,
+  onCategoryChange,
+  onPickSlot,
 }) => {
   return (
     <div className="step-card" ref={timesSectionRef}>
@@ -36,6 +44,14 @@ const TimeStepCard = ({
         travelAnchor={travelAnchor}
         isTravelValidationPending={isTravelValidationPending}
         travelNote={travelNote}
+        selectedEndTime={selectedEndTime}
+        onEndTimeChange={onEndTimeChange}
+        durationMinutes={durationMinutes}
+        onDurationChange={onDurationChange}
+        minDurationMinutes={minDurationMinutes}
+        category={category}
+        onCategoryChange={onCategoryChange}
+        onPickSlot={onPickSlot}
       />
     </div>
   );

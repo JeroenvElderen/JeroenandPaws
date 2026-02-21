@@ -132,6 +132,8 @@ const BookingModal = ({ service, onClose }) => {
   const timesSectionRef = useRef(null);
   const summarySectionRef = useRef(null);
   const [currentStep, setCurrentStep] = useState("calendar");
+  const [selectedEndTime, setSelectedEndTime] = useState("");
+  const [bookingCategory, setBookingCategory] = useState("standard");
   const parsePriceValue = useCallback((value) => {
     if (value === null || value === undefined) return 0;
     if (typeof value === "number") return value;
@@ -296,6 +298,13 @@ const BookingModal = ({ service, onClose }) => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + (minutes || 0);
   }, []);
+
+  const minutesToTime = useCallback((minutes) => {
+    const safe = Math.min(Math.max(minutes, 0), 23 * 60 + 59);
+    const hour = String(Math.floor(safe / 60)).padStart(2, "0");
+    const minute = String(safe % 60).padStart(2, "0");
+    return `${hour}:${minute}`;
+  }, []);
   const getBookingCutoff = useCallback(
     () =>
       DateTime.now()
@@ -314,10 +323,15 @@ const BookingModal = ({ service, onClose }) => {
   const serviceLabel = (service?.label || service?.title || "").toLowerCase();
   const isBoardingService = serviceLabel.includes("boarding");
   const allowWeeklyRecurring = allowRecurring && !isBoardingService;
-  const serviceDuration = useMemo(
+  const defaultServiceDuration = useMemo(
     () => (Number.isFinite(service.durationMinutes) ? service.durationMinutes : 60),
     [service.durationMinutes]
   );
+  const [serviceDuration, setServiceDuration] = useState(defaultServiceDuration);
+
+  useEffect(() => {
+    setServiceDuration(defaultServiceDuration);
+  }, [defaultServiceDuration]);
   const calendarDays = useMemo(() => availability.dates || [], [availability]);
   const availabilityMap = useMemo(() => {
     return calendarDays.reduce((acc, day) => {
@@ -1143,6 +1157,15 @@ const BookingModal = ({ service, onClose }) => {
 
   const pricing = useMemo(() => {
     const servicePrice = parsePriceValue(service.price ?? service.cost ?? "0");
+    const pricingUnit = String(service.price || "").toLowerCase();
+    const hasFlatVisitUnit = ["/visit", "/session", "/journey", "/day", "/night"].some((token) =>
+      pricingUnit.includes(token)
+    );
+    const durationMultiplier =
+      servicePrice > 0 && !hasFlatVisitUnit && defaultServiceDuration > 0
+        ? Math.max(serviceDuration / defaultServiceDuration, 0.5)
+        : 1;
+    const adjustedServicePrice = servicePrice * durationMultiplier;
     const addonTotal = selectedAddonObjects.reduce(
       (sum, addon) => sum + parsePriceValue(addon.price),
       0
@@ -1164,7 +1187,7 @@ const BookingModal = ({ service, onClose }) => {
     ).length;
 
     const visitCount = visitsWithTime || 0;
-    const perDogPerVisit = servicePrice;
+    const perDogPerVisit = adjustedServicePrice;
     const additionalDogPrice = perDogPerVisit * 0.5;
     const additionalDogDiscount =
       activeDogsCount >= 2
@@ -1201,6 +1224,12 @@ const BookingModal = ({ service, onClose }) => {
       descriptionParts.push(`${visitCount} visit${visitCount > 1 ? "s" : ""}`);
     }
 
+    descriptionParts.push(`Duration: ${serviceDuration} mins`);
+
+    if (bookingCategory !== "standard") {
+      descriptionParts.push(`Category: ${bookingCategory}`);
+    }
+
     if (selectedAddonObjects.length) {
       const addonNames = selectedAddonObjects
         .map((addon) => addon.label || addon.value)
@@ -1213,7 +1242,9 @@ const BookingModal = ({ service, onClose }) => {
     }
 
     return {
-      servicePrice,
+      servicePrice: adjustedServicePrice,
+      baseServicePrice: servicePrice,
+      durationMultiplier,
       addonTotal,
       perDogPerVisit,
       dogCount: activeDogsCount,
@@ -1240,11 +1271,24 @@ const BookingModal = ({ service, onClose }) => {
     parsePriceValue,
     scheduleEntries,
     selectedAddonObjects,
+    bookingCategory,
+    defaultServiceDuration,
     service.cost,
     service.price,
     service.title,
+    serviceDuration,
     travelDistanceKm,
   ]);
+
+  useEffect(() => {
+    if (!selectedTime) {
+      setSelectedEndTime("");
+      return;
+    }
+
+    const startMinutes = parseTimeToMinutes(selectedTime);
+    setSelectedEndTime(minutesToTime(startMinutes + serviceDuration));
+  }, [minutesToTime, parseTimeToMinutes, selectedTime, serviceDuration]);
 
   useEffect(() => {
     if (!selectedDate) return;
@@ -1343,6 +1387,33 @@ const BookingModal = ({ service, onClose }) => {
       ...prev,
       [selectedDate]: time,
     }));
+
+    const startMinutes = parseTimeToMinutes(time);
+    setSelectedEndTime(minutesToTime(startMinutes + serviceDuration));
+  };
+
+  const handleEndTimeChange = (nextEndTime) => {
+    setSelectedEndTime(nextEndTime);
+    if (!selectedTime || !nextEndTime) return;
+
+    const duration = parseTimeToMinutes(nextEndTime) - parseTimeToMinutes(selectedTime);
+    if (duration >= 30) {
+      setServiceDuration(Math.max(30, duration));
+    }
+  };
+
+  const handleDurationChange = (nextDuration) => {
+    const normalizedDuration = Math.max(30, Number(nextDuration) || defaultServiceDuration);
+    setServiceDuration(normalizedDuration);
+
+    if (!selectedTime) return;
+    const startMinutes = parseTimeToMinutes(selectedTime);
+    setSelectedEndTime(minutesToTime(startMinutes + normalizedDuration));
+  };
+
+  const handlePickSlot = () => {
+    setCurrentStep("customer");
+    requestAnimationFrame(() => scrollToSection(customerDetailsRef));
   };
 
   const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
@@ -1526,8 +1597,8 @@ const BookingModal = ({ service, onClose }) => {
     setSuccess("");
 
     try {
-      const durationMinutes = Number.isFinite(service.durationMinutes)
-        ? service.durationMinutes
+      const durationMinutes = Number.isFinite(serviceDuration)
+        ? serviceDuration
         : 60;
 
       const petPayload = preparePetPayload();
@@ -1552,7 +1623,9 @@ const BookingModal = ({ service, onClose }) => {
         clientEmail: clientEmail.trim(),
         clientEircode: normalizeEircode(clientEircode),
         additionals,
-        notes: notes.trim(),
+        notes: [notes.trim(), bookingCategory !== "standard" ? `Category: ${bookingCategory}` : ""]
+          .filter(Boolean)
+          .join("\n"),
         timeZone: availability.timeZone || BUSINESS_TIME_ZONE,
         pets: petPayload,
         dogCount: petPayload.length,
@@ -1868,6 +1941,14 @@ const BookingModal = ({ service, onClose }) => {
                     travelAnchor={travelAnchor}
                     isTravelValidationPending={isTravelValidationPending}
                     travelNote={travelNote}
+                    selectedEndTime={selectedEndTime}
+                    onEndTimeChange={handleEndTimeChange}
+                    durationMinutes={serviceDuration}
+                    onDurationChange={handleDurationChange}
+                    minDurationMinutes={30}
+                    category={bookingCategory}
+                    onCategoryChange={setBookingCategory}
+                    onPickSlot={handlePickSlot}
                   />
                 )}
 
