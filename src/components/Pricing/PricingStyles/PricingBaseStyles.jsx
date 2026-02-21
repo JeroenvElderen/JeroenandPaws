@@ -300,143 +300,253 @@ const PricingBaseStyles = () => (
       box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
     }
 
-    .step-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 16px;
-      min-height: 0;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+        .calendar-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 6px;
+        }
+        .multi-day-toggle {
+          margin-top: 6px;
+        }
+        .multi-day-summary {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .multi-day-summary__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+        }
+        .schedule-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .schedule-list.inline {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+        .schedule-list__item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 10px;
+          padding: 10px 12px;
+        }
+        .schedule-list__date {
+          font-weight: 700;
+          margin: 0;
+        }
+        .badge {
+          background: rgba(124, 93, 242, 0.2);
+          border: 1px solid rgba(124, 93, 242, 0.5);
+          color: #f2ecff;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-weight: 700;
+        }
+        .addon-card,
+        .floating-summary-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .addon-card__header {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .addon-card__description {
+          max-width: 180px;
+          text-align: right;
+        }
+        .addon-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .addon-row {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 10px;
+          align-items: start;
+          padding: 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .addon-row.selected {
+          border-color: rgba(124, 93, 242, 0.4);
+          background: rgba(124, 93, 242, 0.08);
+        }
+        .addon-row__title-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: center;
+        }
+        .addon-row__price {
+          font-weight: 700;
+        }
+        .floating-summary__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .floating-summary__section {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          padding-top: 10px;
+        }
+        .floating-summary__totals {
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          padding-top: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .recurrence-card {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
 
-    .calendar-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
-    }
-    .multi-day-toggle {
-      margin-top: 6px;
-    }
-    .multi-day-summary {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .multi-day-summary__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    .schedule-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .schedule-list.inline {
-      flex-direction: row;
-      flex-wrap: wrap;
-    }
-    .schedule-list__item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      padding: 10px 12px;
-    }
-    .schedule-list__date {
-      font-weight: 700;
-      margin: 0;
-    }
-    .badge {
-      background: rgba(124, 93, 242, 0.2);
-      border: 1px solid rgba(124, 93, 242, 0.5);
-      color: #f2ecff;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-weight: 700;
-    }
-    .addon-card,
-    .floating-summary-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .addon-card__header {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .addon-card__description {
-      max-width: 180px;
-      text-align: right;
-    }
-    .addon-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .addon-row {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 10px;
-      align-items: start;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .addon-row.selected {
-      border-color: rgba(124, 93, 242, 0.4);
-      background: rgba(124, 93, 242, 0.08);
-    }
-    .addon-row__title-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-    }
-    .addon-row__price {
-      font-weight: 700;
-    }
-    .floating-summary__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .floating-summary__section {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-top: 10px;
-    }
-    .floating-summary__totals {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .recurrence-card {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+        /* Outlook-inspired booking editor theme */
+        .booking-overlay {
+          background: rgba(7, 8, 12, 0.82);
+          backdrop-filter: blur(4px);
+        }
+        .booking-modal {
+          background: #202124;
+          border: 1px solid #373a40;
+          border-radius: 8px;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+          color: #e3e3e3;
+        }
+        .booking-hero {
+          padding: 14px 18px;
+          border-bottom: 1px solid #373a40;
+          background: #111214;
+        }
+        .booking-hero .eyebrow {
+          color: #b38cff;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .booking-hero h3 {
+          margin: 4px 0;
+          font-size: 35px;
+          line-height: 1.2;
+          color: #d2d2d2;
+          font-weight: 700;
+        }
+        .booking-body {
+          padding: 14px;
+          background: #202124;
+        }
+        .step-card,
+        .calendar-card,
+        .times-card {
+          border-radius: 4px;
+          border: 1px solid #3a3d42;
+          background: #26282c;
+        }
+        .step-toolbar {
+          border-bottom: 1px solid #3a3d42;
+          padding-bottom: 8px;
+        }
+        .ghost-button {
+          background: #2b2e34;
+          color: #d9d9d9;
+          border: 1px solid #4a4e55;
+        }
+        .ghost-button.active,
+        .ghost-button:hover {
+          background: #31353c;
+          border-color: #8e63ff;
+        }
+        .button.w-button {
+          background: #7e57c2;
+          border: 1px solid #8e63ff;
+          color: #ffffff;
+          border-radius: 4px;
+        }
+        .button.w-button:hover {
+          background: #8a63d7;
+        }
+        .booking-wayfinding {
+          background: #191b1f;
+          border: 1px solid #34373d;
+        }
+        .step-chip {
+          border-radius: 8px;
+          background: #2b2f35;
+          border: 1px solid #454a52;
+          color: #d4d4d4;
+        }
+        .step-chip.active {
+          background: #7e57c2;
+          color: #fff;
+          box-shadow: none;
+        }
+        .summary-chip {
+          background: #262a31;
+          border: 1px solid #464a52;
+        }
+        .outlook-form-layout {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .outlook-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .outlook-section-card {
+          border: 1px solid #3f434b;
+          background: #2a2d33;
+          border-radius: 4px;
+          padding: 12px;
+        }
+        .outlook-section-card h4 {
+          margin: 0 0 8px;
+          color: #b9bbbe;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .outlook-summary-grid .full-width,
+        .outlook-form-layout .full-width {
+          grid-column: 1 / -1;
+        }
+        .outlook-form-layout .input-group input,
+        .outlook-form-layout .input-group textarea,
+        .outlook-form-layout .input-group select {
+          background: #1f2126;
+          border: 1px solid #494e56;
+          border-radius: 4px;
+          color: #f3f3f3;
+        }
+        .summary-value {
+          color: #f3f3f3;
+        }
   `}</style>
 );
 
