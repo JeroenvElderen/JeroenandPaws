@@ -4,8 +4,8 @@ const BookingHeader = ({ service, onSupport, onClose }) => {
   return (
     <header className="booking-hero">
       <div>
-        <p className="eyebrow">{service.duration || "Premium care"}</p>
-        <h3>{service.title}</h3>
+        <p className="eyebrow">Agenda</p>
+        <h3>{service.title || "New event"}</h3>
         <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
       </div>
       <div className="hero-actions">
