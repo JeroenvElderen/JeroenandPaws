@@ -64,39 +64,41 @@ const BookingForm = ({
   isMultiDay,
   onRecurrenceChange,
 }) => {
+  const [isAllDay, setIsAllDay] = React.useState(false);
+  const [reminderMinutes, setReminderMinutes] = React.useState("60");
   const isSummaryMode = visibleStage === "summary";
   const showCustomerDetails = ["customer", "summary"].includes(visibleStage);
   const showPetDetails = ["pet", "summary"].includes(visibleStage);
   const showPricingSummary = ["summary"].includes(visibleStage);
   const canAdvanceToPets = Boolean(
-    clientName.trim() && clientEmail.trim() && clientPhone.trim()
+    clientName.trim() && clientEmail.trim() && clientPhone.trim(),
   );
   const hasCustomerDetails = Boolean(
     clientName.trim() &&
-      clientEmail.trim() &&
-      clientPhone.trim() &&
-      clientAddress.trim()
+    clientEmail.trim() &&
+    clientPhone.trim() &&
+    clientAddress.trim(),
   );
   const recurrenceLabel =
     recurrence === "weekly"
       ? "Weekly"
       : recurrence === "monthly"
-      ? "Monthly"
-      : recurrence === "six-months"
-      ? "Every 6 months"
-      : recurrence === "yearly"
-      ? "Yearly"
-      : "One-time booking";
+        ? "Monthly"
+        : recurrence === "six-months"
+          ? "Every 6 months"
+          : recurrence === "yearly"
+            ? "Yearly"
+            : "One-time booking";
   const recurrenceSummaryText =
     recurrence === "weekly"
       ? "Repeats weekly"
       : recurrence === "monthly"
-      ? "Repeats monthly"
-      : recurrence === "six-months"
-      ? "Repeats every 6 months"
-      : recurrence === "yearly"
-      ? "Repeats yearly"
-      : null;
+        ? "Repeats monthly"
+        : recurrence === "six-months"
+          ? "Repeats every 6 months"
+          : recurrence === "yearly"
+            ? "Repeats yearly"
+            : null;
   const recurrenceOptions = isMultiDay
     ? [{ value: "weekly", label: "Weekly (multi-day schedule)" }]
     : [
@@ -114,18 +116,35 @@ const BookingForm = ({
   };
 
   const savedPets = existingPets.filter((pet) =>
-    selectedPetIds.includes(pet.id)
+    selectedPetIds.includes(pet.id),
   );
   const additionalLabels = (selectedAdditionalLabels || []).filter(Boolean);
 
-  const newDogDetails = dogs
-    .slice(0, dogCount)
-    .filter((dog) => {
-      const name = (dog?.name || "").trim();
-      const breed = (dog?.breed || "").trim();
-      const notesText = (dog?.notes || "").trim();
-      return Boolean(name || breed || notesText) && !selectedPetIds.includes(dog?.profileId);
-    });
+  const newDogDetails = dogs.slice(0, dogCount).filter((dog) => {
+    const name = (dog?.name || "").trim();
+    const breed = (dog?.breed || "").trim();
+    const notesText = (dog?.notes || "").trim();
+    return (
+      Boolean(name || breed || notesText) &&
+      !selectedPetIds.includes(dog?.profileId)
+    );
+  });
+
+  const scheduleSummaryLabel = scheduleEntries.length
+    ? scheduleEntries
+        .map((entry) => {
+          const dayLabel = new Date(entry.date).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+          if (isAllDay) {
+            return `${dayLabel} · All day`;
+          }
+          return `${dayLabel} · ${formatTime(entry.time)}`;
+        })
+        .join("\n")
+    : "Pick a date and time in the previous steps.";
 
   if (isSummaryMode) {
     return (
@@ -136,9 +155,13 @@ const BookingForm = ({
         <div className="summary-readonly">
           <div className="summary-card">
             <h4>Service</h4>
-            <p className="summary-value">{service?.title || "Selected service"}</p>
+            <p className="summary-value">
+              {service?.title || "Selected service"}
+            </p>
             {service?.duration && (
-              <p className="muted subtle summary-subvalue">{service.duration}</p>
+              <p className="muted subtle summary-subvalue">
+                {service.duration}
+              </p>
             )}
           </div>
 
@@ -147,7 +170,10 @@ const BookingForm = ({
             {scheduleEntries.length ? (
               <ul className="summary-list">
                 {scheduleEntries.map((entry, index) => (
-                  <li key={`${entry.date}-${index}`} className="summary-item stacked">
+                  <li
+                    key={`${entry.date}-${index}`}
+                    className="summary-item stacked"
+                  >
                     <p className="summary-label">
                       {new Date(entry.date).toLocaleDateString(undefined, {
                         weekday: "long",
@@ -195,9 +221,7 @@ const BookingForm = ({
                       {(dog.name || "Your pup").trim()}
                       {dog.breed ? ` · ${dog.breed}` : ""}
                     </span>
-                    {dog.notes && (
-                      <p className="muted subtle">{dog.notes}</p>
-                    )}
+                    {dog.notes && <p className="muted subtle">{dog.notes}</p>}
                   </div>
                 ))}
               </div>
@@ -235,8 +259,8 @@ const BookingForm = ({
                 )}
                 {pricing.travelSurcharge > 0 ? (
                   <p className="summary-value">
-                    Travel surcharge: {formatCurrency(pricing.travelSurcharge)} (
-                    {pricing.travelSurchargeKm} km over{" "}
+                    Travel surcharge: {formatCurrency(pricing.travelSurcharge)}{" "}
+                    ({pricing.travelSurchargeKm} km over{" "}
                     {pricing.travelSurchargeThreshold} km
                     {pricing.visitCount > 1
                       ? ` × ${pricing.visitCount} visits`
@@ -299,12 +323,12 @@ const BookingForm = ({
         {showCustomerDetails && (
           <>
             <label className="input-group">
-              <span>Your name</span>
+              <span>Title</span>
               <input
                 type="text"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder="Client name"
+                placeholder="Add a booking title"
               />
             </label>
             <label className="input-group">
@@ -317,7 +341,7 @@ const BookingForm = ({
               />
             </label>
             <label className="input-group email-group">
-              <span>Your email</span>
+              <span>Invite attendee</span>
               <div className="email-row">
                 <input
                   type="email"
@@ -338,7 +362,7 @@ const BookingForm = ({
               </div>
             </label>
             <label className="input-group full-width">
-              <span>Service address</span>
+              <span>Location</span>
               <input
                 type="text"
                 value={clientAddress}
@@ -351,12 +375,78 @@ const BookingForm = ({
               />
               {clientAddressLocked && (
                 <p className="muted subtle">
-                  Address is set from your Eircode to keep travel timing accurate.
+                  Address is set from your Eircode to keep travel timing
+                  accurate.
                 </p>
               )}
             </label>
+
+            <div className="input-group full-width">
+              <div className="label-row">
+                <span>Schedule</span>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  aria-pressed={isAllDay}
+                  onClick={() => setIsAllDay((value) => !value)}
+                >
+                  {isAllDay ? "Disable all day" : "Mark as all day"}
+                </button>
+              </div>
+              <textarea
+                value={scheduleSummaryLabel}
+                readOnly
+                rows={Math.max(2, scheduleEntries.length || 2)}
+              />
+              <p className="muted subtle">
+                {scheduleEntries.length
+                  ? "Use the calendar/time steps above to update this schedule."
+                  : "No appointment slot selected yet."}
+              </p>
+            </div>
+
+            <label className="input-group">
+              <span>Reminder</span>
+              <select
+                className="input-like-select recurrence-select"
+                value={reminderMinutes}
+                onChange={(event) => setReminderMinutes(event.target.value)}
+              >
+                <option value="0">At start time</option>
+                <option value="15">15 minutes before</option>
+                <option value="60">1 hour before</option>
+                <option value="1440">1 day before</option>
+              </select>
+            </label>
+
+            {allowRecurring && (
+              <div className="input-group recurrence-group">
+                <span>Repeat</span>
+                <select
+                  className="input-like-select recurrence-select"
+                  value={
+                    recurrenceOptions.some(
+                      (option) => option.value === recurrence,
+                    )
+                      ? recurrence
+                      : recurrenceOptions[0]?.value
+                  }
+                  onChange={(event) => onRecurrenceChange?.(event.target.value)}
+                  disabled={isMultiDay}
+                >
+                  {recurrenceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {hasCustomerDetails && (
-              <p className="success-banner subtle form-success-state" role="status">
+              <p
+                className="success-banner subtle form-success-state"
+                role="status"
+              >
                 Customer details saved. Continue when you're ready.
               </p>
             )}
@@ -373,84 +463,89 @@ const BookingForm = ({
                   </p>
                 ) : (
                   <>
-                  <div className="pet-list">
-                    {existingPets.map((pet) => {
-                      const isSelected = selectedPetIds.includes(pet.id);
-                      const petInitial = (pet.name || pet.breed || "🐾")
-                        .charAt(0)
-                        .toUpperCase();
-                      const noteText = pet.notes || pet.bio || "";
+                    <div className="pet-list">
+                      {existingPets.map((pet) => {
+                        const isSelected = selectedPetIds.includes(pet.id);
+                        const petInitial = (pet.name || pet.breed || "🐾")
+                          .charAt(0)
+                          .toUpperCase();
+                        const noteText = pet.notes || pet.bio || "";
 
-                      return (
-                        <label
-                          key={pet.id}
-                          className={`pet-option ${
-                            isSelected ? "selected" : ""
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(event) => {
-                              const checked = event.target.checked;
-                              setSelectedPetIds((prev) => {
-                                if (checked) {
-                                  return [...prev, pet.id];
-                                }
-                                return prev.filter((id) => id !== pet.id);
-                              });
-                            }}
-                          />
-                          <div className="pet-option__details">
-                            <div className="pet-option__identity">
-                              <div
-                                className="pet-option__thumb"
-                                aria-hidden="true"
-                              >
-                                {pet.photo_data_url || pet.photoDataUrl ? (
-                                  <img
-                                    src={pet.photo_data_url || pet.photoDataUrl}
-                                    alt={`${pet.name} avatar`}
-                                    className="pet-option__avatar"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <div className="pet-option__avatar placeholder">
-                                    <span className="pet-option__initial">
-                                      {petInitial}
-                                    </span>
+                        return (
+                          <label
+                            key={pet.id}
+                            className={`pet-option ${
+                              isSelected ? "selected" : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(event) => {
+                                const checked = event.target.checked;
+                                setSelectedPetIds((prev) => {
+                                  if (checked) {
+                                    return [...prev, pet.id];
+                                  }
+                                  return prev.filter((id) => id !== pet.id);
+                                });
+                              }}
+                            />
+                            <div className="pet-option__details">
+                              <div className="pet-option__identity">
+                                <div
+                                  className="pet-option__thumb"
+                                  aria-hidden="true"
+                                >
+                                  {pet.photo_data_url || pet.photoDataUrl ? (
+                                    <img
+                                      src={
+                                        pet.photo_data_url || pet.photoDataUrl
+                                      }
+                                      alt={`${pet.name} avatar`}
+                                      className="pet-option__avatar"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="pet-option__avatar placeholder">
+                                      <span className="pet-option__initial">
+                                        {petInitial}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="pet-option__glow" />
+                                </div>
+                                <div className="pet-option__text">
+                                  <span className="pet-option__name">
+                                    {pet.name || "Your pup"}
+                                  </span>
+                                  <div className="pet-option__meta-row">
+                                    {pet.breed && (
+                                      <span className="pet-option__breed">
+                                        {pet.breed}
+                                      </span>
+                                    )}
                                   </div>
-                                )}
-                                <div className="pet-option__glow" />
-                              </div>
-                            <div className="pet-option__text">
-                                <span className="pet-option__name">
-                                  {pet.name || "Your pup"}
-                                </span>
-                                <div className="pet-option__meta-row">
-                                  {pet.breed && (
-                                    <span className="pet-option__breed">
-                                      {pet.breed}
-                                    </span>
+                                  {noteText && (
+                                    <p
+                                      className="pet-option__notes"
+                                      title={noteText}
+                                    >
+                                      {noteText}
+                                    </p>
                                   )}
                                 </div>
-                                {noteText && (
-                                  <p className="pet-option__notes" title={noteText}>
-                                    {noteText}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </>
                 )}
-                </div>
+              </div>
             )}
-          {existingPets.length > 0 && !showDogDetails && (
+            {existingPets.length > 0 && !showDogDetails && (
               <div className="input-group full-width">
                 <div className="label-row">
                   <span className="muted subtle">
@@ -500,7 +595,7 @@ const BookingForm = ({
                         />
                       </label>
 
-                  <SearchableSelect
+                      <SearchableSelect
                         label={`Dog ${index + 1} Breed`}
                         options={DOG_BREEDS}
                         value={dogProfile.breed}
@@ -508,13 +603,16 @@ const BookingForm = ({
                           updateDogField(index, "breed", value)
                         }
                         onSearch={(query) =>
-                          setBreedSearch((prev) => ({ ...prev, [index]: query }))
+                          setBreedSearch((prev) => ({
+                            ...prev,
+                            [index]: query,
+                          }))
                         }
                         filteredOptions={filteredBreeds(index)}
                         placeholder="Start typing a breed"
                       />
 
-                        <label className="input-group">
+                      <label className="input-group">
                         <span>Notes</span>
                         <textarea
                           value={dogProfile.notes}
@@ -525,7 +623,7 @@ const BookingForm = ({
                         />
                       </label>
 
-                  <label className="input-group">
+                      <label className="input-group">
                         <span>Photo (optional)</span>
                         <input
                           type="file"
@@ -569,7 +667,10 @@ const BookingForm = ({
               </>
             )}
             {hasAtLeastOneDog && (
-              <p className="success-banner subtle form-success-state" role="status">
+              <p
+                className="success-banner subtle form-success-state"
+                role="status"
+              >
                 Pet details saved. Continue when you're ready.
               </p>
             )}
@@ -585,12 +686,16 @@ const BookingForm = ({
         />
       </label>
 
-      {allowRecurring && (
+      {allowRecurring && visibleStage !== "customer" && (
         <div className="input-group full-width recurrence-group">
           <span>Recurring visits</span>
           <select
             className="input-like-select recurrence-select"
-            value={recurrenceOptions.some((option) => option.value === recurrence) ? recurrence : recurrenceOptions[0]?.value}
+            value={
+              recurrenceOptions.some((option) => option.value === recurrence)
+                ? recurrence
+                : recurrenceOptions[0]?.value
+            }
             onChange={(event) => onRecurrenceChange?.(event.target.value)}
             disabled={isMultiDay}
           >
@@ -602,12 +707,13 @@ const BookingForm = ({
           </select>
           {isMultiDay && (
             <p className="muted subtle">
-              Multi-day bookings repeat weekly to keep each selected day in your routine.
+              Multi-day bookings repeat weekly to keep each selected day in your
+              routine.
             </p>
           )}
         </div>
       )}
-      
+
       {visibleStage === "addons" && (
         <>
           <div className="pricing-row" ref={addOnDropdownRef}>
@@ -641,7 +747,9 @@ const BookingForm = ({
                             {formatCurrency(parsePriceValue(option.price))}
                           </span>
                         </div>
-                        <p className="add-on-description">{option.description}</p>
+                        <p className="add-on-description">
+                          {option.description}
+                        </p>
                         <span className="add-on-check" aria-hidden="true">
                           ✓
                         </span>
@@ -650,7 +758,7 @@ const BookingForm = ({
                   })}
                 </div>
               )}
-            <div className="add-on-running-total">
+              <div className="add-on-running-total">
                 <span>Running add-on total</span>
                 <strong>{formatCurrency(pricing.addonTotal || 0)}</strong>
               </div>
@@ -676,7 +784,8 @@ const BookingForm = ({
               </div>
               <ul className="price-summary__list">
                 <li>
-                  Service: {formatCurrency(pricing.servicePrice)} per dog / visit
+                  Service: {formatCurrency(pricing.servicePrice)} per dog /
+                  visit
                 </li>
                 {pricing.secondDogDiscount > 0 && (
                   <li>
@@ -692,13 +801,14 @@ const BookingForm = ({
                 )}
                 {pricing.selectedAddons.map((addon) => (
                   <li key={addon.id || addon.value}>
-                    + {addon.label}: {formatCurrency(parsePriceValue(addon.price))}
+                    + {addon.label}:{" "}
+                    {formatCurrency(parsePriceValue(addon.price))}
                   </li>
                 ))}
                 {pricing.travelSurcharge > 0 && (
                   <li>
-                    Travel surcharge: {formatCurrency(pricing.travelSurcharge)} (
-                    {pricing.travelSurchargeKm} km over{" "}
+                    Travel surcharge: {formatCurrency(pricing.travelSurcharge)}{" "}
+                    ({pricing.travelSurchargeKm} km over{" "}
                     {pricing.travelSurchargeThreshold} km
                     {pricing.visitCount > 1
                       ? ` × ${pricing.visitCount} visits`
@@ -707,7 +817,8 @@ const BookingForm = ({
                   </li>
                 )}
                 <li>
-                  Total per visit (all dogs): {formatCurrency(pricing.perVisitTotal)}
+                  Total per visit (all dogs):{" "}
+                  {formatCurrency(pricing.perVisitTotal)}
                 </li>
                 <li>
                   Total per dog / visit: {formatCurrency(pricing.servicePrice)}
@@ -715,7 +826,8 @@ const BookingForm = ({
               </ul>
               {pricing.selectedAddons.length > 0 && (
                 <p className="muted subtle">
-                  Add-on pricing applied once per booking in addition to the base service price.
+                  Add-on pricing applied once per booking in addition to the
+                  base service price.
                 </p>
               )}
             </div>
@@ -793,10 +905,15 @@ const BookingForm = ({
                   {isBooking ? "Booking…" : "Confirm / Book"}
                 </button>
               ) : (
-                <p className="muted subtle">Add at least one dog to continue.</p>
+                <p className="muted subtle">
+                  Add at least one dog to continue.
+                </p>
               )}
               {hasAtLeastOneDog && (
-                <p className="success-banner subtle form-success-state" role="status">
+                <p
+                  className="success-banner subtle form-success-state"
+                  role="status"
+                >
                   All set — confirm your booking when you're ready.
                 </p>
               )}
