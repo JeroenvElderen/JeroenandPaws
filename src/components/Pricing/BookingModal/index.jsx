@@ -1,2268 +1,515 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
-import { DateTime } from "luxon";
-import { weekdayLabels, DOG_BREEDS } from "../constants";
-import {
-  buildMonthMatrix,
-  createEmptyDogProfile,
-  generateDemoAvailability,
-} from "../utils";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import {
-  computeApiBaseUrl,
-  getCachedAvailability,
-  prefetchAvailability,
-} from "../availabilityCache";
-import ChatOrFormModal from "../ChatOrFormModal";
-import BookingForm from "../components/BookingForm";
-import BookingErrorBanner from "./BookingErrorBanner";
-import BookingFormStage from "./BookingFormStage";
-import BookingHeader from "./BookingHeader";
-import BookingWayfinding from "./BookingWayfinding";
-import CalendarStepCard from "./CalendarStepCard";
-import PriceSummaryCard from "./PriceSummaryCard";
-import TimeStepCard from "./TimeStepCard";
+import { generateDemoAvailability } from "../utils";
+import { computeApiBaseUrl, getCachedAvailability, prefetchAvailability } from "../availabilityCache";
 
-const BUSINESS_TIME_ZONE = "Europe/Dublin";
-const HOME_EIRCODE = "A98H940";
-const MIN_LEAD_MINUTES = 30;
-const HOME_COORDS = { lat: 53.204, lng: -6.111 }; // Bray (home)
-const TRAVEL_DISTANCE_THRESHOLD_KM = 30;
-const TRAVEL_SURCHARGE_PER_KM = 0.5;
-const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
-const OSRM_ENDPOINT = "https://router.project-osrm.org/route/v1/driving";
-const ROUTING_COORDS = {
-  // Approximate centroids for common routing keys so we can estimate travel when
-  // an online lookup fails. These are fallbacks and should be avoided when the
-  // full Eircode can be resolved through OpenStreetMap.
-  A98: HOME_COORDS,
-  A96: { lat: 53.293, lng: -6.129 }, // Dun Laoghaire
-  A94: { lat: 53.306, lng: -6.211 }, // Blackrock
-  D01: { lat: 53.352, lng: -6.262 }, // Dublin 1
-  D02: { lat: 53.338, lng: -6.247 },
-  D04: { lat: 53.321, lng: -6.228 },
-  D06: { lat: 53.312, lng: -6.260 },
-  D08: { lat: 53.337, lng: -6.278 },
-  D09: { lat: 53.379, lng: -6.238 },
-  D15: { lat: 53.385, lng: -6.398 },
-  D18: { lat: 53.262, lng: -6.149 },
-  K36: { lat: 53.449, lng: -6.226 }, // Swords
-  K67: { lat: 53.159, lng: -6.909 }, // Kildare
-  K78: { lat: 53.347, lng: -6.446 }, // Lucan
-  W23: { lat: 53.351, lng: -6.538 },
-  W91: { lat: 53.179, lng: -6.667 },
+const BUSINESS_TZ = "Europe/Dublin";
+const SLOT_START_HOUR = 8;
+const SLOT_END_HOUR = 20;
+const SLOT_STEP_MINUTES = 30;
+
+const VIEW_MODES = ["day", "week", "month"];
+const COMPOSER_TABS = ["details", "pets", "additional", "confirm"];
+
+const makeIsoDate = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
+const buildTimes = () => {
+  const slots = [];
+  for (let mins = SLOT_START_HOUR * 60; mins < SLOT_END_HOUR * 60; mins += SLOT_STEP_MINUTES) {
+    const h = String(Math.floor(mins / 60)).padStart(2, "0");
+    const m = String(mins % 60).padStart(2, "0");
+    slots.push(`${h}:${m}`);
+  }
+  return slots;
+};
+
+const ALL_TIMES = buildTimes();
+
+const formatDisplayDate = (isoDate) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
 const BookingModal = ({ service, onClose }) => {
-  const MAX_DOGS = 4;
-  const { profile, isAuthenticated, setProfile } = useAuth();
-  const [customerMode, setCustomerMode] = useState(() =>
-    profile ? "login" : "null"
-  );
-  const [loginEmail, setLoginEmail] = useState(profile?.client?.email || "");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
-  const is24h = true;
+  const { profile, isAuthenticated } = useAuth();
+  const [stage, setStage] = useState(isAuthenticated ? "calendar" : "register");
+  const [viewMode, setViewMode] = useState("week");
+  const [composerTab, setComposerTab] = useState("details");
+
   const [availability, setAvailability] = useState(() => {
     const cached = service?.id ? getCachedAvailability(service.id) : null;
-    return {
-      ...(cached || {}),
-      dates: cached?.dates || [],
-      busy: cached?.busy || [],
-      timeZone: cached?.timeZone || BUSINESS_TIME_ZONE,
-    };
+    return cached || { dates: [] };
   });
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [availabilitySource, setAvailabilitySource] = useState("live");
+
+  const [visibleDate, setVisibleDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [clientEircode, setClientEircode] = useState("");
-  const [pendingProfileEircode, setPendingProfileEircode] = useState("");
-  const [eircodeChoiceOpen, setEircodeChoiceOpen] = useState(false);
-  const [clientEmail, setClientEmail] = useState("");
+  const [selectedStart, setSelectedStart] = useState("");
+  const [selectedEnd, setSelectedEnd] = useState("");
+
+  const [clientName, setClientName] = useState(profile?.client?.name || "");
+  const [clientEmail, setClientEmail] = useState(profile?.client?.email || "");
+  const [clientPhone, setClientPhone] = useState(profile?.client?.phone || "");
+  const [clientEircode, setClientEircode] = useState(profile?.client?.eircode || "");
+  const [password, setPassword] = useState("");
+
+  const [petNames, setPetNames] = useState("");
+  const [additionalCare, setAdditionalCare] = useState([]);
   const [notes, setNotes] = useState("");
-  const [isBooking, setIsBooking] = useState(false);
-  const [isLoadingPets, setIsLoadingPets] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
-  const [availabilityNotice, setAvailabilityNotice] = useState("");
-  const [dogCount, setDogCount] = useState(1);
-  const [dogs, setDogs] = useState([createEmptyDogProfile()]);
-  const [breedSearch, setBreedSearch] = useState({});
-  const [existingPets, setExistingPets] = useState([]);
-  const [selectedPetIds, setSelectedPetIds] = useState([]);
-  const [hasAttemptedPetLoad, setHasAttemptedPetLoad] = useState(false);
-  const [showDogDetails, setShowDogDetails] = useState(true);
-  const [selectedSlots, setSelectedSlots] = useState({});
-  const [isMultiDay, setIsMultiDay] = useState(false);
-  const [recurrence, setRecurrence] = useState("none");
-  const [additionals, setAdditionals] = useState([]);
-  const [additionalsOpen, setAdditionalsOpen] = useState(false);
-  const [addons, setAddons] = useState([]);
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [showLoginReset, setShowLoginReset] = useState(false);
-  const [loginResetStatus, setLoginResetStatus] = useState({
-    state: "idle",
-    message: "",
-  });
-  const [travelAnchor, setTravelAnchor] = useState("home");
-  const [homeCoordinates, setHomeCoordinates] = useState(HOME_COORDS);
-  const [previousBookingTime, setPreviousBookingTime] = useState("");
-  const [clientCoordinates, setClientCoordinates] = useState(null);
-  const [travelMinutes, setTravelMinutes] = useState(0);
-  const [travelDistanceKm, setTravelDistanceKm] = useState(0);
-  const [travelNote, setTravelNote] = useState("");
-  const [travelValidationState, setTravelValidationState] = useState("pending");
-  const isTravelValidationPending = travelValidationState === "pending";
-  const customerDetailsRef = useRef(null);
-  const addOnDropdownRef = useRef(null);
-  const addonsSectionRef = useRef(null);
-  const bookingModalRef = useRef(null);
-  const calendarSectionRef = useRef(null);
-  const timesSectionRef = useRef(null);
-  const summarySectionRef = useRef(null);
-  const [currentStep, setCurrentStep] = useState("calendar");
-  const [selectedEndTime, setSelectedEndTime] = useState("");
-  const [bookingCategory, setBookingCategory] = useState("standard");
-  const parsePriceValue = useCallback((value) => {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === "number") return value;
-
-    const normalized = String(value).replace(/,/g, ".");
-    const numeric = Number(normalized.replace(/[^0-9.]/g, ""));
-    return Number.isFinite(numeric) ? numeric : 0;
-  }, []);
-
-
-  const normalizeEircode = useCallback((value) => {
-    return (value || "").replace(/\s+/g, "").toUpperCase();
-  }, []);
-
-  const isFullEircode = useCallback(
-    (value) => /^[A-Z0-9]{3}[A-Z0-9]{4}$/.test(normalizeEircode(value)),
-    [normalizeEircode]
-  );
-
-  const getRoutingKey = useCallback(
-    (eircodeValue) => normalizeEircode(eircodeValue).slice(0, 3),
-    [normalizeEircode]
-  );
-
-  const geocodeEircode = useCallback(async (eircodeValue, signal) => {
-    const query = normalizeEircode(eircodeValue);
-    if (!query || !isFullEircode(query)) return null;
-
-    const url = `${NOMINATIM_ENDPOINT}?format=jsonv2&limit=1&countrycodes=ie&q=${encodeURIComponent(
-      query
-    )}`;
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "JeroenandPaws-booking/1.0 (+https://jeroenandpaws.com)",
-      },
-      signal,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Nominatim error ${response.status}`);
-    }
-
-    const results = await response.json();
-    if (!Array.isArray(results) || results.length === 0) return null;
-
-    const best = results[0];
-    const lat = Number(best.lat);
-    const lng = Number(best.lon);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-
-    return { lat, lng };
-  }, [isFullEircode, normalizeEircode]);
-
-  const getRouteMetrics = useCallback(async (fromCoords, toCoords, signal) => {
-    if (!fromCoords || !toCoords) return null;
-
-    const url = `${OSRM_ENDPOINT}/${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}?overview=false`;
-    const response = await fetch(url, { signal });
-
-    if (!response.ok) {
-      throw new Error(`OSRM error ${response.status}`);
-    }
-
-    const data = await response.json();
-    const route = data?.routes?.[0];
-    const distanceMeters = Number(route?.distance);
-    const durationSeconds = Number(route?.duration);
-
-    if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
-      return null;
-    }
-
-    return {
-      distanceKm: distanceMeters / 1000,
-      durationMinutes: durationSeconds / 60,
-    };
-  }, []);
-
-  const haversineKm = (coordA, coordB) => {
-    const toRadians = (deg) => (deg * Math.PI) / 180;
-    const R = 6371; // km
-    const dLat = toRadians(coordB.lat - coordA.lat);
-    const dLon = toRadians(coordB.lng - coordA.lng);
-    const lat1 = toRadians(coordA.lat);
-    const lat2 = toRadians(coordB.lat);
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const estimateTravelMinutes = useCallback(
-    (from, to) => {
-      const anchor =
-        to || {
-          eircode: HOME_EIRCODE,
-          coords: homeCoordinates,
-        };
-
-      if (from?.coords && anchor?.coords) {
-        const distanceKm = haversineKm(from.coords, anchor.coords);
-        const minutes = Math.round((distanceKm / 50) * 60 + 10); // assume 50km/h + buffer
-        return Math.min(Math.max(minutes, 12), 120);
-      }
-
-      const routingKey = getRoutingKey(from?.eircode);
-      const anchorKey = getRoutingKey(anchor?.eircode);
-
-      if (!routingKey || !anchorKey) return 0;
-
-      const fromCoord = ROUTING_COORDS[routingKey];
-      const anchorCoord = ROUTING_COORDS[anchorKey];
-
-      if (fromCoord && anchorCoord) {
-        const distanceKm = haversineKm(fromCoord, anchorCoord);
-        const minutes = Math.round((distanceKm / 50) * 60 + 10);
-        return Math.min(Math.max(minutes, 12), 120);
-      }
-
-      if (routingKey === anchorKey) return 15;
-      return 45;
-    },
-    [getRoutingKey, homeCoordinates]
-  );
-
-  const estimateTravelDistanceKm = useCallback(
-    (from, to) => {
-      const anchor =
-        to || {
-          eircode: HOME_EIRCODE,
-          coords: homeCoordinates,
-        };
-
-      if (from?.coords && anchor?.coords) {
-        return haversineKm(from.coords, anchor.coords);
-      }
-
-      const routingKey = getRoutingKey(from?.eircode);
-      const anchorKey = getRoutingKey(anchor?.eircode);
-
-      if (!routingKey || !anchorKey) return 0;
-
-      const fromCoord = ROUTING_COORDS[routingKey];
-      const anchorCoord = ROUTING_COORDS[anchorKey];
-
-      if (fromCoord && anchorCoord) {
-        return haversineKm(fromCoord, anchorCoord);
-      }
-
-      if (routingKey === anchorKey) return 5;
-      return 15;
-    },
-    [getRoutingKey, homeCoordinates]
-  );
-
-  const parseTimeToMinutes = useCallback((time) => {
-    if (!time) return 0;
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + (minutes || 0);
-  }, []);
-
-  const minutesToTime = useCallback((minutes) => {
-    const safe = Math.min(Math.max(minutes, 0), 23 * 60 + 59);
-    const hour = String(Math.floor(safe / 60)).padStart(2, "0");
-    const minute = String(safe % 60).padStart(2, "0");
-    return `${hour}:${minute}`;
-  }, []);
-  const getBookingCutoff = useCallback(
-    () =>
-      DateTime.now()
-        .setZone(BUSINESS_TIME_ZONE)
-        .plus({ minutes: MIN_LEAD_MINUTES }),
-    []
-  );
-
-  const formatCurrency = useCallback((value) => {
-    const numeric = Number.isFinite(value) ? value : 0;
-    return `€${numeric.toFixed(2)}`;
-  }, []);
-
-  const allowMultiDay = service?.allowMultiDay !== false;
-  const allowRecurring = service?.allowRecurring !== false;
-  const serviceLabel = (service?.label || service?.title || "").toLowerCase();
-  const isBoardingService = serviceLabel.includes("boarding");
-  const allowWeeklyRecurring = allowRecurring && !isBoardingService;
-  const defaultServiceDuration = useMemo(
-    () => (Number.isFinite(service.durationMinutes) ? service.durationMinutes : 60),
-    [service.durationMinutes]
-  );
-  const [serviceDuration, setServiceDuration] = useState(defaultServiceDuration);
-
-  useEffect(() => {
-    setServiceDuration(defaultServiceDuration);
-  }, [defaultServiceDuration]);
-  const calendarDays = useMemo(() => availability.dates || [], [availability]);
-  const availabilityMap = useMemo(() => {
-    return calendarDays.reduce((acc, day) => {
-      acc[day.date] = day;
-      return acc;
-    }, {});
-  }, [calendarDays]);
-  const busyByDate = useMemo(() => {
-    return (availability.busy || []).reduce((acc, interval) => {
-      if (!interval?.start || !interval?.end) return acc;
-
-      const start = DateTime.fromISO(interval.start).setZone(BUSINESS_TIME_ZONE);
-      const end = DateTime.fromISO(interval.end).setZone(BUSINESS_TIME_ZONE);
-
-      if (!start.isValid || !end.isValid) return acc;
-
-      const startDateKey = start.toISODate();
-      const endDateKey = end.toISODate();
-      const startMinutes = start.hour * 60 + start.minute;
-      const endMinutes = end.hour * 60 + end.minute;
-
-      const pushInterval = (dateKey, range) => {
-        acc[dateKey] = acc[dateKey] || [];
-        acc[dateKey].push(range);
-      };
-
-      if (startDateKey === endDateKey) {
-        pushInterval(startDateKey, { startMinutes, endMinutes });
-        return acc;
-      }
-
-      pushInterval(startDateKey, { startMinutes, endMinutes: 24 * 60 });
-      pushInterval(endDateKey, { startMinutes: 0, endMinutes });
-
-      return acc;
-    }, {});
-  }, [availability.busy]);
-  const normalizeAvailability = useCallback(
-    (data = {}) => ({
-      ...data,
-      dates: data?.dates || [],
-      timeZone: BUSINESS_TIME_ZONE,
-      busy: data?.busy || [],
-    }),
-    []
-  );
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadHomeCoordinates = async () => {
-      try {
-        const coords = await geocodeEircode(HOME_EIRCODE, controller.signal);
-        if (coords) {
-          setHomeCoordinates(coords);
-        }
-      } catch (homeLookupError) {
-        console.warn("Home Eircode lookup failed, using fallback coords", {
-          error: homeLookupError,
-        });
-      }
-    };
-
-    loadHomeCoordinates();
-
-    return () => controller.abort();
-  }, [geocodeEircode]);
-
-  const hasAtLeastOneDog = useMemo(() => {
-    if (selectedPetIds.length > 0) return true;
-
-    const dogsToCheck = dogs.slice(0, dogCount);
-    return dogsToCheck.some((dog) => {
-      if (!dog) return false;
-      const name = (dog.name || "").trim();
-      const breed = (dog.breed || "").trim();
-      const notes = (dog.notes || "").trim();
-
-      return Boolean(
-        name || breed || notes || dog.photoDataUrl || dog.profileId
-      );
-    });
-  }, [dogCount, dogs, selectedPetIds]);
-
-  const trimmedName = clientName.trim();
-  const trimmedEmail = clientEmail.trim();
-  const canLoadPets = Boolean(trimmedName && trimmedEmail);
-
-  const stepOrder = ["calendar", "time", "customer", "pet", "addons", "summary"];
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
-  const isSlotReachable = useCallback(
-    (slot, slotDate) => {
-      if (!slot || !slot.available) return false;
-      if (!slotDate) return false;
-
-      const slotDateTime = DateTime.fromISO(`${slotDate}T${slot.time}`, {
-        zone: BUSINESS_TIME_ZONE,
-      });
-      if (!slotDateTime.isValid) return false;
-
-      const cutoffTime = getBookingCutoff();
-      if (slotDateTime < cutoffTime) return false;
-
-      const startMinutes = parseTimeToMinutes(slot.time);
-
-      const baseMinutes =
-        travelAnchor === "previous" && previousBookingTime
-          ? parseTimeToMinutes(previousBookingTime)
-          : 8 * 60;
-
-      if (startMinutes < baseMinutes + travelMinutes) return false;
-
-      const serviceStart = startMinutes;
-      const serviceEnd = startMinutes + serviceDuration;
-
-      if (!slotDate || !busyByDate[slotDate]) return true;
-
-      const conflictsWithBufferedEvent = busyByDate[slotDate].some(
-        ({ startMinutes: eventStart, endMinutes: eventEnd }) => {
-          const bufferedStart = eventStart - travelMinutes;
-          const bufferedEnd = eventEnd + travelMinutes;
-          return serviceEnd > bufferedStart && serviceStart < bufferedEnd;
-        }
-      );
-
-      return !conflictsWithBufferedEvent;
-    },
-    [
-      busyByDate,
-      parseTimeToMinutes,
-      previousBookingTime,
-      serviceDuration,
-      travelAnchor,
-      travelMinutes,
-      getBookingCutoff,
-    ]
-  );
-
-  const isDayAvailableForService = useCallback(
-    (day) => {
-      if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
-        return false;
-      }
-
-      return day.slots.some((slot) => isSlotReachable(slot, day.date));
-    },
-    [isSlotReachable]
-  );
-
-  const addAnotherDog = () => {
-    setShowDogDetails(true);
-    setDogCount((prevCount) => {
-      const nextCount = Math.min(MAX_DOGS, prevCount + 1);
-      if (nextCount === prevCount) return prevCount;
-
-      setDogs((prevDogs) => {
-        const newDogs = [...prevDogs];
-        while (newDogs.length < nextCount) {
-          newDogs.push(createEmptyDogProfile());
-        }
-        return newDogs;
-      });
-
-      return nextCount;
-    });
-  };
-
-  const updateDogField = (index, field, value) => {
-    setDogs((prevDogs) => {
-      const newDogs = [...prevDogs];
-      newDogs[index] = { ...newDogs[index], [field]: value };
-      return newDogs;
-    });
-  };
-
-  const removeDog = (index) => {
-    setSelectedPetIds((prev) => {
-      const profileId = dogs[index]?.profileId;
-      if (!profileId) return prev;
-      return prev.filter((id) => id !== profileId);
-    });
-
-    setDogs((prevDogs) => {
-      const updatedDogs = prevDogs.filter((_, dogIndex) => dogIndex !== index);
-      const nextDogs = updatedDogs.length > 0 ? updatedDogs : [];
-      setDogCount(nextDogs.length);
-      return nextDogs;
-    });
-  };
-
-  const handleDogPhotoChange = (index, file) => {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateDogField(index, "photoDataUrl", reader.result);
-      updateDogField(index, "photoName", file.name);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const resetDogProfiles = () => {
-    setDogs(Array.from({ length: dogCount }, () => createEmptyDogProfile()));
-    setBreedSearch({});
-  };
-
-  const parseJsonSafely = useCallback(async (response, requestUrl) => {
-    const contentType = response.headers.get("content-type") || "";
-    const text = await response.text();
-    const trimmed = text.trim();
-
-    if (!response.ok) {
-      const fallbackMessage = `Unable to load availability (${response.status})`;
-      const message =
-        trimmed && !trimmed.startsWith("<") ? trimmed : fallbackMessage;
-      throw new Error(message);
-    }
-
-    const looksLikeJson =
-      contentType.includes("application/json") ||
-      trimmed.startsWith("{") ||
-      trimmed.startsWith("[") ||
-      trimmed === "";
-
-    if (!looksLikeJson) {
-      throw new Error(
-        `Received an unexpected response while loading availability. Please try again or use the contact form (source: ${requestUrl}).`
-      );
-    }
-
-    try {
-      return trimmed ? JSON.parse(trimmed) : {};
-    } catch (parseError) {
-      throw new Error(
-        "Availability response could not be read. Please refresh and try again."
-      );
-    }
-  }, []);
-
-  const setInitialVisibleMonth = useCallback((data) => {
-    const firstOpenDate = data.dates.find((day) => {
-      if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
-        return false;
-      }
-    
-      return day.slots.some((slot) => slot.available);
-    });
-
-    if (firstOpenDate) {
-      setVisibleMonth(new Date(firstOpenDate.date));
-    }
-  }, []);
-
-  const handleMonthChange = useCallback((offset) => {
-    setVisibleMonth((prev) => {
-      const next = new Date(prev);
-      next.setDate(1);
-      next.setMonth(prev.getMonth() + offset);
-      return next;
-    });
-  }, []);
-
-  const handleNextMonth = useCallback(() => handleMonthChange(1), [handleMonthChange]);
-  const handlePreviousMonth = useCallback(
-    () => handleMonthChange(-1),
-    [handleMonthChange]
-  );
-
-  const loadAvailability = useCallback(async () => {
-    const cached = getCachedAvailability(service.id);
-    setLoading(!cached);
-    setError("");
-    setSuccess("");
-    setAvailabilityNotice("");
-    setSelectedSlots({});
-    setSelectedDate("");
-    setSelectedTime("");
-    setIsMultiDay(false);
-    setRecurrence("none");
-    try {
-      if (cached) {
-        const normalized = normalizeAvailability(cached);
-        setAvailability(normalized);
-        setInitialVisibleMonth(normalized);
-        return;
-      }
-
-      const data = await prefetchAvailability(service, apiBaseUrl);
-      const normalized = normalizeAvailability(data);
-      setAvailability(normalized);
-      setInitialVisibleMonth(normalized);
-    } catch (error) {
-      console.error("Unable to load live availability", error);
-      const fallback = normalizeAvailability(
-        generateDemoAvailability(service.durationMinutes)
-      );
-      setAvailability(fallback);
-      setInitialVisibleMonth(fallback);
-      setAvailabilityNotice(
-        "Live calendar is unreachable — displaying demo slots so you can keep booking."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    apiBaseUrl,
-    normalizeAvailability,
-    setInitialVisibleMonth,
-    service.durationMinutes,
-    service.id,
-  ]);
   useEffect(() => {
-    loadAvailability();
-  }, [loadAvailability]);
-
-  useEffect(() => {
-    let isCancelled = false;
-    const controller = new AbortController();
-
-    const normalized = normalizeEircode(clientEircode);
-    if (!normalized) {
-      setClientCoordinates(null);
-      setTravelMinutes(0);
-      setTravelDistanceKm(0);
-      setTravelNote("Enter your full Eircode to calculate travel time.");
-      setTravelValidationState("pending");
-      return () => controller.abort();
-    }
-
-    const hasFullClientEircode = isFullEircode(normalized);
-
-    const anchorEircode =
-      travelAnchor === "home"
-        ? HOME_EIRCODE
-        : normalizeEircode(clientAddress) || HOME_EIRCODE;
-    const pricingAnchorEircode = HOME_EIRCODE;
-    const pricingAnchorCoords = homeCoordinates;
-
-    if (!hasFullClientEircode) {
-      const minutes = estimateTravelMinutes(
-        { eircode: normalized, coords: null },
-        { eircode: anchorEircode, coords: null }
-      );
-      const distance = estimateTravelDistanceKm(
-        { eircode: normalized, coords: null },
-        { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
-      );
-
-      setClientCoordinates(null);
-      setTravelMinutes(minutes);
-      setTravelDistanceKm(distance);
-      setTravelNote(
-        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
-      );
-      setTravelValidationState("approximate");
-      return () => controller.abort();
-    }
-
-    const loadCoordinatesAndEstimate = async () => {
+    let mounted = true;
+    const load = async () => {
       try {
-        setTravelNote("Looking up your Eircode with OpenStreetMap (Nominatim)...");
-
-        const [fromCoords, anchorCoords] = await Promise.all([
-          geocodeEircode(normalized, controller.signal),
-          travelAnchor === "home"
-            ? Promise.resolve(homeCoordinates)
-            : geocodeEircode(anchorEircode, controller.signal),
-        ]);
-
-        if (isCancelled) return;
-
-        const resolvedAnchorCoords =
-          anchorCoords || (travelAnchor === "home" ? homeCoordinates : null);
-
-        setClientCoordinates(fromCoords);
-        setClientAddress(normalized);
-
-        const fallbackMinutes = estimateTravelMinutes(
-          { eircode: normalized, coords: fromCoords },
-          { eircode: anchorEircode, coords: resolvedAnchorCoords }
-        );
-        const fallbackDistance = estimateTravelDistanceKm(
-          { eircode: normalized, coords: fromCoords },
-          { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
-        );
-        let minutes = fallbackMinutes;
-        let distance = fallbackDistance;
-
-        if (fromCoords && resolvedAnchorCoords) {
-          try {
-            const routeMetrics = await getRouteMetrics(
-              fromCoords,
-              resolvedAnchorCoords,
-              controller.signal
-            );
-            if (routeMetrics) {
-              distance = routeMetrics.distanceKm;
-              const bufferedMinutes = Math.round(routeMetrics.durationMinutes + 10);
-              minutes = Math.min(Math.max(bufferedMinutes, 12), 120);
-            }
-          } catch (routeError) {
-            console.warn("Route lookup failed, using fallback estimate", {
-              error: routeError,
-            });
+        if (!service?.id) {
+          const demo = generateDemoAvailability(service?.durationMinutes || 30);
+          if (mounted) {
+            setAvailability(demo);
+            setAvailabilitySource("demo");
           }
-        }
-
-        setTravelMinutes(minutes);
-        setTravelDistanceKm(distance);
-        setTravelValidationState("ready");
-
-        if (travelAnchor === "previous" && !previousBookingTime) {
-          setTravelNote(
-            "Share the end time of your earlier booking so we can hide impossible slots."
-          );
           return;
         }
 
-        const anchorLabel =
-          travelAnchor === "previous" && previousBookingTime
-            ? `after your earlier booking at ${previousBookingTime}`
-            : `from home base (${HOME_EIRCODE})`;
-
-        const geocodeDescriptor = fromCoords
-          ? "using your exact Eircode location"
-          : "using your routing key as a fallback";
-        const anchorDescriptor =
-          travelAnchor === "home"
-            ? resolvedAnchorCoords
-              ? "and our exact A98H940 address"
-              : "and our base routing key"
-            : resolvedAnchorCoords
-            ? "and your previous booking location"
-            : "and your previous booking routing key";
-
-        setTravelNote(
-          `We estimate about ${minutes} minutes of travel`
-        );
-      } catch (lookupError) {
-        if (isCancelled) return;
-
-        setClientCoordinates(null);
-        const minutes = estimateTravelMinutes(
-          { eircode: normalized, coords: null },
-          {
-            eircode: anchorEircode,
-            coords: travelAnchor === "home" ? homeCoordinates : null,
-          }
-        );
-        const distance = estimateTravelDistanceKm(
-          { eircode: normalized, coords: null },
-          {
-            eircode: pricingAnchorEircode,
-            coords: pricingAnchorCoords,
-          }
-        );
-
-        setTravelMinutes(minutes);
-        setTravelDistanceKm(distance);
-        setTravelValidationState("approximate");
-        setTravelNote(
-          "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
-        );
-      }
-    };
-
-    loadCoordinatesAndEstimate();
-
-    return () => {
-      isCancelled = true;
-      controller.abort();
-    };
-  }, [
-    clientAddress,
-    clientEircode,
-    estimateTravelMinutes,
-    getRouteMetrics,
-    estimateTravelDistanceKm,
-    geocodeEircode,
-    homeCoordinates,
-    isFullEircode,
-    normalizeEircode,
-    previousBookingTime,
-    travelAnchor,
-  ]);
-
-  useEffect(() => {
-    setExistingPets([]);
-    setSelectedPetIds([]);
-    setHasAttemptedPetLoad(false);
-    setShowDogDetails(true);
-  }, [clientEmail]);
-
-  const applyProfileDetails = useCallback(() => {
-    const client = profile?.client;
-    if (!client) return;
-
-    const phoneNumber = client.phone_number || client.phone || "";
-    const normalizedAddress = normalizeEircode(client.address || "");
-    const existingEircode = normalizeEircode(clientEircode);
-    const shouldPromptEircodeChoice =
-      Boolean(existingEircode) &&
-      Boolean(normalizedAddress) &&
-      existingEircode !== normalizedAddress;
-
-    setClientName(client.full_name || "");
-    setClientPhone(phoneNumber || "");
-    setClientEmail(client.email || "");
-    setLoginEmail(client.email || "");
-    
-    if (shouldPromptEircodeChoice) {
-      setPendingProfileEircode(normalizedAddress);
-      setEircodeChoiceOpen(true);
-      return;
-    }
-
-    setPendingProfileEircode("");
-    setEircodeChoiceOpen(false);
-    setClientAddress(normalizedAddress || client.address || "");
-
-    if (normalizedAddress) {
-      setClientEircode(normalizedAddress);
-    }
-  }, [clientEircode, normalizeEircode, profile]);
-
-  const handleUseSavedEircode = useCallback(() => {
-    if (!pendingProfileEircode) return;
-    setClientEircode(pendingProfileEircode);
-    setClientAddress(pendingProfileEircode);
-    setPendingProfileEircode("");
-    setEircodeChoiceOpen(false);
-  }, [pendingProfileEircode]);
-
-  const handleKeepEnteredEircode = useCallback(() => {
-    setPendingProfileEircode("");
-    setEircodeChoiceOpen(false);
-  }, []);
-
-  useEffect(() => {
-    if (!profile) return;
-    setCustomerMode("login");
-    applyProfileDetails();
-  }, [applyProfileDetails, profile]);
-
-  const handleCustomerModeChange = (mode) => {
-    setCustomerMode(mode);
-    setAuthError("");
-    setLoginAttempts(0);
-    setShowLoginReset(false);
-    setLoginResetStatus({ state: "idle", message: "" });
-    if (mode === "login") {
-      setLoginPassword("");
-      if (profile?.client) {
-        applyProfileDetails();
-      }
-      return;
-    }
-
-    setLoginPassword("");
-    if (!profile?.client) {
-      setClientName("");
-      setClientPhone("");
-      setClientEmail("");
-      setClientAddress(normalizeEircode(clientEircode) || "");
-    }
-  };
-
-  const handleSupabaseLogin = async (event) => {
-    event?.preventDefault?.();
-
-    const email = loginEmail.trim();
-    const password = loginPassword.trim();
-
-    if (!email || !password) {
-      setAuthError("Please enter your email and password to log in.");
-      return;
-    }
-
-    setAuthLoading(true);
-    setAuthError("");
-    try {
-      const response = await fetch("/api/client-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(payload?.message || "Unable to log in.");
-      }
-
-      setProfile(payload);
-      setCustomerMode("login");
-      setClientEmail(payload?.client?.email || email);
-      setClientName(payload?.client?.full_name || "");
-      setClientPhone(payload?.client?.phone_number || "");
-      const preferredAddress =
-        normalizeEircode(clientEircode) ||
-        normalizeEircode(payload?.client?.address || "") ||
-        payload?.client?.address ||
-        "";
-
-      setClientAddress(preferredAddress);
-      if (preferredAddress) {
-        setClientEircode(normalizeEircode(preferredAddress));
-      }
-      setLoginPassword("");
-      setLoginAttempts(0);
-      setShowLoginReset(false);
-      setLoginResetStatus({ state: "idle", message: "" });
-    } catch (loginError) {
-      console.error("Client login failed", loginError);
-      setAuthError(loginError.message || "Incorrect email or password.");
-      setLoginAttempts((previous) => {
-        const next = previous + 1;
-        if (next >= 3) {
-          setShowLoginReset(true);
+        prefetchAvailability(service);
+        const query = new URLSearchParams({
+          serviceId: String(service.id),
+          durationMinutes: String(service?.durationMinutes || 30),
+        });
+        if (clientEircode.trim()) {
+          query.set("clientAddress", clientEircode.trim());
         }
-        return next;
-      });
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
-  const sendLoginResetRequest = async () => {
-    const email = loginEmail.trim();
-
-    if (!email) {
-      setLoginResetStatus({ state: "error", message: "Enter your email to get a reset link." });
-      return;
-    }
-
-    setLoginResetStatus({ state: "loading", message: "" });
-    try {
-      const response = await fetch("/api/password-reset-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(payload?.message || "Could not send reset instructions.");
+        const response = await fetch(`${apiBaseUrl}/api/availability?${query.toString()}`);
+        if (!response.ok) {
+          throw new Error(`Availability unavailable (${response.status})`);
+        }
+        const payload = await response.json();
+        if (mounted) {
+          setAvailability(payload || { dates: [] });
+          setAvailabilityError("");
+          setAvailabilitySource("live");
+        }
+      } catch (error) {
+        if (!mounted) return;
+        setAvailability(generateDemoAvailability(service?.durationMinutes || 30));
+        setAvailabilityError("Live calendar unavailable. Showing demo calendar.");
+        setAvailabilitySource("demo");
       }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [apiBaseUrl, clientEircode, service]);
 
-      setLoginResetStatus({
-        state: "success",
-        message: "Check your email for a link to set a new password.",
-      });
-    } catch (resetError) {
-      setLoginResetStatus({
-        state: "error",
-        message: resetError.message || "Unable to send reset instructions right now.",
-      });
-    }
-  };
+  const availabilityMap = useMemo(() => {
+    const map = {};
+    (availability?.dates || []).forEach((entry) => {
+      if (entry?.date) map[entry.date] = entry;
+    });
+    return map;
+  }, [availability]);
 
-  const fetchExistingPets = useCallback(async () => {
-    if (!clientEmail) {
-      setExistingPets([]);
-      setSelectedPetIds([]);
-      setHasAttemptedPetLoad(false);
-      return;
-    }
+  const travelBufferSlots = useMemo(() => {
+    const eircode = (clientEircode || "").replace(/\s+/g, "").toUpperCase();
+    if (!eircode) return 0;
+    if (eircode.startsWith("A98")) return 1;
+    if (eircode.startsWith("D")) return 1;
+    return 2;
+  }, [clientEircode]);
 
-    setIsLoadingPets(true);
-    setHasAttemptedPetLoad(false);
-    try {
-      const requestUrl = `${apiBaseUrl}/api/pets?ownerEmail=${encodeURIComponent(
-        clientEmail
-      )}`;
-      const response = await fetch(requestUrl, {
-        headers: { Accept: "application/json" },
-      });
+  const daySlots = useCallback(
+    (isoDate) => {
+      const day = availabilityMap[isoDate];
+      const apiSlots = day?.slots || [];
+      const apiSlotMap = new Map(apiSlots.map((slot) => [slot.time, slot]));
 
-      if (!response.ok) {
-        throw new Error("Could not load pets for this email");
-      }
-
-      const data = await parseJsonSafely(response, requestUrl);
-      setExistingPets(Array.isArray(data?.pets) ? data.pets : []);
-      const hasPets = Array.isArray(data?.pets) && data.pets.length > 0;
-
-      if (!hasPets) {
-        setDogCount(1);
-        resetDogProfiles();
-        setShowDogDetails(true);
-      } else {
-        setShowDogDetails(false);
-      }
-    } catch (loadError) {
-      console.error("Failed to load pets", loadError);
-      setExistingPets([]);
-      setSelectedPetIds([]);
-    } finally {
-      setIsLoadingPets(false);
-      setHasAttemptedPetLoad(true);
-    }
-  }, [apiBaseUrl, clientEmail, parseJsonSafely]);
-
-  useEffect(() => {
-    const selectedPets = existingPets.filter((pet) =>
-      selectedPetIds.includes(pet.id)
-    );
-
-    if (selectedPets.length === 0) {
-      if (existingPets.length === 0 && hasAttemptedPetLoad) {
-        setShowDogDetails(true);
-      }
-      return;
-    }
-
-    const desiredCount = Math.min(
-      MAX_DOGS,
-      Math.max(dogCount, selectedPets.length)
-    );
-
-    if (desiredCount !== dogCount) {
-      setDogCount(desiredCount);
-    }
-
-    setDogs((prevDogs) => {
-      const newDogs = [...prevDogs];
-      while (newDogs.length < desiredCount) {
-        newDogs.push(createEmptyDogProfile());
-      }
-
-      selectedPets.forEach((pet, index) => {
-        newDogs[index] = {
-          ...newDogs[index],
-          name: pet.name || "",
-          breed: pet.breed || "",
-          notes: pet.notes || "",
-          profileId: pet.id,
+      const slots = ALL_TIMES.map((time) => {
+        const source = apiSlotMap.get(time);
+        const available = Boolean(source?.available);
+        return {
+          time,
+          state: available ? "open" : "booked",
+          reason: available ? "Open" : "Booked",
         };
       });
 
-      for (let i = selectedPets.length; i < newDogs.length; i += 1) {
-        if (
-          newDogs[i]?.profileId &&
-          !selectedPetIds.includes(newDogs[i].profileId)
-        ) {
-          newDogs[i] = createEmptyDogProfile();
-        }
+      if (travelBufferSlots > 0) {
+        const bookedIndexes = slots
+          .map((slot, index) => ({ slot, index }))
+          .filter(({ slot }) => slot.state === "booked")
+          .map(({ index }) => index);
+
+        bookedIndexes.forEach((index) => {
+          for (let offset = 1; offset <= travelBufferSlots; offset += 1) {
+            const prev = index - offset;
+            const next = index + offset;
+            if (slots[prev] && slots[prev].state === "open") {
+              slots[prev] = { ...slots[prev], state: "travel", reason: "Booked (travel)" };
+            }
+            if (slots[next] && slots[next].state === "open") {
+              slots[next] = { ...slots[next], state: "travel", reason: "Booked (travel)" };
+            }
+          }
+        });
       }
 
-      return newDogs.slice(0, desiredCount);
-    });
-
-    setShowDogDetails(selectedPets.length === 0);
-  }, [dogCount, existingPets, hasAttemptedPetLoad, selectedPetIds]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !canLoadPets || hasAttemptedPetLoad) return;
-
-    fetchExistingPets();
-  }, [canLoadPets, fetchExistingPets, hasAttemptedPetLoad, isAuthenticated]);
-
-  const preparePetPayload = useCallback(() => {
-    const normalizedDogs = dogs.slice(0, dogCount).map((dog) => {
-      const name = (dog?.name || "").trim();
-      const breed = (dog?.breed || "").trim();
-      const notes = (dog?.notes || "").trim();
-      const photo = dog?.photoDataUrl;
-      const photoName = dog?.photoName;
-      const profileId = dog?.profileId;
-
-      const hasDetails = Boolean(name || breed || notes || photo || profileId);
-      if (!hasDetails) return null;
-
-      return {
-        id: profileId || undefined,
-        name,
-        breed,
-        notes,
-        photoDataUrl: photo,
-        photoName,
-      };
-    });
-
-    return normalizedDogs.filter(Boolean);
-  }, [dogCount, dogs]);
-
-  const monthMatrix = useMemo(
-    () => buildMonthMatrix(visibleMonth),
-    [visibleMonth]
-  );
-
-  const formatTime = (slot) => {
-    if (is24h) return slot;
-    const [hourStr, minutes] = slot.split(":");
-    const hour = Number(hourStr);
-    const suffix = hour >= 12 ? "PM" : "AM";
-    const adjustedHour = hour % 12 === 0 ? 12 : hour % 12;
-    return `${adjustedHour}:${minutes} ${suffix}`;
-  };
-
-  const scheduleEntries = useMemo(() => {
-    return Object.entries(selectedSlots || {})
-      .map(([date, time]) => ({ date, time }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [selectedSlots]);
-
-  const selectedAdditionalLabels = useMemo(() => {
-    if (!additionals.length) return addons.slice(0, 3).map((a) => a.label);
-
-    return additionals
-      .map((value) => addons.find((a) => a.value === value)?.label || value)
-      .slice(0, 3);
-  }, [additionals, addons]);
-
-  const selectedAddonObjects = useMemo(() => {
-    return additionals
-      .map((value) => addons.find((addon) => addon.value === value))
-      .filter(Boolean);
-  }, [additionals, addons]);
-
-  const pricing = useMemo(() => {
-    const servicePrice = parsePriceValue(service.price ?? service.cost ?? "0");
-    const pricingUnit = String(service.price || "").toLowerCase();
-    const hasFlatVisitUnit = ["/visit", "/session", "/journey", "/day", "/night"].some((token) =>
-      pricingUnit.includes(token)
-    );
-    const durationMultiplier =
-      servicePrice > 0 && !hasFlatVisitUnit && defaultServiceDuration > 0
-        ? Math.max(serviceDuration / defaultServiceDuration, 0.5)
-        : 1;
-    const adjustedServicePrice = servicePrice * durationMultiplier;
-    const addonTotal = selectedAddonObjects.reduce(
-      (sum, addon) => sum + parsePriceValue(addon.price),
-      0
-    );
-
-    const activeDogsCount = dogs
-      .slice(0, dogCount)
-      .map((dog) => {
-        const name = (dog?.name || "").trim();
-        const breed = (dog?.breed || "").trim();
-        const notes = (dog?.notes || "").trim();
-        const profileId = dog?.profileId;
-        return name || breed || notes || profileId ? dog : null;
-      })
-      .filter(Boolean).length;
-
-    const visitsWithTime = scheduleEntries.filter(
-      (entry) => entry.date && entry.time
-    ).length;
-
-    const visitCount = visitsWithTime || 0;
-    const perDogPerVisit = adjustedServicePrice;
-    const additionalDogPrice = perDogPerVisit * 0.5;
-    const additionalDogDiscount =
-      activeDogsCount >= 2
-        ? Math.max(perDogPerVisit - additionalDogPrice, 0)
-        : 0;
-    const secondDogPrice = additionalDogPrice;
-    const thirdDogPrice = additionalDogPrice;
-    const secondDogDiscount = additionalDogDiscount;
-    const thirdDogDiscount = additionalDogDiscount;
-
-    let perVisitTotal = 0;
-    if (activeDogsCount >= 1) perVisitTotal += perDogPerVisit;
-    if (activeDogsCount >= 2)
-      perVisitTotal += additionalDogPrice * (activeDogsCount - 1);
-
-    const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
-    const chargeableTravelKm = Math.max(
-      0,
-      Math.ceil(travelDistanceKm - TRAVEL_DISTANCE_THRESHOLD_KM)
-    );
-    const travelSurcharge =
-      chargeableTravelKm * TRAVEL_SURCHARGE_PER_KM * (visitCount || 0);
-    const totalPrice = baseTotal + addonTotal + travelSurcharge;
-
-    const descriptionParts = [service.title];
-
-    if (activeDogsCount) {
-      descriptionParts.push(
-        `${activeDogsCount} dog${activeDogsCount > 1 ? "s" : ""}`
-      );
-    }
-
-    if (visitCount) {
-      descriptionParts.push(`${visitCount} visit${visitCount > 1 ? "s" : ""}`);
-    }
-
-    descriptionParts.push(`Duration: ${serviceDuration} mins`);
-
-    if (bookingCategory !== "standard") {
-      descriptionParts.push(`Category: ${bookingCategory}`);
-    }
-
-    if (selectedAddonObjects.length) {
-      const addonNames = selectedAddonObjects
-        .map((addon) => addon.label || addon.value)
-        .join(", ");
-      descriptionParts.push(`Add-ons: ${addonNames}`);
-    }
-
-    if (travelSurcharge > 0) {
-      descriptionParts.push(`Travel surcharge`);
-    }
-
-    return {
-      servicePrice: adjustedServicePrice,
-      baseServicePrice: servicePrice,
-      durationMultiplier,
-      addonTotal,
-      perDogPerVisit,
-      dogCount: activeDogsCount,
-      visitCount,
-      totalPrice,
-      description: descriptionParts.join(" · "),
-      selectedAddons: selectedAddonObjects,
-      secondDogDiscount,
-      secondDogPrice,
-      thirdDogDiscount,
-      thirdDogPrice,
-      additionalDogDiscount,
-      additionalDogPrice,
-      perVisitTotal,
-      travelDistanceKm,
-      travelSurcharge,
-      travelSurchargeRate: TRAVEL_SURCHARGE_PER_KM,
-      travelSurchargeThreshold: TRAVEL_DISTANCE_THRESHOLD_KM,
-      travelSurchargeKm: chargeableTravelKm,
-    };
-  }, [
-    dogCount,
-    dogs,
-    parsePriceValue,
-    scheduleEntries,
-    selectedAddonObjects,
-    bookingCategory,
-    defaultServiceDuration,
-    service.cost,
-    service.price,
-    service.title,
-    serviceDuration,
-    travelDistanceKm,
-  ]);
-
-  useEffect(() => {
-    if (!selectedTime) {
-      setSelectedEndTime("");
-      return;
-    }
-
-    const startMinutes = parseTimeToMinutes(selectedTime);
-    setSelectedEndTime(minutesToTime(startMinutes + serviceDuration));
-  }, [minutesToTime, parseTimeToMinutes, selectedTime, serviceDuration]);
-
-  useEffect(() => {
-    if (!selectedDate) return;
-
-    if (!(selectedDate in selectedSlots)) {
-      const nextDate = scheduleEntries[0]?.date || "";
-      setSelectedDate(nextDate);
-      setSelectedTime(nextDate ? selectedSlots[nextDate] || "" : "");
-      return;
-    }
-
-    const savedTime = selectedSlots[selectedDate] || "";
-    if (savedTime !== selectedTime) {
-      setSelectedTime(savedTime || "");
-    }
-  }, [selectedDate, selectedSlots, selectedTime, scheduleEntries]);
-
-  useEffect(() => {
-    if (isMultiDay || scheduleEntries.length <= 1) return;
-
-    const primary = scheduleEntries[0];
-    if (!primary?.date) return;
-
-    setSelectedSlots({ [primary.date]: primary.time || "" });
-    setSelectedDate(primary.date);
-    setSelectedTime(primary.time || "");
-  }, [isMultiDay, scheduleEntries]);
-
-  useEffect(() => {
-    if (!allowMultiDay || !allowWeeklyRecurring) {
-      setIsMultiDay(false);
-    }
-  }, [allowMultiDay, allowWeeklyRecurring]);
-
-  useEffect(() => {
-    if (isMultiDay && recurrence !== "weekly") {
-      setRecurrence("weekly");
-    }
-  }, [isMultiDay, recurrence]);
-
-  useEffect(() => {
-    if (!allowWeeklyRecurring && recurrence !== "none") {
-      setRecurrence("none");
-    }
-  }, [allowWeeklyRecurring, recurrence]);
-
-  const getDefaultSlotForDate = useCallback(
-    (iso) => {
-      const day = availabilityMap[iso];
-      if (!day || !Array.isArray(day.slots)) return "";
-
-      const firstAvailable = day.slots.find((slot) =>
-        isSlotReachable(slot, day.date)
-      );
-      return firstAvailable?.time || "";
+      return slots;
     },
-    [availabilityMap, isSlotReachable]
+    [availabilityMap, travelBufferSlots]
   );
 
-  const handleDaySelection = (iso) => {
-    const existingTime = selectedSlots[iso];
-    if (isMultiDay && existingTime) {
-      removeDateFromSchedule(iso);
+  const currentDate = selectedDate || makeIsoDate(new Date());
+  const currentDaySlots = useMemo(() => daySlots(currentDate), [currentDate, daySlots]);
+
+  const plannerDates = useMemo(() => {
+    const anchor = new Date(`${currentDate}T00:00:00`);
+    if (viewMode === "day") return [currentDate];
+    if (viewMode === "week") {
+      const monday = new Date(anchor);
+      const weekday = (monday.getDay() + 6) % 7;
+      monday.setDate(monday.getDate() - weekday);
+      return Array.from({ length: 7 }, (_, idx) => {
+        const next = new Date(monday);
+        next.setDate(monday.getDate() + idx);
+        return makeIsoDate(next);
+      });
+    }
+
+    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const days = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
+    return Array.from({ length: days }, (_, idx) => makeIsoDate(new Date(first.getFullYear(), first.getMonth(), idx + 1)));
+  }, [currentDate, viewMode]);
+
+  const canContinueFromRegister = useMemo(() => {
+    if (isAuthenticated) return true;
+    return Boolean(clientName.trim() && clientEmail.trim() && clientPhone.trim() && clientEircode.trim() && password.trim());
+  }, [clientName, clientEircode, clientEmail, clientPhone, isAuthenticated, password]);
+
+  const petsLabel = petNames
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .join(", ") || "Your dog";
+  const bookingTitle = `${petsLabel} - ${service?.title || "Service"}`;
+
+  const pickSlot = (isoDate, slotTime) => {
+    const slot = daySlots(isoDate).find((item) => item.time === slotTime);
+    if (!slot || slot.state !== "open") return;
+
+    const [h, m] = slotTime.split(":").map(Number);
+    const end = h * 60 + m + SLOT_STEP_MINUTES;
+    const endHour = String(Math.floor(end / 60)).padStart(2, "0");
+    const endMin = String(end % 60).padStart(2, "0");
+
+    setSelectedDate(isoDate);
+    setSelectedStart(slotTime);
+    setSelectedEnd(`${endHour}:${endMin}`);
+    setStage("composer");
+    setComposerTab("details");
+  };
+
+  const submitBooking = async () => {
+    if (!selectedDate || !selectedStart || !selectedEnd) {
+      setSubmitMessage("Pick a valid date/time first.");
       return;
     }
-    const nextTime = existingTime || getDefaultSlotForDate(iso);
 
-    if (isMultiDay) {
-      setSelectedSlots((prev) => ({
-        ...prev,
-        [iso]: nextTime,
-      }));
-      setSelectedDate(iso);
-      setSelectedTime(nextTime);
-      requestAnimationFrame(() => scrollToSection(timesSectionRef));
-      return;
-    }
-
-    setSelectedSlots({ [iso]: nextTime });
-    setSelectedDate(iso);
-    setSelectedTime(nextTime);
-    setCurrentStep("time");
-    requestAnimationFrame(() => scrollToSection(timesSectionRef));
-  };
-
-  const scrollToSection = (ref) => {
-    if (ref?.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
-  const handleTimeSelection = (time) => {
-    if (!selectedDate) return;
-    setSelectedTime(time);
-    setSelectedSlots((prev) => ({
-      ...prev,
-      [selectedDate]: time,
-    }));
-
-    const startMinutes = parseTimeToMinutes(time);
-    setSelectedEndTime(minutesToTime(startMinutes + serviceDuration));
-  };
-
-  const handleEndTimeChange = (nextEndTime) => {
-    setSelectedEndTime(nextEndTime);
-    if (!selectedTime || !nextEndTime) return;
-
-    const duration = parseTimeToMinutes(nextEndTime) - parseTimeToMinutes(selectedTime);
-    if (duration >= 30) {
-      setServiceDuration(Math.max(30, duration));
-    }
-  };
-
-  const handleDurationChange = (nextDuration) => {
-    const normalizedDuration = Math.max(30, Number(nextDuration) || defaultServiceDuration);
-    setServiceDuration(normalizedDuration);
-
-    if (!selectedTime) return;
-    const startMinutes = parseTimeToMinutes(selectedTime);
-    setSelectedEndTime(minutesToTime(startMinutes + normalizedDuration));
-  };
-
-  const handlePickSlot = () => {
-    setCurrentStep("customer");
-    requestAnimationFrame(() => scrollToSection(customerDetailsRef));
-  };
-
-  const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
-  const selectedDayWithTravel = useMemo(() => {
-    if (!selectedDay)
-      return { day: null, hiddenCount: 0, hasSelectedSlot: false, selectedSlotReachable: false };
-
-    const slotsWithReachability = (selectedDay.slots || []).map((slot) => ({
-      ...slot,
-      reachable: isSlotReachable(slot, selectedDay.date),
-    }));
-
-    const hiddenCount = slotsWithReachability.filter(
-      (slot) => slot.available && !slot.reachable
-    ).length;
-
-    const reachableSlots = slotsWithReachability.filter(
-      (slot) => slot.available && slot.reachable
-    );
-
-    const selectedSlot = slotsWithReachability.find(
-      (slot) => slot.time === selectedTime
-    );
-
-    const slotsWithSelection = [...reachableSlots];
-
-    if (selectedSlot && !selectedSlot.reachable) {
-      slotsWithSelection.unshift({ ...selectedSlot, forceVisible: true });
-    }
-    
-    return {
-      day: { ...selectedDay, slots: slotsWithSelection },
-      hiddenCount,
-      hasSelectedSlot: Boolean(selectedSlot),
-      selectedSlotReachable: selectedSlot?.reachable !== false,
-    };
-  }, [isSlotReachable, selectedDay, selectedTime]);
-
-  const isSelectedTimeReachable = useMemo(() => {
-    if (!selectedTime || !selectedDayWithTravel.day) return false;
-
-    return Boolean(
-      selectedDayWithTravel.hasSelectedSlot &&
-        selectedDayWithTravel.selectedSlotReachable
-    );
-  }, [
-    selectedDayWithTravel.hasSelectedSlot,
-    selectedDayWithTravel.selectedSlotReachable,
-    selectedDayWithTravel.day,
-    selectedTime,
-  ]);
-
-  const canProceedToCustomer = Boolean(
-    selectedDate &&
-    selectedTime &&
-    normalizeEircode(clientEircode) &&
-    isSelectedTimeReachable
-  );
-  const canContinueFromCalendar = isMultiDay
-    ? scheduleEntries.length > 0
-    : Boolean(selectedDate);
-
-  const removeDateFromSchedule = (date) => {
-    setSelectedSlots((prev) => {
-      const next = { ...prev };
-      delete next[date];
-
-      const remainingDates = Object.keys(next);
-      const nextDate = remainingDates.includes(selectedDate)
-        ? selectedDate
-        : remainingDates[0] || "";
-
-      setSelectedDate(nextDate);
-      setSelectedTime(nextDate ? next[nextDate] || "" : "");
-
-      return next;
-    });
-  };
-
-  const monthLabel = visibleMonth.toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
-  const selectedDateLabel = selectedDate
-    ? new Date(selectedDate).toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      })
-    : "Pick a date";
-
-  const handleBookAndPay = async () => {
+    setSubmitting(true);
+    setSubmitMessage("");
     try {
-      if (!pricing.dogCount || !pricing.visitCount) {
-        setError("Add at least one dog and choose a time to see the price.");
-        return;
-      }
-
-      const amountInEuro = Number(pricing.totalPrice.toFixed(2));
-
-      const bookingReturnPath = (() => {
-        if (typeof window === "undefined") return "/services";
-        const url = new URL(window.location.href);
-        url.searchParams.set("booking", "1");
-        url.searchParams.set("service", service.id);
-        return `${url.pathname}?${url.searchParams.toString()}`;
-      })();
-
-      const paymentRes = await fetch("/api/create-payment-link", {
+      const response = await fetch(`${apiBaseUrl}/api/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: amountInEuro,
-          description: pricing.description || `Booking: ${service.title}`,
-          cancelPath: bookingReturnPath,
+          serviceId: service?.id,
+          client_name: clientName,
+          client_email: clientEmail,
+          client_phone: clientPhone,
+          client_eircode: clientEircode,
+          dog_names: petNames,
+          additionals: additionalCare,
+          date: selectedDate,
+          start_time: selectedStart,
+          end_time: selectedEnd,
+          notes,
         }),
       });
 
-      const paymentData = await paymentRes.json();
-      if (!paymentData?.orderId) {
-        throw new Error("Payment order could not be created.");
-      }
-
-      const paymentOrderId = paymentData.orderId;
-
-      const bookingId = await handleBook(paymentOrderId, {
-        paymentPreference: "pay_now",
-        paymentLink: paymentData.url,
-      });
-      if (!bookingId) throw new Error("No booking ID returned!");
-
-      if (paymentData.url) {
-        window.location.href = paymentData.url;
-      } else {
-        alert("Unable to begin payment");
-      }
-    } catch (err) {
-      console.error("💥 Booking + payment error:", err);
-      alert("Unable to start payment. Try again.");
-    }
-  };
-
-  const handleBook = async (paymentOrderId, options = {}) => {
-    const { paymentPreference = "pay_now", paymentLink = null } = options;
-    const sortedSchedule = Object.entries(selectedSlots || {})
-      .map(([date, time]) => ({ date, time }))
-      .filter((entry) => entry.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    const validSchedule = sortedSchedule.filter((entry) => Boolean(entry.time));
-
-    if (!validSchedule.length) {
-      setError("Please pick at least one date and time.");
-      return;
-    }
-
-    if (isMultiDay && validSchedule.length !== sortedSchedule.length) {
-      setError("Please choose a time for each selected day.");
-      return;
-    }
-
-    const primaryEntry = validSchedule[0];
-    const recurrenceSelection = recurrence === "none" ? null : recurrence;
-    const bookingMode =
-      isMultiDay || validSchedule.length > 1 ? "multi-day" : "single";
-
-    if (
-      !clientName.trim() ||
-      !clientPhone.trim() ||
-      !clientEmail.trim() ||
-      !clientAddress.trim()
-    ) {
-      setError(
-        "Please add your name, phone number, email, and address so we can confirm your booking."
-      );
-      return;
-    }
-
-    setIsBooking(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const durationMinutes = Number.isFinite(serviceDuration)
-        ? serviceDuration
-        : 60;
-
-      const petPayload = preparePetPayload();
-
-      const schedulePayload = validSchedule.map((entry) => ({
-        ...entry,
-        durationMinutes,
-      }));
-
-      const amountInEuro = Number(pricing.totalPrice.toFixed(2));
-
-      // ⭐ ADD PAYMENT ORDER ID INTO BOOKING HERE
-      const payload = {
-        date: primaryEntry.date,
-        time: primaryEntry.time,
-        durationMinutes,
-        serviceId: service.id,
-        serviceTitle: service.title,
-        clientName: clientName.trim(),
-        clientPhone: clientPhone.trim(),
-        clientAddress: clientAddress.trim(),
-        clientEmail: clientEmail.trim(),
-        clientEircode: normalizeEircode(clientEircode),
-        additionals,
-        notes: [notes.trim(), bookingCategory !== "standard" ? `Category: ${bookingCategory}` : ""]
-          .filter(Boolean)
-          .join("\n"),
-        timeZone: availability.timeZone || BUSINESS_TIME_ZONE,
-        pets: petPayload,
-        dogCount: petPayload.length,
-        schedule: schedulePayload,
-        recurrence: recurrenceSelection,
-        autoRenew: Boolean(recurrenceSelection),
-        bookingMode,
-        amount: amountInEuro,
-        payment_order_id: paymentOrderId, // <-- CRITICAL
-        payment_preference: paymentPreference,
-        payment_link: paymentLink,
-        travel_minutes: travelMinutes,
-        travel_anchor: travelAnchor,
-        previous_booking_time: previousBookingTime,
-        client_coordinates: clientCoordinates,
-      };
-
-      const requestUrl = `${apiBaseUrl}/api/book`;
-      const response = await fetch(requestUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        let message =
-          "Booking could not be completed right now. Please try again shortly.";
-
-        try {
-          const errorText = await response.text();
-          const parsedError = errorText ? JSON.parse(errorText) : {};
-          if (parsedError?.message) message = parsedError.message;
-        } catch (_) {}
-
-        throw new Error(message);
-      }
-
-      const data = await response.json();
-      console.log("📦 BOOKING API RESPONSE:", data);
-
-      const bookingId = data?.booking_id;
-      if (!bookingId) throw new Error("No booking ID returned!");
-
-      return bookingId;
-    } catch (bookingError) {
-      console.error("Booking failed", bookingError);
-      setError(
-        bookingError.message ||
-          "Unable to send booking. Please try again later."
-      );
+      if (!response.ok) throw new Error("Booking failed");
+      setSubmitMessage("Booking request submitted.");
+      setStage("calendar");
+    } catch (error) {
+      setSubmitMessage("Could not submit booking right now.");
     } finally {
-      setIsBooking(false);
+      setSubmitting(false);
     }
-  };
-
-  useEffect(() => {
-    if (!selectedDate) return;
-
-    setVisibleMonth(new Date(selectedDate));
-    const day = availabilityMap[selectedDate];
-    if (!day) return;
-
-    const reachableSlots = (day.slots || []).filter((slot) =>
-      isSlotReachable(slot, day.date)
-    );
-
-    if (!reachableSlots.length) return;
-
-    const hasSelectedSlot = reachableSlots.some(
-      (slot) => slot.time === selectedTime
-    );
-
-    if (!hasSelectedSlot) {
-      setSelectedTime(reachableSlots[0].time);
-    }
-  }, [
-    availabilityMap,
-    isSlotReachable,
-    selectedDate,
-    selectedTime,
-  ]);
-
-  const filteredBreeds = (dogIndex) => {
-    const query = breedSearch[dogIndex]?.toLowerCase() || "";
-    return DOG_BREEDS.filter((breed) => breed.toLowerCase().includes(query));
-  };
-
-  const toggleAdditional = (value) => {
-    setAdditionals((prev) =>
-      prev.includes(value)
-        ? prev.filter((item) => item !== value)
-        : [...prev, value]
-    );
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        addOnDropdownRef.current &&
-        !addOnDropdownRef.current.contains(event.target)
-      ) {
-        setAdditionalsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/addons")
-      .then((res) => res.json())
-      .then((data) => setAddons(data.addons ?? []));
-  }, []);
-
-  useEffect(() => {
-    if (bookingModalRef.current) {
-      bookingModalRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, []);
-
-  const progressPercent =
-    ((stepOrder.indexOf(currentStep) + 1) / stepOrder.length) * 100;
-
-  const supportService = useMemo(
-    () => ({
-      ...service,
-      ctaOptions: {
-        heading: "Need a hand?",
-        description:
-          "Chat with us for concierge booking support or share your request and we’ll set everything up.",
-      },
-    }),
-    [service]
-  );
-
-  const summaryChips = [
-    selectedDateLabel || "Pick a date",
-    selectedTime ? formatTime(selectedTime) : "Pick a time",
-    normalizeEircode(clientEircode) || null,
-    pricing.dogCount
-      ? `${pricing.dogCount} dog${pricing.dogCount > 1 ? "s" : ""}`
-      : null,
-  ].filter(Boolean);
-
-  const goToStepAndScroll = (step) => {
-    setCurrentStep(step);
-    if (step === "calendar") scrollToSection(calendarSectionRef);
-    if (step === "time") scrollToSection(timesSectionRef);
-    if (step === "addons") scrollToSection(addonsSectionRef);
-    if (step === "summary") scrollToSection(summarySectionRef);
-  };
-
-  const bookingFormProps = {
-    error,
-    success,
-    customerMode,
-    onSelectCustomerMode: handleCustomerModeChange,
-    service,
-    scheduleEntries,
-    formatTime,
-    clientName,
-    setClientName,
-    clientPhone,
-    setClientPhone,
-    clientEmail,
-    setClientEmail,
-    clientAddress,
-    setClientAddress,
-    clientAddressLocked: Boolean(normalizeEircode(clientEircode)),
-    canLoadPets,
-    fetchExistingPets,
-    isLoadingPets,
-    existingPets,
-    hasAttemptedPetLoad,
-    selectedPetIds,
-    setSelectedPetIds,
-    showDogDetails,
-    setShowDogDetails,
-    dogCount,
-    addAnotherDog,
-    removeDog,
-    dogs,
-    updateDogField,
-    handleDogPhotoChange,
-    MAX_DOGS,
-    breedSearch,
-    setBreedSearch,
-    notes,
-    setNotes,
-    additionals,
-    additionalsOpen,
-    setAdditionalsOpen,
-    toggleAdditional,
-    addons,
-    selectedAdditionalLabels,
-    formatCurrency,
-    parsePriceValue,
-    pricing,
-    hasAtLeastOneDog,
-    handleBookAndPay,
-    isBooking,
-    loading,
-    isPopup: false,
-    addOnDropdownRef,
-    filteredBreeds,
-    customerDetailsRef,
-    travelNote,
-    allowRecurring: allowWeeklyRecurring,
-    recurrence,
-    isMultiDay,
-    onRecurrenceChange: setRecurrence,
   };
 
   return (
-    <>
-      <div
-        className="booking-overlay"
-        role="dialog"
-        aria-modal="true"
-        ref={bookingModalRef}
-      >
-        <div className="booking-modal">
-          <BookingHeader
-            service={service}
-            onSupport={() => setSupportOpen(true)}
-            onClose={onClose}
-          />
+    <div className="booking-overlay" role="dialog" aria-modal="true">
+      <div className="booking-shell">
+        <header className="booking-shell__header">
+          <div>
+            <p className="eyebrow">{service?.duration || "Visit"}</p>
+            <h3>{service?.title || "Booking"}</h3>
+            <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
+          </div>
+          <button type="button" className="close-button" onClick={onClose} aria-label="Close booking">×</button>
+        </header>
 
-          {/* <div
-            className="progress-track"
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              className="progress-fill"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div> */}
+        {!isAuthenticated && stage === "register" && (
+          <section className="card">
+            <h4>Create account first</h4>
+            <p className="muted">Before choosing slots, clients must register an account.</p>
+            <div className="grid-2">
+              <label className="input-group"><span>Name</span><input value={clientName} onChange={(e) => setClientName(e.target.value)} /></label>
+              <label className="input-group"><span>Email</span><input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} /></label>
+              <label className="input-group"><span>Phone</span><input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} /></label>
+              <label className="input-group"><span>Eircode</span><input value={clientEircode} onChange={(e) => setClientEircode(e.target.value.toUpperCase())} /></label>
+              <label className="input-group full"><span>Password</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+            </div>
+            <div className="actions-row">
+              <button type="button" className="ghost-button" onClick={onClose}>Cancel</button>
+              <button type="button" className="button" disabled={!canContinueFromRegister} onClick={() => setStage("calendar")}>Continue to calendar</button>
+            </div>
+          </section>
+        )}
 
-          <div className="booking-body">
-            <BookingWayfinding
-              stepOrder={stepOrder}
-              currentStep={currentStep}
-              onStepSelect={goToStepAndScroll}
-              summaryChips={summaryChips}
-            />
+        {stage === "calendar" && (
+          <section className="card">
+            <div className="calendar-topbar">
+              <div className="toggle-group">
+                {VIEW_MODES.map((mode) => (
+                  <button key={mode} type="button" className={`ghost-button tiny ${viewMode === mode ? "is-active" : ""}`} onClick={() => setViewMode(mode)}>
+                    {mode[0].toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <div className="muted">{availabilitySource === "live" ? "Live owner calendar check" : "Demo availability"} · Travel buffer: {travelBufferSlots * SLOT_STEP_MINUTES} min · Time zone: {BUSINESS_TZ}</div>
+            </div>
 
-            <div className="booking-layout">
-              <div className="booking-main">
-                {error && (
-                  <BookingErrorBanner
-                    message={error}
-                    onPickTime={() => goToStepAndScroll("time")}
-                    onSupport={() => setSupportOpen(true)}
-                  />
-                )}
+            {availabilityError && <p className="muted subtle">{availabilityError}</p>}
 
-                {currentStep === "calendar" && (
-                  <CalendarStepCard
-                    allowMultiDay={allowMultiDay}
-                    allowWeeklyRecurring={allowWeeklyRecurring}
-                    clientEircode={clientEircode}
-                    onClientEircodeChange={setClientEircode}
-                    isMultiDay={isMultiDay}
-                    onToggleMultiDay={() => setIsMultiDay((prev) => !prev)}
-                    travelAnchor={travelAnchor}
-                    previousBookingTime={previousBookingTime}
-                    onPreviousBookingTimeChange={setPreviousBookingTime}
-                    availabilityNotice={availabilityNotice}
-                    loading={loading}
-                    monthLabel={monthLabel}
-                    weekdayLabels={weekdayLabels}
-                    monthMatrix={monthMatrix}
-                    visibleMonth={visibleMonth}
-                    availabilityMap={availabilityMap}
-                    isDayAvailableForService={isDayAvailableForService}
-                    selectedDate={selectedDate}
-                    selectedSlots={selectedSlots}
-                    handleDaySelection={handleDaySelection}
-                    calendarSectionRef={calendarSectionRef}
-                    onPreviousMonth={handlePreviousMonth}
-                    onNextMonth={handleNextMonth}
-                    canContinueFromCalendar={canContinueFromCalendar}
-                    onContinue={() => goToStepAndScroll("time")}
-                  />
-                )}
+            {viewMode === "month" ? (
+              <div className="month-grid">
+                {plannerDates.map((isoDate) => {
+                  const openCount = daySlots(isoDate).filter((slot) => slot.state === "open").length;
+                  return (
+                    <button key={isoDate} type="button" className={`month-cell ${isoDate === currentDate ? "active" : ""}`} onClick={() => setSelectedDate(isoDate)}>
+                      <strong>{new Date(`${isoDate}T00:00:00`).getDate()}</strong>
+                      <span>{openCount} open</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="planner-table">
+                <div className="planner-header">
+                  <span />
+                  {plannerDates.map((isoDate) => (
+                    <button key={isoDate} type="button" className={`planner-day ${isoDate === currentDate ? "active" : ""}`} onClick={() => setSelectedDate(isoDate)}>
+                      {formatDisplayDate(isoDate)}
+                    </button>
+                  ))}
+                </div>
 
-                {currentStep === "time" && (
-                  <TimeStepCard
-                    selectedDay={selectedDayWithTravel.day}
-                    isDayAvailableForService={isDayAvailableForService}
-                    selectedTime={selectedTime}
-                    onTimeSelection={handleTimeSelection}
-                    selectedSlotReachable={
-                      selectedDayWithTravel.selectedSlotReachable
-                    }
-                    formatTime={formatTime}
-                    onContinue={() => goToStepAndScroll("customer")}
-                    onBack={() => goToStepAndScroll("calendar")}
-                    canContinue={canProceedToCustomer}
-                    timesSectionRef={timesSectionRef}
-                    hiddenSlotCount={selectedDayWithTravel.hiddenCount}
-                    travelMinutes={travelMinutes}
-                    travelAnchor={travelAnchor}
-                    isTravelValidationPending={isTravelValidationPending}
-                    travelNote={travelNote}
-                    selectedEndTime={selectedEndTime}
-                    onEndTimeChange={handleEndTimeChange}
-                    durationMinutes={serviceDuration}
-                    onDurationChange={handleDurationChange}
-                    minDurationMinutes={30}
-                    category={bookingCategory}
-                    onCategoryChange={setBookingCategory}
-                    onPickSlot={handlePickSlot}
-                  />
-                )}
+                {ALL_TIMES.map((time) => (
+                  <div className="planner-row" key={`row-${time}`}>
+                    <span className="planner-time">{time}</span>
+                    {plannerDates.map((isoDate) => {
+                      const slot = daySlots(isoDate).find((entry) => entry.time === time);
+                      const isOpen = slot?.state === "open";
+                      return (
+                        <button
+                          key={`${isoDate}-${time}`}
+                          type="button"
+                          className={`planner-cell ${slot?.state || "booked"}`}
+                          onClick={() => pickSlot(isoDate, time)}
+                          disabled={!isOpen}
+                        >
+                          {slot?.reason || "Booked"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
 
-                {currentStep === "customer" && (
-                  <div className="step-card">
-                    <div className="step-toolbar">
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => goToStepAndScroll("time")}
-                      >
-                        Change time
-                      </button>
-                    </div>
-                    {!isAuthenticated && (
-                      <div className="input-group full-width">
-                        <div className="label-row">
-                          <span>Account access</span>
-                          <div className="actions-stack">
-                            <button
-                              type="button"
-                              className={`ghost-button ${
-                                customerMode === "login" ? "active" : ""
-                              }`}
-                              onClick={() => handleCustomerModeChange("login")}
-                              aria-pressed={customerMode === "login"}
-                            >
-                              Login
-                            </button>
-                            <button
-                              type="button"
-                              className={`ghost-button ${
-                                customerMode === "new" ? "active" : ""
-                              }`}
-                              onClick={() => handleCustomerModeChange("new")}
-                              aria-pressed={customerMode === "new"}
-                            >
-                              Register
-                            </button>
-                          </div>
-                        </div>
+            <div className="actions-row">
+              <button type="button" className="ghost-button" onClick={onClose}>Close</button>
+              <button type="button" className="button" onClick={() => setStage("composer")} disabled={!selectedStart || !selectedDate}>Open selected slot</button>
+            </div>
+          </section>
+        )}
 
-                      {customerMode === "login" ? (
-                          <form
-                            className="auth-form"
-                            onSubmit={handleSupabaseLogin}
-                          >
-                            {authError && (
-                              <p className="error-banner">{authError}</p>
-                            )}
-                            <div className="form-grid">
-                              <label className="input-group">
-                                <span>Email</span>
-                                <input
-                                  type="email"
-                                  value={loginEmail}
-                                  onChange={(e) => setLoginEmail(e.target.value)}
-                                  placeholder="you@example.com"
-                                  autoComplete="email"
-                                />
-                              </label>
-                              <label className="input-group">
-                                <span>Password</span>
-                                <input
-                                  type="password"
-                                  value={loginPassword}
-                                  onChange={(e) =>
-                                    setLoginPassword(e.target.value)
-                                  }
-                                  placeholder="Enter your password"
-                                  autoComplete="current-password"
-                                />
-                              </label>
-                            </div>
-                            <div className="actions-row">
-                              <div className="actions-stack">
-                                <button
-                                  type="submit"
-                                  className="button w-button"
-                                  disabled={authLoading}
-                                >
-                                  {authLoading
-                                    ? "Logging in…"
-                                    : "Login to Jeroen & Paws"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ghost-button"
-                                  onClick={() => {
-                                    setShowLoginReset(true);
-                                    setLoginResetStatus({
-                                      state: "idle",
-                                      message: "",
-                                    });
-                                  }}
-                                >
-                                  Set a new password
-                                </button>
-                              </div>
-                              </div>
-                            {showLoginReset && (
-                              <div
-                                style={{
-                                  marginTop: "12px",
-                                  padding: "12px",
-                                  borderRadius: "12px",
-                                  border: "1px solid #e5e7eb",
-                                  background: "#f9fafb",
-                                  display: "grid",
-                                  gap: "10px",
-                                }}
-                              >
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    color: "#111827",
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  Set a new password
-                                </p>
-                              <p style={{ margin: 0, color: "#4b5563" }}>
-                                  After multiple login attempts, request a
-                                  secure email to create a new password.
-                                </p>
-                                <label className="input-group" style={{ margin: 0 }}>
-                                  <span>Email</span>
-                                  <input
-                                    type="email"
-                                    value={loginEmail}
-                                    onChange={(e) =>
-                                      setLoginEmail(e.target.value)
-                                    }
-                                    placeholder="you@example.com"
-                                    autoComplete="email"
-                                  />
-                                </label>
-                                <div
-                                  className="actions-row"
-                                  style={{
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <button
-                                    type="button"
-                                    className="button w-button"
-                                    disabled={loginResetStatus.state === "loading"}
-                                    onClick={sendLoginResetRequest}
-                                  >
-                                    {loginResetStatus.state === "loading"
-                                      ? "Sending reset link…"
-                                      : "Email me a reset link"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="ghost-button"
-                                    onClick={() => setShowLoginReset(false)}
-                                  >
-                                    Keep trying to log in
-                                  </button>
-                                </div>
-                                {loginResetStatus.message && (
-                                  <p
-                                    className={
-                                      loginResetStatus.state === "success"
-                                        ? "success-banner subtle"
-                                        : "error-banner"
-                                    }
-                                    style={{ margin: 0 }}
-                                  >
-                                    {loginResetStatus.message}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                            {eircodeChoiceOpen && (
-                              <div className="success-banner subtle">
-                                <p>
-                                  We found a saved Eircode. Which do you want to
-                                  use?
-                                </p>
-                                <div className="actions-row">
-                                  <button
-                                    type="button"
-                                    className="button w-button"
-                                    onClick={handleUseSavedEircode}
-                                  >
-                                    Use saved
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="ghost-button"
-                                    onClick={handleKeepEnteredEircode}
-                                  >
-                                    Keep entered
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </form>
-                        ) : customerMode === "new" ? (
-                          <div className="actions-stack">
-                            <p className="muted subtle">
-                              We’ll create your account after booking.
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                    {(customerMode === "new" || isAuthenticated) && (
-                      <BookingForm
-                        {...bookingFormProps}
-                        visibleStage="customer"
-                        onContinue={() => goToStepAndScroll("pet")}
-                      />
-                    )}
+        {stage === "composer" && (
+          <section className="card composer-shell">
+            <div className="composer-toolbar">
+              <div className="toggle-group">
+                {COMPOSER_TABS.map((tab) => (
+                  <button key={tab} type="button" className={`ghost-button tiny ${composerTab === tab ? "is-active" : ""}`} onClick={() => setComposerTab(tab)}>
+                    {tab === "additional" ? "Additional care" : tab[0].toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="ghost-button tiny" onClick={() => setStage("calendar")}>Back to calendar</button>
+            </div>
+
+            <div className="composer-layout">
+              <div className="composer-main">
+                {composerTab === "details" && (
+                  <div className="grid-2">
+                    <label className="input-group full"><span>Title</span><input value={bookingTitle} readOnly /></label>
+                    <label className="input-group"><span>Date</span><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} /></label>
+                    <label className="input-group"><span>Start</span><input type="time" step={1800} value={selectedStart} onChange={(e) => setSelectedStart(e.target.value)} /></label>
+                    <label className="input-group"><span>End</span><input type="time" step={1800} value={selectedEnd} onChange={(e) => setSelectedEnd(e.target.value)} /></label>
+                    <label className="input-group"><span>Location (Eircode)</span><input value={clientEircode} readOnly /></label>
+                    <label className="input-group full"><span>Description</span><textarea rows={6} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Booking notes" /></label>
                   </div>
                 )}
 
-                {currentStep === "pet" && (
-                  <BookingFormStage
-                    toolbar={(
-                      <div className="step-toolbar">
-                        <div className="actions-stack">
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => goToStepAndScroll("customer")}
-                          >
-                            Back to customer
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => goToStepAndScroll("time")}
-                          >
-                            Change time
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    bookingFormProps={bookingFormProps}
-                    visibleStage="pet"
-                    onContinue={() => goToStepAndScroll("addons")}
-                  />
+                {composerTab === "pets" && (
+                  <div className="stack">
+                    <label className="input-group full">
+                      <span>Dog name(s)</span>
+                      <input value={petNames} onChange={(e) => setPetNames(e.target.value)} placeholder="Compass, Luna" />
+                    </label>
+                    <p className="muted">This replaces participant invites. Only client and owner are included.</p>
+                  </div>
                 )}
 
-                {currentStep === "addons" && (
-                  <BookingFormStage
-                    containerRef={addonsSectionRef}
-                    toolbar={(
-                      <div className="step-toolbar">
-                        <div className="actions-stack">
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => goToStepAndScroll("pet")}
-                          >
-                            Back to pets
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => goToStepAndScroll("time")}
-                          >
-                            Change time
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    bookingFormProps={bookingFormProps}
-                    visibleStage="addons"
-                    onContinue={() => goToStepAndScroll("summary")}
-                  />
+                {composerTab === "additional" && (
+                  <div className="stack">
+                    {[
+                      "Medication support",
+                      "Photo update",
+                      "Towel dry",
+                      "Extended feeding",
+                    ].map((item) => (
+                      <label className="checkbox-row" key={item}>
+                        <input
+                          type="checkbox"
+                          checked={additionalCare.includes(item)}
+                          onChange={(event) => {
+                            setAdditionalCare((prev) =>
+                              event.target.checked ? [...prev, item] : prev.filter((it) => it !== item)
+                            );
+                          }}
+                        />
+                        <span>{item}</span>
+                      </label>
+                    ))}
+                  </div>
                 )}
 
-                {currentStep === "summary" && (
-                  <BookingFormStage
-                    containerRef={summarySectionRef}
-                    toolbar={(
-                      <div className="step-toolbar">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => goToStepAndScroll("addons")}
-                        >
-                          Back to additional care
-                        </button>
-                      </div>
-                    )}
-                    bookingFormProps={bookingFormProps}
-                    visibleStage="summary"
-                    onContinue={() => goToStepAndScroll("summary")}
-                  />
+                {composerTab === "confirm" && (
+                  <div className="stack">
+                    <h4>{bookingTitle}</h4>
+                    <p className="muted">{formatDisplayDate(selectedDate)} · {selectedStart} - {selectedEnd}</p>
+                    <p className="muted">Location: {clientEircode || "Missing Eircode"}</p>
+                    <p className="muted">Additional care: {additionalCare.length ? additionalCare.join(", ") : "None"}</p>
+                    <button type="button" className="button" disabled={submitting} onClick={submitBooking}>
+                      {submitting ? "Submitting..." : "Submit booking"}
+                    </button>
+                    {submitMessage && <p className="muted subtle">{submitMessage}</p>}
+                  </div>
                 )}
-
-                <PriceSummaryCard
-                  pricing={pricing}
-                  formatCurrency={formatCurrency}
-                  parsePriceValue={parsePriceValue}
-                />
               </div>
+
+              <aside className="composer-rail">
+                <h5>Day calendar</h5>
+                <p className="muted subtle">Gray blocks are booked or travel-blocked.</p>
+                <div className="rail-grid">
+                  {currentDaySlots.map((slot) => (
+                    <button
+                      key={`rail-${slot.time}`}
+                      type="button"
+                      className={`rail-cell ${slot.state} ${selectedStart === slot.time ? "active" : ""}`}
+                      disabled={slot.state !== "open"}
+                      onClick={() => pickSlot(currentDate, slot.time)}
+                    >
+                      <span>{slot.time}</span>
+                      <strong>{slot.reason}</strong>
+                    </button>
+                  ))}
+                </div>
+              </aside>
             </div>
-          </div>
-        </div>
+          </section>
+        )}
       </div>
-      {supportOpen && (
-        <ChatOrFormModal
-          service={supportService}
-          onClose={() => setSupportOpen(false)}
-        />
-      )}
-    </>
+
+      <style jsx global>{`
+        .booking-overlay { position: fixed; inset: 0; background: rgba(8, 5, 20, 0.82); z-index: 9999; padding: 24px; overflow: auto; }
+        .booking-shell { max-width: 1240px; margin: 0 auto; background: linear-gradient(145deg,#1a1132,#1f0f3a); border-radius: 18px; border: 1px solid rgba(255,255,255,.1); color: #f3eefe; box-shadow: 0 30px 70px rgba(0,0,0,.45); }
+        .booking-shell__header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,.08); }
+        .booking-shell__header h3 { margin: 6px 0; }
+        .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; margin: 0; }
+        .card { padding: 18px 24px 24px; display: grid; gap: 14px; }
+        .muted { color: #c8bddf; margin: 0; }
+        .muted.subtle { font-size: 13px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+        .input-group { display:flex; flex-direction:column; gap:6px; font-weight:600; }
+        .input-group input,.input-group textarea { background: rgba(0,0,0,.18); color:#f8f3ff; border:1px solid rgba(255,255,255,.18); border-radius:10px; padding:10px 12px; }
+        .input-group textarea { resize: vertical; }
+        .input-group.full { grid-column: 1 / -1; }
+        .actions-row { display:flex; justify-content:flex-end; gap:10px; }
+        .button { border:none; border-radius:12px; padding:10px 14px; background: linear-gradient(145deg,#6e4bd8,#7c5df2); color:#fff; font-weight:700; cursor:pointer; }
+        .button:disabled { opacity:.5; cursor:not-allowed; }
+        .ghost-button { border:1px solid rgba(255,255,255,.3); border-radius:12px; background:transparent; color:#f3eefe; padding:9px 12px; cursor:pointer; }
+        .ghost-button.tiny { font-size:12px; padding:7px 10px; }
+        .ghost-button.is-active { background: rgba(124,93,242,.3); border-color: rgba(124,93,242,.75); }
+        .close-button { border:1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color:#fff; width:36px; height:36px; border-radius:999px; font-size:22px; cursor:pointer; }
+        .calendar-topbar { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+        .toggle-group { display:flex; gap:8px; flex-wrap:wrap; }
+
+        .planner-table { display:grid; gap:8px; overflow:auto; }
+        .planner-header,.planner-row { display:grid; grid-template-columns: 72px repeat(7, minmax(110px,1fr)); gap:8px; align-items:center; }
+        .planner-day { border:1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color:#efe8ff; border-radius:10px; padding:8px; text-align:left; }
+        .planner-day.active { border-color: rgba(124,93,242,.8); background: rgba(124,93,242,.25); }
+        .planner-time { text-align:right; color:#c8bddf; font-size:12px; }
+        .planner-cell { border:1px solid rgba(255,255,255,.14); border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:#efe8ff; }
+        .planner-cell.open { background: rgba(124,93,242,.22); border-color: rgba(124,93,242,.6); cursor:pointer; }
+        .planner-cell.booked,.planner-cell.travel { background: rgba(120,120,130,.45); border-color: rgba(180,180,190,.45); color:#e8e8eb; }
+
+        .month-grid { display:grid; grid-template-columns: repeat(7,minmax(90px,1fr)); gap:8px; }
+        .month-cell { text-align:left; border:1px solid rgba(255,255,255,.14); border-radius:12px; background: rgba(255,255,255,.04); color:#f2ecff; padding:10px; display:grid; gap:6px; }
+        .month-cell.active { border-color: rgba(124,93,242,.8); background: rgba(124,93,242,.26); }
+
+        .composer-shell { gap: 12px; }
+        .composer-toolbar { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; }
+        .composer-layout { display:grid; grid-template-columns: minmax(0,1.6fr) minmax(280px,1fr); gap:14px; }
+        .composer-main,.composer-rail { border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px; background: rgba(255,255,255,.04); }
+        .stack { display:grid; gap:10px; }
+        .checkbox-row { display:flex; gap:10px; align-items:center; }
+        .rail-grid { display:grid; gap:8px; max-height:520px; overflow:auto; }
+        .rail-cell { border:1px solid rgba(255,255,255,.18); border-radius:10px; background: rgba(255,255,255,.04); color:#f3eefe; padding:8px 10px; display:flex; justify-content:space-between; }
+        .rail-cell.open { border-color: rgba(124,93,242,.6); background: rgba(124,93,242,.2); cursor:pointer; }
+        .rail-cell.booked,.rail-cell.travel { background: rgba(120,120,130,.42); border-color: rgba(180,180,190,.4); color:#ececf0; }
+        .rail-cell.active { box-shadow: 0 0 0 2px rgba(124,93,242,.85); }
+
+        @media (max-width: 1024px) {
+          .grid-2 { grid-template-columns: 1fr; }
+          .composer-layout { grid-template-columns: 1fr; }
+          .planner-header,.planner-row { grid-template-columns: 64px repeat(7,minmax(95px,1fr)); }
+        }
+      `}</style>
+    </div>
   );
 };
 
