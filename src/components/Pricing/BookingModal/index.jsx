@@ -46,7 +46,7 @@ const ROUTING_COORDS = {
   D01: { lat: 53.352, lng: -6.262 }, // Dublin 1
   D02: { lat: 53.338, lng: -6.247 },
   D04: { lat: 53.321, lng: -6.228 },
-  D06: { lat: 53.312, lng: -6.260 },
+  D06: { lat: 53.312, lng: -6.26 },
   D08: { lat: 53.337, lng: -6.278 },
   D09: { lat: 53.379, lng: -6.238 },
   D15: { lat: 53.385, lng: -6.398 },
@@ -62,7 +62,7 @@ const BookingModal = ({ service, onClose }) => {
   const MAX_DOGS = 4;
   const { profile, isAuthenticated, setProfile } = useAuth();
   const [customerMode, setCustomerMode] = useState(() =>
-    profile ? "login" : "null"
+    profile ? "login" : "null",
   );
   const [loginEmail, setLoginEmail] = useState(profile?.client?.email || "");
   const [loginPassword, setLoginPassword] = useState("");
@@ -143,51 +143,54 @@ const BookingModal = ({ service, onClose }) => {
     return Number.isFinite(numeric) ? numeric : 0;
   }, []);
 
-
   const normalizeEircode = useCallback((value) => {
     return (value || "").replace(/\s+/g, "").toUpperCase();
   }, []);
 
   const isFullEircode = useCallback(
     (value) => /^[A-Z0-9]{3}[A-Z0-9]{4}$/.test(normalizeEircode(value)),
-    [normalizeEircode]
+    [normalizeEircode],
   );
 
   const getRoutingKey = useCallback(
     (eircodeValue) => normalizeEircode(eircodeValue).slice(0, 3),
-    [normalizeEircode]
+    [normalizeEircode],
   );
 
-  const geocodeEircode = useCallback(async (eircodeValue, signal) => {
-    const query = normalizeEircode(eircodeValue);
-    if (!query || !isFullEircode(query)) return null;
+  const geocodeEircode = useCallback(
+    async (eircodeValue, signal) => {
+      const query = normalizeEircode(eircodeValue);
+      if (!query || !isFullEircode(query)) return null;
 
-    const url = `${NOMINATIM_ENDPOINT}?format=jsonv2&limit=1&countrycodes=ie&q=${encodeURIComponent(
-      query
-    )}`;
+      const url = `${NOMINATIM_ENDPOINT}?format=jsonv2&limit=1&countrycodes=ie&q=${encodeURIComponent(
+        query,
+      )}`;
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "JeroenandPaws-booking/1.0 (+https://jeroenandpaws.com)",
-      },
-      signal,
-    });
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "JeroenandPaws-booking/1.0 (+https://jeroenandpaws.com)",
+        },
+        signal,
+      });
 
-    if (!response.ok) {
-      throw new Error(`Nominatim error ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`Nominatim error ${response.status}`);
+      }
 
-    const results = await response.json();
-    if (!Array.isArray(results) || results.length === 0) return null;
+      const results = await response.json();
+      if (!Array.isArray(results) || results.length === 0) return null;
 
-    const best = results[0];
-    const lat = Number(best.lat);
-    const lng = Number(best.lon);
+      const best = results[0];
+      const lat = Number(best.lat);
+      const lng = Number(best.lon);
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-    return { lat, lng };
-  }, [isFullEircode, normalizeEircode]);
+      return { lat, lng };
+    },
+    [isFullEircode, normalizeEircode],
+  );
 
   const getRouteMetrics = useCallback(async (fromCoords, toCoords, signal) => {
     if (!fromCoords || !toCoords) return null;
@@ -231,11 +234,10 @@ const BookingModal = ({ service, onClose }) => {
 
   const estimateTravelMinutes = useCallback(
     (from, to) => {
-      const anchor =
-        to || {
-          eircode: HOME_EIRCODE,
-          coords: homeCoordinates,
-        };
+      const anchor = to || {
+        eircode: HOME_EIRCODE,
+        coords: homeCoordinates,
+      };
 
       if (from?.coords && anchor?.coords) {
         const distanceKm = haversineKm(from.coords, anchor.coords);
@@ -260,16 +262,15 @@ const BookingModal = ({ service, onClose }) => {
       if (routingKey === anchorKey) return 15;
       return 45;
     },
-    [getRoutingKey, homeCoordinates]
+    [getRoutingKey, homeCoordinates],
   );
 
   const estimateTravelDistanceKm = useCallback(
     (from, to) => {
-      const anchor =
-        to || {
-          eircode: HOME_EIRCODE,
-          coords: homeCoordinates,
-        };
+      const anchor = to || {
+        eircode: HOME_EIRCODE,
+        coords: homeCoordinates,
+      };
 
       if (from?.coords && anchor?.coords) {
         return haversineKm(from.coords, anchor.coords);
@@ -290,7 +291,7 @@ const BookingModal = ({ service, onClose }) => {
       if (routingKey === anchorKey) return 5;
       return 15;
     },
-    [getRoutingKey, homeCoordinates]
+    [getRoutingKey, homeCoordinates],
   );
 
   const parseTimeToMinutes = useCallback((time) => {
@@ -310,7 +311,7 @@ const BookingModal = ({ service, onClose }) => {
       DateTime.now()
         .setZone(BUSINESS_TIME_ZONE)
         .plus({ minutes: MIN_LEAD_MINUTES }),
-    []
+    [],
   );
 
   const formatCurrency = useCallback((value) => {
@@ -324,10 +325,13 @@ const BookingModal = ({ service, onClose }) => {
   const isBoardingService = serviceLabel.includes("boarding");
   const allowWeeklyRecurring = allowRecurring && !isBoardingService;
   const defaultServiceDuration = useMemo(
-    () => (Number.isFinite(service.durationMinutes) ? service.durationMinutes : 60),
-    [service.durationMinutes]
+    () =>
+      Number.isFinite(service.durationMinutes) ? service.durationMinutes : 60,
+    [service.durationMinutes],
   );
-  const [serviceDuration, setServiceDuration] = useState(defaultServiceDuration);
+  const [serviceDuration, setServiceDuration] = useState(
+    defaultServiceDuration,
+  );
 
   useEffect(() => {
     setServiceDuration(defaultServiceDuration);
@@ -343,7 +347,9 @@ const BookingModal = ({ service, onClose }) => {
     return (availability.busy || []).reduce((acc, interval) => {
       if (!interval?.start || !interval?.end) return acc;
 
-      const start = DateTime.fromISO(interval.start).setZone(BUSINESS_TIME_ZONE);
+      const start = DateTime.fromISO(interval.start).setZone(
+        BUSINESS_TIME_ZONE,
+      );
       const end = DateTime.fromISO(interval.end).setZone(BUSINESS_TIME_ZONE);
 
       if (!start.isValid || !end.isValid) return acc;
@@ -376,7 +382,7 @@ const BookingModal = ({ service, onClose }) => {
       timeZone: BUSINESS_TIME_ZONE,
       busy: data?.busy || [],
     }),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -411,7 +417,7 @@ const BookingModal = ({ service, onClose }) => {
       const notes = (dog.notes || "").trim();
 
       return Boolean(
-        name || breed || notes || dog.photoDataUrl || dog.profileId
+        name || breed || notes || dog.photoDataUrl || dog.profileId,
       );
     });
   }, [dogCount, dogs, selectedPetIds]);
@@ -420,7 +426,14 @@ const BookingModal = ({ service, onClose }) => {
   const trimmedEmail = clientEmail.trim();
   const canLoadPets = Boolean(trimmedName && trimmedEmail);
 
-  const stepOrder = ["calendar", "time", "customer", "pet", "addons", "summary"];
+  const stepOrder = [
+    "calendar",
+    "time",
+    "customer",
+    "pet",
+    "addons",
+    "summary",
+  ];
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
 
@@ -456,7 +469,7 @@ const BookingModal = ({ service, onClose }) => {
           const bufferedStart = eventStart - travelMinutes;
           const bufferedEnd = eventEnd + travelMinutes;
           return serviceEnd > bufferedStart && serviceStart < bufferedEnd;
-        }
+        },
       );
 
       return !conflictsWithBufferedEvent;
@@ -469,7 +482,7 @@ const BookingModal = ({ service, onClose }) => {
       travelAnchor,
       travelMinutes,
       getBookingCutoff,
-    ]
+    ],
   );
 
   const isDayAvailableForService = useCallback(
@@ -480,7 +493,7 @@ const BookingModal = ({ service, onClose }) => {
 
       return day.slots.some((slot) => isSlotReachable(slot, day.date));
     },
-    [isSlotReachable]
+    [isSlotReachable],
   );
 
   const addAnotherDog = () => {
@@ -560,7 +573,7 @@ const BookingModal = ({ service, onClose }) => {
 
     if (!looksLikeJson) {
       throw new Error(
-        `Received an unexpected response while loading availability. Please try again or use the contact form (source: ${requestUrl}).`
+        `Received an unexpected response while loading availability. Please try again or use the contact form (source: ${requestUrl}).`,
       );
     }
 
@@ -568,7 +581,7 @@ const BookingModal = ({ service, onClose }) => {
       return trimmed ? JSON.parse(trimmed) : {};
     } catch (parseError) {
       throw new Error(
-        "Availability response could not be read. Please refresh and try again."
+        "Availability response could not be read. Please refresh and try again.",
       );
     }
   }, []);
@@ -578,7 +591,7 @@ const BookingModal = ({ service, onClose }) => {
       if (!day || !Array.isArray(day.slots) || day.slots.length === 0) {
         return false;
       }
-    
+
       return day.slots.some((slot) => slot.available);
     });
 
@@ -596,10 +609,13 @@ const BookingModal = ({ service, onClose }) => {
     });
   }, []);
 
-  const handleNextMonth = useCallback(() => handleMonthChange(1), [handleMonthChange]);
+  const handleNextMonth = useCallback(
+    () => handleMonthChange(1),
+    [handleMonthChange],
+  );
   const handlePreviousMonth = useCallback(
     () => handleMonthChange(-1),
-    [handleMonthChange]
+    [handleMonthChange],
   );
 
   const loadAvailability = useCallback(async () => {
@@ -628,12 +644,12 @@ const BookingModal = ({ service, onClose }) => {
     } catch (error) {
       console.error("Unable to load live availability", error);
       const fallback = normalizeAvailability(
-        generateDemoAvailability(service.durationMinutes)
+        generateDemoAvailability(service.durationMinutes),
       );
       setAvailability(fallback);
       setInitialVisibleMonth(fallback);
       setAvailabilityNotice(
-        "Live calendar is unreachable — displaying demo slots so you can keep booking."
+        "Live calendar is unreachable — displaying demo slots so you can keep booking.",
       );
     } finally {
       setLoading(false);
@@ -675,18 +691,18 @@ const BookingModal = ({ service, onClose }) => {
     if (!hasFullClientEircode) {
       const minutes = estimateTravelMinutes(
         { eircode: normalized, coords: null },
-        { eircode: anchorEircode, coords: null }
+        { eircode: anchorEircode, coords: null },
       );
       const distance = estimateTravelDistanceKm(
         { eircode: normalized, coords: null },
-        { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
+        { eircode: pricingAnchorEircode, coords: pricingAnchorCoords },
       );
 
       setClientCoordinates(null);
       setTravelMinutes(minutes);
       setTravelDistanceKm(distance);
       setTravelNote(
-        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now."
+        "Please enter your full 7-character Eircode so we can geocode your exact location. We're using the routing key as a fallback for now.",
       );
       setTravelValidationState("approximate");
       return () => controller.abort();
@@ -694,7 +710,9 @@ const BookingModal = ({ service, onClose }) => {
 
     const loadCoordinatesAndEstimate = async () => {
       try {
-        setTravelNote("Looking up your Eircode with OpenStreetMap (Nominatim)...");
+        setTravelNote(
+          "Looking up your Eircode with OpenStreetMap (Nominatim)...",
+        );
 
         const [fromCoords, anchorCoords] = await Promise.all([
           geocodeEircode(normalized, controller.signal),
@@ -713,11 +731,11 @@ const BookingModal = ({ service, onClose }) => {
 
         const fallbackMinutes = estimateTravelMinutes(
           { eircode: normalized, coords: fromCoords },
-          { eircode: anchorEircode, coords: resolvedAnchorCoords }
+          { eircode: anchorEircode, coords: resolvedAnchorCoords },
         );
         const fallbackDistance = estimateTravelDistanceKm(
           { eircode: normalized, coords: fromCoords },
-          { eircode: pricingAnchorEircode, coords: pricingAnchorCoords }
+          { eircode: pricingAnchorEircode, coords: pricingAnchorCoords },
         );
         let minutes = fallbackMinutes;
         let distance = fallbackDistance;
@@ -727,11 +745,13 @@ const BookingModal = ({ service, onClose }) => {
             const routeMetrics = await getRouteMetrics(
               fromCoords,
               resolvedAnchorCoords,
-              controller.signal
+              controller.signal,
             );
             if (routeMetrics) {
               distance = routeMetrics.distanceKm;
-              const bufferedMinutes = Math.round(routeMetrics.durationMinutes + 10);
+              const bufferedMinutes = Math.round(
+                routeMetrics.durationMinutes + 10,
+              );
               minutes = Math.min(Math.max(bufferedMinutes, 12), 120);
             }
           } catch (routeError) {
@@ -747,7 +767,7 @@ const BookingModal = ({ service, onClose }) => {
 
         if (travelAnchor === "previous" && !previousBookingTime) {
           setTravelNote(
-            "Share the end time of your earlier booking so we can hide impossible slots."
+            "Share the end time of your earlier booking so we can hide impossible slots.",
           );
           return;
         }
@@ -766,12 +786,10 @@ const BookingModal = ({ service, onClose }) => {
               ? "and our exact A98H940 address"
               : "and our base routing key"
             : resolvedAnchorCoords
-            ? "and your previous booking location"
-            : "and your previous booking routing key";
+              ? "and your previous booking location"
+              : "and your previous booking routing key";
 
-        setTravelNote(
-          `We estimate about ${minutes} minutes of travel`
-        );
+        setTravelNote(`We estimate about ${minutes} minutes of travel`);
       } catch (lookupError) {
         if (isCancelled) return;
 
@@ -781,21 +799,21 @@ const BookingModal = ({ service, onClose }) => {
           {
             eircode: anchorEircode,
             coords: travelAnchor === "home" ? homeCoordinates : null,
-          }
+          },
         );
         const distance = estimateTravelDistanceKm(
           { eircode: normalized, coords: null },
           {
             eircode: pricingAnchorEircode,
             coords: pricingAnchorCoords,
-          }
+          },
         );
 
         setTravelMinutes(minutes);
         setTravelDistanceKm(distance);
         setTravelValidationState("approximate");
         setTravelNote(
-          "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys."
+          "We couldn't confirm the exact location from your full Eircode via OpenStreetMap, so we're falling back to routing keys.",
         );
       }
     };
@@ -843,7 +861,7 @@ const BookingModal = ({ service, onClose }) => {
     setClientPhone(phoneNumber || "");
     setClientEmail(client.email || "");
     setLoginEmail(client.email || "");
-    
+
     if (shouldPromptEircodeChoice) {
       setPendingProfileEircode(normalizedAddress);
       setEircodeChoiceOpen(true);
@@ -965,7 +983,10 @@ const BookingModal = ({ service, onClose }) => {
     const email = loginEmail.trim();
 
     if (!email) {
-      setLoginResetStatus({ state: "error", message: "Enter your email to get a reset link." });
+      setLoginResetStatus({
+        state: "error",
+        message: "Enter your email to get a reset link.",
+      });
       return;
     }
 
@@ -980,7 +1001,9 @@ const BookingModal = ({ service, onClose }) => {
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(payload?.message || "Could not send reset instructions.");
+        throw new Error(
+          payload?.message || "Could not send reset instructions.",
+        );
       }
 
       setLoginResetStatus({
@@ -990,7 +1013,8 @@ const BookingModal = ({ service, onClose }) => {
     } catch (resetError) {
       setLoginResetStatus({
         state: "error",
-        message: resetError.message || "Unable to send reset instructions right now.",
+        message:
+          resetError.message || "Unable to send reset instructions right now.",
       });
     }
   };
@@ -1007,7 +1031,7 @@ const BookingModal = ({ service, onClose }) => {
     setHasAttemptedPetLoad(false);
     try {
       const requestUrl = `${apiBaseUrl}/api/pets?ownerEmail=${encodeURIComponent(
-        clientEmail
+        clientEmail,
       )}`;
       const response = await fetch(requestUrl, {
         headers: { Accept: "application/json" },
@@ -1040,7 +1064,7 @@ const BookingModal = ({ service, onClose }) => {
 
   useEffect(() => {
     const selectedPets = existingPets.filter((pet) =>
-      selectedPetIds.includes(pet.id)
+      selectedPetIds.includes(pet.id),
     );
 
     if (selectedPets.length === 0) {
@@ -1052,7 +1076,7 @@ const BookingModal = ({ service, onClose }) => {
 
     const desiredCount = Math.min(
       MAX_DOGS,
-      Math.max(dogCount, selectedPets.length)
+      Math.max(dogCount, selectedPets.length),
     );
 
     if (desiredCount !== dogCount) {
@@ -1123,7 +1147,7 @@ const BookingModal = ({ service, onClose }) => {
 
   const monthMatrix = useMemo(
     () => buildMonthMatrix(visibleMonth),
-    [visibleMonth]
+    [visibleMonth],
   );
 
   const formatTime = (slot) => {
@@ -1158,9 +1182,13 @@ const BookingModal = ({ service, onClose }) => {
   const pricing = useMemo(() => {
     const servicePrice = parsePriceValue(service.price ?? service.cost ?? "0");
     const pricingUnit = String(service.price || "").toLowerCase();
-    const hasFlatVisitUnit = ["/visit", "/session", "/journey", "/day", "/night"].some((token) =>
-      pricingUnit.includes(token)
-    );
+    const hasFlatVisitUnit = [
+      "/visit",
+      "/session",
+      "/journey",
+      "/day",
+      "/night",
+    ].some((token) => pricingUnit.includes(token));
     const durationMultiplier =
       servicePrice > 0 && !hasFlatVisitUnit && defaultServiceDuration > 0
         ? Math.max(serviceDuration / defaultServiceDuration, 0.5)
@@ -1168,7 +1196,7 @@ const BookingModal = ({ service, onClose }) => {
     const adjustedServicePrice = servicePrice * durationMultiplier;
     const addonTotal = selectedAddonObjects.reduce(
       (sum, addon) => sum + parsePriceValue(addon.price),
-      0
+      0,
     );
 
     const activeDogsCount = dogs
@@ -1183,7 +1211,7 @@ const BookingModal = ({ service, onClose }) => {
       .filter(Boolean).length;
 
     const visitsWithTime = scheduleEntries.filter(
-      (entry) => entry.date && entry.time
+      (entry) => entry.date && entry.time,
     ).length;
 
     const visitCount = visitsWithTime || 0;
@@ -1206,7 +1234,7 @@ const BookingModal = ({ service, onClose }) => {
     const baseTotal = visitCount ? perVisitTotal * visitCount : 0;
     const chargeableTravelKm = Math.max(
       0,
-      Math.ceil(travelDistanceKm - TRAVEL_DISTANCE_THRESHOLD_KM)
+      Math.ceil(travelDistanceKm - TRAVEL_DISTANCE_THRESHOLD_KM),
     );
     const travelSurcharge =
       chargeableTravelKm * TRAVEL_SURCHARGE_PER_KM * (visitCount || 0);
@@ -1214,9 +1242,15 @@ const BookingModal = ({ service, onClose }) => {
 
     const descriptionParts = [service.title];
 
+    const dogNames = dogs
+      .slice(0, dogCount)
+      .map((dog) => (dog?.name || "").trim())
+      .filter(Boolean);
+    const bookingTitle = `${dogNames.length ? dogNames.join(" & ") : "Dog"} · ${service.title}`;
+
     if (activeDogsCount) {
       descriptionParts.push(
-        `${activeDogsCount} dog${activeDogsCount > 1 ? "s" : ""}`
+        `${activeDogsCount} dog${activeDogsCount > 1 ? "s" : ""}`,
       );
     }
 
@@ -1251,6 +1285,7 @@ const BookingModal = ({ service, onClose }) => {
       visitCount,
       totalPrice,
       description: descriptionParts.join(" · "),
+      bookingTitle,
       selectedAddons: selectedAddonObjects,
       secondDogDiscount,
       secondDogPrice,
@@ -1341,11 +1376,11 @@ const BookingModal = ({ service, onClose }) => {
       if (!day || !Array.isArray(day.slots)) return "";
 
       const firstAvailable = day.slots.find((slot) =>
-        isSlotReachable(slot, day.date)
+        isSlotReachable(slot, day.date),
       );
       return firstAvailable?.time || "";
     },
-    [availabilityMap, isSlotReachable]
+    [availabilityMap, isSlotReachable],
   );
 
   const handleDaySelection = (iso) => {
@@ -1396,14 +1431,18 @@ const BookingModal = ({ service, onClose }) => {
     setSelectedEndTime(nextEndTime);
     if (!selectedTime || !nextEndTime) return;
 
-    const duration = parseTimeToMinutes(nextEndTime) - parseTimeToMinutes(selectedTime);
+    const duration =
+      parseTimeToMinutes(nextEndTime) - parseTimeToMinutes(selectedTime);
     if (duration >= 30) {
       setServiceDuration(Math.max(30, duration));
     }
   };
 
   const handleDurationChange = (nextDuration) => {
-    const normalizedDuration = Math.max(30, Number(nextDuration) || defaultServiceDuration);
+    const normalizedDuration = Math.max(
+      30,
+      Number(nextDuration) || defaultServiceDuration,
+    );
     setServiceDuration(normalizedDuration);
 
     if (!selectedTime) return;
@@ -1419,7 +1458,12 @@ const BookingModal = ({ service, onClose }) => {
   const selectedDay = selectedDate ? availabilityMap[selectedDate] : null;
   const selectedDayWithTravel = useMemo(() => {
     if (!selectedDay)
-      return { day: null, hiddenCount: 0, hasSelectedSlot: false, selectedSlotReachable: false };
+      return {
+        day: null,
+        hiddenCount: 0,
+        hasSelectedSlot: false,
+        selectedSlotReachable: false,
+      };
 
     const slotsWithReachability = (selectedDay.slots || []).map((slot) => ({
       ...slot,
@@ -1427,15 +1471,15 @@ const BookingModal = ({ service, onClose }) => {
     }));
 
     const hiddenCount = slotsWithReachability.filter(
-      (slot) => slot.available && !slot.reachable
+      (slot) => slot.available && !slot.reachable,
     ).length;
 
     const reachableSlots = slotsWithReachability.filter(
-      (slot) => slot.available && slot.reachable
+      (slot) => slot.available && slot.reachable,
     );
 
     const selectedSlot = slotsWithReachability.find(
-      (slot) => slot.time === selectedTime
+      (slot) => slot.time === selectedTime,
     );
 
     const slotsWithSelection = [...reachableSlots];
@@ -1443,7 +1487,7 @@ const BookingModal = ({ service, onClose }) => {
     if (selectedSlot && !selectedSlot.reachable) {
       slotsWithSelection.unshift({ ...selectedSlot, forceVisible: true });
     }
-    
+
     return {
       day: { ...selectedDay, slots: slotsWithSelection },
       hiddenCount,
@@ -1457,7 +1501,7 @@ const BookingModal = ({ service, onClose }) => {
 
     return Boolean(
       selectedDayWithTravel.hasSelectedSlot &&
-        selectedDayWithTravel.selectedSlotReachable
+      selectedDayWithTravel.selectedSlotReachable,
     );
   }, [
     selectedDayWithTravel.hasSelectedSlot,
@@ -1470,7 +1514,7 @@ const BookingModal = ({ service, onClose }) => {
     selectedDate &&
     selectedTime &&
     normalizeEircode(clientEircode) &&
-    isSelectedTimeReachable
+    isSelectedTimeReachable,
   );
   const canContinueFromCalendar = isMultiDay
     ? scheduleEntries.length > 0
@@ -1527,7 +1571,9 @@ const BookingModal = ({ service, onClose }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amountInEuro,
-          description: pricing.description || `Booking: ${service.title}`,
+          description:
+            pricing.description ||
+            `Booking: ${pricing.bookingTitle || service.title}`,
           cancelPath: bookingReturnPath,
         }),
       });
@@ -1587,7 +1633,7 @@ const BookingModal = ({ service, onClose }) => {
       !clientAddress.trim()
     ) {
       setError(
-        "Please add your name, phone number, email, and address so we can confirm your booking."
+        "Please add your name, phone number, email, and address so we can confirm your booking.",
       );
       return;
     }
@@ -1616,14 +1662,17 @@ const BookingModal = ({ service, onClose }) => {
         time: primaryEntry.time,
         durationMinutes,
         serviceId: service.id,
-        serviceTitle: service.title,
+        serviceTitle: pricing.bookingTitle || service.title,
         clientName: clientName.trim(),
         clientPhone: clientPhone.trim(),
         clientAddress: clientAddress.trim(),
         clientEmail: clientEmail.trim(),
         clientEircode: normalizeEircode(clientEircode),
         additionals,
-        notes: [notes.trim(), bookingCategory !== "standard" ? `Category: ${bookingCategory}` : ""]
+        notes: [
+          notes.trim(),
+          bookingCategory !== "standard" ? `Category: ${bookingCategory}` : "",
+        ]
           .filter(Boolean)
           .join("\n"),
         timeZone: availability.timeZone || BUSINESS_TIME_ZONE,
@@ -1677,7 +1726,7 @@ const BookingModal = ({ service, onClose }) => {
       console.error("Booking failed", bookingError);
       setError(
         bookingError.message ||
-          "Unable to send booking. Please try again later."
+          "Unable to send booking. Please try again later.",
       );
     } finally {
       setIsBooking(false);
@@ -1692,24 +1741,19 @@ const BookingModal = ({ service, onClose }) => {
     if (!day) return;
 
     const reachableSlots = (day.slots || []).filter((slot) =>
-      isSlotReachable(slot, day.date)
+      isSlotReachable(slot, day.date),
     );
 
     if (!reachableSlots.length) return;
 
     const hasSelectedSlot = reachableSlots.some(
-      (slot) => slot.time === selectedTime
+      (slot) => slot.time === selectedTime,
     );
 
     if (!hasSelectedSlot) {
       setSelectedTime(reachableSlots[0].time);
     }
-  }, [
-    availabilityMap,
-    isSlotReachable,
-    selectedDate,
-    selectedTime,
-  ]);
+  }, [availabilityMap, isSlotReachable, selectedDate, selectedTime]);
 
   const filteredBreeds = (dogIndex) => {
     const query = breedSearch[dogIndex]?.toLowerCase() || "";
@@ -1720,7 +1764,7 @@ const BookingModal = ({ service, onClose }) => {
     setAdditionals((prev) =>
       prev.includes(value)
         ? prev.filter((item) => item !== value)
-        : [...prev, value]
+        : [...prev, value],
     );
   };
 
@@ -1765,7 +1809,7 @@ const BookingModal = ({ service, onClose }) => {
           "Chat with us for concierge booking support or share your request and we’ll set everything up.",
       },
     }),
-    [service]
+    [service],
   );
 
   const summaryChips = [
@@ -1857,6 +1901,8 @@ const BookingModal = ({ service, onClose }) => {
         <div className="booking-modal">
           <BookingHeader
             service={service}
+            bookingTitle={pricing.bookingTitle}
+            totalPrice={pricing.totalPrice}
             onSupport={() => setSupportOpen(true)}
             onClose={onClose}
           />
@@ -1946,9 +1992,9 @@ const BookingModal = ({ service, onClose }) => {
                     durationMinutes={serviceDuration}
                     onDurationChange={handleDurationChange}
                     minDurationMinutes={30}
-                    category={bookingCategory}
-                    onCategoryChange={setBookingCategory}
                     onPickSlot={handlePickSlot}
+                    totalPrice={pricing.totalPrice}
+                    serviceTitle={pricing.bookingTitle}
                   />
                 )}
 
@@ -1991,7 +2037,7 @@ const BookingModal = ({ service, onClose }) => {
                           </div>
                         </div>
 
-                      {customerMode === "login" ? (
+                        {customerMode === "login" ? (
                           <form
                             className="auth-form"
                             onSubmit={handleSupabaseLogin}
@@ -2005,7 +2051,9 @@ const BookingModal = ({ service, onClose }) => {
                                 <input
                                   type="email"
                                   value={loginEmail}
-                                  onChange={(e) => setLoginEmail(e.target.value)}
+                                  onChange={(e) =>
+                                    setLoginEmail(e.target.value)
+                                  }
                                   placeholder="you@example.com"
                                   autoComplete="email"
                                 />
@@ -2048,7 +2096,7 @@ const BookingModal = ({ service, onClose }) => {
                                   Set a new password
                                 </button>
                               </div>
-                              </div>
+                            </div>
                             {showLoginReset && (
                               <div
                                 style={{
@@ -2070,11 +2118,14 @@ const BookingModal = ({ service, onClose }) => {
                                 >
                                   Set a new password
                                 </p>
-                              <p style={{ margin: 0, color: "#4b5563" }}>
+                                <p style={{ margin: 0, color: "#4b5563" }}>
                                   After multiple login attempts, request a
                                   secure email to create a new password.
                                 </p>
-                                <label className="input-group" style={{ margin: 0 }}>
+                                <label
+                                  className="input-group"
+                                  style={{ margin: 0 }}
+                                >
                                   <span>Email</span>
                                   <input
                                     type="email"
@@ -2096,7 +2147,9 @@ const BookingModal = ({ service, onClose }) => {
                                   <button
                                     type="button"
                                     className="button w-button"
-                                    disabled={loginResetStatus.state === "loading"}
+                                    disabled={
+                                      loginResetStatus.state === "loading"
+                                    }
                                     onClick={sendLoginResetRequest}
                                   >
                                     {loginResetStatus.state === "loading"
@@ -2171,7 +2224,7 @@ const BookingModal = ({ service, onClose }) => {
 
                 {currentStep === "pet" && (
                   <BookingFormStage
-                    toolbar={(
+                    toolbar={
                       <div className="step-toolbar">
                         <div className="actions-stack">
                           <button
@@ -2190,7 +2243,7 @@ const BookingModal = ({ service, onClose }) => {
                           </button>
                         </div>
                       </div>
-                    )}
+                    }
                     bookingFormProps={bookingFormProps}
                     visibleStage="pet"
                     onContinue={() => goToStepAndScroll("addons")}
@@ -2200,7 +2253,7 @@ const BookingModal = ({ service, onClose }) => {
                 {currentStep === "addons" && (
                   <BookingFormStage
                     containerRef={addonsSectionRef}
-                    toolbar={(
+                    toolbar={
                       <div className="step-toolbar">
                         <div className="actions-stack">
                           <button
@@ -2219,7 +2272,7 @@ const BookingModal = ({ service, onClose }) => {
                           </button>
                         </div>
                       </div>
-                    )}
+                    }
                     bookingFormProps={bookingFormProps}
                     visibleStage="addons"
                     onContinue={() => goToStepAndScroll("summary")}
@@ -2229,7 +2282,7 @@ const BookingModal = ({ service, onClose }) => {
                 {currentStep === "summary" && (
                   <BookingFormStage
                     containerRef={summarySectionRef}
-                    toolbar={(
+                    toolbar={
                       <div className="step-toolbar">
                         <button
                           type="button"
@@ -2239,7 +2292,7 @@ const BookingModal = ({ service, onClose }) => {
                           Back to additional care
                         </button>
                       </div>
-                    )}
+                    }
                     bookingFormProps={bookingFormProps}
                     visibleStage="summary"
                     onContinue={() => goToStepAndScroll("summary")}
