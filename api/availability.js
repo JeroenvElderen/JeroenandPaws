@@ -11,7 +11,7 @@ const EIRCODE_FULL_REGEX = /\b([AC-FHKNPRTV-Y]\d{2}[AC-FHKNPRTV-Y0-9]{4})\b/i;
 const EIRCODE_ROUTING_REGEX = /\b([AC-FHKNPRTV-Y]\d{2})\b/i;
 const AVAILABILITY_CACHE_TTL_MS = Number.parseInt(
   process.env.AVAILABILITY_CACHE_TTL_MS ?? "300000",
-  10
+  10,
 );
 const availabilityCache = new Map();
 
@@ -26,7 +26,11 @@ const buildAvailabilityCacheKey = ({
   return `${safeDuration}:${safeWindow}:${normalizedAddress}`;
 };
 
-const getCachedAvailability = ({ durationMinutes, windowDays, clientAddress }) => {
+const getCachedAvailability = ({
+  durationMinutes,
+  windowDays,
+  clientAddress,
+}) => {
   const key = buildAvailabilityCacheKey({
     durationMinutes,
     windowDays,
@@ -141,9 +145,7 @@ const normalizeCalendarEvents = (events, timeZone) =>
     })
     .filter(
       (event) =>
-        event &&
-        !event.isCancelled &&
-        event.showAs?.toLowerCase() !== "free"
+        event && !event.isCancelled && event.showAs?.toLowerCase() !== "free",
     )
     .sort((a, b) => a.start.toMillis() - b.start.toMillis());
 
@@ -193,13 +195,13 @@ const applyTravelBufferToAvailability = async ({
   const bufferMinutes = busyWindows.length
     ? Math.max(
         DEFAULT_MIN_TRAVEL_MINUTES,
-        await estimateTravelMinutes(baseAddress, trimmedAddress)
+        await estimateTravelMinutes(baseAddress, trimmedAddress),
       )
     : 0;
   const bufferedBusyByDate = buildBufferedBusyByDate(
     busyWindows,
     bufferMinutes,
-    timeZone
+    timeZone,
   );
   const hasBufferedBusy = Object.keys(bufferedBusyByDate).length > 0;
   const hasEventLocations = eventLocations.length > 0;
@@ -208,9 +210,7 @@ const applyTravelBufferToAvailability = async ({
     return availability;
   }
 
-  const slotDuration = Number.isFinite(durationMinutes)
-    ? durationMinutes
-    : 60;
+  const slotDuration = Number.isFinite(durationMinutes) ? durationMinutes : 60;
   const travelCache = new Map();
 
   const getTravelMinutes = async (fromAddress, toAddress) => {
@@ -222,7 +222,7 @@ const applyTravelBufferToAvailability = async ({
     }
     const minutes = await estimateTravelMinutes(
       from || baseAddress,
-      to || baseAddress
+      to || baseAddress,
     );
     travelCache.set(cacheKey, minutes);
     return minutes;
@@ -265,7 +265,7 @@ const applyTravelBufferToAvailability = async ({
       const bufferedBusy = bufferedBusyByDate[day.date] || [];
       const conflictsWithBufferedBusy = bufferedBusy.some(
         ({ startMinutes: busyStart, endMinutes: busyEnd }) =>
-          endMinutes > busyStart && startMinutes < busyEnd
+          endMinutes > busyStart && startMinutes < busyEnd,
       );
 
       if (conflictsWithBufferedBusy) {
@@ -277,7 +277,7 @@ const applyTravelBufferToAvailability = async ({
         const { previous, next } = findAdjacentEvents(
           normalizedEvents,
           slotStartUtc,
-          slotEndUtc
+          slotEndUtc,
         );
 
         if (previous) {
@@ -286,7 +286,7 @@ const applyTravelBufferToAvailability = async ({
             .as("minutes");
           const travelMinutes = await getTravelMinutes(
             previous.location || baseAddress,
-            trimmedAddress
+            trimmedAddress,
           );
           if (availableGap < travelMinutes) {
             updatedSlots.push({ ...slot, available: false, reachable: false });
@@ -300,7 +300,7 @@ const applyTravelBufferToAvailability = async ({
             .as("minutes");
           const travelMinutes = await getTravelMinutes(
             trimmedAddress,
-            next.location || baseAddress
+            next.location || baseAddress,
           );
           if (availableGap < travelMinutes) {
             updatedSlots.push({ ...slot, available: false, reachable: false });
@@ -328,7 +328,7 @@ const isMailboxConcurrencyError = (error) => {
 const resolveWindowDays = (windowDaysParam) => {
   const configuredWindowDays = Number.parseInt(
     process.env.WINDOW_DAYS ?? "365",
-    10
+    10,
   );
   const defaultWindowDays = Number.isNaN(configuredWindowDays)
     ? 21
@@ -396,6 +396,8 @@ const buildAvailability = async ({
   return availability;
 };
 
+const DEFAULT_OWNER_CALENDAR_ID = "jeroen@jeroenandpaws.com";
+
 const availabilityHandler = async (req, res) => {
   if (req.method !== "GET") {
     res.statusCode = 405;
@@ -406,13 +408,16 @@ const availabilityHandler = async (req, res) => {
   }
 
   try {
-    const calendarId = process.env.OUTLOOK_CALENDAR_ID;
-    if (!calendarId) {
-      throw new Error("Missing OUTLOOK_CALENDAR_ID env var");
-    }
+    const calendarId =
+      process.env.OUTLOOK_CALENDAR_ID ||
+      process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL ||
+      DEFAULT_OWNER_CALENDAR_ID;
 
-    const { durationMinutes, clientAddress, windowDays: windowDaysParam } =
-      req.query || {};
+    const {
+      durationMinutes,
+      clientAddress,
+      windowDays: windowDaysParam,
+    } = req.query || {};
     const serviceDurationMinutes = Number.parseInt(durationMinutes, 10);
 
     const windowDays = resolveWindowDays(windowDaysParam);

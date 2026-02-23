@@ -22,9 +22,9 @@ const TimeStepCard = ({
   durationMinutes,
   onDurationChange,
   minDurationMinutes,
-  category,
-  onCategoryChange,
   onPickSlot,
+  totalPrice,
+  serviceTitle,
 }) => {
   return (
     <div className="step-card" ref={timesSectionRef}>
@@ -49,9 +49,9 @@ const TimeStepCard = ({
         durationMinutes={durationMinutes}
         onDurationChange={onDurationChange}
         minDurationMinutes={minDurationMinutes}
-        category={category}
-        onCategoryChange={onCategoryChange}
         onPickSlot={onPickSlot}
+        totalPrice={totalPrice}
+        serviceTitle={serviceTitle}
       />
     </div>
   );

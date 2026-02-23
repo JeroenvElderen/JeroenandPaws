@@ -28,6 +28,8 @@ const ADDITIONAL_LABELS = {
   "house-care": "House touches",
 };
 
+const DEFAULT_OWNER_CALENDAR_ID = "jeroen@jeroenandpaws.com";
+
 const resolveCalendarEmail = (calendarId) =>
   process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL?.trim() ||
   process.env.OUTLOOK_SENDER_EMAIL?.trim() ||
@@ -78,7 +80,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const calendarId = process.env.OUTLOOK_CALENDAR_ID;
+    const calendarId =
+      process.env.OUTLOOK_CALENDAR_ID || DEFAULT_OWNER_CALENDAR_ID;
     let accessToken = null;
     const calendarEmail = resolveCalendarEmail(calendarId);
 
@@ -120,7 +123,9 @@ module.exports = async (req, res) => {
     if (!clientName || !clientPhone || !clientEmail || !clientAddress) {
       res.statusCode = 400;
       res.end(
-        JSON.stringify({ message: "Name, phone, email, and address required." })
+        JSON.stringify({
+          message: "Name, phone, email, and address required.",
+        }),
       );
       return;
     }
@@ -154,12 +159,12 @@ module.exports = async (req, res) => {
       recurrence === "weekly"
         ? "weekly"
         : recurrence === "monthly"
-        ? "monthly"
-        : recurrence === "six-months"
-        ? "every 6 months"
-        : recurrence === "yearly"
-        ? "yearly"
-        : "";
+          ? "monthly"
+          : recurrence === "six-months"
+            ? "every 6 months"
+            : recurrence === "yearly"
+              ? "yearly"
+              : "";
 
     const aggregatedNotes = [
       notes?.trim(),
@@ -240,7 +245,8 @@ module.exports = async (req, res) => {
             accessToken,
             calendarId,
             subject: buildCalendarSubject({
-              serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
+              serviceTitle:
+                serviceTitle || bookingResult?.booking?.service_title,
               status: "pending",
             }),
             start: start.toUTC().toISO(),
@@ -248,14 +254,16 @@ module.exports = async (req, res) => {
             timeZone,
             locationDisplayName: clientAddress,
             body: buildCalendarBody({
-              serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
+              serviceTitle:
+                serviceTitle || bookingResult?.booking?.service_title,
               status: "pending",
               paymentLink,
             }),
             bodyContentType: "Text",
             categories: buildCalendarCategories({
               status: "pending",
-              serviceTitle: serviceTitle || bookingResult?.booking?.service_title,
+              serviceTitle:
+                serviceTitle || bookingResult?.booking?.service_title,
             }),
             showAs: "tentative",
           });
@@ -263,7 +271,7 @@ module.exports = async (req, res) => {
           if (calendarEvent?.id) {
             await saveBookingCalendarEventId(
               bookingResult.booking.id,
-              calendarEvent.id
+              calendarEvent.id,
             );
           }
 
@@ -271,7 +279,6 @@ module.exports = async (req, res) => {
             bookingId: bookingResult.booking.id,
             ok: Boolean(calendarEvent?.id),
           });
-          
         } catch (calendarError) {
           console.error("Calendar creation failed", calendarError);
           calendarResults.push({
@@ -298,7 +305,7 @@ module.exports = async (req, res) => {
       return res.end(
         JSON.stringify({
           message: "Booking created but no booking ID returned",
-        })
+        }),
       );
     }
 
@@ -310,11 +317,13 @@ module.exports = async (req, res) => {
 
     const confirmationBody = buildConfirmationBody({
       clientName,
-      timing: bookingResults[0]?.timing || buildFriendlyTiming({
-        start: DateTime.now().toUTC(),
-        end: DateTime.now().toUTC(),
-        timeZone,
-      }),
+      timing:
+        bookingResults[0]?.timing ||
+        buildFriendlyTiming({
+          start: DateTime.now().toUTC(),
+          end: DateTime.now().toUTC(),
+          timeZone,
+        }),
       service: bookingResults[0]?.service || { title: serviceTitle },
       notes: aggregatedNotes,
       pets: petsFromBody,
@@ -329,11 +338,13 @@ module.exports = async (req, res) => {
     const notificationBody = buildNotificationBody({
       service: { title: serviceTitle },
       client: { full_name: clientName, email: clientEmail },
-      timing: bookingResults[0]?.timing || buildFriendlyTiming({
-        start: DateTime.now().toUTC(),
-        end: DateTime.now().toUTC(),
-        timeZone,
-      }),
+      timing:
+        bookingResults[0]?.timing ||
+        buildFriendlyTiming({
+          start: DateTime.now().toUTC(),
+          end: DateTime.now().toUTC(),
+          timeZone,
+        }),
       notes: aggregatedNotes,
       pets: petsFromBody,
       schedule: scheduleSummary,
@@ -398,7 +409,7 @@ module.exports = async (req, res) => {
         calendarStatus: calendarResults.length
           ? { ok: calendarResults.every((entry) => entry.ok), calendarResults }
           : { ok: false, skipped: true },
-      })
+      }),
     );
   } catch (err) {
     console.error("Booking error", err);
