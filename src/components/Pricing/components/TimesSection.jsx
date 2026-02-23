@@ -115,7 +115,7 @@ const TimesSection = ({
   return (
     <div className="times-card" ref={timesSectionRef}>
       <div className="times-header">
-        <h4>Available slots</h4>
+        <h4>Outlook-style event creator</h4>
         <div className="times-actions">
           <p className="times-total">
             Total: €{Number(totalPrice || 0).toFixed(2)}
@@ -202,6 +202,10 @@ const TimesSection = ({
 
         {selectedDay && selectedTime && (
           <div className="slot-editor">
+            <div className="event-title-row">
+              <span className="muted subtle">Event title</span>
+              <strong>{serviceTitle || "Booking"}</strong>
+            </div>
             <div className="slot-editor__header">
               <h5>{serviceTitle}</h5>
               <p className="muted subtle">
