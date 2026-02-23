@@ -1,23 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
-import { DateTime } from "luxon";
-import { weekdayLabels, DOG_BREEDS } from "../constants";
-import {
-  buildMonthMatrix,
-  createEmptyDogProfile,
-  generateDemoAvailability,
-} from "../utils";
-import { useAuth } from "../../../context/AuthContext";
-import {
-  computeApiBaseUrl,
-  getCachedAvailability,
-  prefetchAvailability,
-} from "../availabilityCache";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ChatOrFormModal from "../ChatOrFormModal";
 import BookingForm from "../components/BookingForm";
 import BookingErrorBanner from "./BookingErrorBanner";
@@ -334,18 +315,7 @@ const BookingModal = ({ service, onClose }) => {
   );
 
   useEffect(() => {
-    setServiceDuration(defaultServiceDuration);
-  }, [defaultServiceDuration]);
-  const calendarDays = useMemo(() => availability.dates || [], [availability]);
-  const availabilityMap = useMemo(() => {
-    return calendarDays.reduce((acc, day) => {
-      acc[day.date] = day;
-      return acc;
-    }, {});
-  }, [calendarDays]);
-  const busyByDate = useMemo(() => {
-    return (availability.busy || []).reduce((acc, interval) => {
-      if (!interval?.start || !interval?.end) return acc;
+    let isMounted = true;
 
       const start = DateTime.fromISO(interval.start).setZone(
         BUSINESS_TIME_ZONE,
@@ -496,16 +466,10 @@ const BookingModal = ({ service, onClose }) => {
     [isSlotReachable],
   );
 
-  const addAnotherDog = () => {
-    setShowDogDetails(true);
-    setDogCount((prevCount) => {
-      const nextCount = Math.min(MAX_DOGS, prevCount + 1);
-      if (nextCount === prevCount) return prevCount;
-
-      setDogs((prevDogs) => {
-        const newDogs = [...prevDogs];
-        while (newDogs.length < nextCount) {
-          newDogs.push(createEmptyDogProfile());
+        if (!response.ok) {
+          throw new Error(
+            "We couldn't load the Outlook booking link right now.",
+          );
         }
         return newDogs;
       });
@@ -769,7 +733,6 @@ const BookingModal = ({ service, onClose }) => {
           setTravelNote(
             "Share the end time of your earlier booking so we can hide impossible slots.",
           );
-          return;
         }
 
         const anchorLabel =
@@ -818,11 +781,10 @@ const BookingModal = ({ service, onClose }) => {
       }
     };
 
-    loadCoordinatesAndEstimate();
+    loadBookingLink();
 
     return () => {
-      isCancelled = true;
-      controller.abort();
+      isMounted = false;
     };
   }, [
     clientAddress,
@@ -1537,17 +1499,7 @@ const BookingModal = ({ service, onClose }) => {
     });
   };
 
-  const monthLabel = visibleMonth.toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
-  const selectedDateLabel = selectedDate
-    ? new Date(selectedDate).toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      })
-    : "Pick a date";
+  const canOpenOutlook = Boolean(outlookBookingUrl);
 
   const handleBookAndPay = async () => {
     try {
@@ -1829,66 +1781,10 @@ const BookingModal = ({ service, onClose }) => {
     if (step === "summary") scrollToSection(summarySectionRef);
   };
 
-  const bookingFormProps = {
-    error,
-    success,
-    customerMode,
-    onSelectCustomerMode: handleCustomerModeChange,
-    service,
-    scheduleEntries,
-    formatTime,
-    clientName,
-    setClientName,
-    clientPhone,
-    setClientPhone,
-    clientEmail,
-    setClientEmail,
-    clientAddress,
-    setClientAddress,
-    clientAddressLocked: Boolean(normalizeEircode(clientEircode)),
-    canLoadPets,
-    fetchExistingPets,
-    isLoadingPets,
-    existingPets,
-    hasAttemptedPetLoad,
-    selectedPetIds,
-    setSelectedPetIds,
-    showDogDetails,
-    setShowDogDetails,
-    dogCount,
-    addAnotherDog,
-    removeDog,
-    dogs,
-    updateDogField,
-    handleDogPhotoChange,
-    MAX_DOGS,
-    breedSearch,
-    setBreedSearch,
-    notes,
-    setNotes,
-    additionals,
-    additionalsOpen,
-    setAdditionalsOpen,
-    toggleAdditional,
-    addons,
-    selectedAdditionalLabels,
-    formatCurrency,
-    parsePriceValue,
-    pricing,
-    hasAtLeastOneDog,
-    handleBookAndPay,
-    isBooking,
-    loading,
-    isPopup: false,
-    addOnDropdownRef,
-    filteredBreeds,
-    customerDetailsRef,
-    travelNote,
-    allowRecurring: allowWeeklyRecurring,
-    recurrence,
-    isMultiDay,
-    onRecurrenceChange: setRecurrence,
-  };
+  const primaryLabel = useMemo(() => {
+    if (isLoadingLink) return "Loading Outlook…";
+    return canOpenOutlook ? "Book in Outlook" : "Contact support";
+  }, [canOpenOutlook, isLoadingLink]);
 
   return (
     <>
@@ -2309,10 +2205,11 @@ const BookingModal = ({ service, onClose }) => {
           </div>
         </div>
       </div>
-      {supportOpen && (
+
+      {showSupport && (
         <ChatOrFormModal
-          service={supportService}
-          onClose={() => setSupportOpen(false)}
+          service={service}
+          onClose={() => setShowSupport(false)}
         />
       )}
     </>
