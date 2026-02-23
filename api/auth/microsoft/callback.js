@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
     const tokens = await exchangeCodeForTokens(code);
     serializeTokens(res, tokens);
 
-    const redirectTarget = returnTo || "/booking";
+    const redirectTarget = returnTo || "/contact";
     res.statusCode = 302;
     res.setHeader("Location", redirectTarget);
     res.end();

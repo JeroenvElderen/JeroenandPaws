@@ -7,7 +7,6 @@ const {
   getBearerToken,
   requireSupabase,
 } = require("./_lib/supabase");
-const { reconcileBookingsWithCalendar } = require('./_lib/bookings');
 
 module.exports = async (req, res) => {
   if (req.method === "GET") {
@@ -60,22 +59,12 @@ module.exports = async (req, res) => {
       .eq("owner_id", clientResult.data.id)
       .order("created_at", { ascending: false });
 
-    const bookingsResult = await supabaseAdmin
-      .from("bookings")
-      .select("*, services_catalog(*), booking_pets(pet_id)")
-      .eq("client_id", clientResult.data.id)
-      .order("start_at", { ascending: false });
-
-    const reconciledBookings = await reconcileBookingsWithCalendar(
-      bookingsResult.data || []
-    );
-
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
         client: clientResult.data,
         pets: petsResult.data || [],
-        bookings: reconciledBookings,
+        bookings: [],
       })
     );
     return;

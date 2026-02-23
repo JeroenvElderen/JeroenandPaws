@@ -11,7 +11,7 @@ export async function getServerSideProps(context) {
 
   return {
     redirect: {
-      destination: '/booking',
+      destination: '/contact',
       permanent: false,
     },
   };
