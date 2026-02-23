@@ -29,6 +29,64 @@ const PricingControlStyles = () => (
           padding: 6px 10px;
           font-size: 12px;
         }
+
+        .ghost-button.tiny.is-active {
+          background: rgba(124, 93, 242, 0.3);
+          border-color: rgba(124, 93, 242, 0.7);
+        }
+        .planner-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          overflow-x: auto;
+        }
+        .planner-grid__header,
+        .planner-row {
+          display: grid;
+          grid-template-columns: 72px repeat(7, minmax(94px, 1fr));
+          gap: 8px;
+          align-items: center;
+        }
+        .planner-hour {
+          font-size: 12px;
+          opacity: 0.8;
+          text-align: right;
+          padding-right: 6px;
+        }
+        .planner-day-label {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.06);
+          color: #f2ecff;
+          padding: 8px;
+          font-weight: 600;
+        }
+        .planner-day-label.active {
+          border-color: rgba(124, 93, 242, 0.7);
+          background: rgba(124, 93, 242, 0.2);
+        }
+        .planner-cell {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          color: #f2ecff;
+          min-height: 40px;
+          font-weight: 700;
+        }
+        .planner-cell.open {
+          background: rgba(124, 93, 242, 0.2);
+          border-color: rgba(124, 93, 242, 0.48);
+          color: #f5f2ff;
+        }
+        .planner-cell.booked {
+          background: rgba(48, 31, 96, 0.62);
+          border-color: rgba(124, 93, 242, 0.24);
+          color: rgba(220, 212, 242, 0.86);
+        }
+        .planner-cell.active {
+          box-shadow: 0 0 0 2px rgba(124, 93, 242, 0.88);
+          background: linear-gradient(145deg, rgba(110, 75, 216, 0.36), rgba(124, 93, 242, 0.42));
+        }
+
         .selection-summary {
           display: flex;
           justify-content: space-between;
@@ -299,6 +357,78 @@ const PricingControlStyles = () => (
   grid-column: 1 / -1;
 }
 
+
+
+.composer-toolbar {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.composer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 14px;
+}
+
+.composer-main,
+.composer-day-rail {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.slot-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.composer-day-rail h5 {
+  margin: 0 0 8px;
+}
+
+.planner-rail-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.planner-rail-cell {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 8px 10px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #f4efff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.planner-rail-cell.open {
+  border-color: rgba(124, 93, 242, 0.5);
+  background: rgba(124, 93, 242, 0.2);
+}
+
+.planner-rail-cell.booked {
+  border-color: rgba(163, 163, 175, 0.4);
+  background: rgba(116, 116, 128, 0.35);
+}
+
+.planner-rail-cell.active {
+  box-shadow: 0 0 0 2px rgba(124, 93, 242, 0.85);
+}
+
+@media (max-width: 980px) {
+  .composer-layout {
+    grid-template-columns: 1fr;
+  }
+}
   `}</style>
 );
 

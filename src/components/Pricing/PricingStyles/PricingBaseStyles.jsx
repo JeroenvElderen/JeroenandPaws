@@ -294,6 +294,13 @@ const PricingBaseStyles = () => (
           color: #0c061a;
           box-shadow: 0 8px 18px rgba(124, 93, 242, 0.35);
         }
+        .step-label {
+          white-space: nowrap;
+          font-size: 13px;
+        }
+        .step-chip.active .step-label {
+          color: #150d2e;
+        }
 
         .step-card {
           background: rgba(255, 255, 255, 0.05);
