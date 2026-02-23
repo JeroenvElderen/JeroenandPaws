@@ -87,6 +87,15 @@ const PricingBaseStyles = () => (
       display: flex;
       flex-direction: column;
     }
+
+    .outlook-only-modal {
+      max-width: 680px;
+      height: auto;
+      min-height: 0;
+    }
+    .outlook-only-card {
+      gap: 14px;
+    }
     .service-chooser {
       width: min(980px, 100%);
       background: linear-gradient(135deg, #170f2c, #1c1235);

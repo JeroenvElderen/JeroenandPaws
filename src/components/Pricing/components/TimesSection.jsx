@@ -104,23 +104,6 @@ const TimesSection = ({
     window.addEventListener("pointerup", onUp);
   };
 
-  const handleTrackClick = (event) => {
-    if (!Number.isFinite(startMinutes) || !Number.isFinite(endMinutes)) return;
-
-    const trackRect = event.currentTarget.getBoundingClientRect();
-    const offsetY = event.clientY - trackRect.top;
-    const clickedSteps = Math.round(offsetY / stepHeight);
-    const clickedMinutes = dayStartMinutes + clickedSteps * gridStep;
-    const duration = Math.max(minDurationMinutes, endMinutes - startMinutes);
-    const nextStart = Math.max(
-      dayStartMinutes,
-      Math.min(dayEndMinutes - duration, clickedMinutes),
-    );
-
-    handleTimeSelection(minutesToTime(nextStart));
-    onEndTimeChange?.(minutesToTime(nextStart + duration));
-  };
-
   const slotOptions =
     selectedDay?.slots
       ?.filter(
@@ -226,8 +209,7 @@ const TimesSection = ({
             <div className="slot-editor__header">
               <h5>{serviceTitle}</h5>
               <p className="muted subtle">
-                Drag to move, pull the bottom handle to extend or shorten, or
-                click on the timeline to reposition.
+                Drag the green block to adjust time like Outlook.
               </p>
             </div>
 
@@ -239,11 +221,7 @@ const TimesSection = ({
                   return <span key={minutes}>{minutesToTime(minutes)}</span>;
                 })}
               </div>
-              <div
-                className="time-dragger__track"
-                role="presentation"
-                onClick={handleTrackClick}
-              >
+              <div className="time-dragger__track" role="presentation">
                 {Number.isFinite(startMinutes) &&
                   Number.isFinite(endMinutes) && (
                     <div
@@ -253,7 +231,6 @@ const TimesSection = ({
                         height: `${blockHeight}px`,
                       }}
                       onPointerDown={(event) => onDragStart(event, "move")}
-                      onClick={(event) => event.stopPropagation()}
                     >
                       <span>
                         {selectedTime} - {selectedEndTime}

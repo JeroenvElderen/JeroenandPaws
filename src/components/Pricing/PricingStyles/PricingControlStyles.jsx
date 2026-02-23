@@ -297,21 +297,6 @@ const PricingControlStyles = () => (
       margin: 4px 0 0;
     }
 
-    .event-title-row {
-      display: grid;
-      gap: 2px;
-      margin-bottom: 10px;
-      padding: 8px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .event-title-row strong {
-      color: #f2ecff;
-      font-size: 15px;
-    }
-
     .slot-editor__grid {
       margin-top: 12px;
       display: grid;
