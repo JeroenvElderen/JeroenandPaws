@@ -1901,6 +1901,8 @@ const BookingModal = ({ service, onClose }) => {
         <div className="booking-modal">
           <BookingHeader
             service={service}
+            bookingTitle={pricing.bookingTitle}
+            totalPrice={pricing.totalPrice}
             onSupport={() => setSupportOpen(true)}
             onClose={onClose}
           />
@@ -1990,8 +1992,6 @@ const BookingModal = ({ service, onClose }) => {
                     durationMinutes={serviceDuration}
                     onDurationChange={handleDurationChange}
                     minDurationMinutes={30}
-                    category={bookingCategory}
-                    onCategoryChange={setBookingCategory}
                     onPickSlot={handlePickSlot}
                     totalPrice={pricing.totalPrice}
                     serviceTitle={pricing.bookingTitle}
