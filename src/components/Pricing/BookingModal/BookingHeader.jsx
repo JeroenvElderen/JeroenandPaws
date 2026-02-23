@@ -3,6 +3,8 @@ import React from "react";
 const BookingHeader = ({
   service,
   onSupport,
+  onOutlookBooking,
+  hasOutlookBookingLink = false,
   onClose,
   totalPrice = 0,
   bookingTitle = "",
@@ -19,9 +21,19 @@ const BookingHeader = ({
           <span>Total price</span>
           <strong>€{Number(totalPrice || 0).toFixed(2)}</strong>
         </div>
-        <button type="button" className="ghost-button" onClick={onSupport}>
-          Support
-        </button>
+        {hasOutlookBookingLink ? (
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={onOutlookBooking}
+          >
+            Book in Outlook
+          </button>
+        ) : (
+          <button type="button" className="ghost-button" onClick={onSupport}>
+            Support
+          </button>
+        )}
         <button
           className="close-button"
           type="button"
