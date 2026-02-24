@@ -211,6 +211,39 @@ const BookingModal = ({ service, onClose }) => {
     [availabilityMap, travelBufferSlots],
   );
 
+  const dayBlocks = useCallback(
+    (isoDate) => {
+      const slotsForDay = daySlots(isoDate);
+      const blocks = [];
+      let currentBlock = null;
+
+      slotsForDay.forEach((slot) => {
+        if (!currentBlock || currentBlock.state !== slot.state) {
+          if (currentBlock) {
+            blocks.push(currentBlock);
+          }
+          currentBlock = {
+            state: slot.state,
+            start: slot.time,
+            end: minutesToTime((timeToMinutes(slot.time) || 0) + SLOT_STEP_MINUTES),
+          };
+          return;
+        }
+
+        currentBlock.end = minutesToTime(
+          (timeToMinutes(slot.time) || 0) + SLOT_STEP_MINUTES,
+        );
+      });
+
+      if (currentBlock) {
+        blocks.push(currentBlock);
+      }
+
+      return blocks;
+    },
+    [daySlots],
+  );
+
   const currentDate = selectedDate || makeIsoDate(new Date());
   const currentDaySlots = useMemo(
     () => daySlots(currentDate),
@@ -572,8 +605,8 @@ const BookingModal = ({ service, onClose }) => {
               </div>
             ) : (
               <div className="planner-table">
-                <div className="planner-header">
-                  <span />
+                <div className="planner-header" style={{ "--planner-cols": plannerDates.length }}>
+                  <span className="planner-time" />
                   {plannerDates.map((isoDate) => (
                     <button
                       key={isoDate}
@@ -586,28 +619,70 @@ const BookingModal = ({ service, onClose }) => {
                   ))}
                 </div>
 
-                {ALL_TIMES.map((time) => (
-                  <div className="planner-row" key={`row-${time}`}>
-                    <span className="planner-time">{time}</span>
-                    {plannerDates.map((isoDate) => {
-                      const slot = daySlots(isoDate).find(
-                        (entry) => entry.time === time,
-                      );
-                      const isOpen = slot?.state === "open";
-                      return (
-                        <button
-                          key={`${isoDate}-${time}`}
-                          type="button"
-                          className={`planner-cell ${slot?.state || "booked"}`}
-                          onClick={() => pickSlot(isoDate, time)}
-                          disabled={!isOpen}
-                        >
-                          {slot?.reason || "Booked"}
-                        </button>
-                      );
-                    })}
+                <div className="planner-body" style={{ "--planner-cols": plannerDates.length }}>
+                  <div className="planner-time-column">
+                    {ALL_TIMES.filter((_, idx) => idx % 2 === 0).map((time) => (
+                      <span key={`label-${time}`} className="planner-time">
+                        {time}
+                      </span>
+                    ))}
                   </div>
-                ))}
+                
+                {plannerDates.map((isoDate) => (
+                    <div key={`col-${isoDate}`} className="planner-column">
+                      <div className="planner-grid-lines">
+                        {ALL_TIMES.map((time) => (
+                          <div key={`${isoDate}-line-${time}`} className="planner-line" />
+                        ))}
+                      </div>
+
+                      {dayBlocks(isoDate).map((block) => {
+                        const startMinutes = timeToMinutes(block.start) || 0;
+                        const endMinutes = timeToMinutes(block.end) || 0;
+                        const top =
+                          ((startMinutes - SLOT_START_HOUR * 60) /
+                            (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                          100;
+                        const height =
+                          ((endMinutes - startMinutes) /
+                            (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                          100;
+
+                        return (
+                          <button
+                            key={`${isoDate}-${block.start}-${block.end}-${block.state}`}
+                            type="button"
+                            className={`planner-block ${block.state}`}
+                            style={{ top: `${top}%`, height: `${height}%` }}
+                            onClick={() =>
+                              block.state === "open" && pickSlot(isoDate, block.start)
+                            }
+                            disabled={block.state !== "open"}
+                          >
+                            <span>{block.start}</span>
+                            <strong>
+                              {block.state === "open" ? "Available" : "Booked"}
+                            </strong>
+                          </button>
+                        );
+                      })}
+
+                      {selectedDate === isoDate &&
+                        selectedStartMinutes !== null &&
+                        selectedEndMinutes !== null && (
+                          <div
+                            className="planner-selected"
+                            style={{
+                              top: `${selectionTopPercent}%`,
+                              height: `${selectionHeightPercent}%`,
+                            }}
+                          >
+                            {selectedStart} - {selectedEnd}
+                          </div>
+                        )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -783,24 +858,40 @@ const BookingModal = ({ service, onClose }) => {
                   Booked blocks mirror Outlook style (gray). Drag purple handles
                   to change duration.
                 </p>
-                <div
-                  className="rail-grid outlook-day"
-                  id="booking-day-rail-grid"
-                >
-                  {currentDaySlots.map((slot) => (
-                    <button
-                      key={`rail-${slot.time}`}
-                      type="button"
-                      className={`outlook-slot ${slot.state}`}
-                      disabled={slot.state !== "open"}
-                      onClick={() => pickSlot(currentDate, slot.time)}
-                    >
-                      <span>{slot.time}</span>
-                      {(slot.state === "booked" || slot.state === "travel") && (
-                        <strong>Booked</strong>
-                      )}
-                    </button>
-                  ))}
+                <div className="rail-grid outlook-day" id="booking-day-rail-grid">
+                  <div className="planner-grid-lines">
+                    {currentDaySlots.map((slot) => (
+                      <div key={`rail-line-${slot.time}`} className="planner-line" />
+                    ))}
+                  </div>
+                  {dayBlocks(currentDate).map((block) => {
+                    const startMinutes = timeToMinutes(block.start) || 0;
+                    const endMinutes = timeToMinutes(block.end) || 0;
+                    const top =
+                      ((startMinutes - SLOT_START_HOUR * 60) /
+                        (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                      100;
+                    const height =
+                      ((endMinutes - startMinutes) /
+                        (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                      100;
+
+                    return (
+                      <button
+                        key={`rail-${block.start}-${block.end}-${block.state}`}
+                        type="button"
+                        className={`outlook-slot ${block.state}`}
+                        style={{ top: `${top}%`, height: `${height}%` }}
+                        disabled={block.state !== "open"}
+                        onClick={() => pickSlot(currentDate, block.start)}
+                      >
+                        <span>
+                          {block.start} - {block.end}
+                        </span>
+                        <strong>{block.state === "open" ? "Available" : "Booked"}</strong>
+                      </button>
+                    );
+                  })}
                   {selectedStartMinutes !== null &&
                     selectedEndMinutes !== null && (
                       <div
@@ -974,12 +1065,24 @@ const BookingModal = ({ service, onClose }) => {
           gap: 8px;
           overflow: auto;
         }
-        .planner-header,
-        .planner-row {
+        .planner-header {
           display: grid;
-          grid-template-columns: 72px repeat(7, minmax(110px, 1fr));
+          grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
           gap: 8px;
           align-items: center;
+        }
+        .planner-body {
+          display: grid;
+          grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
+          gap: 8px;
+          min-height: 620px;
+        }
+        .planner-time-column {
+          display: grid;
+          grid-template-rows: repeat(12, 1fr);
+          align-items: start;
+          border-right: 1px solid rgba(255, 255, 255, 0.15);
+          padding-top: 6px;
         }
         .planner-day {
           border: 1px solid rgba(255, 255, 255, 0.16);
@@ -997,25 +1100,66 @@ const BookingModal = ({ service, onClose }) => {
           text-align: right;
           color: #c8bddf;
           font-size: 12px;
+          padding-right: 8px;
         }
-        .planner-cell {
-          border: 1px solid rgba(255, 255, 255, 0.14);
+        .planner-column {
+          position: relative;
+          border-left: 1px solid rgba(255, 255, 255, 0.16);
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.01);
+          min-height: 620px;
+        }
+        .planner-grid-lines {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          grid-template-rows: repeat(24, 1fr);
+          pointer-events: none;
+        }
+        .planner-line {
+          border-top: 1px dashed rgba(255, 255, 255, 0.11);
+        }
+        .planner-line:nth-child(2n) {
+          border-top-style: solid;
+          border-top-color: rgba(255, 255, 255, 0.18);
+        }
+        .planner-block {
+          position: absolute;
+          left: 6px;
+          right: 6px;
           border-radius: 8px;
-          padding: 8px;
+          padding: 6px 8px;
           font-size: 12px;
           font-weight: 700;
           color: #efe8ff;
+          z-index: 2;
+          display: grid;
+          align-content: start;
+          text-align: left;
         }
-        .planner-cell.open {
-          background: rgba(124, 93, 242, 0.22);
-          border-color: rgba(124, 93, 242, 0.6);
+        .planner-block.open {
+          background: rgba(124, 93, 242, 0.6);
+          border: 1px solid rgba(181, 156, 255, 0.95);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
           cursor: pointer;
         }
-        .planner-cell.booked,
-        .planner-cell.travel {
-          background: rgba(120, 120, 130, 0.45);
-          border-color: rgba(180, 180, 190, 0.45);
+        .planner-block.booked,
+        .planner-block.travel {
+          background: rgba(63, 61, 83, 0.8);
+          border: 1px solid rgba(151, 148, 183, 0.55);
           color: #e8e8eb;
+        }
+        .planner-selected {
+          position: absolute;
+          left: 12px;
+          right: 12px;
+          border: 1px solid rgba(214, 192, 255, 0.98);
+          background: rgba(145, 108, 255, 0.78);
+          border-radius: 8px;
+          font-size: 11px;
+          padding: 3px 6px;
+          font-weight: 700;
+          z-index: 3;
         }
 
         .month-grid {
@@ -1072,33 +1216,38 @@ const BookingModal = ({ service, onClose }) => {
           align-items: center;
         }
         .rail-grid {
-          display: grid;
-          gap: 6px;
-          max-height: 520px;
-          overflow: auto;
           position: relative;
+          min-height: 620px;
+          border-left: 1px solid rgba(255, 255, 255, 0.18);
+          border-right: 1px solid rgba(255, 255, 255, 0.1);
+          overflow: hidden;
         }
         .outlook-slot {
-          border: 1px solid rgba(255, 255, 255, 0.18);
+          position: absolute;
+          left: 8px;
+          right: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.26);
           border-radius: 8px;
-          min-height: 32px;
-          background: rgba(124, 93, 242, 0.18);
+          min-height: 26px;
+          background: rgba(124, 93, 242, 0.58);
           color: #f3eefe;
           padding: 6px 10px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          display: grid;
+          gap: 4px;
+          align-content: start;
           font-weight: 600;
+          text-align: left;
+          z-index: 2;
         }
         .outlook-slot.open {
-          border-color: rgba(124, 93, 242, 0.7);
-          background: rgba(124, 93, 242, 0.24);
+          border-color: rgba(184, 161, 255, 0.95);
+          background: rgba(122, 85, 243, 0.66);
           cursor: pointer;
         }
         .outlook-slot.booked,
         .outlook-slot.travel {
-          background: rgba(118, 118, 132, 0.58);
-          border-color: rgba(178, 178, 192, 0.56);
+          background: rgba(63, 61, 83, 0.8);
+          border-color: rgba(151, 148, 183, 0.58);
           color: #ececf0;
           cursor: not-allowed;
         }
@@ -1147,8 +1296,8 @@ const BookingModal = ({ service, onClose }) => {
             grid-template-columns: 1fr;
           }
           .planner-header,
-          .planner-row {
-            grid-template-columns: 64px repeat(7, minmax(95px, 1fr));
+          .planner-body {
+            grid-template-columns: 64px repeat(var(--planner-cols, 7), minmax(95px, 1fr));
           }
         }
       `}</style>
