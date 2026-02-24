@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { generateDemoAvailability } from "../utils";
-import { computeApiBaseUrl, getCachedAvailability, prefetchAvailability } from "../availabilityCache";
+import {
+  computeApiBaseUrl,
+  getCachedAvailability,
+  prefetchAvaiability,
+} from "../availabilityCache";
 
 const BUSINESS_TZ = "Europe/Dublin";
 const SLOT_START_HOUR = 8;
@@ -21,7 +25,11 @@ const makeIsoDate = (date) => {
 
 const buildTimes = () => {
   const slots = [];
-  for (let mins = SLOT_START_HOUR * 60; mins < SLOT_END_HOUR * 60; mins += SLOT_STEP_MINUTES) {
+  for (
+    let mins = SLOT_START_HOUR * 60;
+    mins < SLOT_END_HOUR * 60;
+    mins += SLOT_STEP_MINUTES
+  ) {
     const h = String(Math.floor(mins / 60)).padStart(2, "0");
     const m = String(mins % 60).padStart(2, "0");
     slots.push(`${h}:${m}`);
@@ -37,6 +45,20 @@ const formatDisplayDate = (isoDate) =>
     month: "long",
     day: "numeric",
   });
+
+const timeToMinutes = (timeValue) => {
+  if (!timeValue) {
+    return null;
+  }
+  const [hoursPart, minutesPart] = timeValue.split(":").map(Number);
+  return hoursPart * 60 + minutesPart;
+};
+
+const minutesToTime = (totalMinutes) => {
+  const hoursPart = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+  const minutesPart = String(totalMinutes % 60).padStart(2, "0");
+  return `${hoursPart}:${minutesPart}`;
+};
 
 const BookingModal = ({ service, onClose }) => {
   const { profile, isAuthenticated } = useAuth();
@@ -55,11 +77,14 @@ const BookingModal = ({ service, onClose }) => {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedStart, setSelectedStart] = useState("");
   const [selectedEnd, setSelectedEnd] = useState("");
+  const [dragHandle, setDragHandle] = useState("");
 
   const [clientName, setClientName] = useState(profile?.client?.name || "");
   const [clientEmail, setClientEmail] = useState(profile?.client?.email || "");
   const [clientPhone, setClientPhone] = useState(profile?.client?.phone || "");
-  const [clientEircode, setClientEircode] = useState(profile?.client?.eircode || "");
+  const [clientEircode, setClientEircode] = useState(
+    profile?.client?.eircode || "",
+  );
   const [password, setPassword] = useState("");
 
   const [petNames, setPetNames] = useState("");
@@ -92,7 +117,9 @@ const BookingModal = ({ service, onClose }) => {
           query.set("clientAddress", clientEircode.trim());
         }
 
-        const response = await fetch(`${apiBaseUrl}/api/availability?${query.toString()}`);
+        const response = await fetch(
+          `${apiBaseUrl}/api/availability?${query.toString()}`,
+        );
         if (!response.ok) {
           throw new Error(`Availability unavailable (${response.status})`);
         }
@@ -104,8 +131,12 @@ const BookingModal = ({ service, onClose }) => {
         }
       } catch (error) {
         if (!mounted) return;
-        setAvailability(generateDemoAvailability(service?.durationMinutes || 30));
-        setAvailabilityError("Live calendar unavailable. Showing demo calendar.");
+        setAvailability(
+          generateDemoAvailability(service?.durationMinutes || 30),
+        );
+        setAvailabilityError(
+          "Live calendar unavailable. Showing demo calendar.",
+        );
         setAvailabilitySource("demo");
       }
     };
@@ -158,10 +189,18 @@ const BookingModal = ({ service, onClose }) => {
             const prev = index - offset;
             const next = index + offset;
             if (slots[prev] && slots[prev].state === "open") {
-              slots[prev] = { ...slots[prev], state: "travel", reason: "Booked (travel)" };
+              slots[prev] = {
+                ...slots[prev],
+                state: "travel",
+                reason: "Booked (travel)",
+              };
             }
             if (slots[next] && slots[next].state === "open") {
-              slots[next] = { ...slots[next], state: "travel", reason: "Booked (travel)" };
+              slots[next] = {
+                ...slots[next],
+                state: "travel",
+                reason: "Booked (travel)",
+              };
             }
           }
         });
@@ -169,11 +208,14 @@ const BookingModal = ({ service, onClose }) => {
 
       return slots;
     },
-    [availabilityMap, travelBufferSlots]
+    [availabilityMap, travelBufferSlots],
   );
 
   const currentDate = selectedDate || makeIsoDate(new Date());
-  const currentDaySlots = useMemo(() => daySlots(currentDate), [currentDate, daySlots]);
+  const currentDaySlots = useMemo(
+    () => daySlots(currentDate),
+    [currentDate, daySlots],
+  );
 
   const plannerDates = useMemo(() => {
     const anchor = new Date(`${currentDate}T00:00:00`);
@@ -190,37 +232,176 @@ const BookingModal = ({ service, onClose }) => {
     }
 
     const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    const days = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
-    return Array.from({ length: days }, (_, idx) => makeIsoDate(new Date(first.getFullYear(), first.getMonth(), idx + 1)));
+    const days = new Date(
+      anchor.getFullYear(),
+      anchor.getMonth() + 1,
+      0,
+    ).getDate();
+    return Array.from({ length: days }, (_, idx) =>
+      makeIsoDate(new Date(first.getFullYear(), first.getMonth(), idx + 1)),
+    );
   }, [currentDate, viewMode]);
 
   const canContinueFromRegister = useMemo(() => {
     if (isAuthenticated) return true;
-    return Boolean(clientName.trim() && clientEmail.trim() && clientPhone.trim() && clientEircode.trim() && password.trim());
-  }, [clientName, clientEircode, clientEmail, clientPhone, isAuthenticated, password]);
+    return Boolean(
+      clientName.trim() &&
+      clientEmail.trim() &&
+      clientPhone.trim() &&
+      clientEircode.trim() &&
+      password.trim(),
+    );
+  }, [
+    clientName,
+    clientEircode,
+    clientEmail,
+    clientPhone,
+    isAuthenticated,
+    password,
+  ]);
 
-  const petsLabel = petNames
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .join(", ") || "Your dog";
+  const petsLabel =
+    petNames
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .join(", ") || "Your dog";
   const bookingTitle = `${petsLabel} - ${service?.title || "Service"}`;
 
   const pickSlot = (isoDate, slotTime) => {
     const slot = daySlots(isoDate).find((item) => item.time === slotTime);
     if (!slot || slot.state !== "open") return;
 
-    const [h, m] = slotTime.split(":").map(Number);
-    const end = h * 60 + m + SLOT_STEP_MINUTES;
-    const endHour = String(Math.floor(end / 60)).padStart(2, "0");
-    const endMin = String(end % 60).padStart(2, "0");
+    const startMinutes = timeToMinutes(slotTime);
+    const endTime = minutesToTime((startMinutes || 0) + SLOT_STEP_MINUTES);
 
     setSelectedDate(isoDate);
     setSelectedStart(slotTime);
-    setSelectedEnd(`${endHour}:${endMin}`);
+    setSelectedEnd(endTime);
     setStage("composer");
     setComposerTab("details");
   };
+
+  const selectedStartMinutes = useMemo(
+    () => timeToMinutes(selectedStart),
+    [selectedStart],
+  );
+  const selectedEndMinutes = useMemo(
+    () => timeToMinutes(selectedEnd),
+    [selectedEnd],
+  );
+  const maxDayMinutes = SLOT_END_HOUR * 60;
+
+  const isRangeOpen = useCallback(
+    (startMins, endMins, dateValue = currentDate) => {
+      if (startMins === null || endMins === null || endMins <= startMins) {
+        return false;
+      }
+      const slotsForDay = daySlots(dateValue);
+      for (
+        let minuteValue = startMins;
+        minuteValue < endMins;
+        minuteValue += SLOT_STEP_MINUTES
+      ) {
+        const timeValue = minutesToTime(minuteValue);
+        const slot = slotsForDay.find(
+          (slotItem) => slotItem.time === timeValue,
+        );
+        if (!slot || slot.state !== "open") {
+          return false;
+        }
+      }
+      return true;
+    },
+    [currentDate, daySlots],
+  );
+
+  const updateSelectionFromHandle = useCallback(
+    (handle, clientY) => {
+      if (!handle) {
+        return;
+      }
+      const railElement = document.getElementById("booking-day-rail-grid");
+      if (!railElement) {
+        return;
+      }
+
+      const railRect = railElement.getBoundingClientRect();
+      const clamped = Math.min(
+        Math.max(clientY - railRect.top, 0),
+        railRect.height,
+      );
+      const relativeSteps = Math.round(
+        clamped / (railRect.height / ALL_TIMES.length),
+      );
+      const minuteValue = Math.min(
+        Math.max(
+          SLOT_START_HOUR * 60 + relativeSteps * SLOT_STEP_MINUTES,
+          SLOT_START_HOUR * 60,
+        ),
+        maxDayMinutes,
+      );
+
+      if (handle === "start") {
+        if (selectedEndMinutes === null || minuteValue >= selectedEndMinutes) {
+          return;
+        }
+        if (!isRangeOpen(minuteValue, selectedEndMinutes)) {
+          return;
+        }
+        setSelectedStart(minutesToTime(minuteValue));
+        return;
+      }
+
+      if (
+        selectedStartMinutes === null ||
+        minuteValue <= selectedStartMinutes
+      ) {
+        return;
+      }
+      if (!isRangeOpen(selectedStartMinutes, minuteValue)) {
+        return;
+      }
+      setSelectedEnd(minutesToTime(minuteValue));
+    },
+    [isRangeOpen, maxDayMinutes, selectedEndMinutes, selectedStartMinutes],
+  );
+
+  useEffect(() => {
+    if (!dragHandle) {
+      return undefined;
+    }
+
+    const onPointerMove = (event) => {
+      event.preventDefault();
+      updateSelectionFromHandle(dragHandle, event.clientY);
+    };
+
+    const onPointerUp = () => {
+      setDragHandle("");
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [dragHandle, updateSelectionFromHandle]);
+
+  const selectionTopPercent =
+    selectedStartMinutes === null
+      ? 0
+      : ((selectedStartMinutes - SLOT_START_HOUR * 60) /
+          (maxDayMinutes - SLOT_START_HOUR * 60)) *
+        100;
+  const selectionHeightPercent =
+    selectedStartMinutes === null || selectedEndMinutes === null
+      ? 0
+      : ((selectedEndMinutes - selectedStartMinutes) /
+          (maxDayMinutes - SLOT_START_HOUR * 60)) *
+        100;
 
   const submitBooking = async () => {
     if (!selectedDate || !selectedStart || !selectedEnd) {
@@ -268,23 +449,74 @@ const BookingModal = ({ service, onClose }) => {
             <h3>{service?.title || "Booking"}</h3>
             <p className="muted">Jeroen van Elderen · Jeroen & Paws</p>
           </div>
-          <button type="button" className="close-button" onClick={onClose} aria-label="Close booking">×</button>
+          <button
+            type="button"
+            className="close-button"
+            onClick={onClose}
+            aria-label="Close booking"
+          >
+            ×
+          </button>
         </header>
 
         {!isAuthenticated && stage === "register" && (
           <section className="card">
             <h4>Create account first</h4>
-            <p className="muted">Before choosing slots, clients must register an account.</p>
+            <p className="muted">
+              Before choosing slots, clients must register an account.
+            </p>
             <div className="grid-2">
-              <label className="input-group"><span>Name</span><input value={clientName} onChange={(e) => setClientName(e.target.value)} /></label>
-              <label className="input-group"><span>Email</span><input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} /></label>
-              <label className="input-group"><span>Phone</span><input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} /></label>
-              <label className="input-group"><span>Eircode</span><input value={clientEircode} onChange={(e) => setClientEircode(e.target.value.toUpperCase())} /></label>
-              <label className="input-group full"><span>Password</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+              <label className="input-group">
+                <span>Name</span>
+                <input
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                />
+              </label>
+              <label className="input-group">
+                <span>Email</span>
+                <input
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                />
+              </label>
+              <label className="input-group">
+                <span>Phone</span>
+                <input
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                />
+              </label>
+              <label className="input-group">
+                <span>Eircode</span>
+                <input
+                  value={clientEircode}
+                  onChange={(e) =>
+                    setClientEircode(e.target.value.toUpperCase())
+                  }
+                />
+              </label>
+              <label className="input-group full">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </label>
             </div>
             <div className="actions-row">
-              <button type="button" className="ghost-button" onClick={onClose}>Cancel</button>
-              <button type="button" className="button" disabled={!canContinueFromRegister} onClick={() => setStage("calendar")}>Continue to calendar</button>
+              <button type="button" className="ghost-button" onClick={onClose}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="button"
+                disabled={!canContinueFromRegister}
+                onClick={() => setStage("calendar")}
+              >
+                Continue to calendar
+              </button>
             </div>
           </section>
         )}
@@ -294,23 +526,45 @@ const BookingModal = ({ service, onClose }) => {
             <div className="calendar-topbar">
               <div className="toggle-group">
                 {VIEW_MODES.map((mode) => (
-                  <button key={mode} type="button" className={`ghost-button tiny ${viewMode === mode ? "is-active" : ""}`} onClick={() => setViewMode(mode)}>
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`ghost-button tiny ${viewMode === mode ? "is-active" : ""}`}
+                    onClick={() => setViewMode(mode)}
+                  >
                     {mode[0].toUpperCase() + mode.slice(1)}
                   </button>
                 ))}
               </div>
-              <div className="muted">{availabilitySource === "live" ? "Live owner calendar check" : "Demo availability"} · Travel buffer: {travelBufferSlots * SLOT_STEP_MINUTES} min · Time zone: {BUSINESS_TZ}</div>
+              <div className="muted">
+                {availabilitySource === "live"
+                  ? "Live owner calendar check"
+                  : "Demo availability"}{" "}
+                · Travel buffer: {travelBufferSlots * SLOT_STEP_MINUTES} min ·
+                Time zone: {BUSINESS_TZ}
+              </div>
             </div>
 
-            {availabilityError && <p className="muted subtle">{availabilityError}</p>}
+            {availabilityError && (
+              <p className="muted subtle">{availabilityError}</p>
+            )}
 
             {viewMode === "month" ? (
               <div className="month-grid">
                 {plannerDates.map((isoDate) => {
-                  const openCount = daySlots(isoDate).filter((slot) => slot.state === "open").length;
+                  const openCount = daySlots(isoDate).filter(
+                    (slot) => slot.state === "open",
+                  ).length;
                   return (
-                    <button key={isoDate} type="button" className={`month-cell ${isoDate === currentDate ? "active" : ""}`} onClick={() => setSelectedDate(isoDate)}>
-                      <strong>{new Date(`${isoDate}T00:00:00`).getDate()}</strong>
+                    <button
+                      key={isoDate}
+                      type="button"
+                      className={`month-cell ${isoDate === currentDate ? "active" : ""}`}
+                      onClick={() => setSelectedDate(isoDate)}
+                    >
+                      <strong>
+                        {new Date(`${isoDate}T00:00:00`).getDate()}
+                      </strong>
                       <span>{openCount} open</span>
                     </button>
                   );
@@ -321,7 +575,12 @@ const BookingModal = ({ service, onClose }) => {
                 <div className="planner-header">
                   <span />
                   {plannerDates.map((isoDate) => (
-                    <button key={isoDate} type="button" className={`planner-day ${isoDate === currentDate ? "active" : ""}`} onClick={() => setSelectedDate(isoDate)}>
+                    <button
+                      key={isoDate}
+                      type="button"
+                      className={`planner-day ${isoDate === currentDate ? "active" : ""}`}
+                      onClick={() => setSelectedDate(isoDate)}
+                    >
                       {formatDisplayDate(isoDate)}
                     </button>
                   ))}
@@ -331,7 +590,9 @@ const BookingModal = ({ service, onClose }) => {
                   <div className="planner-row" key={`row-${time}`}>
                     <span className="planner-time">{time}</span>
                     {plannerDates.map((isoDate) => {
-                      const slot = daySlots(isoDate).find((entry) => entry.time === time);
+                      const slot = daySlots(isoDate).find(
+                        (entry) => entry.time === time,
+                      );
                       const isOpen = slot?.state === "open";
                       return (
                         <button
@@ -351,8 +612,17 @@ const BookingModal = ({ service, onClose }) => {
             )}
 
             <div className="actions-row">
-              <button type="button" className="ghost-button" onClick={onClose}>Close</button>
-              <button type="button" className="button" onClick={() => setStage("composer")} disabled={!selectedStart || !selectedDate}>Open selected slot</button>
+              <button type="button" className="ghost-button" onClick={onClose}>
+                Close
+              </button>
+              <button
+                type="button"
+                className="button"
+                onClick={() => setStage("composer")}
+                disabled={!selectedStart || !selectedDate}
+              >
+                Open selected slot
+              </button>
             </div>
           </section>
         )}
@@ -362,24 +632,74 @@ const BookingModal = ({ service, onClose }) => {
             <div className="composer-toolbar">
               <div className="toggle-group">
                 {COMPOSER_TABS.map((tab) => (
-                  <button key={tab} type="button" className={`ghost-button tiny ${composerTab === tab ? "is-active" : ""}`} onClick={() => setComposerTab(tab)}>
-                    {tab === "additional" ? "Additional care" : tab[0].toUpperCase() + tab.slice(1)}
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`ghost-button tiny ${composerTab === tab ? "is-active" : ""}`}
+                    onClick={() => setComposerTab(tab)}
+                  >
+                    {tab === "additional"
+                      ? "Additional care"
+                      : tab[0].toUpperCase() + tab.slice(1)}
                   </button>
                 ))}
               </div>
-              <button type="button" className="ghost-button tiny" onClick={() => setStage("calendar")}>Back to calendar</button>
+              <button
+                type="button"
+                className="ghost-button tiny"
+                onClick={() => setStage("calendar")}
+              >
+                Back to calendar
+              </button>
             </div>
 
             <div className="composer-layout">
               <div className="composer-main">
                 {composerTab === "details" && (
                   <div className="grid-2">
-                    <label className="input-group full"><span>Title</span><input value={bookingTitle} readOnly /></label>
-                    <label className="input-group"><span>Date</span><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} /></label>
-                    <label className="input-group"><span>Start</span><input type="time" step={1800} value={selectedStart} onChange={(e) => setSelectedStart(e.target.value)} /></label>
-                    <label className="input-group"><span>End</span><input type="time" step={1800} value={selectedEnd} onChange={(e) => setSelectedEnd(e.target.value)} /></label>
-                    <label className="input-group"><span>Location (Eircode)</span><input value={clientEircode} readOnly /></label>
-                    <label className="input-group full"><span>Description</span><textarea rows={6} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Booking notes" /></label>
+                    <label className="input-group full">
+                      <span>Title</span>
+                      <input value={bookingTitle} readOnly />
+                    </label>
+                    <label className="input-group">
+                      <span>Date</span>
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                      />
+                    </label>
+                    <label className="input-group">
+                      <span>Start</span>
+                      <input
+                        type="time"
+                        step={1800}
+                        value={selectedStart}
+                        onChange={(e) => setSelectedStart(e.target.value)}
+                      />
+                    </label>
+                    <label className="input-group">
+                      <span>End</span>
+                      <input
+                        type="time"
+                        step={1800}
+                        value={selectedEnd}
+                        onChange={(e) => setSelectedEnd(e.target.value)}
+                      />
+                    </label>
+                    <label className="input-group">
+                      <span>Location (Eircode)</span>
+                      <input value={clientEircode} readOnly />
+                    </label>
+                    <label className="input-group full">
+                      <span>Description</span>
+                      <textarea
+                        rows={6}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Booking notes"
+                      />
+                    </label>
                   </div>
                 )}
 
@@ -387,9 +707,16 @@ const BookingModal = ({ service, onClose }) => {
                   <div className="stack">
                     <label className="input-group full">
                       <span>Dog name(s)</span>
-                      <input value={petNames} onChange={(e) => setPetNames(e.target.value)} placeholder="Compass, Luna" />
+                      <input
+                        value={petNames}
+                        onChange={(e) => setPetNames(e.target.value)}
+                        placeholder="Compass, Luna"
+                      />
                     </label>
-                    <p className="muted">This replaces participant invites. Only client and owner are included.</p>
+                    <p className="muted">
+                      This replaces participant invites. Only client and owner
+                      are included.
+                    </p>
                   </div>
                 )}
 
@@ -407,7 +734,9 @@ const BookingModal = ({ service, onClose }) => {
                           checked={additionalCare.includes(item)}
                           onChange={(event) => {
                             setAdditionalCare((prev) =>
-                              event.target.checked ? [...prev, item] : prev.filter((it) => it !== item)
+                              event.target.checked
+                                ? [...prev, item]
+                                : prev.filter((it) => it !== item),
                             );
                           }}
                         />
@@ -420,33 +749,90 @@ const BookingModal = ({ service, onClose }) => {
                 {composerTab === "confirm" && (
                   <div className="stack">
                     <h4>{bookingTitle}</h4>
-                    <p className="muted">{formatDisplayDate(selectedDate)} · {selectedStart} - {selectedEnd}</p>
-                    <p className="muted">Location: {clientEircode || "Missing Eircode"}</p>
-                    <p className="muted">Additional care: {additionalCare.length ? additionalCare.join(", ") : "None"}</p>
-                    <button type="button" className="button" disabled={submitting} onClick={submitBooking}>
+                    <p className="muted">
+                      {formatDisplayDate(selectedDate)} · {selectedStart} -{" "}
+                      {selectedEnd}
+                    </p>
+                    <p className="muted">
+                      Location: {clientEircode || "Missing Eircode"}
+                    </p>
+                    <p className="muted">
+                      Additional care:{" "}
+                      {additionalCare.length
+                        ? additionalCare.join(", ")
+                        : "None"}
+                    </p>
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={submitting}
+                      onClick={submitBooking}
+                    >
                       {submitting ? "Submitting..." : "Submit booking"}
                     </button>
-                    {submitMessage && <p className="muted subtle">{submitMessage}</p>}
+                    {submitMessage && (
+                      <p className="muted subtle">{submitMessage}</p>
+                    )}
                   </div>
                 )}
               </div>
 
               <aside className="composer-rail">
                 <h5>Day calendar</h5>
-                <p className="muted subtle">Gray blocks are booked or travel-blocked.</p>
-                <div className="rail-grid">
+                <p className="muted subtle">
+                  Booked blocks mirror Outlook style (gray). Drag purple handles
+                  to change duration.
+                </p>
+                <div
+                  className="rail-grid outlook-day"
+                  id="booking-day-rail-grid"
+                >
                   {currentDaySlots.map((slot) => (
                     <button
                       key={`rail-${slot.time}`}
                       type="button"
-                      className={`rail-cell ${slot.state} ${selectedStart === slot.time ? "active" : ""}`}
+                      className={`outlook-slot ${slot.state}`}
                       disabled={slot.state !== "open"}
                       onClick={() => pickSlot(currentDate, slot.time)}
                     >
                       <span>{slot.time}</span>
-                      <strong>{slot.reason}</strong>
+                      {(slot.state === "booked" || slot.state === "travel") && (
+                        <strong>Booked</strong>
+                      )}
                     </button>
                   ))}
+                  {selectedStartMinutes !== null &&
+                    selectedEndMinutes !== null && (
+                      <div
+                        className="selection-overlay"
+                        style={{
+                          top: `${selectionTopPercent}%`,
+                          height: `${selectionHeightPercent}%`,
+                        }}
+                      >
+                        <div className="selection-label">
+                          {selectedStart} - {selectedEnd}
+                        </div>
+                        <button
+                          type="button"
+                          className="drag-handle top"
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            setDragHandle("start");
+                          }}
+                          aria-label="Adjust start"
+                        />
+                        <button
+                          type="button"
+                          className="drag-handle bottom"
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            setDragHandle("end");
+                          }}
+                          aria-label="Adjust end"
+                        />
+                      </div>
+                    )}
                 </div>
               </aside>
             </div>
@@ -455,58 +841,315 @@ const BookingModal = ({ service, onClose }) => {
       </div>
 
       <style jsx global>{`
-        .booking-overlay { position: fixed; inset: 0; background: rgba(8, 5, 20, 0.82); z-index: 9999; padding: 24px; overflow: auto; }
-        .booking-shell { max-width: 1240px; margin: 0 auto; background: linear-gradient(145deg,#1a1132,#1f0f3a); border-radius: 18px; border: 1px solid rgba(255,255,255,.1); color: #f3eefe; box-shadow: 0 30px 70px rgba(0,0,0,.45); }
-        .booking-shell__header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,.08); }
-        .booking-shell__header h3 { margin: 6px 0; }
-        .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; margin: 0; }
-        .card { padding: 18px 24px 24px; display: grid; gap: 14px; }
-        .muted { color: #c8bddf; margin: 0; }
-        .muted.subtle { font-size: 13px; }
-        .grid-2 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-        .input-group { display:flex; flex-direction:column; gap:6px; font-weight:600; }
-        .input-group input,.input-group textarea { background: rgba(0,0,0,.18); color:#f8f3ff; border:1px solid rgba(255,255,255,.18); border-radius:10px; padding:10px 12px; }
-        .input-group textarea { resize: vertical; }
-        .input-group.full { grid-column: 1 / -1; }
-        .actions-row { display:flex; justify-content:flex-end; gap:10px; }
-        .button { border:none; border-radius:12px; padding:10px 14px; background: linear-gradient(145deg,#6e4bd8,#7c5df2); color:#fff; font-weight:700; cursor:pointer; }
-        .button:disabled { opacity:.5; cursor:not-allowed; }
-        .ghost-button { border:1px solid rgba(255,255,255,.3); border-radius:12px; background:transparent; color:#f3eefe; padding:9px 12px; cursor:pointer; }
-        .ghost-button.tiny { font-size:12px; padding:7px 10px; }
-        .ghost-button.is-active { background: rgba(124,93,242,.3); border-color: rgba(124,93,242,.75); }
-        .close-button { border:1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color:#fff; width:36px; height:36px; border-radius:999px; font-size:22px; cursor:pointer; }
-        .calendar-topbar { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
-        .toggle-group { display:flex; gap:8px; flex-wrap:wrap; }
+        .booking-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(8, 5, 20, 0.82);
+          z-index: 9999;
+          padding: 24px;
+          overflow: auto;
+        }
+        .booking-shell {
+          max-width: 1240px;
+          margin: 0 auto;
+          background: linear-gradient(145deg, #1a1132, #1f0f3a);
+          border-radius: 18px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #f3eefe;
+          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+        }
+        .booking-shell__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 20px 24px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .booking-shell__header h3 {
+          margin: 6px 0;
+        }
+        .eyebrow {
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          opacity: 0.8;
+          margin: 0;
+        }
+        .card {
+          padding: 18px 24px 24px;
+          display: grid;
+          gap: 14px;
+        }
+        .muted {
+          color: #c8bddf;
+          margin: 0;
+        }
+        .muted.subtle {
+          font-size: 13px;
+        }
+        .grid-2 {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-weight: 600;
+        }
+        .input-group input,
+        .input-group textarea {
+          background: rgba(0, 0, 0, 0.18);
+          color: #f8f3ff;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 10px;
+          padding: 10px 12px;
+        }
+        .input-group textarea {
+          resize: vertical;
+        }
+        .input-group.full {
+          grid-column: 1 / -1;
+        }
+        .actions-row {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+        .button {
+          border: none;
+          border-radius: 12px;
+          padding: 10px 14px;
+          background: linear-gradient(145deg, #6e4bd8, #7c5df2);
+          color: #fff;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .ghost-button {
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 12px;
+          background: transparent;
+          color: #f3eefe;
+          padding: 9px 12px;
+          cursor: pointer;
+        }
+        .ghost-button.tiny {
+          font-size: 12px;
+          padding: 7px 10px;
+        }
+        .ghost-button.is-active {
+          background: rgba(124, 93, 242, 0.3);
+          border-color: rgba(124, 93, 242, 0.75);
+        }
+        .close-button {
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.08);
+          color: #fff;
+          width: 36px;
+          height: 36px;
+          border-radius: 999px;
+          font-size: 22px;
+          cursor: pointer;
+        }
+        .calendar-topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .toggle-group {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
 
-        .planner-table { display:grid; gap:8px; overflow:auto; }
-        .planner-header,.planner-row { display:grid; grid-template-columns: 72px repeat(7, minmax(110px,1fr)); gap:8px; align-items:center; }
-        .planner-day { border:1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color:#efe8ff; border-radius:10px; padding:8px; text-align:left; }
-        .planner-day.active { border-color: rgba(124,93,242,.8); background: rgba(124,93,242,.25); }
-        .planner-time { text-align:right; color:#c8bddf; font-size:12px; }
-        .planner-cell { border:1px solid rgba(255,255,255,.14); border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:#efe8ff; }
-        .planner-cell.open { background: rgba(124,93,242,.22); border-color: rgba(124,93,242,.6); cursor:pointer; }
-        .planner-cell.booked,.planner-cell.travel { background: rgba(120,120,130,.45); border-color: rgba(180,180,190,.45); color:#e8e8eb; }
+        .planner-table {
+          display: grid;
+          gap: 8px;
+          overflow: auto;
+        }
+        .planner-header,
+        .planner-row {
+          display: grid;
+          grid-template-columns: 72px repeat(7, minmax(110px, 1fr));
+          gap: 8px;
+          align-items: center;
+        }
+        .planner-day {
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          background: rgba(255, 255, 255, 0.06);
+          color: #efe8ff;
+          border-radius: 10px;
+          padding: 8px;
+          text-align: left;
+        }
+        .planner-day.active {
+          border-color: rgba(124, 93, 242, 0.8);
+          background: rgba(124, 93, 242, 0.25);
+        }
+        .planner-time {
+          text-align: right;
+          color: #c8bddf;
+          font-size: 12px;
+        }
+        .planner-cell {
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 8px;
+          padding: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #efe8ff;
+        }
+        .planner-cell.open {
+          background: rgba(124, 93, 242, 0.22);
+          border-color: rgba(124, 93, 242, 0.6);
+          cursor: pointer;
+        }
+        .planner-cell.booked,
+        .planner-cell.travel {
+          background: rgba(120, 120, 130, 0.45);
+          border-color: rgba(180, 180, 190, 0.45);
+          color: #e8e8eb;
+        }
 
-        .month-grid { display:grid; grid-template-columns: repeat(7,minmax(90px,1fr)); gap:8px; }
-        .month-cell { text-align:left; border:1px solid rgba(255,255,255,.14); border-radius:12px; background: rgba(255,255,255,.04); color:#f2ecff; padding:10px; display:grid; gap:6px; }
-        .month-cell.active { border-color: rgba(124,93,242,.8); background: rgba(124,93,242,.26); }
+        .month-grid {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(90px, 1fr));
+          gap: 8px;
+        }
+        .month-cell {
+          text-align: left;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.04);
+          color: #f2ecff;
+          padding: 10px;
+          display: grid;
+          gap: 6px;
+        }
+        .month-cell.active {
+          border-color: rgba(124, 93, 242, 0.8);
+          background: rgba(124, 93, 242, 0.26);
+        }
 
-        .composer-shell { gap: 12px; }
-        .composer-toolbar { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; }
-        .composer-layout { display:grid; grid-template-columns: minmax(0,1.6fr) minmax(280px,1fr); gap:14px; }
-        .composer-main,.composer-rail { border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px; background: rgba(255,255,255,.04); }
-        .stack { display:grid; gap:10px; }
-        .checkbox-row { display:flex; gap:10px; align-items:center; }
-        .rail-grid { display:grid; gap:8px; max-height:520px; overflow:auto; }
-        .rail-cell { border:1px solid rgba(255,255,255,.18); border-radius:10px; background: rgba(255,255,255,.04); color:#f3eefe; padding:8px 10px; display:flex; justify-content:space-between; }
-        .rail-cell.open { border-color: rgba(124,93,242,.6); background: rgba(124,93,242,.2); cursor:pointer; }
-        .rail-cell.booked,.rail-cell.travel { background: rgba(120,120,130,.42); border-color: rgba(180,180,190,.4); color:#ececf0; }
-        .rail-cell.active { box-shadow: 0 0 0 2px rgba(124,93,242,.85); }
+        .composer-shell {
+          gap: 12px;
+        }
+        .composer-toolbar {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          flex-wrap: wrap;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 10px;
+        }
+        .composer-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+          gap: 14px;
+        }
+        .composer-main,
+        .composer-rail {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .stack {
+          display: grid;
+          gap: 10px;
+        }
+        .checkbox-row {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        .rail-grid {
+          display: grid;
+          gap: 6px;
+          max-height: 520px;
+          overflow: auto;
+          position: relative;
+        }
+        .outlook-slot {
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 8px;
+          min-height: 32px;
+          background: rgba(124, 93, 242, 0.18);
+          color: #f3eefe;
+          padding: 6px 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 600;
+        }
+        .outlook-slot.open {
+          border-color: rgba(124, 93, 242, 0.7);
+          background: rgba(124, 93, 242, 0.24);
+          cursor: pointer;
+        }
+        .outlook-slot.booked,
+        .outlook-slot.travel {
+          background: rgba(118, 118, 132, 0.58);
+          border-color: rgba(178, 178, 192, 0.56);
+          color: #ececf0;
+          cursor: not-allowed;
+        }
+        .selection-overlay {
+          position: absolute;
+          left: 4px;
+          right: 4px;
+          border-radius: 10px;
+          border: 1px solid rgba(124, 93, 242, 0.95);
+          background: rgba(112, 84, 232, 0.7);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+          min-height: 32px;
+          z-index: 4;
+        }
+        .selection-label {
+          position: absolute;
+          left: 12px;
+          top: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #fff;
+        }
+        .drag-handle {
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-radius: 999px;
+          border: 2px solid #130a29;
+          background: #bfa9ff;
+          left: 50%;
+          transform: translateX(-50%);
+          cursor: ns-resize;
+        }
+        .drag-handle.top {
+          top: -8px;
+        }
+        .drag-handle.bottom {
+          bottom: -8px;
+        }
 
         @media (max-width: 1024px) {
-          .grid-2 { grid-template-columns: 1fr; }
-          .composer-layout { grid-template-columns: 1fr; }
-          .planner-header,.planner-row { grid-template-columns: 64px repeat(7,minmax(95px,1fr)); }
+          .grid-2 {
+            grid-template-columns: 1fr;
+          }
+          .composer-layout {
+            grid-template-columns: 1fr;
+          }
+          .planner-header,
+          .planner-row {
+            grid-template-columns: 64px repeat(7, minmax(95px, 1fr));
+          }
         }
       `}</style>
     </div>
