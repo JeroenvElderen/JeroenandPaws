@@ -4,7 +4,7 @@ import { generateDemoAvailability } from "../utils";
 import {
   computeApiBaseUrl,
   getCachedAvailability,
-  prefetchAvaiability,
+  prefetchAvailability,
 } from "../availabilityCache";
 
 const BUSINESS_TZ = "Europe/Dublin";
@@ -43,6 +43,21 @@ const formatDisplayDate = (isoDate) =>
   new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
     weekday: "long",
     month: "long",
+    day: "numeric",
+  });
+
+const formatWeekdayShort = (isoDate) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+  });
+
+const formatMonthShort = (isoDate) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+  });
+
+const formatDayNumber = (isoDate) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
     day: "numeric",
   });
 
@@ -604,7 +619,7 @@ const BookingModal = ({ service, onClose }) => {
                 })}
               </div>
             ) : (
-              <div className="planner-table">
+              <div className="planner-table outlook-planner-table">
                 <div className="planner-header" style={{ "--planner-cols": plannerDates.length }}>
                   <span className="planner-time" />
                   {plannerDates.map((isoDate) => (
@@ -614,7 +629,9 @@ const BookingModal = ({ service, onClose }) => {
                       className={`planner-day ${isoDate === currentDate ? "active" : ""}`}
                       onClick={() => setSelectedDate(isoDate)}
                     >
-                      {formatDisplayDate(isoDate)}
+                      <span className="planner-day-number">{formatDayNumber(isoDate)}</span>
+                      <span className="planner-day-week">{formatWeekdayShort(isoDate)}</span>
+                      <span className="planner-day-month">{formatMonthShort(isoDate)}</span>
                     </button>
                   ))}
                 </div>
@@ -659,9 +676,13 @@ const BookingModal = ({ service, onClose }) => {
                             }
                             disabled={block.state !== "open"}
                           >
-                            <span>{block.start}</span>
-                            <strong>
-                              {block.state === "open" ? "Available" : "Booked"}
+                            <span className="event-meta">{block.start} - {block.end}</span>
+                            <strong className="event-title">
+                              {block.state === "open"
+                                ? service?.name || "Booking"
+                                : block.state === "travel"
+                                  ? "Travel buffer"
+                                  : "Busy"}
                             </strong>
                           </button>
                         );
@@ -855,8 +876,8 @@ const BookingModal = ({ service, onClose }) => {
               <aside className="composer-rail">
                 <h5>Day calendar</h5>
                 <p className="muted subtle">
-                  Booked blocks mirror Outlook style (gray). Drag purple handles
-                  to change duration.
+                  Outlook-like event cards: green=open, blue=busy, amber=travel buffer.
+                  Drag purple handles to change duration.
                 </p>
                 <div className="rail-grid outlook-day" id="booking-day-rail-grid">
                   <div className="planner-grid-lines">
@@ -885,10 +906,16 @@ const BookingModal = ({ service, onClose }) => {
                         disabled={block.state !== "open"}
                         onClick={() => pickSlot(currentDate, block.start)}
                       >
-                        <span>
+                        <span className="event-meta">
                           {block.start} - {block.end}
                         </span>
-                        <strong>{block.state === "open" ? "Available" : "Booked"}</strong>
+                        <strong className="event-title">
+                          {block.state === "open"
+                            ? service?.name || "Booking"
+                            : block.state === "travel"
+                              ? "Travel buffer"
+                              : "Busy"}
+                        </strong>
                       </button>
                     );
                   })}
@@ -1062,20 +1089,26 @@ const BookingModal = ({ service, onClose }) => {
 
         .planner-table {
           display: grid;
-          gap: 8px;
+          gap: 0;
           overflow: auto;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 8px;
+          background: #222326;
         }
         .planner-header {
           display: grid;
           grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
-          gap: 8px;
-          align-items: center;
+          gap: 0;
+          align-items: stretch;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+          background: #2a2b2f;
         }
         .planner-body {
           display: grid;
           grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
-          gap: 8px;
+          gap: 0;
           min-height: 620px;
+          background: #1f2023;
         }
         .planner-time-column {
           display: grid;
@@ -1083,30 +1116,46 @@ const BookingModal = ({ service, onClose }) => {
           align-items: start;
           border-right: 1px solid rgba(255, 255, 255, 0.15);
           padding-top: 6px;
+          background: #2a2b2f;
         }
         .planner-day {
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          background: rgba(255, 255, 255, 0.06);
-          color: #efe8ff;
-          border-radius: 10px;
-          padding: 8px;
+          border: 0;
+          border-left: 1px solid rgba(255, 255, 255, 0.12);
+          background: transparent;
+          color: #f5f5f5;
+          border-radius: 0;
+          padding: 10px 10px 8px;
           text-align: left;
+          display: grid;
+          justify-items: start;
+          align-content: center;
+          gap: 2px;
+        }
+        .planner-day-number {
+          font-size: 30px;
+          line-height: 1;
+          color: #b88bff;
+          font-weight: 500;
+        }
+        .planner-day-week,
+        .planner-day-month {
+          font-size: 13px;
+          color: #d8d8da;
         }
         .planner-day.active {
-          border-color: rgba(124, 93, 242, 0.8);
-          background: rgba(124, 93, 242, 0.25);
+          box-shadow: inset 0 2px 0 #b88bff;
+          background: rgba(184, 139, 255, 0.08);
         }
         .planner-time {
           text-align: right;
-          color: #c8bddf;
+          color: #aeb0b5;
           font-size: 12px;
           padding-right: 8px;
         }
         .planner-column {
           position: relative;
-          border-left: 1px solid rgba(255, 255, 255, 0.16);
-          border-right: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.01);
+          border-left: 1px solid rgba(255, 255, 255, 0.12);
+          background: #1f2023;
           min-height: 620px;
         }
         .planner-grid-lines {
@@ -1125,37 +1174,53 @@ const BookingModal = ({ service, onClose }) => {
         }
         .planner-block {
           position: absolute;
-          left: 6px;
-          right: 6px;
-          border-radius: 8px;
-          padding: 6px 8px;
+          left: 4px;
+          right: 4px;
+          border-radius: 3px;
+          padding: 5px 7px;
           font-size: 12px;
-          font-weight: 700;
-          color: #efe8ff;
+          font-weight: 600;
+          color: #f4f6f8;
           z-index: 2;
           display: grid;
+          gap: 2px;
           align-content: start;
           text-align: left;
         }
+        .event-meta {
+          font-size: 10px;
+          opacity: 0.9;
+          line-height: 1.2;
+        }
+        .event-title {
+          font-size: 12px;
+          line-height: 1.2;
+          font-weight: 700;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         .planner-block.open {
-          background: rgba(124, 93, 242, 0.6);
-          border: 1px solid rgba(181, 156, 255, 0.95);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+          background: rgba(0, 95, 0, 0.9);
+          border: 1px solid rgba(80, 191, 80, 0.65);
           cursor: pointer;
         }
-        .planner-block.booked,
+        .planner-block.booked {
+          background: rgba(0, 62, 109, 0.88);
+          border: 1px solid rgba(54, 138, 196, 0.68);
+        }
         .planner-block.travel {
-          background: rgba(63, 61, 83, 0.8);
-          border: 1px solid rgba(151, 148, 183, 0.55);
-          color: #e8e8eb;
+          background: rgba(80, 58, 0, 0.9);
+          border: 1px solid rgba(184, 144, 54, 0.7);
+          color: #f7efd8;
         }
         .planner-selected {
           position: absolute;
-          left: 12px;
-          right: 12px;
-          border: 1px solid rgba(214, 192, 255, 0.98);
-          background: rgba(145, 108, 255, 0.78);
-          border-radius: 8px;
+          left: 8px;
+          right: 8px;
+          border: 1px solid rgba(188, 151, 255, 0.95);
+          background: rgba(120, 88, 224, 0.82);
+          border-radius: 4px;
           font-size: 11px;
           padding: 3px 6px;
           font-weight: 700;
@@ -1224,31 +1289,36 @@ const BookingModal = ({ service, onClose }) => {
         }
         .outlook-slot {
           position: absolute;
-          left: 8px;
-          right: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.26);
-          border-radius: 8px;
+          left: 6px;
+          right: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 3px;
           min-height: 26px;
-          background: rgba(124, 93, 242, 0.58);
-          color: #f3eefe;
-          padding: 6px 10px;
+          background: rgba(0, 62, 109, 0.88);
+          color: #f4f6f8;
+          padding: 5px 8px;
           display: grid;
-          gap: 4px;
+          gap: 2px;
           align-content: start;
           font-weight: 600;
           text-align: left;
           z-index: 2;
         }
         .outlook-slot.open {
-          border-color: rgba(184, 161, 255, 0.95);
-          background: rgba(122, 85, 243, 0.66);
+          border-color: rgba(80, 191, 80, 0.65);
+          background: rgba(0, 95, 0, 0.9);
           cursor: pointer;
         }
-        .outlook-slot.booked,
+        .outlook-slot.booked {
+          background: rgba(0, 62, 109, 0.88);
+          border-color: rgba(54, 138, 196, 0.68);
+          color: #f4f6f8;
+          cursor: not-allowed;
+        }
         .outlook-slot.travel {
-          background: rgba(63, 61, 83, 0.8);
-          border-color: rgba(151, 148, 183, 0.58);
-          color: #ececf0;
+          background: rgba(80, 58, 0, 0.9);
+          border-color: rgba(184, 144, 54, 0.7);
+          color: #f7efd8;
           cursor: not-allowed;
         }
         .selection-overlay {
