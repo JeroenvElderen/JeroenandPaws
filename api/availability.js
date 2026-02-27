@@ -14,6 +14,7 @@ const AVAILABILITY_CACHE_TTL_MS = Number.parseInt(
   10
 );
 const availabilityCache = new Map();
+const MIN_SLOT_TRAVEL_GAP_MINUTES = 30;
 
 const buildAvailabilityCacheKey = ({
   durationMinutes,
@@ -167,6 +168,66 @@ const findAdjacentEvents = (events, slotStartUtc, slotEndUtc) => {
   return { previous, next };
 };
 
+const buildInterBookingTravelBusyByDate = async ({
+  events,
+  timeZone,
+  baseAddress,
+  getTravelMinutes,
+}) => {
+  const interBookingBusyByDate = {};
+
+  if (!Array.isArray(events) || events.length < 2) {
+    return interBookingBusyByDate;
+  }
+
+  const pushInterval = (dateKey, range) => {
+    interBookingBusyByDate[dateKey] = interBookingBusyByDate[dateKey] || [];
+    interBookingBusyByDate[dateKey].push(range);
+  };
+
+  for (let idx = 0; idx < events.length - 1; idx += 1) {
+    const current = events[idx];
+    const next = events[idx + 1];
+    if (!current || !next) continue;
+
+    const gapMinutes = next.start.diff(current.end, "minutes").as("minutes");
+    if (gapMinutes <= 0) continue;
+
+    const travelMinutes = await getTravelMinutes(
+      current.location || baseAddress,
+      next.location || baseAddress
+    );
+
+    if (gapMinutes >= Math.max(travelMinutes, MIN_SLOT_TRAVEL_GAP_MINUTES)) {
+      continue;
+    }
+
+    const gapStart = current.end.setZone(timeZone);
+    const gapEnd = next.start.setZone(timeZone);
+    const startDateKey = gapStart.toISODate();
+    const endDateKey = gapEnd.toISODate();
+
+    if (startDateKey === endDateKey) {
+      pushInterval(startDateKey, {
+        startMinutes: gapStart.hour * 60 + gapStart.minute,
+        endMinutes: gapEnd.hour * 60 + gapEnd.minute,
+      });
+      continue;
+    }
+
+    pushInterval(startDateKey, {
+      startMinutes: gapStart.hour * 60 + gapStart.minute,
+      endMinutes: 24 * 60,
+    });
+    pushInterval(endDateKey, {
+      startMinutes: 0,
+      endMinutes: gapEnd.hour * 60 + gapEnd.minute,
+    });
+  }
+
+  return interBookingBusyByDate;
+};
+
 const applyTravelBufferToAvailability = async ({
   availability,
   clientAddress,
@@ -174,7 +235,6 @@ const applyTravelBufferToAvailability = async ({
   events,
 }) => {
   const trimmedAddress = (clientAddress || "").trim();
-  if (!trimmedAddress) return availability;
 
   const dates = availability?.dates || [];
   if (!dates.length) return availability;
@@ -228,6 +288,13 @@ const applyTravelBufferToAvailability = async ({
     return minutes;
   };
 
+  const interBookingBusyByDate = await buildInterBookingTravelBusyByDate({
+    events: normalizedEvents,
+    timeZone,
+    baseAddress,
+    getTravelMinutes,
+  });
+
   const updatedDates = [];
 
   for (const day of dates) {
@@ -263,17 +330,18 @@ const applyTravelBufferToAvailability = async ({
       const startMinutes = slotStart.hour * 60 + slotStart.minute;
       const endMinutes = startMinutes + slotDuration;
       const bufferedBusy = bufferedBusyByDate[day.date] || [];
-      const conflictsWithBufferedBusy = bufferedBusy.some(
+      const interBookingBusy = interBookingBusyByDate[day.date] || [];
+      const conflictsWithTravelBusy = [...bufferedBusy, ...interBookingBusy].some(
         ({ startMinutes: busyStart, endMinutes: busyEnd }) =>
           endMinutes > busyStart && startMinutes < busyEnd
       );
 
-      if (conflictsWithBufferedBusy) {
+      if (conflictsWithTravelBusy) {
         updatedSlots.push({ ...slot, available: false, reachable: false });
         continue;
       }
 
-      if (normalizedEvents.length) {
+      if (normalizedEvents.length && trimmedAddress) {
         const { previous, next } = findAdjacentEvents(
           normalizedEvents,
           slotStartUtc,
@@ -288,7 +356,7 @@ const applyTravelBufferToAvailability = async ({
             previous.location || baseAddress,
             trimmedAddress
           );
-          if (availableGap < travelMinutes) {
+          if (availableGap < Math.max(travelMinutes, MIN_SLOT_TRAVEL_GAP_MINUTES)) {
             updatedSlots.push({ ...slot, available: false, reachable: false });
             continue;
           }
@@ -302,7 +370,7 @@ const applyTravelBufferToAvailability = async ({
             trimmedAddress,
             next.location || baseAddress
           );
-          if (availableGap < travelMinutes) {
+          if (availableGap < Math.max(travelMinutes, MIN_SLOT_TRAVEL_GAP_MINUTES)) {
             updatedSlots.push({ ...slot, available: false, reachable: false });
             continue;
           }
@@ -406,10 +474,8 @@ const availabilityHandler = async (req, res) => {
   }
 
   try {
-    const calendarId = process.env.OUTLOOK_CALENDAR_ID;
-    if (!calendarId) {
-      throw new Error("Missing OUTLOOK_CALENDAR_ID env var");
-    }
+    const calendarId =
+      process.env.OUTLOOK_CALENDAR_ID || "jeroen@jeroenandpaws.com";
 
     const { durationMinutes, clientAddress, windowDays: windowDaysParam } =
       req.query || {};

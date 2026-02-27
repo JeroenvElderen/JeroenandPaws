@@ -11,6 +11,7 @@ const BUSINESS_TZ = "Europe/Dublin";
 const SLOT_START_HOUR = 8;
 const SLOT_END_HOUR = 20;
 const SLOT_STEP_MINUTES = 30;
+const CALENDAR_SCROLL_HEIGHT = 520;
 
 const VIEW_MODES = ["day", "week", "month"];
 const COMPOSER_TABS = ["details", "pets", "additional", "confirm"];
@@ -109,6 +110,19 @@ const BookingModal = ({ service, onClose }) => {
   const [submitMessage, setSubmitMessage] = useState("");
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
+
+  useEffect(() => {
+    if (!profile?.client) {
+      return;
+    }
+
+    setClientName((previous) => previous || profile.client.name || "");
+    setClientEmail((previous) => previous || profile.client.email || "");
+    setClientPhone((previous) => previous || profile.client.phone || "");
+    setClientEircode(
+      (previous) => previous || profile.client.eircode?.toUpperCase() || "",
+    );
+  }, [profile]);
 
   useEffect(() => {
     let mounted = true;
@@ -259,7 +273,7 @@ const BookingModal = ({ service, onClose }) => {
     [daySlots],
   );
 
-  const currentDate = selectedDate || makeIsoDate(new Date());
+  const currentDate = selectedDate || makeIsoDate(visibleDate);
   const currentDaySlots = useMemo(
     () => daySlots(currentDate),
     [currentDate, daySlots],
@@ -288,6 +302,21 @@ const BookingModal = ({ service, onClose }) => {
     return Array.from({ length: days }, (_, idx) =>
       makeIsoDate(new Date(first.getFullYear(), first.getMonth(), idx + 1)),
     );
+  }, [currentDate, viewMode]);
+
+  const plannerLabel = useMemo(() => {
+    const anchor = new Date(`${currentDate}T00:00:00`);
+    if (viewMode === "day") {
+      return anchor.toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+    return anchor.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
   }, [currentDate, viewMode]);
 
   const canContinueFromRegister = useMemo(() => {
@@ -329,6 +358,22 @@ const BookingModal = ({ service, onClose }) => {
     setStage("composer");
     setComposerTab("details");
   };
+
+  const navigatePlanner = useCallback(
+    (direction) => {
+      const anchor = new Date(`${currentDate}T00:00:00`);
+      if (viewMode === "day") {
+        anchor.setDate(anchor.getDate() + direction);
+      } else if (viewMode === "week") {
+        anchor.setDate(anchor.getDate() + direction * 7);
+      } else {
+        anchor.setMonth(anchor.getMonth() + direction, 1);
+      }
+      setVisibleDate(anchor);
+      setSelectedDate(makeIsoDate(anchor));
+    },
+    [currentDate, viewMode],
+  );
 
   const selectedStartMinutes = useMemo(
     () => timeToMinutes(selectedStart),
@@ -375,12 +420,14 @@ const BookingModal = ({ service, onClose }) => {
       }
 
       const railRect = railElement.getBoundingClientRect();
+      const relativePosition =
+        clientY - railRect.top + railElement.scrollTop;
       const clamped = Math.min(
-        Math.max(clientY - railRect.top, 0),
-        railRect.height,
+        Math.max(relativePosition, 0),
+        railElement.scrollHeight,
       );
       const relativeSteps = Math.round(
-        clamped / (railRect.height / ALL_TIMES.length),
+        clamped / (railElement.scrollHeight / ALL_TIMES.length),
       );
       const minuteValue = Math.min(
         Math.max(
@@ -584,6 +631,23 @@ const BookingModal = ({ service, onClose }) => {
                   </button>
                 ))}
               </div>
+              <div className="planner-nav">
+                <button
+                  type="button"
+                  className="ghost-button tiny"
+                  onClick={() => navigatePlanner(-1)}
+                >
+                  Previous {viewMode}
+                </button>
+                <strong>{plannerLabel}</strong>
+                <button
+                  type="button"
+                  className="ghost-button tiny"
+                  onClick={() => navigatePlanner(1)}
+                >
+                  Next {viewMode}
+                </button>
+              </div>
               <div className="muted">
                 {availabilitySource === "live"
                   ? "Live owner calendar check"
@@ -636,17 +700,24 @@ const BookingModal = ({ service, onClose }) => {
                   ))}
                 </div>
 
-                <div className="planner-body" style={{ "--planner-cols": plannerDates.length }}>
-                  <div className="planner-time-column">
-                    {ALL_TIMES.filter((_, idx) => idx % 2 === 0).map((time) => (
-                      <span key={`label-${time}`} className="planner-time">
-                        {time}
-                      </span>
-                    ))}
-                  </div>
+                <div className="planner-body-wrapper">
+                  <div
+                    className="planner-body"
+                    style={{
+                      "--planner-cols": plannerDates.length,
+                      "--planner-scroll-height": `${CALENDAR_SCROLL_HEIGHT}px`,
+                    }}
+                  >
+                    <div className="planner-time-column">
+                      {ALL_TIMES.filter((_, idx) => idx % 2 === 0).map((time) => (
+                        <span key={`label-${time}`} className="planner-time">
+                          {time}
+                        </span>
+                      ))}
+                    </div>
                 
-                {plannerDates.map((isoDate) => (
-                    <div key={`col-${isoDate}`} className="planner-column">
+                  {plannerDates.map((isoDate) => (
+                      <div key={`col-${isoDate}`} className="planner-column">
                       <div className="planner-grid-lines">
                         {ALL_TIMES.map((time) => (
                           <div key={`${isoDate}-line-${time}`} className="planner-line" />
@@ -703,6 +774,7 @@ const BookingModal = ({ service, onClose }) => {
                         )}
                     </div>
                   ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -879,13 +951,14 @@ const BookingModal = ({ service, onClose }) => {
                   Outlook-like event cards: green=open, blue=busy, amber=travel buffer.
                   Drag purple handles to change duration.
                 </p>
-                <div className="rail-grid outlook-day" id="booking-day-rail-grid">
-                  <div className="planner-grid-lines">
-                    {currentDaySlots.map((slot) => (
-                      <div key={`rail-line-${slot.time}`} className="planner-line" />
-                    ))}
-                  </div>
-                  {dayBlocks(currentDate).map((block) => {
+                <div className="rail-grid-wrapper">
+                  <div className="rail-grid outlook-day" id="booking-day-rail-grid">
+                    <div className="planner-grid-lines">
+                      {currentDaySlots.map((slot) => (
+                        <div key={`rail-line-${slot.time}`} className="planner-line" />
+                      ))}
+                    </div>
+                    {dayBlocks(currentDate).map((block) => {
                     const startMinutes = timeToMinutes(block.start) || 0;
                     const endMinutes = timeToMinutes(block.end) || 0;
                     const top =
@@ -919,38 +992,39 @@ const BookingModal = ({ service, onClose }) => {
                       </button>
                     );
                   })}
-                  {selectedStartMinutes !== null &&
-                    selectedEndMinutes !== null && (
-                      <div
-                        className="selection-overlay"
-                        style={{
-                          top: `${selectionTopPercent}%`,
-                          height: `${selectionHeightPercent}%`,
-                        }}
-                      >
-                        <div className="selection-label">
-                          {selectedStart} - {selectedEnd}
+                    {selectedStartMinutes !== null &&
+                      selectedEndMinutes !== null && (
+                        <div
+                          className="selection-overlay"
+                          style={{
+                            top: `${selectionTopPercent}%`,
+                            height: `${selectionHeightPercent}%`,
+                          }}
+                          >
+                          <div className="selection-label">
+                            {selectedStart} - {selectedEnd}
+                          </div>
+                          <button
+                            type="button"
+                            className="drag-handle top"
+                            onPointerDown={(event) => {
+                              event.preventDefault();
+                              setDragHandle("start");
+                            }}
+                            aria-label="Adjust start"
+                          />
+                          <button
+                            type="button"
+                            className="drag-handle bottom"
+                            onPointerDown={(event) => {
+                              event.preventDefault();
+                              setDragHandle("end");
+                            }}
+                            aria-label="Adjust end"
+                          />
                         </div>
-                        <button
-                          type="button"
-                          className="drag-handle top"
-                          onPointerDown={(event) => {
-                            event.preventDefault();
-                            setDragHandle("start");
-                          }}
-                          aria-label="Adjust start"
-                        />
-                        <button
-                          type="button"
-                          className="drag-handle bottom"
-                          onPointerDown={(event) => {
-                            event.preventDefault();
-                            setDragHandle("end");
-                          }}
-                          aria-label="Adjust end"
-                        />
-                      </div>
-                    )}
+                      )}
+                  </div>
                 </div>
               </aside>
             </div>
@@ -1086,11 +1160,17 @@ const BookingModal = ({ service, onClose }) => {
           gap: 8px;
           flex-wrap: wrap;
         }
+        .planner-nav {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
 
         .planner-table {
           display: grid;
           gap: 0;
-          overflow: auto;
+          overflow: hidden;
           border: 1px solid rgba(255, 255, 255, 0.16);
           border-radius: 8px;
           background: #222326;
@@ -1103,11 +1183,16 @@ const BookingModal = ({ service, onClose }) => {
           border-bottom: 1px solid rgba(255, 255, 255, 0.16);
           background: #2a2b2f;
         }
+        .planner-body-wrapper {
+          max-height: ${CALENDAR_SCROLL_HEIGHT}px;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
         .planner-body {
           display: grid;
           grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
           gap: 0;
-          min-height: 620px;
+          min-height: calc(var(--planner-scroll-height, 520px) * 1.6);
           background: #1f2023;
         }
         .planner-time-column {
@@ -1280,12 +1365,16 @@ const BookingModal = ({ service, onClose }) => {
           gap: 10px;
           align-items: center;
         }
+        .rail-grid-wrapper {
+          max-height: ${CALENDAR_SCROLL_HEIGHT}px;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
         .rail-grid {
           position: relative;
-          min-height: 620px;
+          min-height: calc(${CALENDAR_SCROLL_HEIGHT}px * 1.6);
           border-left: 1px solid rgba(255, 255, 255, 0.18);
           border-right: 1px solid rgba(255, 255, 255, 0.1);
-          overflow: hidden;
         }
         .outlook-slot {
           position: absolute;
@@ -1331,6 +1420,7 @@ const BookingModal = ({ service, onClose }) => {
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
           min-height: 32px;
           z-index: 4;
+          pointer-events: none;
         }
         .selection-label {
           position: absolute;
@@ -1350,6 +1440,7 @@ const BookingModal = ({ service, onClose }) => {
           left: 50%;
           transform: translateX(-50%);
           cursor: ns-resize;
+          pointer-events: auto;
         }
         .drag-handle.top {
           top: -8px;
