@@ -11,6 +11,8 @@ const BUSINESS_TZ = "Europe/Dublin";
 const SLOT_START_HOUR = 8;
 const SLOT_END_HOUR = 20;
 const SLOT_STEP_MINUTES = 30;
+const DURATION_STEP_MINUTES = 15;
+const MIN_DURATION_MINUTES = 30;
 const CALENDAR_SCROLL_HEIGHT = 520;
 
 const VIEW_MODES = ["day", "week", "month"];
@@ -76,6 +78,27 @@ const minutesToTime = (totalMinutes) => {
   return `${hoursPart}:${minutesPart}`;
 };
 
+const parsePriceNumber = (priceText) => {
+  if (!priceText) return null;
+  const normalized = String(priceText).replace(/,/g, ".");
+  const match = normalized.match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  return Number(match[1]);
+};
+
+const isWeekendDate = (isoDate) => {
+  const day = new Date(`${isoDate}T00:00:00`).getDay();
+  return day === 0 || day === 6;
+};
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(amount || 0));
+
 const BookingModal = ({ service, onClose }) => {
   const { profile, isAuthenticated } = useAuth();
   const [stage, setStage] = useState(isAuthenticated ? "calendar" : "register");
@@ -104,12 +127,24 @@ const BookingModal = ({ service, onClose }) => {
   const [password, setPassword] = useState("");
 
   const [petNames, setPetNames] = useState("");
+  const [savedPets, setSavedPets] = useState([]);
+  const [petsLoading, setPetsLoading] = useState(false);
   const [additionalCare, setAdditionalCare] = useState([]);
+  const [availableAddons, setAvailableAddons] = useState([]);
+  const [addonsLoading, setAddonsLoading] = useState(false);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
 
   const apiBaseUrl = useMemo(() => computeApiBaseUrl(), []);
+  const serviceUnitPrice = useMemo(
+    () => parsePriceNumber(service?.price),
+    [service?.price],
+  );
+  const serviceUnitMinutes = Number(service?.durationMinutes || 0) || 0;
+  const isBoardingService = /overnight|boarding/i.test(
+    `${service?.slug || ""} ${service?.category || ""} ${service?.title || ""}`,
+  );
 
   useEffect(() => {
     if (!profile?.client) {
@@ -175,6 +210,66 @@ const BookingModal = ({ service, onClose }) => {
     };
   }, [apiBaseUrl, clientEircode, service]);
 
+  useEffect(() => {
+    let active = true;
+    const ownerEmail = (clientEmail || profile?.client?.email || "")
+      .trim()
+      .toLowerCase();
+    if (!ownerEmail) return undefined;
+
+    const loadPets = async () => {
+      setPetsLoading(true);
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}/api/pets?ownerEmail=${encodeURIComponent(ownerEmail)}`,
+        );
+        if (!response.ok) throw new Error("Failed to load pets");
+        const payload = await response.json();
+        if (active) {
+          setSavedPets(payload?.pets || []);
+        }
+      } catch (error) {
+        if (active) {
+          setSavedPets([]);
+        }
+      } finally {
+        if (active) setPetsLoading(false);
+      }
+    };
+
+    loadPets();
+    return () => {
+      active = false;
+    };
+  }, [apiBaseUrl, clientEmail, profile?.client?.email]);
+
+  useEffect(() => {
+    let active = true;
+    const loadAddons = async () => {
+      setAddonsLoading(true);
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/addons`);
+        if (!response.ok) throw new Error("Failed to load addons");
+        const payload = await response.json();
+        if (active) {
+          setAvailableAddons(
+            (payload?.addons || []).filter(
+              (addon) => addon?.is_active !== false,
+            ),
+          );
+        }
+      } catch (error) {
+        if (active) setAvailableAddons([]);
+      } finally {
+        if (active) setAddonsLoading(false);
+      }
+    };
+    loadAddons();
+    return () => {
+      active = false;
+    };
+  }, [apiBaseUrl]);
+
   const availabilityMap = useMemo(() => {
     const map = {};
     (availability?.dates || []).forEach((entry) => {
@@ -196,16 +291,55 @@ const BookingModal = ({ service, onClose }) => {
       const day = availabilityMap[isoDate];
       const apiSlots = day?.slots || [];
       const apiSlotMap = new Map(apiSlots.map((slot) => [slot.time, slot]));
+      const weekend = isWeekendDate(isoDate);
+      const now = new Date();
+      const isToday = isoDate === makeIsoDate(now);
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
       const slots = ALL_TIMES.map((time) => {
         const source = apiSlotMap.get(time);
-        const available = Boolean(source?.available);
+        const minuteMark = timeToMinutes(time) || 0;
+        const isPastTime = isToday && minuteMark < nowMinutes;
+        const hasApiState = typeof source?.available === "boolean";
+        const defaultOpenWeekend =
+          (weekend || isBoardingService) && !hasApiState;
+        const available = defaultOpenWeekend || Boolean(source?.available);
+
+        if (isPastTime) {
+          return {
+            time,
+            state: "booked",
+            reason: "Past time",
+          };
+        }
+
         return {
           time,
           state: available ? "open" : "booked",
           reason: available ? "Open" : "Booked",
         };
       });
+
+      if (selectedDate === isoDate && selectedStart && selectedEnd) {
+        const start = timeToMinutes(selectedStart);
+        const end = timeToMinutes(selectedEnd);
+        slots.forEach((slot, index) => {
+          const slotMins = timeToMinutes(slot.time);
+          if (
+            slotMins !== null &&
+            start !== null &&
+            end !== null &&
+            slotMins >= start &&
+            slotMins < end
+          ) {
+            slots[index] = {
+              ...slot,
+              state: "held",
+              reason: "Selected in draft",
+            };
+          }
+        });
+      }
 
       if (travelBufferSlots > 0) {
         const bookedIndexes = slots
@@ -237,7 +371,14 @@ const BookingModal = ({ service, onClose }) => {
 
       return slots;
     },
-    [availabilityMap, travelBufferSlots],
+    [
+      availabilityMap,
+      isBoardingService,
+      selectedDate,
+      selectedEnd,
+      selectedStart,
+      travelBufferSlots,
+    ],
   );
 
   const dayBlocks = useCallback(
@@ -254,7 +395,9 @@ const BookingModal = ({ service, onClose }) => {
           currentBlock = {
             state: slot.state,
             start: slot.time,
-            end: minutesToTime((timeToMinutes(slot.time) || 0) + SLOT_STEP_MINUTES),
+            end: minutesToTime(
+              (timeToMinutes(slot.time) || 0) + SLOT_STEP_MINUTES,
+            ),
           };
           return;
         }
@@ -394,9 +537,13 @@ const BookingModal = ({ service, onClose }) => {
       for (
         let minuteValue = startMins;
         minuteValue < endMins;
-        minuteValue += SLOT_STEP_MINUTES
+        minuteValue += DURATION_STEP_MINUTES
       ) {
-        const timeValue = minutesToTime(minuteValue);
+        const snappedMinute =
+          SLOT_START_HOUR * 60 +
+          Math.floor((minuteValue - SLOT_START_HOUR * 60) / SLOT_STEP_MINUTES) *
+            SLOT_STEP_MINUTES;
+        const timeValue = minutesToTime(snappedMinute);
         const slot = slotsForDay.find(
           (slotItem) => slotItem.time === timeValue,
         );
@@ -420,25 +567,29 @@ const BookingModal = ({ service, onClose }) => {
       }
 
       const railRect = railElement.getBoundingClientRect();
-      const relativePosition =
-        clientY - railRect.top + railElement.scrollTop;
+      const relativePosition = clientY - railRect.top + railElement.scrollTop;
       const clamped = Math.min(
         Math.max(relativePosition, 0),
         railElement.scrollHeight,
       );
       const relativeSteps = Math.round(
-        clamped / (railElement.scrollHeight / ALL_TIMES.length),
+        clamped /
+          (railElement.scrollHeight /
+            ((maxDayMinutes - SLOT_START_HOUR * 60) / DURATION_STEP_MINUTES)),
       );
       const minuteValue = Math.min(
         Math.max(
-          SLOT_START_HOUR * 60 + relativeSteps * SLOT_STEP_MINUTES,
+          SLOT_START_HOUR * 60 + relativeSteps * DURATION_STEP_MINUTES,
           SLOT_START_HOUR * 60,
         ),
         maxDayMinutes,
       );
 
       if (handle === "start") {
-        if (selectedEndMinutes === null || minuteValue >= selectedEndMinutes) {
+        if (
+          selectedEndMinutes === null ||
+          minuteValue > selectedEndMinutes - MIN_DURATION_MINUTES
+        ) {
           return;
         }
         if (!isRangeOpen(minuteValue, selectedEndMinutes)) {
@@ -450,7 +601,7 @@ const BookingModal = ({ service, onClose }) => {
 
       if (
         selectedStartMinutes === null ||
-        minuteValue <= selectedStartMinutes
+        minuteValue < selectedStartMinutes + MIN_DURATION_MINUTES
       ) {
         return;
       }
@@ -497,6 +648,37 @@ const BookingModal = ({ service, onClose }) => {
       : ((selectedEndMinutes - selectedStartMinutes) /
           (maxDayMinutes - SLOT_START_HOUR * 60)) *
         100;
+
+  const selectedDurationMinutes = useMemo(() => {
+    if (selectedStartMinutes === null || selectedEndMinutes === null) return 0;
+    return Math.max(0, selectedEndMinutes - selectedStartMinutes);
+  }, [selectedEndMinutes, selectedStartMinutes]);
+
+  const servicePrice = useMemo(() => {
+    if (!serviceUnitPrice || !serviceUnitMinutes || !selectedDurationMinutes) {
+      return 0;
+    }
+    return (serviceUnitPrice / serviceUnitMinutes) * selectedDurationMinutes;
+  }, [selectedDurationMinutes, serviceUnitMinutes, serviceUnitPrice]);
+
+  const selectedAddonDetails = useMemo(
+    () =>
+      availableAddons.filter((addon) =>
+        additionalCare.includes(addon.value || addon.id),
+      ),
+    [additionalCare, availableAddons],
+  );
+
+  const addonsPrice = useMemo(
+    () =>
+      selectedAddonDetails.reduce(
+        (sum, addon) => sum + Number(addon.price || 0),
+        0,
+      ),
+    [selectedAddonDetails],
+  );
+
+  const totalPrice = servicePrice + addonsPrice;
 
   const submitBooking = async () => {
     if (!selectedDate || !selectedStart || !selectedEnd) {
@@ -684,7 +866,10 @@ const BookingModal = ({ service, onClose }) => {
               </div>
             ) : (
               <div className="planner-table outlook-planner-table">
-                <div className="planner-header" style={{ "--planner-cols": plannerDates.length }}>
+                <div
+                  className="planner-header"
+                  style={{ "--planner-cols": plannerDates.length }}
+                >
                   <span className="planner-time" />
                   {plannerDates.map((isoDate) => (
                     <button
@@ -693,9 +878,15 @@ const BookingModal = ({ service, onClose }) => {
                       className={`planner-day ${isoDate === currentDate ? "active" : ""}`}
                       onClick={() => setSelectedDate(isoDate)}
                     >
-                      <span className="planner-day-number">{formatDayNumber(isoDate)}</span>
-                      <span className="planner-day-week">{formatWeekdayShort(isoDate)}</span>
-                      <span className="planner-day-month">{formatMonthShort(isoDate)}</span>
+                      <span className="planner-day-number">
+                        {formatDayNumber(isoDate)}
+                      </span>
+                      <span className="planner-day-week">
+                        {formatWeekdayShort(isoDate)}
+                      </span>
+                      <span className="planner-day-month">
+                        {formatMonthShort(isoDate)}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -709,71 +900,70 @@ const BookingModal = ({ service, onClose }) => {
                     }}
                   >
                     <div className="planner-time-column">
-                      {ALL_TIMES.filter((_, idx) => idx % 2 === 0).map((time) => (
-                        <span key={`label-${time}`} className="planner-time">
-                          {time}
-                        </span>
-                      ))}
+                      {ALL_TIMES.filter((_, idx) => idx % 2 === 0).map(
+                        (time) => (
+                          <span key={`label-${time}`} className="planner-time">
+                            {time}
+                          </span>
+                        ),
+                      )}
                     </div>
                 
                   {plannerDates.map((isoDate) => (
                       <div key={`col-${isoDate}`} className="planner-column">
-                      <div className="planner-grid-lines">
-                        {ALL_TIMES.map((time) => (
-                          <div key={`${isoDate}-line-${time}`} className="planner-line" />
-                        ))}
+                        <div className="planner-grid-lines">
+                          {ALL_TIMES.map((time) => (
+                            <div
+                              key={`${isoDate}-line-${time}`}
+                              className="planner-line"
+                            />
+                          ))}
+                        </div>
+
+                        {dayBlocks(isoDate)
+                          .filter((block) => block.state !== "held")
+                          .map((block) => {
+                            const startMinutes =
+                              timeToMinutes(block.start) || 0;
+                            const endMinutes = timeToMinutes(block.end) || 0;
+                            const top =
+                              ((startMinutes - SLOT_START_HOUR * 60) /
+                                (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                              100;
+                            const height =
+                              ((endMinutes - startMinutes) /
+                                (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                              100;
+
+                            return (
+                              <button
+                                key={`${isoDate}-${block.start}-${block.end}-${block.state}`}
+                                type="button"
+                                className={`planner-block ${block.state}`}
+                                style={{ top: `${top}%`, height: `${height}%` }}
+                                onClick={() =>
+                                  block.state === "open" &&
+                                  pickSlot(isoDate, block.start)
+                                }
+                                disabled={block.state !== "open"}
+                              >
+                                <span className="event-meta">
+                                  {block.start} - {block.end}
+                                </span>
+                                <strong className="event-title">
+                                  {block.state === "open"
+                                    ? service?.name || "Booking"
+                                    : block.state === "travel"
+                                      ? "Travel buffer"
+                                      : block.state === "held"
+                                        ? "Reserved"
+                                        : "Busy"}
+                                </strong>
+                              </button>
+                            );
+                          })}
                       </div>
-
-                      {dayBlocks(isoDate).map((block) => {
-                        const startMinutes = timeToMinutes(block.start) || 0;
-                        const endMinutes = timeToMinutes(block.end) || 0;
-                        const top =
-                          ((startMinutes - SLOT_START_HOUR * 60) /
-                            (maxDayMinutes - SLOT_START_HOUR * 60)) *
-                          100;
-                        const height =
-                          ((endMinutes - startMinutes) /
-                            (maxDayMinutes - SLOT_START_HOUR * 60)) *
-                          100;
-
-                        return (
-                          <button
-                            key={`${isoDate}-${block.start}-${block.end}-${block.state}`}
-                            type="button"
-                            className={`planner-block ${block.state}`}
-                            style={{ top: `${top}%`, height: `${height}%` }}
-                            onClick={() =>
-                              block.state === "open" && pickSlot(isoDate, block.start)
-                            }
-                            disabled={block.state !== "open"}
-                          >
-                            <span className="event-meta">{block.start} - {block.end}</span>
-                            <strong className="event-title">
-                              {block.state === "open"
-                                ? service?.name || "Booking"
-                                : block.state === "travel"
-                                  ? "Travel buffer"
-                                  : "Busy"}
-                            </strong>
-                          </button>
-                        );
-                      })}
-
-                      {selectedDate === isoDate &&
-                        selectedStartMinutes !== null &&
-                        selectedEndMinutes !== null && (
-                          <div
-                            className="planner-selected"
-                            style={{
-                              top: `${selectionTopPercent}%`,
-                              height: `${selectionHeightPercent}%`,
-                            }}
-                          >
-                            {selectedStart} - {selectedEnd}
-                          </div>
-                        )}
-                    </div>
-                  ))}
+                    ))}
                   </div>
                 </div>
               </div>
@@ -812,13 +1002,18 @@ const BookingModal = ({ service, onClose }) => {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                className="ghost-button tiny"
-                onClick={() => setStage("calendar")}
-              >
-                Back to calendar
-              </button>
+              <div className="toolbar-meta">
+                <div className="price-pill">
+                  Total {formatCurrency(totalPrice)}
+                </div>
+                <button
+                  type="button"
+                  className="ghost-button tiny"
+                  onClick={() => setStage("calendar")}
+                >
+                  Back to calendar
+                </button>
+              </div>
             </div>
 
             <div className="composer-layout">
@@ -841,18 +1036,58 @@ const BookingModal = ({ service, onClose }) => {
                       <span>Start</span>
                       <input
                         type="time"
-                        step={1800}
+                        step={900}
                         value={selectedStart}
-                        onChange={(e) => setSelectedStart(e.target.value)}
+                        onChange={(e) => {
+                          const nextStart = e.target.value;
+                          const nextStartMinutes = timeToMinutes(nextStart);
+                          const endMinutes = selectedEndMinutes;
+                          if (nextStartMinutes === null || endMinutes === null)
+                            return;
+                          if (
+                            endMinutes - nextStartMinutes <
+                            MIN_DURATION_MINUTES
+                          )
+                            return;
+                          if (
+                            !isRangeOpen(
+                              nextStartMinutes,
+                              endMinutes,
+                              selectedDate || currentDate,
+                            )
+                          )
+                            return;
+                          setSelectedStart(nextStart);
+                        }}
                       />
                     </label>
                     <label className="input-group">
                       <span>End</span>
                       <input
                         type="time"
-                        step={1800}
+                        step={900}
                         value={selectedEnd}
-                        onChange={(e) => setSelectedEnd(e.target.value)}
+                        onChange={(e) => {
+                          const nextEnd = e.target.value;
+                          const nextEndMinutes = timeToMinutes(nextEnd);
+                          const startMinutes = selectedStartMinutes;
+                          if (nextEndMinutes === null || startMinutes === null)
+                            return;
+                          if (
+                            nextEndMinutes - startMinutes <
+                            MIN_DURATION_MINUTES
+                          )
+                            return;
+                          if (
+                            !isRangeOpen(
+                              startMinutes,
+                              nextEndMinutes,
+                              selectedDate || currentDate,
+                            )
+                          )
+                            return;
+                          setSelectedEnd(nextEnd);
+                        }}
                       />
                     </label>
                     <label className="input-group">
@@ -873,6 +1108,34 @@ const BookingModal = ({ service, onClose }) => {
 
                 {composerTab === "pets" && (
                   <div className="stack">
+                    <div className="pets-header-row">
+                      <h4>Saved pets</h4>
+                      <button
+                        type="button"
+                        className="ghost-button tiny"
+                        onClick={() => window.open("/profile", "_blank")}
+                      >
+                        Create new pet
+                      </button>
+                    </div>
+                    {petsLoading ? (
+                      <p className="muted">Loading pets...</p>
+                    ) : savedPets.length ? (
+                      <div className="pets-card-grid">
+                        {savedPets.map((pet) => (
+                          <article key={pet.id} className="pet-card">
+                            <strong>{pet.name || "Your dog"}</strong>
+                            <p className="muted subtle">
+                              {pet.breed || "Breed not set"}
+                            </p>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="muted">
+                        No pets yet. Create one from your profile.
+                      </p>
+                    )}
                     <label className="input-group full">
                       <span>Dog name(s)</span>
                       <input
@@ -881,41 +1144,54 @@ const BookingModal = ({ service, onClose }) => {
                         placeholder="Compass, Luna"
                       />
                     </label>
-                    <p className="muted">
-                      This replaces participant invites. Only client and owner
-                      are included.
-                    </p>
                   </div>
                 )}
 
                 {composerTab === "additional" && (
                   <div className="stack">
-                    {[
-                      "Medication support",
-                      "Photo update",
-                      "Towel dry",
-                      "Extended feeding",
-                    ].map((item) => (
-                      <label className="checkbox-row" key={item}>
-                        <input
-                          type="checkbox"
-                          checked={additionalCare.includes(item)}
-                          onChange={(event) => {
-                            setAdditionalCare((prev) =>
-                              event.target.checked
-                                ? [...prev, item]
-                                : prev.filter((it) => it !== item),
-                            );
-                          }}
-                        />
-                        <span>{item}</span>
-                      </label>
-                    ))}
+                    {addonsLoading ? (
+                      <p className="muted">Loading add-ons...</p>
+                    ) : (
+                      availableAddons.map((addon) => {
+                        const addonKey = addon.value || addon.id;
+                        return (
+                          <label
+                            className="checkbox-row addon-row"
+                            key={addonKey}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={additionalCare.includes(addonKey)}
+                              onChange={(event) => {
+                                setAdditionalCare((prev) =>
+                                  event.target.checked
+                                    ? [...prev, addonKey]
+                                    : prev.filter((it) => it !== addonKey),
+                                );
+                              }}
+                            />
+                            <span>
+                              <strong>{addon.label}</strong>
+                              {addon.description && (
+                                <small className="muted subtle addon-desc">
+                                  {addon.description}
+                                </small>
+                              )}
+                            </span>
+                            <em>
+                              {Number(addon.price || 0) > 0
+                                ? formatCurrency(addon.price)
+                                : "Included"}
+                            </em>
+                          </label>
+                        );
+                      })
+                    )}
                   </div>
                 )}
 
                 {composerTab === "confirm" && (
-                  <div className="stack">
+                  <div className="stack premium-summary">
                     <h4>{bookingTitle}</h4>
                     <p className="muted">
                       {formatDisplayDate(selectedDate)} · {selectedStart} -{" "}
@@ -924,19 +1200,36 @@ const BookingModal = ({ service, onClose }) => {
                     <p className="muted">
                       Location: {clientEircode || "Missing Eircode"}
                     </p>
-                    <p className="muted">
-                      Additional care:{" "}
-                      {additionalCare.length
-                        ? additionalCare.join(", ")
-                        : "None"}
-                    </p>
+                    <div className="cost-breakdown">
+                      <div>
+                        <span>Service ({selectedDurationMinutes} min)</span>
+                        <strong>{formatCurrency(servicePrice)}</strong>
+                      </div>
+                      <div>
+                        <span>Add-ons</span>
+                        <strong>{formatCurrency(addonsPrice)}</strong>
+                      </div>
+                      <div className="grand-total">
+                        <span>Total</span>
+                        <strong>{formatCurrency(totalPrice)}</strong>
+                      </div>
+                    </div>
+                    {selectedAddonDetails.length > 0 && (
+                      <p className="muted subtle">
+                        {selectedAddonDetails
+                          .map((addon) => addon.label)
+                          .join(", ")}
+                      </p>
+                    )}
                     <button
                       type="button"
                       className="button"
                       disabled={submitting}
                       onClick={submitBooking}
                     >
-                      {submitting ? "Submitting..." : "Submit booking"}
+                      {submitting
+                        ? "Submitting..."
+                        : `Submit booking · ${formatCurrency(totalPrice)}`}
                     </button>
                     {submitMessage && (
                       <p className="muted subtle">{submitMessage}</p>
@@ -952,46 +1245,52 @@ const BookingModal = ({ service, onClose }) => {
                   Drag purple handles to change duration.
                 </p>
                 <div className="rail-grid-wrapper">
-                  <div className="rail-grid outlook-day" id="booking-day-rail-grid">
+                  <div
+                    className="rail-grid outlook-day"
+                    id="booking-day-rail-grid"
+                  >
                     <div className="planner-grid-lines">
                       {currentDaySlots.map((slot) => (
-                        <div key={`rail-line-${slot.time}`} className="planner-line" />
+                        <div
+                          key={`rail-line-${slot.time}`}
+                          className="planner-line"
+                        />
                       ))}
                     </div>
                     {dayBlocks(currentDate).map((block) => {
-                    const startMinutes = timeToMinutes(block.start) || 0;
-                    const endMinutes = timeToMinutes(block.end) || 0;
-                    const top =
-                      ((startMinutes - SLOT_START_HOUR * 60) /
-                        (maxDayMinutes - SLOT_START_HOUR * 60)) *
-                      100;
-                    const height =
-                      ((endMinutes - startMinutes) /
-                        (maxDayMinutes - SLOT_START_HOUR * 60)) *
-                      100;
+                      const startMinutes = timeToMinutes(block.start) || 0;
+                      const endMinutes = timeToMinutes(block.end) || 0;
+                      const top =
+                        ((startMinutes - SLOT_START_HOUR * 60) /
+                          (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                        100;
+                      const height =
+                        ((endMinutes - startMinutes) /
+                          (maxDayMinutes - SLOT_START_HOUR * 60)) *
+                        100;
 
-                    return (
-                      <button
-                        key={`rail-${block.start}-${block.end}-${block.state}`}
-                        type="button"
-                        className={`outlook-slot ${block.state}`}
-                        style={{ top: `${top}%`, height: `${height}%` }}
-                        disabled={block.state !== "open"}
-                        onClick={() => pickSlot(currentDate, block.start)}
-                      >
-                        <span className="event-meta">
-                          {block.start} - {block.end}
-                        </span>
-                        <strong className="event-title">
-                          {block.state === "open"
-                            ? service?.name || "Booking"
-                            : block.state === "travel"
-                              ? "Travel buffer"
-                              : "Busy"}
-                        </strong>
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={`rail-${block.start}-${block.end}-${block.state}`}
+                          type="button"
+                          className={`outlook-slot ${block.state}`}
+                          style={{ top: `${top}%`, height: `${height}%` }}
+                          disabled={block.state !== "open"}
+                          onClick={() => pickSlot(currentDate, block.start)}
+                        >
+                          <span className="event-meta">
+                            {block.start} - {block.end}
+                          </span>
+                          <strong className="event-title">
+                            {block.state === "open"
+                              ? service?.name || "Booking"
+                              : block.state === "travel"
+                                ? "Travel buffer"
+                                : "Busy"}
+                          </strong>
+                        </button>
+                      );
+                    })}
                     {selectedStartMinutes !== null &&
                       selectedEndMinutes !== null && (
                         <div
@@ -1000,7 +1299,7 @@ const BookingModal = ({ service, onClose }) => {
                             top: `${selectionTopPercent}%`,
                             height: `${selectionHeightPercent}%`,
                           }}
-                          >
+                        >
                           <div className="selection-label">
                             {selectedStart} - {selectedEnd}
                           </div>
@@ -1177,7 +1476,10 @@ const BookingModal = ({ service, onClose }) => {
         }
         .planner-header {
           display: grid;
-          grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
+          grid-template-columns: 72px repeat(
+              var(--planner-cols, 7),
+              minmax(110px, 1fr)
+            );
           gap: 0;
           align-items: stretch;
           border-bottom: 1px solid rgba(255, 255, 255, 0.16);
@@ -1190,7 +1492,10 @@ const BookingModal = ({ service, onClose }) => {
         }
         .planner-body {
           display: grid;
-          grid-template-columns: 72px repeat(var(--planner-cols, 7), minmax(110px, 1fr));
+          grid-template-columns: 72px repeat(
+              var(--planner-cols, 7),
+              minmax(110px, 1fr)
+            );
           gap: 0;
           min-height: calc(var(--planner-scroll-height, 520px) * 1.6);
           background: #1f2023;
@@ -1299,6 +1604,13 @@ const BookingModal = ({ service, onClose }) => {
           border: 1px solid rgba(184, 144, 54, 0.7);
           color: #f7efd8;
         }
+        .planner-block.held,
+        .outlook-slot.held {
+          background: rgba(94, 63, 188, 0.82);
+          border-color: rgba(194, 171, 255, 0.92);
+          color: #f7f1ff;
+          cursor: not-allowed;
+        }
         .planner-selected {
           position: absolute;
           left: 8px;
@@ -1344,6 +1656,20 @@ const BookingModal = ({ service, onClose }) => {
           border-radius: 12px;
           padding: 10px;
         }
+        .toolbar-meta {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        .price-pill {
+          border: 1px solid rgba(171, 130, 255, 0.8);
+          background: rgba(124, 93, 242, 0.2);
+          color: #e8dcff;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-size: 12px;
+          font-weight: 700;
+        }
         .composer-layout {
           display: grid;
           grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
@@ -1359,6 +1685,23 @@ const BookingModal = ({ service, onClose }) => {
         .stack {
           display: grid;
           gap: 10px;
+        }
+        .pets-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+        }
+        .pets-card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 10px;
+        }
+        .pet-card {
+          border: 1px solid rgba(171, 130, 255, 0.45);
+          border-radius: 12px;
+          padding: 10px;
+          background: rgba(90, 62, 170, 0.18);
         }
         .checkbox-row {
           display: flex;
@@ -1449,6 +1792,57 @@ const BookingModal = ({ service, onClose }) => {
           bottom: -8px;
         }
 
+        .addon-row {
+          justify-content: space-between;
+        }
+        .addon-row span {
+          display: grid;
+        }
+        .addon-desc {
+          display: block;
+        }
+        .premium-summary {
+          border: 1px solid rgba(171, 130, 255, 0.4);
+          border-radius: 14px;
+          padding: 14px;
+          background: radial-gradient(
+            circle at top right,
+            rgba(145, 103, 255, 0.24),
+            rgba(20, 13, 38, 0.7)
+          );
+        }
+        .cost-breakdown {
+          display: grid;
+          gap: 8px;
+        }
+        .cost-breakdown > div {
+          display: flex;
+          justify-content: space-between;
+        }
+        .cost-breakdown .grand-total {
+          border-top: 1px solid rgba(255, 255, 255, 0.2);
+          padding-top: 8px;
+          font-size: 16px;
+        }
+        .planner-body-wrapper,
+        .rail-grid-wrapper {
+          scrollbar-color: #7c5df2 rgba(255, 255, 255, 0.08);
+          scrollbar-width: thin;
+        }
+        .planner-body-wrapper::-webkit-scrollbar,
+        .rail-grid-wrapper::-webkit-scrollbar {
+          width: 10px;
+        }
+        .planner-body-wrapper::-webkit-scrollbar-track,
+        .rail-grid-wrapper::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 999px;
+        }
+        .planner-body-wrapper::-webkit-scrollbar-thumb,
+        .rail-grid-wrapper::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, #8d6aff, #5e3fc9);
+          border-radius: 999px;
+        }
         @media (max-width: 1024px) {
           .grid-2 {
             grid-template-columns: 1fr;
@@ -1458,7 +1852,10 @@ const BookingModal = ({ service, onClose }) => {
           }
           .planner-header,
           .planner-body {
-            grid-template-columns: 64px repeat(var(--planner-cols, 7), minmax(95px, 1fr));
+            grid-template-columns: 64px repeat(
+                var(--planner-cols, 7),
+                minmax(95px, 1fr)
+              );
           }
         }
       `}</style>
