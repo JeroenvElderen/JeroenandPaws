@@ -129,6 +129,11 @@ const BookingModal = ({ service, onClose }) => {
   const [petNames, setPetNames] = useState("");
   const [savedPets, setSavedPets] = useState([]);
   const [petsLoading, setPetsLoading] = useState(false);
+  const [newPetName, setNewPetName] = useState("");
+  const [newPetBreed, setNewPetBreed] = useState("");
+  const [newPetNotes, setNewPetNotes] = useState("");
+  const [savingPet, setSavingPet] = useState(false);
+  const [petFormMessage, setPetFormMessage] = useState("");
   const [additionalCare, setAdditionalCare] = useState([]);
   const [availableAddons, setAvailableAddons] = useState([]);
   const [addonsLoading, setAddonsLoading] = useState(false);
@@ -301,9 +306,9 @@ const BookingModal = ({ service, onClose }) => {
         const minuteMark = timeToMinutes(time) || 0;
         const isPastTime = isToday && minuteMark < nowMinutes;
         const hasApiState = typeof source?.available === "boolean";
-        const defaultOpenWeekend =
-          (weekend || isBoardingService) && !hasApiState;
-        const available = defaultOpenWeekend || Boolean(source?.available);
+        const available = hasApiState
+          ? Boolean(source?.available)
+          : Boolean(isBoardingService && weekend);
 
         if (isPastTime) {
           return {
@@ -585,6 +590,27 @@ const BookingModal = ({ service, onClose }) => {
         maxDayMinutes,
       );
 
+      if (handle === "move") {
+        if (selectedStartMinutes === null || selectedEndMinutes === null) {
+          return;
+        }
+        const duration = selectedEndMinutes - selectedStartMinutes;
+        if (duration < MIN_DURATION_MINUTES) {
+          return;
+        }
+        const nextStart = Math.min(
+          Math.max(minuteValue, SLOT_START_HOUR * 60),
+          maxDayMinutes - duration,
+        );
+        const nextEnd = nextStart + duration;
+        if (!isRangeOpen(nextStart, nextEnd)) {
+          return;
+        }
+        setSelectedStart(minutesToTime(nextStart));
+        setSelectedEnd(minutesToTime(nextEnd));
+        return;
+      }
+
       if (handle === "start") {
         if (
           selectedEndMinutes === null ||
@@ -679,6 +705,55 @@ const BookingModal = ({ service, onClose }) => {
   );
 
   const totalPrice = servicePrice + addonsPrice;
+
+  const savePetInline = useCallback(async () => {
+    const ownerEmail = (clientEmail || profile?.client?.email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!ownerEmail || !newPetName.trim()) {
+      setPetFormMessage("Add a pet name to save your pet.");
+      return;
+    }
+
+    setSavingPet(true);
+    setPetFormMessage("");
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/pets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerEmail,
+          name: newPetName.trim(),
+          breed: newPetBreed.trim(),
+          notes: newPetNotes.trim(),
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to save pet");
+      const payload = await response.json();
+      if (payload?.pet) {
+        setSavedPets((prev) => [payload.pet, ...prev]);
+      }
+      setPetNames((prev) =>
+        [prev, newPetName.trim()].filter(Boolean).join(", "),
+      );
+      setNewPetName("");
+      setNewPetBreed("");
+      setNewPetNotes("");
+      setPetFormMessage("Pet saved.");
+    } catch (error) {
+      setPetFormMessage("Could not save pet right now.");
+    } finally {
+      setSavingPet(false);
+    }
+  }, [
+    apiBaseUrl,
+    clientEmail,
+    newPetBreed,
+    newPetName,
+    newPetNotes,
+    profile?.client?.email,
+  ]);
 
   const submitBooking = async () => {
     if (!selectedDate || !selectedStart || !selectedEnd) {
@@ -1110,13 +1185,6 @@ const BookingModal = ({ service, onClose }) => {
                   <div className="stack">
                     <div className="pets-header-row">
                       <h4>Saved pets</h4>
-                      <button
-                        type="button"
-                        className="ghost-button tiny"
-                        onClick={() => window.open("/profile", "_blank")}
-                      >
-                        Create new pet
-                      </button>
                     </div>
                     {petsLoading ? (
                       <p className="muted">Loading pets...</p>
@@ -1133,7 +1201,7 @@ const BookingModal = ({ service, onClose }) => {
                       </div>
                     ) : (
                       <p className="muted">
-                        No pets yet. Create one from your profile.
+                        No pets yet. Create one below.
                       </p>
                     )}
                     <label className="input-group full">
@@ -1144,6 +1212,49 @@ const BookingModal = ({ service, onClose }) => {
                         placeholder="Compass, Luna"
                       />
                     </label>
+                    <div className="new-pet-inline">
+                      <h5>Create new pet</h5>
+                      <div className="grid-2">
+                        <label className="input-group">
+                          <span>Name</span>
+                          <input
+                            value={newPetName}
+                            onChange={(e) => setNewPetName(e.target.value)}
+                            placeholder="Milo"
+                          />
+                        </label>
+                        <label className="input-group">
+                          <span>Breed</span>
+                          <input
+                            value={newPetBreed}
+                            onChange={(e) => setNewPetBreed(e.target.value)}
+                            placeholder="Labrador"
+                          />
+                        </label>
+                        <label className="input-group full">
+                          <span>Notes</span>
+                          <textarea
+                            rows={3}
+                            value={newPetNotes}
+                            onChange={(e) => setNewPetNotes(e.target.value)}
+                            placeholder="Anything we should know?"
+                          />
+                        </label>
+                      </div>
+                      <div className="actions-row">
+                        <button
+                          type="button"
+                          className="button"
+                          onClick={savePetInline}
+                          disabled={savingPet || !newPetName.trim()}
+                        >
+                          {savingPet ? "Saving..." : "Save pet"}
+                        </button>
+                      </div>
+                      {petFormMessage && (
+                        <p className="muted subtle">{petFormMessage}</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1298,6 +1409,11 @@ const BookingModal = ({ service, onClose }) => {
                           style={{
                             top: `${selectionTopPercent}%`,
                             height: `${selectionHeightPercent}%`,
+                          }}
+                          onPointerDown={(event) => {
+                            if (event.target.closest(".drag-handle")) return;
+                            event.preventDefault();
+                            setDragHandle("move");
                           }}
                         >
                           <div className="selection-label">
@@ -1708,6 +1824,18 @@ const BookingModal = ({ service, onClose }) => {
           gap: 10px;
           align-items: center;
         }
+        .checkbox-row input[type="checkbox"] {
+          accent-color: #8c61ff;
+        }
+        .new-pet-inline {
+          border: 1px solid rgba(171, 130, 255, 0.4);
+          border-radius: 12px;
+          padding: 12px;
+          background: rgba(87, 58, 160, 0.12);
+        }
+        .new-pet-inline h5 {
+          margin: 0 0 8px;
+        }
         .rail-grid-wrapper {
           max-height: ${CALENDAR_SCROLL_HEIGHT}px;
           overflow-y: auto;
@@ -1763,7 +1891,8 @@ const BookingModal = ({ service, onClose }) => {
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
           min-height: 32px;
           z-index: 4;
-          pointer-events: none;
+          pointer-events: auto;
+          cursor: grab;
         }
         .selection-label {
           position: absolute;
@@ -1772,6 +1901,9 @@ const BookingModal = ({ service, onClose }) => {
           font-size: 12px;
           font-weight: 700;
           color: #fff;
+        }
+        .selection-overlay:active {
+          cursor: grabbing;
         }
         .drag-handle {
           position: absolute;
