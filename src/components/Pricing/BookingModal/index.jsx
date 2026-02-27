@@ -12,7 +12,7 @@ const SLOT_START_HOUR = 8;
 const SLOT_END_HOUR = 20;
 const SLOT_STEP_MINUTES = 30;
 const DURATION_STEP_MINUTES = 15;
-const MIN_DURATION_MINUTES = 30;
+const DEFAULT_MIN_DURATION_MINUTES = 30;
 const CALENDAR_SCROLL_HEIGHT = 520;
 
 const VIEW_MODES = ["day", "week", "month"];
@@ -128,6 +128,7 @@ const BookingModal = ({ service, onClose }) => {
 
   const [petNames, setPetNames] = useState("");
   const [savedPets, setSavedPets] = useState([]);
+  const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [petsLoading, setPetsLoading] = useState(false);
   const [newPetName, setNewPetName] = useState("");
   const [newPetBreed, setNewPetBreed] = useState("");
@@ -147,6 +148,8 @@ const BookingModal = ({ service, onClose }) => {
     [service?.price],
   );
   const serviceUnitMinutes = Number(service?.durationMinutes || 0) || 0;
+  const minimumDurationMinutes =
+    serviceUnitMinutes || DEFAULT_MIN_DURATION_MINUTES;
   const isBoardingService = /overnight|boarding/i.test(
     `${service?.slug || ""} ${service?.category || ""} ${service?.title || ""}`,
   );
@@ -485,24 +488,23 @@ const BookingModal = ({ service, onClose }) => {
     password,
   ]);
 
-  const petsLabel =
-    petNames
-      .split(",")
-      .map((name) => name.trim())
-      .filter(Boolean)
-      .join(", ") || "Your dog";
-  const bookingTitle = `${petsLabel} - ${service?.title || "Service"}`;
-
   const pickSlot = (isoDate, slotTime) => {
     const slot = daySlots(isoDate).find((item) => item.time === slotTime);
     if (!slot || slot.state !== "open") return;
 
     const startMinutes = timeToMinutes(slotTime);
-    const endTime = minutesToTime((startMinutes || 0) + SLOT_STEP_MINUTES);
+    const nextStart = startMinutes || 0;
+    const nextEnd = nextStart + minimumDurationMinutes;
+    if (nextEnd > maxDayMinutes) {
+      return;
+    }
+    if (!isRangeOpen(nextStart, nextEnd, isoDate)) {
+      return;
+    }
 
     setSelectedDate(isoDate);
     setSelectedStart(slotTime);
-    setSelectedEnd(endTime);
+    setSelectedEnd(minutesToTime(nextEnd));
     setStage("composer");
     setComposerTab("details");
   };
@@ -595,7 +597,7 @@ const BookingModal = ({ service, onClose }) => {
           return;
         }
         const duration = selectedEndMinutes - selectedStartMinutes;
-        if (duration < MIN_DURATION_MINUTES) {
+        if (duration < minimumDurationMinutes) {
           return;
         }
         const nextStart = Math.min(
@@ -614,7 +616,7 @@ const BookingModal = ({ service, onClose }) => {
       if (handle === "start") {
         if (
           selectedEndMinutes === null ||
-          minuteValue > selectedEndMinutes - MIN_DURATION_MINUTES
+          minuteValue > selectedEndMinutes - minimumDurationMinutes
         ) {
           return;
         }
@@ -627,7 +629,7 @@ const BookingModal = ({ service, onClose }) => {
 
       if (
         selectedStartMinutes === null ||
-        minuteValue < selectedStartMinutes + MIN_DURATION_MINUTES
+        minuteValue < selectedStartMinutes + minimumDurationMinutes
       ) {
         return;
       }
@@ -636,7 +638,13 @@ const BookingModal = ({ service, onClose }) => {
       }
       setSelectedEnd(minutesToTime(minuteValue));
     },
-    [isRangeOpen, maxDayMinutes, selectedEndMinutes, selectedStartMinutes],
+    [
+      isRangeOpen,
+      maxDayMinutes,
+      minimumDurationMinutes,
+      selectedEndMinutes,
+      selectedStartMinutes,
+    ],
   );
 
   useEffect(() => {
@@ -680,12 +688,48 @@ const BookingModal = ({ service, onClose }) => {
     return Math.max(0, selectedEndMinutes - selectedStartMinutes);
   }, [selectedEndMinutes, selectedStartMinutes]);
 
-  const servicePrice = useMemo(() => {
+  const selectedDurationLabel = selectedDurationMinutes
+    ? `${selectedDurationMinutes} min`
+    : service?.duration || `${minimumDurationMinutes} min`;
+  const durationTitleSuffix =
+    selectedDurationMinutes > minimumDurationMinutes
+      ? ` · Extended ${selectedDurationLabel}`
+      : ` · ${selectedDurationLabel}`;
+  const petsLabel =
+    petNames
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .join(", ") || "Your dog";
+  const bookingTitle = `${petsLabel} - ${service?.title || "Service"}${durationTitleSuffix}`;
+
+  const baseServicePrice = useMemo(() => {
     if (!serviceUnitPrice || !serviceUnitMinutes || !selectedDurationMinutes) {
       return 0;
     }
     return (serviceUnitPrice / serviceUnitMinutes) * selectedDurationMinutes;
   }, [selectedDurationMinutes, serviceUnitMinutes, serviceUnitPrice]);
+
+  const selectedPetCount = useMemo(() => {
+    if (selectedPetIds.length > 0) {
+      return selectedPetIds.length;
+    }
+    const namedPets = petNames
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean);
+    return Math.max(namedPets.length, 1);
+  }, [petNames, selectedPetIds]);
+
+  const petPriceMultiplier = useMemo(() => {
+    if (selectedPetCount <= 1) return 1;
+    return 1 + (selectedPetCount - 1) * 0.5;
+  }, [selectedPetCount]);
+
+  const servicePrice = useMemo(
+    () => baseServicePrice * petPriceMultiplier,
+    [baseServicePrice, petPriceMultiplier],
+  );
 
   const selectedAddonDetails = useMemo(
     () =>
@@ -1121,7 +1165,7 @@ const BookingModal = ({ service, onClose }) => {
                             return;
                           if (
                             endMinutes - nextStartMinutes <
-                            MIN_DURATION_MINUTES
+                            minimumDurationMinutes
                           )
                             return;
                           if (
@@ -1150,7 +1194,7 @@ const BookingModal = ({ service, onClose }) => {
                             return;
                           if (
                             nextEndMinutes - startMinutes <
-                            MIN_DURATION_MINUTES
+                            minimumDurationMinutes
                           )
                             return;
                           if (
@@ -1185,19 +1229,47 @@ const BookingModal = ({ service, onClose }) => {
                   <div className="stack">
                     <div className="pets-header-row">
                       <h4>Saved pets</h4>
+                      <p className="muted subtle">
+                        {selectedPetCount} pet{selectedPetCount === 1 ? "" : "s"} selected
+                      </p>
                     </div>
                     {petsLoading ? (
                       <p className="muted">Loading pets...</p>
                     ) : savedPets.length ? (
                       <div className="pets-card-grid">
-                        {savedPets.map((pet) => (
-                          <article key={pet.id} className="pet-card">
-                            <strong>{pet.name || "Your dog"}</strong>
-                            <p className="muted subtle">
-                              {pet.breed || "Breed not set"}
-                            </p>
-                          </article>
-                        ))}
+                        {savedPets.map((pet) => {
+                          const isSelected = selectedPetIds.includes(pet.id);
+                          return (
+                            <button
+                              key={pet.id}
+                              type="button"
+                              className={`pet-card ${isSelected ? "selected" : ""}`}
+                              onClick={() => {
+                                setSelectedPetIds((prev) => {
+                                  const next = prev.includes(pet.id)
+                                    ? prev.filter((id) => id !== pet.id)
+                                    : [...prev, pet.id];
+                                  const selectedNames = savedPets
+                                    .filter((candidate) => next.includes(candidate.id))
+                                    .map((candidate) => candidate.name)
+                                    .filter(Boolean)
+                                    .join(", ");
+                                  if (selectedNames) {
+                                    setPetNames(selectedNames);
+                                  }
+                                  return next;
+                                });
+                              }}
+                              aria-pressed={isSelected}
+                            >
+                              <strong>{pet.name || "Your dog"}</strong>
+                              <p className="muted subtle">
+                                {pet.breed || "Breed not set"}
+                              </p>
+                              {isSelected && <span className="pet-card-badge">Selected</span>}
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="muted">
@@ -1267,7 +1339,9 @@ const BookingModal = ({ service, onClose }) => {
                         const addonKey = addon.value || addon.id;
                         return (
                           <label
-                            className="checkbox-row addon-row"
+                            className={`checkbox-row addon-row ${
+                              additionalCare.includes(addonKey) ? "checked" : ""
+                            }`}
                             key={addonKey}
                           >
                             <input
@@ -1313,9 +1387,18 @@ const BookingModal = ({ service, onClose }) => {
                     </p>
                     <div className="cost-breakdown">
                       <div>
-                        <span>Service ({selectedDurationMinutes} min)</span>
+                        <span>
+                          Service ({selectedDurationMinutes} min × {selectedPetCount} pet
+                          {selectedPetCount === 1 ? "" : "s"})
+                        </span>
                         <strong>{formatCurrency(servicePrice)}</strong>
                       </div>
+                      {selectedPetCount > 1 && (
+                        <div>
+                          <span>Multi-pet discount (50% from 2nd pet)</span>
+                          <strong>× {petPriceMultiplier.toFixed(2)}</strong>
+                        </div>
+                      )}
                       <div>
                         <span>Add-ons</span>
                         <strong>{formatCurrency(addonsPrice)}</strong>
@@ -1424,19 +1507,27 @@ const BookingModal = ({ service, onClose }) => {
                             className="drag-handle top"
                             onPointerDown={(event) => {
                               event.preventDefault();
+                              event.stopPropagation();
+                              event.currentTarget.setPointerCapture?.(event.pointerId);
                               setDragHandle("start");
                             }}
                             aria-label="Adjust start"
-                          />
+                          >
+                            •
+                          </button>
                           <button
                             type="button"
                             className="drag-handle bottom"
                             onPointerDown={(event) => {
                               event.preventDefault();
+                              event.stopPropagation();
+                              event.currentTarget.setPointerCapture?.(event.pointerId);
                               setDragHandle("end");
                             }}
                             aria-label="Adjust end"
-                          />
+                          >
+                            •
+                          </button>
                         </div>
                       )}
                   </div>
@@ -1818,6 +1909,27 @@ const BookingModal = ({ service, onClose }) => {
           border-radius: 12px;
           padding: 10px;
           background: rgba(90, 62, 170, 0.18);
+          color: inherit;
+          text-align: left;
+          display: grid;
+          gap: 4px;
+        }
+        button.pet-card {
+          width: 100%;
+          cursor: pointer;
+        }
+        .pet-card.selected {
+          border-color: #b88bff;
+          background: rgba(124, 93, 242, 0.35);
+          box-shadow: inset 0 0 0 1px rgba(217, 197, 255, 0.55);
+        }
+        .pet-card-badge {
+          justify-self: start;
+          background: #7c5df2;
+          color: #fff;
+          border-radius: 999px;
+          font-size: 11px;
+          padding: 2px 8px;
         }
         .checkbox-row {
           display: flex;
@@ -1826,6 +1938,12 @@ const BookingModal = ({ service, onClose }) => {
         }
         .checkbox-row input[type="checkbox"] {
           accent-color: #8c61ff;
+          width: 18px;
+          height: 18px;
+        }
+        .addon-row.checked {
+          border-color: rgba(140, 97, 255, 0.8);
+          background: rgba(124, 93, 242, 0.22);
         }
         .new-pet-inline {
           border: 1px solid rgba(171, 130, 255, 0.4);
@@ -1893,6 +2011,8 @@ const BookingModal = ({ service, onClose }) => {
           z-index: 4;
           pointer-events: auto;
           cursor: grab;
+          touch-action: none;
+          user-select: none;
         }
         .selection-label {
           position: absolute;
@@ -1907,8 +2027,8 @@ const BookingModal = ({ service, onClose }) => {
         }
         .drag-handle {
           position: absolute;
-          width: 14px;
-          height: 14px;
+          width: 18px;
+          height: 18px;
           border-radius: 999px;
           border: 2px solid #130a29;
           background: #bfa9ff;
@@ -1916,6 +2036,15 @@ const BookingModal = ({ service, onClose }) => {
           transform: translateX(-50%);
           cursor: ns-resize;
           pointer-events: auto;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: 700;
+          color: #2a145c;
+          padding: 0;
+          touch-action: none;
+          user-select: none;
         }
         .drag-handle.top {
           top: -8px;
@@ -1926,6 +2055,10 @@ const BookingModal = ({ service, onClose }) => {
 
         .addon-row {
           justify-content: space-between;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px;
+          padding: 8px 10px;
+          transition: background 0.2s ease, border-color 0.2s ease;
         }
         .addon-row span {
           display: grid;
