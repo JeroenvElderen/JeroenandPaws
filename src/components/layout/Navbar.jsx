@@ -383,7 +383,13 @@ const Navbar = () => {
         </nav>
       </div>
       <div className="nav_right">
-        
+        <Link
+          href="/book"
+          className="button w-button"
+          onClick={closeAllMenus}
+        >
+          Book a Meet &amp; Greet
+        </Link>
       </div>
       <div
         aria-controls="primary-navigation"
