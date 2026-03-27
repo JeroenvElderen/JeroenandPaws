@@ -1,40 +1,32 @@
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
+import styles from '../styles/marketing-site.module.css';
 
 const AboutPage = () => (
-  <main>
+  <main className={styles.page}>
     <Head>
       <title>About Jeroen & Paws | Dog Care in Bray, Wicklow</title>
-      <meta name="description" content="Meet Jeroen and learn about the calm, ethical dog care philosophy behind Jeroen & Paws." />
+      <meta name="description" content="Meet Jeroen and learn about the calm, ethical care philosophy behind Jeroen & Paws in Bray, Wicklow." />
     </Head>
 
-    <header className="section">
-      <div className="container">
-        <div className="w-layout-grid grid_2-col tablet-1-col gap-large">
-          <div className="image-ratio_3x2">
-            <Image src="/images/Jeroen.jpg" alt="Jeroen profile" width={900} height={600} className="image_cover" />
-          </div>
-          <div className="header">
-            <h1 className="heading_h1">About Jeroen &amp; Paws</h1>
-            <p className="paragraph_large">I provide calm, ethical dog care rooted in consistency, safety, and communication.</p>
-            <div className="button-group">
-              <Link href="/book" className="button w-button">Book a Meet &amp; Greet</Link>
-              <Link href="/services" className="button is-secondary w-button">See services</Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+    <section className={`${styles.section} ${styles.hero}`}>
+      <h1>About Jeroen &amp; Paws</h1>
+      <p>I built Jeroen &amp; Paws to offer practical, trustworthy support for local dog owners who want care done properly.</p>
+    </section>
 
-    <section className="section">
-      <div className="container">
-        <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
-          <article className="card"><div className="card_body"><h2 className="heading_h5">My story</h2><p className="margin-bottom_none">Started locally helping owners with nervous and high-energy dogs, then built a structured full-time service.</p></div></article>
-          <article className="card"><div className="card_body"><h2 className="heading_h5">Experience</h2><p className="margin-bottom_none">7+ years hands-on handling, pet first-aid aware, and force-free training principles.</p></div></article>
-          <article className="card"><div className="card_body"><h2 className="heading_h5">Philosophy</h2><p className="margin-bottom_none">Low-stress routines, patient handling, and dependable communication for every family.</p></div></article>
-        </div>
-      </div>
+    <section className={styles.section}>
+      <h2>My story</h2>
+      <p>After years helping friends and neighbors with reactive and high-energy dogs, I turned that experience into a local service focused on calm routines and clear communication.</p>
+      <h2>Experience &amp; credentials</h2>
+      <ul>
+        <li>7+ years hands-on dog handling experience</li>
+        <li>Pet first-aid aware practices</li>
+        <li>Continuous study in force-free, ethical dog care</li>
+      </ul>
+      <h2>Philosophy</h2>
+      <p>Dogs do best with consistency, patient boundaries, and low-stress environments. That drives every walk, daycare day, and boarding stay.</p>
+      <p><strong>Real photo:</strong> Please replace this section with your preferred personal image asset for strongest trust conversion.</p>
+      <Link href="/book" className={styles.buttonPrimary}>Book a Meet &amp; Greet</Link>
     </section>
   </main>
 );

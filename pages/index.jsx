@@ -1,85 +1,74 @@
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
+import styles from '../styles/marketing-site.module.css';
+
+const location = 'Bray, Wicklow';
 
 const HomePage = () => (
-  <main>
+  <main className={styles.page}>
     <Head>
-      <title>Dog Care in Bray, Wicklow — Walking, Boarding & Daycare | Jeroen & Paws</title>
+      <title>Dog Care in Bray, Wicklow | Walking, Boarding & Daycare</title>
       <meta
         name="description"
-        content="Dog walking, daycare and boarding in Bray and Wicklow. Book a meet & greet and get calm, reliable care tailored to your dog."
+        content="Trusted dog walking, daycare, and boarding in Bray and Wicklow. Book a meet & greet with Jeroen & Paws today."
       />
     </Head>
 
-    <header className="section">
-      <div className="container">
-        <div className="header">
-          <h1 className="heading_h1">Dog Care in Bray, Wicklow — Walking, Boarding &amp; Daycare</h1>
-          <p className="paragraph_large">Calm, reliable care tailored to your dog’s temperament and routine so you can leave home stress-free.</p>
-          <div className="button-group">
-            <Link href="/book" className="button w-button">Book a Meet &amp; Greet</Link>
-            <Link href="/contact" className="button is-secondary w-button">Check Availability</Link>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <section className="section">
-      <div className="container">
-        <div className="header"><h2 className="heading_h2">Trusted by local dog owners</h2></div>
-        <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
-          <article className="card"><div className="card_body"><p><strong>“Absolutely brilliant with nervous dogs.”</strong></p><p className="paragraph_small margin-bottom_none">— Client in Bray</p></div></article>
-          <article className="card"><div className="card_body"><p><strong>7+ years of hands-on experience.</strong></p><p className="paragraph_small margin-bottom_none">Calm handling and ethical care methods.</p></div></article>
-          <article className="card"><div className="card_body"><p><strong>Real photos and updates.</strong></p><p className="paragraph_small margin-bottom_none">You’ll see how your dog is doing after each service.</p></div></article>
-        </div>
+    <section className={`${styles.section} ${styles.hero}`}>
+      <p className={styles.kicker}>Local dog care</p>
+      <h1>Dog Care in {location} — Walking, Boarding &amp; Daycare</h1>
+      <p>Calm, reliable care tailored to your dog&apos;s temperament and routine, so you can leave home stress-free.</p>
+      <div className={styles.ctaRow}>
+        <Link href="/book" className={styles.buttonPrimary}>Book a Meet &amp; Greet</Link>
+        <Link href="/contact" className={styles.buttonSecondary}>Check Availability</Link>
       </div>
     </section>
 
-    <section className="section">
-      <div className="container">
-        <div className="header"><h2 className="heading_h2">Services</h2></div>
-        <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
-          <article className="card"><div className="card_body"><h3 className="heading_h4">Dog Walking</h3><p>Structured solo or small-group walks.</p><Link href="/services/dog-walking" className="button w-button">Dog Walking</Link></div></article>
-          <article className="card"><div className="card_body"><h3 className="heading_h4">Daycare</h3><p>Supervised daytime care with routine, play and rest.</p><Link href="/services/daycare" className="button w-button">Daycare</Link></div></article>
-          <article className="card"><div className="card_body"><h3 className="heading_h4">Boarding</h3><p>Comfortable overnight care with regular updates.</p><Link href="/services/boarding" className="button w-button">Boarding</Link></div></article>
-        </div>
+    <section className={styles.section}>
+      <p className={styles.kicker}>Social proof</p>
+      <div className={styles.grid3}>
+        <article className={styles.card}><strong>“Absolutely brilliant with nervous dogs.”</strong><p>— Local client, Bray</p></article>
+        <article className={styles.card}><strong>7+ years of dog handling experience.</strong><p>Pet first-aid aware, calm handling approach.</p></article>
+        <article className={styles.card}><strong>Real local dogs, real happy tails.</strong><p>See photo updates after walks and stays.</p></article>
       </div>
     </section>
 
-    <section className="section">
-      <div className="container">
-        <div className="w-layout-grid grid_2-col tablet-1-col gap-large">
-          <div className="image-ratio_3x2">
-            <Image src="/images/Jeroen.jpg" alt="Jeroen with a dog" width={900} height={600} className="image_cover" />
-          </div>
-          <div>
-            <h2 className="heading_h2">About Jeroen</h2>
-            <p>I built Jeroen &amp; Paws to provide calm, ethical dog care with clear communication and dependable routines.</p>
-            <Link href="/about" className="button is-secondary w-button">Read more</Link>
-          </div>
-        </div>
+    <section className={styles.section}>
+      <p className={styles.kicker}>Services</p>
+      <div className={styles.grid3}>
+        <article className={styles.card}><h2>Dog Walking</h2><p>Structured solo or small-group walks with enrichment and report cards.</p><Link href="/services/dog-walking" className={styles.buttonPrimary}>View Dog Walking</Link></article>
+        <article className={styles.card}><h2>Daycare</h2><p>Home-style day care for social dogs needing attention, rest, and routine.</p><Link href="/services/daycare" className={styles.buttonPrimary}>View Daycare</Link></article>
+        <article className={styles.card}><h2>Boarding</h2><p>Overnight boarding with clear updates, comfort breaks, and one-to-one care.</p><Link href="/services/boarding" className={styles.buttonPrimary}>View Boarding</Link></article>
       </div>
     </section>
 
-    <section className="section">
-      <div className="container">
-        <div className="header"><h2 className="heading_h2">How it works</h2></div>
-        <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
-          <article className="card"><div className="card_body"><h3 className="heading_h5">1. Book meet &amp; greet</h3><p className="margin-bottom_none">Tell me about your dog and goals.</p></div></article>
-          <article className="card"><div className="card_body"><h3 className="heading_h5">2. Assessment</h3><p className="margin-bottom_none">We assess temperament, social fit and logistics.</p></div></article>
-          <article className="card"><div className="card_body"><h3 className="heading_h5">3. Start service</h3><p className="margin-bottom_none">Begin care with updates and predictable scheduling.</p></div></article>
-        </div>
-      </div>
+    <section className={styles.section}>
+      <p className={styles.kicker}>About</p>
+      <h2>Care led by trust, patience, and clear communication.</h2>
+      <p>I&apos;m Jeroen. I started Jeroen &amp; Paws to provide ethical, low-stress care for local families who want dependable support.</p>
+      <Link href="/about" className={styles.buttonSecondary}>Read my story</Link>
     </section>
 
-    <section className="section">
-      <div className="container">
-        <h2 className="heading_h2">Service area</h2>
-        <p>Dog walking, daycare and boarding in Bray, Enniskerry, Shankill, Greystones and surrounding Wicklow areas.</p>
-        <div className="button-group">
-          <Link href="/book" className="button w-button">Book your meet &amp; greet</Link>
-        </div>
+    <section className={styles.section}>
+      <p className={styles.kicker}>How it works</p>
+      <ol className={styles.steps}>
+        <li><strong>1. Book meet &amp; greet</strong> — We discuss your goals, dog routine, and any concerns.</li>
+        <li><strong>2. Assessment</strong> — I assess temperament, social fit, and practical logistics.</li>
+        <li><strong>3. Start service</strong> — We begin care with updates and predictable scheduling.</li>
+      </ol>
+    </section>
+
+    <section className={styles.section}>
+      <p className={styles.kicker}>Service area</p>
+      <h2>Dog walking and pet care in Bray, Wicklow &amp; nearby neighborhoods.</h2>
+      <p>Primary coverage includes Bray, Enniskerry, Shankill, Greystones, and nearby parts of North Wicklow.</p>
+    </section>
+
+    <section className={`${styles.section} ${styles.finalCta}`}>
+      <h2>Ready to get started?</h2>
+      <p>Book your meet &amp; greet and we&apos;ll plan care around your dog.</p>
+      <div className={styles.ctaRow} style={{ justifyContent: 'center' }}>
+        <Link href="/book" className={styles.buttonPrimary}>Book your meet &amp; greet</Link>
       </div>
     </section>
   </main>

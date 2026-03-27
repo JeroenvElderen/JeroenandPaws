@@ -1,29 +1,31 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import styles from '../styles/marketing-site.module.css';
 
 const calendlyUrl = 'https://calendly.com/';
 const whatsappUrl = 'https://wa.me/353000000000';
 
 const BookPage = () => (
-  <main>
+  <main className={styles.page}>
     <Head>
       <title>Book a Meet & Greet | Jeroen & Paws Bray, Wicklow</title>
-      <meta name="description" content="Book your meet & greet for dog walking, daycare, or boarding in Bray and Wicklow." />
+      <meta name="description" content="Book a meet & greet for dog walking, daycare, or boarding in Bray and Wicklow." />
     </Head>
 
-    <header className="section">
-      <div className="container">
-        <div className="header">
-          <h1 className="heading_h1">Book a Meet &amp; Greet</h1>
-          <p className="paragraph_large">Fast booking options below — mobile-friendly and simple.</p>
-          <div className="button-group">
-            <a href={calendlyUrl} target="_blank" rel="noreferrer" className="button w-button">Book via Calendly</a>
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="button is-secondary w-button">Book via WhatsApp</a>
-          </div>
-          <p className="paragraph_small">Prefer a form? <Link href="/contact">Use the contact page</Link>.</p>
-        </div>
+    <section className={`${styles.section} ${styles.hero}`}>
+      <h1>Book a Meet &amp; Greet</h1>
+      <p>Pick the fastest option below. Mobile-friendly and takes under 2 minutes.</p>
+      <div className={styles.ctaRow}>
+        <a href={calendlyUrl} target="_blank" rel="noreferrer" className={styles.buttonPrimary}>Book via Calendly</a>
+        <a href={whatsappUrl} target="_blank" rel="noreferrer" className={styles.buttonSecondary}>Book via WhatsApp</a>
       </div>
-    </header>
+    </section>
+
+    <section className={styles.section}>
+      <h2>Prefer a quick form?</h2>
+      <p>Use the contact form if you&apos;d like us to suggest suitable times for your meet &amp; greet.</p>
+      <Link href="/contact" className={styles.buttonPrimary}>Open booking form</Link>
+    </section>
   </main>
 );
 

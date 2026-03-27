@@ -1,29 +1,24 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import styles from '../../styles/marketing-site.module.css';
 
 const ServicesPage = () => (
-  <main>
+  <main className={styles.page}>
     <Head>
-      <title>Dog Services in Bray, Wicklow | Jeroen & Paws</title>
-      <meta name="description" content="Explore dog walking, daycare, and boarding in Bray and Wicklow and book a meet & greet." />
+      <title>Dog Services in Bray, Wicklow | Walking, Daycare, Boarding</title>
+      <meta name="description" content="Explore dog walking, daycare, and boarding services in Bray and Wicklow. Transparent pricing and simple booking." />
     </Head>
 
-    <header className="section">
-      <div className="container">
-        <div className="header">
-          <h1 className="heading_h1">Dog Services in Bray, Wicklow</h1>
-          <p className="paragraph_large">Choose the right care option and book your meet &amp; greet in minutes.</p>
-        </div>
-      </div>
-    </header>
+    <section className={`${styles.section} ${styles.hero}`}>
+      <h1>Dog Services in Bray, Wicklow</h1>
+      <p>Choose the right level of care and book a meet &amp; greet in minutes.</p>
+    </section>
 
-    <section className="section">
-      <div className="container">
-        <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
-          <article className="card"><div className="card_body"><h2 className="heading_h4">Dog Walking</h2><p>Reliable solo or small-group walks.</p><Link href="/services/dog-walking" className="button w-button">View service</Link></div></article>
-          <article className="card"><div className="card_body"><h2 className="heading_h4">Daycare</h2><p>Supervised day care with routine and rest.</p><Link href="/services/daycare" className="button w-button">View service</Link></div></article>
-          <article className="card"><div className="card_body"><h2 className="heading_h4">Boarding</h2><p>Overnight home-style boarding with updates.</p><Link href="/services/boarding" className="button w-button">View service</Link></div></article>
-        </div>
+    <section className={styles.section}>
+      <div className={styles.grid3}>
+        <article className={styles.card}><h2>Dog Walking</h2><p>Reliable individual or small-group walks.</p><Link href="/services/dog-walking" className={styles.buttonPrimary}>Dog Walking</Link></article>
+        <article className={styles.card}><h2>Daycare</h2><p>Supervised daytime care with rest and play.</p><Link href="/services/daycare" className={styles.buttonPrimary}>Daycare</Link></article>
+        <article className={styles.card}><h2>Boarding</h2><p>Overnight home-style boarding with updates.</p><Link href="/services/boarding" className={styles.buttonPrimary}>Boarding</Link></article>
       </div>
     </section>
   </main>
