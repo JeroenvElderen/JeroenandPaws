@@ -483,7 +483,7 @@ const sendMail = async ({
         emailAddress: { address },
       }))
     : replyTo
-    ? [{ emailAdDress: { address: replyTo } }]
+    ? [{ emailAddress: { address: replyTo } }]
     : undefined;
 
   const principalPath = buildPrincipalPath(fromCalendarId);

@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 const initialState = {
-  name: '',
-  email: '',
-  message: '',
+  name: "",
+  email: "",
+  message: "",
 };
 
 const ContactFormSection = () => {
   const [formState, setFormState] = useState(initialState);
-  const [status, setStatus] = useState('idle');
-  const [error, setError] = useState('');
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -18,30 +18,42 @@ const ContactFormSection = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setStatus('submitting');
-    setError('');
+    
+    const shouldContinue = window.confirm(
+      "Quick heads up: when you reply to my email, my response may land in your junk/spam folder. Please keep an eye on it.",
+    );
+
+    if (!shouldContinue) {
+      return;
+    }
+
+    setStatus("submitting");
+    setError("");
 
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formState),
       });
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.message || 'Failed to send message');
+        throw new Error(payload?.message || "Failed to send message");
       }
 
-      setStatus('success');
+      setStatus("success");
       setFormState(initialState);
     } catch (submissionError) {
-      setError(submissionError.message || 'Unable to send your message. Please try again.');
-      setStatus('error');
+      setError(
+        submissionError.message ||
+          "Unable to send your message. Please try again.",
+      );
+      setStatus("error");
     }
   };
 
-  const showForm = status !== 'success';
+  const showForm = status !== "success";
 
   return (
     <section id="contact-form" className="section">
@@ -112,11 +124,11 @@ const ContactFormSection = () => {
                     type="submit"
                     data-wait="Please wait..."
                     className="button w-button"
-                    value={status === 'submitting' ? 'Sending...' : 'Submit'}
-                    disabled={status === 'submitting'}
+                    value={status === "submitting" ? "Sending..." : "Submit"}
+                    disabled={status === "submitting"}
                   />
                 </div>
-                {status === 'error' && (
+                {status === "error" && (
                   <div className="form_error-message w-form-fail">
                     <div className="form_error-message_content">
                       <img
@@ -131,7 +143,7 @@ const ContactFormSection = () => {
                 )}
               </form>
             )}
-            {status === 'success' && (
+            {status === "success" && (
               <div className="form_success-message w-form-done">
                 <div>Thank you! I’ll be in touch soon.</div>
               </div>
@@ -143,12 +155,15 @@ const ContactFormSection = () => {
           >
             <h2 className="heading_h2">Let’s talk about what your dog needs</h2>
             <p className="subheading">
-              Considering training, walks, day care, or boarding? I’m here to help your dog feel understood, supported, and set up for success. Reach out and let’s explore the options that suit them best.
+              Considering training, walks, day care, or boarding? I’m here to
+              help your dog feel understood, supported, and set up for success.
+              Reach out and let’s explore the options that suit them best.
             </p>
             <div className="margin-top_small">
               <h3 className="heading_h4">Contact options</h3>
               <p className="subheading">
-                Prefer a quick hello? Email or call any time, and I’ll respond within 24 hours.
+                Prefer a quick hello? Email or call any time, and I’ll respond
+                within 24 hours.
               </p>
               <div className="margin-top_xsmall">
                 <p className="jp-type-caption">Email</p>
