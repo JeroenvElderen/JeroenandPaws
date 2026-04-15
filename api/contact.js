@@ -125,7 +125,10 @@ module.exports = async (req, res) => {
       fromCalendarId: calendarId,
       to: toEmail,
       from: senderEmail,
-      replyTo: email,
+      replyTo: {
+        address: email,
+        name,
+      },
       subject,
       body: bodyContent,
       contentType: 'HTML',

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import ReplyNoticeModal from '../../../components/ReplyNoticeModal';
 import { getServiceLabel } from '../../../constants/serviceLabels';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -62,6 +63,7 @@ const CustomBookingFormSection = ({ serviceId }) => {
   );
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
+  const [showReplyNotice, setShowReplyNotice] = useState(false);
   const { profile } = useAuth();
 
   const petSummary = useMemo(() => {
@@ -109,8 +111,7 @@ const CustomBookingFormSection = ({ serviceId }) => {
     });
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const submitForm = async () => {
     setStatus('submitting');
     setError('');
 
@@ -139,12 +140,27 @@ const CustomBookingFormSection = ({ serviceId }) => {
     }
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setShowReplyNotice(true);
+  };
+
+  const handleContinue = async () => {
+    setShowReplyNotice(false);
+    await submitForm();
+  };
+
   const showForm = status !== 'success';
   const visibleDogCount = Math.min(Number(formState.dogCount) || 1, 4);
   const visibleDogs = (formState.dogs || []).slice(0, visibleDogCount);
 
   return (
     <section id="custom-booking" className="section">
+      <ReplyNoticeModal
+        isOpen={showReplyNotice}
+        onCancel={() => setShowReplyNotice(false)}
+        onContinue={handleContinue}
+      />
       <div className="container">
         <div className="w-layout-grid grid_2-col gap-large">
           <div className="w-form">

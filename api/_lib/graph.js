@@ -6,6 +6,33 @@ const MAX_GRAPH_WINDOW_DAYS = 62;
 
 const BUSINESS_TIME_ZONE = "Europe/Dublin";
 
+const toAddressEntry = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    const address = value.trim();
+    return address ? { emailAddress: { address } } : null;
+  }
+
+  if (typeof value === "object") {
+    const address = value.address?.trim();
+    if (!address) {
+      return null;
+    }
+    const name = value.name?.trim();
+    return {
+      emailAddress: {
+        address,
+        ...(name ? { name } : {}),
+      },
+    };
+  }
+
+  return null;
+};
+
 const mapBusyIntervals = (items) =>
   items.map((item) => {
     const startZone = item.start?.timeZone || BUSINESS_TIME_ZONE;
@@ -466,25 +493,17 @@ const sendMail = async ({
     throw new Error("sendMail called without recipient email address");
   }
 
-  const recipients = Array.isArray(to)
-    ? to.filter(Boolean).map((address) => ({
-        emailAddress: { address },
-      }))
-    : [
-        {
-          emailAddress: {
-            address: to,
-          },
-        },
-      ];
+  const recipients = (Array.isArray(to) ? to : [to])
+    .map((address) => toAddressEntry(address))
+    .filter(Boolean);
 
-  const replyToEntries = Array.isArray(replyTo)
-    ? replyTo.filter(Boolean).map((address) => ({
-        emailAddress: { address },
-      }))
-    : replyTo
-    ? [{ emailAddress: { address: replyTo } }]
-    : undefined;
+  if (!recipients.length) {
+    throw new Error("sendMail called with invalid recipient email address");
+  }
+
+  const replyToEntries = (Array.isArray(replyTo) ? replyTo : [replyTo])
+    .map((entry) => toAddressEntry(entry))
+    .filter(Boolean);
 
   const principalPath = buildPrincipalPath(fromCalendarId);
 
@@ -503,7 +522,7 @@ const sendMail = async ({
           content: body,
         },
         toRecipients: recipients,
-        ...(replyToEntries ? { replyTo: replyToEntries } : {}),
+        ...(replyToEntries.length ? { replyTo: replyToEntries } : {}),
       },
       saveToSentItems: false,
     }),

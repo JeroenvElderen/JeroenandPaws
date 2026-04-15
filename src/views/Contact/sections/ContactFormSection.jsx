@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ReplyNoticeModal from "../../../components/ReplyNoticeModal";
 
 const initialState = {
   name: "",
@@ -10,23 +11,14 @@ const ContactFormSection = () => {
   const [formState, setFormState] = useState(initialState);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [showReplyNotice, setShowReplyNotice] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormState((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    
-    const shouldContinue = window.confirm(
-      "Quick heads up: when you reply to my email, my response may land in your junk/spam folder. Please keep an eye on it.",
-    );
-
-    if (!shouldContinue) {
-      return;
-    }
-
+  const submitForm = async () => {
     setStatus("submitting");
     setError("");
 
@@ -53,10 +45,25 @@ const ContactFormSection = () => {
     }
   };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setShowReplyNotice(true);
+  };
+
+  const handleContinue = async () => {
+    setShowReplyNotice(false);
+    await submitForm();
+  };
+
   const showForm = status !== "success";
 
   return (
     <section id="contact-form" className="section">
+      <ReplyNoticeModal
+        isOpen={showReplyNotice}
+        onCancel={() => setShowReplyNotice(false)}
+        onContinue={handleContinue}
+      />
       <div className="container">
         <div className="w-layout-grid grid_2-col gap-large">
           <div className="w-form">
@@ -173,7 +180,7 @@ const ContactFormSection = () => {
               </div>
               <div className="margin-top_xsmall">
                 <p className="jp-type-caption">Phone</p>
-                <a href="tel:+353851234567" className="link">
+                <a href="tel:+353872473099" className="link">
                   +353872473099
                 </a>
               </div>
