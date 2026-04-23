@@ -25,7 +25,7 @@ const PricingSection = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan a custom check-in",
+          ctaText: service.price ? "Send request" : "Plan a custom check-in",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -47,7 +47,7 @@ const PricingSection = () => {
       title="Home Check-Ins — Flexible Care at Home"
       services={services}
       gridClassName="grid_3-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );

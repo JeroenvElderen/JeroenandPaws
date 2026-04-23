@@ -12,9 +12,9 @@ const OvernightStays = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose your overnight option",
-    chooserDescription: "Select the stay that fits your dates before booking.",
+    chooserDescription: "Select the stay that fits your dates before sending your request.",
   });
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const OvernightStays = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? false,
-          ctaText: service.price ? "Check availability" : "Plan a tailored stay",
+          ctaText: service.price ? "Send request" : "Plan a tailored stay",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -57,7 +57,7 @@ const OvernightStays = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
-      <StickyBookingCta label="Book an overnight stay" onClick={openBooking} />
+      <StickyBookingCta label="Request an overnight stay" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

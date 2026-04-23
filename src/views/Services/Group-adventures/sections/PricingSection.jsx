@@ -25,7 +25,7 @@ const PricingSection = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan Custom Adventure",
+          ctaText: service.price ? "Send request" : "Plan Custom Adventure",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -47,7 +47,7 @@ const PricingSection = () => {
       title="Group Adventure Plans"
       services={services}
       gridClassName="grid_4-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );

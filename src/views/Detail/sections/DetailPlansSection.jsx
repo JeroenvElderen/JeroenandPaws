@@ -17,7 +17,7 @@ const DetailPlansSection = () => (
                 <p></p>
               </div>
               <div className="w-layout-hflex button-group is-align-center margin-bottom_xsmall">
-                <Link href="/contact?service=30-minute-walk" className="button w-button">Book a Walk</Link>
+                <Link href="/contact?service=30-minute-walk" className="button w-button">Request a Walk</Link>
               </div>
               <p className="text-color_secondary">Pause or cancel anytime—no worries.</p>
             </div>
@@ -31,7 +31,7 @@ const DetailPlansSection = () => (
                 <p></p>
               </div>
               <div className="w-layout-hflex button-group is-align-center margin-bottom_xsmall">
-                <Link href="/contact?service=60-minute-walk" className="button w-button">Reserve Now</Link>
+                <Link href="/contact?service=60-minute-walk" className="button w-button">Send Request</Link>
               </div>
               <p className="text-color_secondary">Flexible scheduling for busy lives.</p>
             </div>
@@ -45,7 +45,7 @@ const DetailPlansSection = () => (
                 <p></p>
               </div>
               <div className="w-layout-hflex button-group is-align-center margin-bottom_xsmall">
-                <Link href="/contact?service=day-care" className="button w-button">Join Day Care</Link>
+                <Link href="/contact?service=day-care" className="button w-button">Request Day Care</Link>
               </div>
               <p className="text-color_secondary">Your dog’s home away from home.</p>
             </div>

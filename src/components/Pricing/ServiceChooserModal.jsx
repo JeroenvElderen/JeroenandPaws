@@ -6,8 +6,8 @@ const ServiceChooserModal = ({
   onSelect,
   onClose,
   title = "Choose a service to book",
-  description = "Pick the option that best fits your companion to continue to availability.",
-  defaultCta = "Check availability",
+  description = "Pick the option that best fits your companion to continue with a request.",
+  defaultCta = "Send request",
 }) => {
   const hasServices = services.length > 0;
 
@@ -16,7 +16,7 @@ const ServiceChooserModal = ({
       <div className="service-chooser">
         <header className="service-chooser__header">
           <div>
-            <p className="eyebrow">Booking</p>
+            <p className="eyebrow">Request</p>
             <h3>{title}</h3>
             <p className="muted">{description}</p>
           </div>

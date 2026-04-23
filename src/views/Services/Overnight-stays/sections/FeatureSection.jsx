@@ -20,7 +20,7 @@ const FeatureSection = ({ onBook }) => {
               company, relaxed routines, outdoor time, and cosy places to rest —
               all supported with attentive supervision and a reassuring,
               lived-in environment where they are never treated as just another
-              booking.
+              request process.
             </p>
             <div className="button-group">
               <button
@@ -28,7 +28,7 @@ const FeatureSection = ({ onBook }) => {
                 onClick={onBook}
                 className="button w-button"
               >
-                Book an overnight stay
+                Request an overnight stay
               </button>
               <a href="#services" className="button is-secondary w-button">
                 View services and pricing

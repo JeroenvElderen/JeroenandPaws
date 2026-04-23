@@ -1,52 +1,60 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import BookingModal from "./BookingModal";
 import ChatOrFormModal from "./ChatOrFormModal";
 import ServiceChooserModal from "./ServiceChooserModal";
-import { prefetchAvailabilityBatch } from "./availabilityCache";
+
+const toKebabCase = (value = "") =>
+  String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+const createRequestOptions = (service = {}) => {
+  const serviceKey = service.id || service.slug || toKebabCase(service.title) || "custom-request";
+  const serviceTitle = service.title || "your service";
+
+  return {
+    chatUrl: service.ctaOptions?.chatUrl,
+    formUrl: service.ctaOptions?.formUrl || `/contact?service=${serviceKey}`,
+    heading: service.ctaOptions?.heading || `How would you like to request ${serviceTitle}?`,
+    description:
+      service.ctaOptions?.description ||
+      "Start on WhatsApp for a quick chat, or send a request form and we will follow up.",
+  };
+};
 
 const useServiceBooking = ({
   services = [],
-  defaultCta = "Check availability",
-  chooserTitle = "Choose a service to book",
-  chooserDescription = "Pick the option that best fits your companion to continue to availability.",
+  defaultCta = "Send request",
+  chooserTitle = "Choose a service",
+  chooserDescription = "Pick the option that best fits your companion to continue.",
 } = {}) => {
-  const [activeService, setActiveService] = useState(null);
   const [ctaChoiceService, setCtaChoiceService] = useState(null);
   const [showChooser, setShowChooser] = useState(false);
   const autoOpenedRef = useRef(false);
 
   const handleSelect = useCallback((service) => {
     if (!service) return;
-    if (service.ctaOptions) {
-      setCtaChoiceService(service);
+
+    if (service.ctaHref && typeof window !== "undefined") {
       setShowChooser(false);
+      window.location.href = service.ctaHref;
       return;
     }
-    if (service.ctaHref) {
-      setShowChooser(false);
-      if (typeof window !== "undefined") {
-        window.location.href = service.ctaHref;
-      }
-      return;
-    }
-    setActiveService(service);
+
+    setCtaChoiceService({
+      ...service,
+      ctaOptions: createRequestOptions(service),
+    });
     setShowChooser(false);
   }, []);
-
-  useEffect(() => {
-    const batchTargets = services.filter((service) => !service?.ctaHref);
-    if (batchTargets.length) {
-      prefetchAvailabilityBatch(batchTargets);
-    }
-  }, [services]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (autoOpenedRef.current) return;
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get("booking") !== "1") return;
-
+    if (params.get("booking") !== "1" && params.get("request") !== "1") return;
     if (services.length === 0) return;
 
     const requestedServiceId = params.get("service");
@@ -54,21 +62,23 @@ const useServiceBooking = ({
       ? services.find((service) => service?.id === requestedServiceId)
       : null;
 
+    autoOpenedRef.current = true;
     if (matchingService) {
-      autoOpenedRef.current = true;
       handleSelect(matchingService);
       return;
     }
 
     if (services.length === 1) {
-      autoOpenedRef.current = true;
       handleSelect(services[0]);
+      return;
     }
+
+    setShowChooser(true);
   }, [handleSelect, services]);
 
   const openBooking = useCallback(() => {
     if (services.length === 0) {
-      setShowChooser(true);
+      setCtaChoiceService({ ctaOptions: createRequestOptions({}) });
       return;
     }
 
@@ -90,12 +100,6 @@ const useServiceBooking = ({
           title={chooserTitle}
           description={chooserDescription}
           defaultCta={defaultCta}
-        />
-      )}
-      {activeService && !activeService.ctaHref && (
-        <BookingModal
-          service={activeService}
-          onClose={() => setActiveService(null)}
         />
       )}
       {ctaChoiceService?.ctaOptions && (

@@ -40,7 +40,7 @@ const FaqSection = () => {
         "Please send their regular food, any medication, and a familiar item such as a blanket or toy. Familiar scents help dogs settle quickly in a new space.",
     },
     {
-      question: "Can I visit your home before booking?",
+      question: "Can I visit your home before requesting care?",
       answer:
         "Of course. A brief meet-and-greet helps your dog become familiar with the space and allows us to discuss routines, expectations, and any questions you may have.",
     },

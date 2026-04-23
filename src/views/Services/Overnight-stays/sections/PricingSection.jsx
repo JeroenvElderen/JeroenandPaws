@@ -21,7 +21,7 @@ const PricingSection = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? false,
-          ctaText: service.price ? "Check availability" : "Plan a tailored stay",
+          ctaText: service.price ? "Send request" : "Plan a tailored stay",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -43,7 +43,7 @@ const PricingSection = () => {
       title="Overnight Stay Options"
       services={services}
       gridClassName="grid_4-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );

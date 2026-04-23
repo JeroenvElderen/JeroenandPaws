@@ -27,7 +27,7 @@ const FeatureSection = ({ onBook }) => {
                 onClick={onBook}
                 className="button w-button"
               >
-                Book a solo journey
+                Request a solo journey
               </button>
               <a href="#services" className="button is-secondary w-button">
                 View services and pricing

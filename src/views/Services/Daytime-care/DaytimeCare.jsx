@@ -12,9 +12,9 @@ const DaytimeCare = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose a daytime care plan",
-    chooserDescription: "Select the schedule that fits your companion before booking.",
+    chooserDescription: "Select the schedule that fits your companion before sending your request.",
   });
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const DaytimeCare = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan tailored care",
+          ctaText: service.price ? "Send request" : "Plan tailored care",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -60,7 +60,7 @@ const DaytimeCare = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
-      <StickyBookingCta label="Book a daytime care spot" onClick={openBooking} />
+      <StickyBookingCta label="Request daytime care" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

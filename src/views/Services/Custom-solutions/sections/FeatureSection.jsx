@@ -16,7 +16,7 @@ const FeatureSection = ({ onBook }) => {
             </p>
               <div className="button-group">
               <button type="button" onClick={onBook} className="button w-button">
-                Book a Meet &amp; Greet
+                Request a Meet &amp; Greet
               </button>
               <a href="#services" className="button is-secondary w-button">
                 View services & pricing

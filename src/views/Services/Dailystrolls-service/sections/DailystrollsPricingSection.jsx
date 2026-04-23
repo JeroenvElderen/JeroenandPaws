@@ -29,7 +29,7 @@ const DailystrollsPricingSection = () => {
         allowRecurring: service.allow_recurring ?? true,
         allowMultiDay: service.allow_multi_day ?? true,
         ctaText:
-          service.price === null ? "Build a custom visit" : "Check availability",
+          service.price === null ? "Build a custom visit" : "Send request",
         ...(service.price === null && {
           ctaOptions: {
             chatUrl: getPreferredChatUrl(),
@@ -53,7 +53,7 @@ const DailystrollsPricingSection = () => {
       title="Daily stroll options for every companion"
       services={services}
       gridClassName="grid_3-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );

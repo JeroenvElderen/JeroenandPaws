@@ -25,7 +25,7 @@ const SoloJourneyPricingSection = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan a solo journey",
+          ctaText: service.price ? "Send request" : "Plan a solo journey",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -47,7 +47,7 @@ const SoloJourneyPricingSection = () => {
       title="Solo Journey Plans"
       services={services}
       gridClassName="grid_3-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );
