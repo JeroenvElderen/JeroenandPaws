@@ -11,7 +11,7 @@ const TrainingHelp = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose your training session",
     chooserDescription: "Pick the focus you want before scheduling.",
   });
@@ -37,7 +37,7 @@ const TrainingHelp = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan a tailored session",
+          ctaText: service.price ? "Send request" : "Plan a tailored session",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),

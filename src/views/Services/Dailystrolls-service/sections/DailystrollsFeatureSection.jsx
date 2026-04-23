@@ -23,7 +23,7 @@ const DailystrollsFeatureSection = ({ onBook }) => {
                 className="button w-button"
                 onClick={onBook}
               >
-                Book your first walk
+                Request your first walk
               </button>
               <a href="#services" className="button is-secondary w-button">
                 View walk plans & pricing

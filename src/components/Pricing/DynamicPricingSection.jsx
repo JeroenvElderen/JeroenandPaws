@@ -1,47 +1,55 @@
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
-import BookingModal from "./BookingModal";
+import React, { useState } from "react";
 import ChatOrFormModal from "./ChatOrFormModal";
 import PricingStyles from "./PricingStyles";
-import AvailabilityPreview from "./AvailabilityPreview";
-import { prefetchAvailability, prefetchAvailabilityBatch } from "./availabilityCache";
+
+const normalizeCtaLabel = (label = "") => {
+  if (!label) return "Send request";
+  if (/check availability/i.test(label)) return "Send request";
+  if (/^book\b/i.test(label)) return label.replace(/^book/i, "Request");
+  return label;
+};
+
+const toKebabCase = (value = "") =>
+  String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
 const DynamicPricingSection = ({
   title = "Walking Plans for Every Pup",
   services = [],
   gridClassName = "grid_4-col",
-  defaultCta = "Check availability",
+  defaultCta = "Send request",
 }) => {
-  const [activeService, setActiveService] = useState(null);
   const [ctaChoiceService, setCtaChoiceService] = useState(null);
 
-  useEffect(() => {
-    const batchTargets = services.filter((service) => !service?.ctaHref);
-    if (batchTargets.length) {
-      prefetchAvailabilityBatch(batchTargets);
-    }
-  }, [services]);
-  
   const getCtaLabel = (service) => {
-    if (service.ctaText) return service.ctaText;
-    if (service.duration) return `Book ${service.duration}`;
-    if (service.title) return `Book ${service.title}`;
+    if (service.ctaText) return normalizeCtaLabel(service.ctaText);
+    if (service.duration) return `Request ${service.duration}`;
+    if (service.title) return `Request ${service.title}`;
     return defaultCta;
   };
 
-  const handlePrefetch = (service) => {
-    if (!service?.ctaHref) {
-      prefetchAvailability(service);
-    }
+  const buildRequestService = (service = {}) => {
+    const serviceKey = service.id || service.slug || toKebabCase(service.title) || "custom-request";
+    return {
+      ...service,
+      ctaOptions: {
+        chatUrl: service.ctaOptions?.chatUrl,
+        formUrl: service.ctaOptions?.formUrl || `/contact?service=${serviceKey}`,
+        heading: service.ctaOptions?.heading || `How would you like to request ${service.title || "this service"}?`,
+        description:
+          service.ctaOptions?.description ||
+          "Message us on WhatsApp or send the request form and we will follow up directly.",
+      },
+    };
   };
 
   const handleSelect = (service) => {
-    if (service.ctaOptions) {
-      setCtaChoiceService(service);
-      return;
-    }
     if (service.ctaHref) return;
-    setActiveService(service);
+    setCtaChoiceService(buildRequestService(service));
   };
 
   return (
@@ -60,7 +68,6 @@ const DynamicPricingSection = ({
                   {service.label && <div className="eyebrow">{service.label}</div>}
                   {service.price && <p className="heading_h3">{service.price}</p>}
                   {service.description && <p>{service.description}</p>}
-                  <AvailabilityPreview service={service} />
                 </div>
                 <div className="button-group is-align-center">
                   {service.ctaHref ? (
@@ -83,12 +90,6 @@ const DynamicPricingSection = ({
         </ul>
       </div>
 
-      {activeService && !activeService.ctaHref && (
-        <BookingModal
-          service={activeService}
-          onClose={() => setActiveService(null)}
-        />
-      )}
       {ctaChoiceService?.ctaOptions && (
         <ChatOrFormModal
           service={ctaChoiceService}

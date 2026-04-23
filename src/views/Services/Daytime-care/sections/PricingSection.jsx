@@ -25,7 +25,7 @@ const PricingSection = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan tailored care",
+          ctaText: service.price ? "Send request" : "Plan tailored care",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -47,7 +47,7 @@ const PricingSection = () => {
       title="Daytime care plans for every companion"
       services={services}
       gridClassName="grid_3-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );

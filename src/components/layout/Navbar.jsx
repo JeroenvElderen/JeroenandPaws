@@ -13,8 +13,7 @@ const Navbar = () => {
     '/about',
     '/gallery',
     '/faq',
-    '/pricing',
-    '/contact',
+        '/contact',
     '/services',
   ]);
 
@@ -289,16 +288,6 @@ const Navbar = () => {
                 <div>Gallery</div>
               </Link>
             </li>
-            {/* <li className="nav_menu-list-item">
-              <Link
-                href="/pricing"
-                className="nav_link on-accent-primary w-inline-block"
-                onClick={closeAllMenus}
-                {...getLinkProps('/gallery')}
-              >
-                <div>Pricing</div>
-              </Link>
-            </li> */}
             <li className="nav_menu-list-item">
               <Link
                 href="/faq"
@@ -362,13 +351,6 @@ const Navbar = () => {
                 </nav>
               </div>
             </li>
-            {/* <li className ="nav_menu-list-item">
-              <Link href="/booking" className="nav_link on-accent-primary w-inline-block" onClick={closeAllMenus}>
-                  <div>
-                    Booking
-                  </div>
-              </Link>
-            </li> */}
             <li className="nav_menu-list-item">
               <Link
                 href="/contact"

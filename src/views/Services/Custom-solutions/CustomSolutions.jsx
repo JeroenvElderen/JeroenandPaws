@@ -11,9 +11,9 @@ const CustomSolutions = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose a custom option",
-    chooserDescription: "Pick the tailored service you want before chatting or booking.",
+    chooserDescription: "Pick the tailored service you want before chatting or sending your request.",
   });
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const CustomSolutions = () => {
         durationMinutes: service.duration_minutes || null,
         allowRecurring: service.allow_recurring ?? true,
         allowMultiDay: service.allow_multi_day ?? true,
-        ctaText: "Check availability",
+        ctaText: "Send request",
         ctaOptions: {
           chatUrl: getPreferredChatUrl(),
           formUrl: `/contact?service=${service.slug}`,
@@ -54,7 +54,7 @@ const CustomSolutions = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
-      <StickyBookingCta label="Book a Meet &amp; Greet" onClick={openBooking} />
+      <StickyBookingCta label="Request a Meet &amp; Greet" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

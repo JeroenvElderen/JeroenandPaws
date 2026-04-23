@@ -6,16 +6,15 @@ import TestimonialsSection from './sections/TestimonialsSection';
 import AboutSection from "./sections/AboutSection";
 import useServiceBooking from "../../../components/Pricing/useServiceBooking";
 import { getPreferredChatUrl } from "../../../utils/chatLinks";
-import book from "api/book";
 import StickyBookingCta from "../../../components/StickyBookingCta";
 
 const HomeCheckins = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose your check-in",
-    chooserDescription: "Select a visit length before you continue to booking.",
+    chooserDescription: "Select a visit length before sending your request.",
   });
 
   useEffect(() => {
@@ -39,7 +38,7 @@ const HomeCheckins = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan a custom check-in",
+          ctaText: service.price ? "Send request" : "Plan a custom check-in",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -62,7 +61,7 @@ const HomeCheckins = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
-       <StickyBookingCta label="Book a home check-in" onClick={openBooking} />
+       <StickyBookingCta label="Request a home check-in" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

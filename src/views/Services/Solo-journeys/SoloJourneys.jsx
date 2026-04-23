@@ -12,7 +12,7 @@ const SoloJourneys = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose your solo journey",
     chooserDescription: "Select the outing you want before scheduling.",
   });
@@ -38,7 +38,7 @@ const SoloJourneys = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan a solo journey",
+          ctaText: service.price ? "Send request" : "Plan a solo journey",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -61,7 +61,7 @@ const SoloJourneys = () => {
       <PricingSection />
       <FaqSection />
       <TestimonialsSection />
-      <StickyBookingCta label="Book a solo journey" onClick={openBooking} />
+      <StickyBookingCta label="Request a solo journey" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

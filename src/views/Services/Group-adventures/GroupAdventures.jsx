@@ -12,9 +12,9 @@ const GroupAdventures = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose your adventure",
-    chooserDescription: "Pick the outing that fits your companion before checking availability.",
+    chooserDescription: "Pick the outing that fits your companion before sending your request.",
   });
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const GroupAdventures = () => {
           durationMinutes: service.duration_minutes || null,
           allowRecurring: service.allow_recurring ?? true,
           allowMultiDay: service.allow_multi_day ?? true,
-          ctaText: service.price ? "Check availability" : "Plan Custom Adventure",
+          ctaText: service.price ? "Send request" : "Plan Custom Adventure",
           ...(service.price === null && {
             ctaOptions: {
               chatUrl: getPreferredChatUrl(),
@@ -60,7 +60,7 @@ const GroupAdventures = () => {
       <AboutSection />
       <PricingSection />
       <FaqSection />
-      <StickyBookingCta label="Join an adventure" onClick={openBooking} />
+      <StickyBookingCta label="Request an adventure" onClick={openBooking} />
       {bookingOverlays}
     </>
   );

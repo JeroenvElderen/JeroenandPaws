@@ -26,7 +26,7 @@ const FeatureSection = ({ onBook }) => {
                 onClick={onBook}
                 className="button w-button"
               >
-                Book a daytime care spot
+                Request daytime care
               </button>
               <a href="#services" className="button is-secondary w-button">
                 View daytime care plans & pricing

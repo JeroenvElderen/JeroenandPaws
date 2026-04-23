@@ -6,8 +6,7 @@ import { usePrefetchOnIntent } from '../../hooks/usePrefetchOnIntent';
 const Footer = () => {
   const { getLinkProps } = usePrefetchOnIntent([
     '/about',
-    '/pricing',
-    '/contact',
+        '/contact',
     '/faq',
     '/services',
   ]);
@@ -129,15 +128,6 @@ const Footer = () => {
                 {...getLinkProps('/about')}
               >
                 <div>About</div>
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/pricing"
-                className="footer_link on-inverse w-inline-block"
-                {...getLinkProps('/pricing')}
-              >
-                <div>Pricing</div>
               </Link>
             </li>
             <li>

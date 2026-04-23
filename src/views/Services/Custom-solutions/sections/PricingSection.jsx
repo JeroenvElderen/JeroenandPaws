@@ -24,7 +24,7 @@ const PricingSection = () => {
         durationMinutes: service.duration_minutes || null,
         allowRecurring: service.allow_recurring ?? true,
         allowMultiDay: service.allow_multi_day ?? true,
-        ctaText: "Check availability",
+        ctaText: "Send request",
 
         // Custom-care services always use ctaOptions
         ctaOptions: {
@@ -49,7 +49,7 @@ const PricingSection = () => {
       title="Tailored solutions for every dog"
       services={services}
       gridClassName="grid_4-col"
-      defaultCta="Check availability"
+      defaultCta="Send request"
     />
     </section>
   );

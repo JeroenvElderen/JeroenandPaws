@@ -12,9 +12,9 @@ const Dailystrolls = () => {
   const [services, setServices] = useState([]);
   const { openBooking, bookingOverlays } = useServiceBooking({
     services,
-    defaultCta: "Check availability",
+    defaultCta: "Send request",
     chooserTitle: "Choose your stroll",
-    chooserDescription: "Pick the walk that matches your companion before checking availability.",
+    chooserDescription: "Pick the walk that matches your companion before sending your request.",
   });
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const Dailystrolls = () => {
         allowRecurring: service.allow_recurring ?? true,
         allowMultiDay: service.allow_multi_day ?? true,
         ctaText:
-          service.price === null ? "Build a custom visit" : "Check availability",
+          service.price === null ? "Build a custom visit" : "Send request",
         ...(service.price === null && {
           ctaOptions: {
             chatUrl: getPreferredChatUrl(),
@@ -62,7 +62,7 @@ const Dailystrolls = () => {
       <DailystrollsPricingSection />
       <DailystrollsFaqSection />
       <DailystrollsTestimonialsSection />
-      <StickyBookingCta label="Book a Meet &amp; Greet" />
+      <StickyBookingCta label="Request a Meet &amp; Greet" />
       {bookingOverlays}
     </>
   );
