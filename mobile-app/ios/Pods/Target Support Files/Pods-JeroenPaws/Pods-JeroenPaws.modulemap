@@ -1,0 +1,6 @@
+module Pods_JeroenPaws {
+  umbrella header "Pods-JeroenPaws-umbrella.h"
+
+  export *
+  module * { export * }
+}

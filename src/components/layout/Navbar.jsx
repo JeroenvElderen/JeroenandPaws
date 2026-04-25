@@ -280,16 +280,6 @@ const Navbar = () => {
             </li>
             <li className="nav_menu-list-item">
               <Link
-                href="/gallery"
-                className="nav_link on-accent-primary w-inline-block"
-                onClick={closeAllMenus}
-                {...getLinkProps('/gallery')}
-              >
-                <div>Gallery</div>
-              </Link>
-            </li>
-            <li className="nav_menu-list-item">
-              <Link
                 href="/faq"
                 className="nav_link on-accent-primary w-inline-block"
                 onClick={closeAllMenus}
@@ -297,59 +287,6 @@ const Navbar = () => {
               >
                 <div>Questions</div>
               </Link>
-            </li>
-            <li className="nav_menu-list-item">
-              <div
-                data-delay="0"
-                data-hover="false"
-                className={`nav_dropdown-menu w-dropdown${isProfileNavOpen ? ' w--open' : ''}`}
-              >
-                <div
-                  className={`nav_link on-accent-primary w-dropdown-toggle${isProfileNavOpen ? ' w--open' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={isProfileNavOpen}
-                  onClick={toggleProfileNav}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      toggleProfileNav();
-                    }
-                  }}
-                >
-                  <div>Account</div>
-                  <div className="nav-caret w-icon-dropdown-toggle"></div>
-                </div>
-                <nav
-                  className={`mega-nav_dropdown-list w-dropdown-list account-dropdown${isProfileNavOpen ? ' w--open' : ''}`}
-                  aria-hidden={!isProfileNavOpen}
-                >
-                  <div className={`mega-nav_dropdown-list-wrapper account-dropdown${isProfileNavOpen ? ' w--open' : ''}`}>
-                    <ul className="grid_1-col gap-small margin-bottom_none w-list-unstyled">
-                      <li className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc673e-93dc6729">
-                        <div className="w-layout-grid grid_1-col gap-small">
-                          <div>
-                            <ul className="mega-nav_list w-list-unstyled">
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/profile"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div>
-                                    <div><strong>Profile</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Update your details and preferences.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </nav>
-              </div>
             </li>
             <li className="nav_menu-list-item">
               <Link
