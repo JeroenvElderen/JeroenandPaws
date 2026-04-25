@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Script from 'next/script';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Layout from '../src/components/layout/Layout';
 const ConsentBanner = dynamic(() => import('../src/components/ConsentBanner'), {
@@ -97,6 +98,12 @@ function MyApp({ Component, pageProps }) {
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   return (
     <>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
+      </Head>
       {shouldEnableAnalytics && analyticsConsent === 'granted' && hasInteracted && (
         <>
           <Script
