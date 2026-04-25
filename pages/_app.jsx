@@ -11,9 +11,7 @@ import '../src/assets/css/normalize.css';
 import '../src/assets/css/jeroenandpaws.css';
 import '../src/assets/css/jeroen-paws.css';
 import '../src/assets/css/backend.css';
-import '../styles/profile.css';
 
-import { AuthProvider } from '../src/context/AuthContext';
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
@@ -122,9 +120,7 @@ function MyApp({ Component, pageProps }) {
           onDecline={() => handleConsent('denied')}
         />
       )}
-      <AuthProvider>
-        {getLayout(<Component {...pageProps} />)}
-      </AuthProvider>
+      {getLayout(<Component {...pageProps} />)}
     </>
   );
 }
