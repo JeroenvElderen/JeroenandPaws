@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReplyNoticeModal from '../../../components/ReplyNoticeModal';
 import { getServiceLabel } from '../../../constants/serviceLabels';
-import { useAuth } from '../../../context/AuthContext';
 
 const createDog = () => ({
   name: '',
@@ -64,14 +63,6 @@ const CustomBookingFormSection = ({ serviceId }) => {
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
   const [showReplyNotice, setShowReplyNotice] = useState(false);
-  const { profile } = useAuth();
-
-  const petSummary = useMemo(() => {
-    const pets = profile?.pets || [];
-    const names = pets.map((pet) => pet?.name || pet?.breed || '').filter(Boolean);
-    return names.length ? `Pets: ${names.join(', ')}` : '';
-  }, [profile]);
-
   useEffect(() => {
     setFormState((current) => ({
       ...current,
@@ -79,19 +70,7 @@ const CustomBookingFormSection = ({ serviceId }) => {
     }));
   }, [serviceLabel]);
 
-  useEffect(() => {
-    const client = profile?.client;
-    if (!client) return;
 
-    setFormState((current) => ({
-      ...current,
-      name: current.name || client.full_name || '',
-      email: client.email || current.email,
-      phone: current.phone || client.phone_number || '',
-      message: current.message || petSummary || current.message,
-    }));
-  }, [petSummary, profile]);
-  
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormState((current) => ({ ...current, [name]: value }));
