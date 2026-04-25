@@ -21,14 +21,6 @@ const slides = [
     objectPosition: "50% 40%",
   },
   {
-    title: "Group adventures",
-    description:
-      "Fun, confidence-building outings where companions explore and play together.",
-    href: "/services/group-adventures",
-    imageSrc: "/images/dogs/lakta/lakta2.jpg",
-    imageAlt: "Group of dogs playing together outdoors",
-  },
-  {
     title: "Solo journeys",
     description:
       "One-to-one walks that provide calm, focused attention just for your companion.",
@@ -38,13 +30,12 @@ const slides = [
     objectPosition: "50% 40%",
   },
   {
-    title: "Overnight stays",
+    title: "Group adventures",
     description:
-      "A homely stay where your companion rests comfortably and feels safe.",
-    href: "/services/overnight-stays",
-    imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
-    imageAlt: "Dog resting comfortably indoors",
-    objectPosition: "50% 25%",
+      "Fun, confidence-building outings where companions explore and play together.",
+    href: "/services/group-adventures",
+    imageSrc: "/images/dogs/lakta/lakta2.jpg",
+    imageAlt: "Group of dogs playing together outdoors",
   },
   {
     title: "Daytime care",
@@ -63,6 +54,15 @@ const slides = [
     imageSrc: "/images/dogs/Nola/nola2.jpg",
     imageAlt: "Person greeting a dog inside a home",
     objectPosition: "50% 40%",
+  },
+  {
+    title: "Overnight stays",
+    description:
+      "A homely stay where your companion rests comfortably and feels safe.",
+    href: "/services/overnight-stays",
+    imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
+    imageAlt: "Dog resting comfortably indoors",
+    objectPosition: "50% 25%",
   },
   {
     title: "Training help",

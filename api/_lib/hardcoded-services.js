@@ -1,4 +1,4 @@
-const HARDCODED_SERVICES = [
+const RAW_HARDCODED_SERVICES = [
   {
     slug: "group-adventure-120",
     title: "2-Hour Adventure",
@@ -215,6 +215,51 @@ const HARDCODED_SERVICES = [
     duration: null,
     category: "Solo Journeys",
   },
+];
+
+// Manual display order (edit this list whenever you want to change ordering).
+const HARDCODED_SERVICE_ORDER = [
+  "daily-stroll-30",
+  "daily-stroll-60",
+  "daily-stroll-custom",
+  "group-adventure-120",
+  "group-adventure-240",
+  "group-adventure-480",
+  "group-adventure-custom",
+  "solo-journey-180",
+  "solo-journey-360",
+  "solo-journey-custom",
+  "overnight-stay-standard",
+  "overnight-stay-custom",
+  "daytime-care-half-day",
+  "daytime-care-full-day",
+  "daytime-care-custom",
+  "home-check-in-30",
+  "home-check-in-60",
+  "home-check-in-custom",
+  "training-intro",
+  "training-standard",
+  "training-extended",
+  "puppy-training",
+  "training-custom",
+  "behaviour-consultation",
+  "specialist-support",
+  "custom-care-plan",
+  "custom-training",
+];
+
+const servicesBySlug = RAW_HARDCODED_SERVICES.reduce((acc, service) => {
+  acc[service.slug] = service;
+  return acc;
+}, {});
+
+const HARDCODED_SERVICES = [
+  ...HARDCODED_SERVICE_ORDER
+    .map((slug) => servicesBySlug[slug])
+    .filter(Boolean),
+  ...RAW_HARDCODED_SERVICES.filter(
+    (service) => !HARDCODED_SERVICE_ORDER.includes(service.slug)
+  ),
 ];
 
 module.exports = {

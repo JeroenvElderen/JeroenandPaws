@@ -62,14 +62,6 @@ const Footer = () => {
             </li>
             <li>
               <Link
-                href="/services/group-adventures#group-adventures"
-                className="footer_link on-inverse w-inline-block"
-              >
-                <div>Group adventures</div>
-              </Link>
-            </li>
-            <li>
-              <Link
                 href="/services/solo-journeys#solo-journeys"
                 className="footer_link on-inverse w-inline-block"
               >
@@ -78,10 +70,10 @@ const Footer = () => {
             </li>
             <li>
               <Link
-                href="/services/overnight-stays#overnight-stays"
+                href="/services/group-adventures#group-adventures"
                 className="footer_link on-inverse w-inline-block"
               >
-                <div>Overnight stay</div>
+                <div>Group adventures</div>
               </Link>
             </li>
             <li>
@@ -98,6 +90,14 @@ const Footer = () => {
                 className="footer_link on-inverse w-inline-block"
               >
                 <div>Home check-ins</div>
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/services/overnight-stays#overnight-stays"
+                className="footer_link on-inverse w-inline-block"
+              >
+                <div>Overnight stay</div>
               </Link>
             </li>
             <li>

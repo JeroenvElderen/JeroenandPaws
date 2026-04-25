@@ -167,25 +167,25 @@ const Navbar = () => {
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  href="/services/group-adventures"
+                                  href="/services/solo-journeys"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a0197-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6754-93dc6729">
-                                    <div><strong>Group adventures</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Join friendly packs for social fun.</div>
+                                    <div><strong>Solo journeys</strong></div>
+                                    <div className="paragraph_small text-color_secondary">Dedicated care for your pet.</div>
                                   </div>
                                 </Link>
                               </li>
                               <li className="margin-bottom_none">
                                 <Link
-                                  href="/services/solo-journeys"
+                                  href="/services/group-adventures"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
                                   <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01a2-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc675f-93dc6729">
-                                    <div><strong>Solo journeys</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Dedicated care for your pet.</div>
+                                    <div><strong>Group adventures</strong></div>
+                                    <div className="paragraph_small text-color_secondary">Join friendly packs for social fun.</div>
                                   </div>
                                 </Link>
                               </li>
@@ -196,23 +196,11 @@ const Navbar = () => {
                             <ul className="mega-nav_list w-list-unstyled">
                               <li className="margin-bottom_none">
                                 <Link
-                                  href="/services/overnight-stays"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01b1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc676e-93dc6729">
-                                    <div><strong>Overnight stays</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Safe and cozy nights.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
                                   href="/services/daytime-care"
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01bc-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6779-93dc6729">
+                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01b1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc676e-93dc6729">
                                     <div><strong>Daytime care</strong></div>
                                     <div className="paragraph_small text-color_secondary">Engaging and secure day care.</div>
                                   </div>
@@ -224,9 +212,21 @@ const Navbar = () => {
                                   className="mega-nav_link-item w-inline-block"
                                   onClick={closeAllMenus}
                                 >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01c7-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6784-93dc6729">
+                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01bc-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6779-93dc6729">
                                     <div><strong>Home check-ins</strong></div>
                                     <div className="paragraph_small text-color_secondary">Quick visits for your pet&#x27;s needs.</div>
+                                  </div>
+                                </Link>
+                              </li>
+                              <li className="margin-bottom_none">
+                                <Link
+                                  href="/services/overnight-stays"
+                                  className="mega-nav_link-item w-inline-block"
+                                  onClick={closeAllMenus}
+                                >
+                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01c7-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6784-93dc6729">
+                                    <div><strong>Overnight stays</strong></div>
+                                    <div className="paragraph_small text-color_secondary">Safe and cozy nights.</div>
                                   </div>
                                 </Link>
                               </li>
