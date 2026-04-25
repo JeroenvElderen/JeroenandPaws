@@ -1,6 +1,6 @@
 import React from "react";
 
-const DailystrollsFeatureSection = ({ onBook }) => {
+const DailystrollsFeatureSection = () => {
   return (
     <header className="section" data-sticky-anchor="true">
       <div className="container">
@@ -18,13 +18,9 @@ const DailystrollsFeatureSection = ({ onBook }) => {
               the day.
             </p>
             <div className="button-group">
-              <button
-                type="button"
-                className="button w-button"
-                onClick={onBook}
-              >
+              <a href="/contact" className="button w-button">
                 Request your first walk
-              </button>
+              </a>
               <a href="#services" className="button is-secondary w-button">
                 View walk plans & pricing
               </a>

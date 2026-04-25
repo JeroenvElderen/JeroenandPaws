@@ -1,6 +1,6 @@
 import React from "react";
 
-const FeatureSection = ({ onBook }) => {
+const FeatureSection = () => {
   return (
     <header className="section" data-sticky-anchor="true">
       <div className="container">
@@ -15,9 +15,9 @@ const FeatureSection = ({ onBook }) => {
               From training to daily walks, day care, and boarding — your dog’s comfort and happiness always come first. Together, we’ll create a personalised care plan that suits your lifestyle and supports your dog’s unique needs.
             </p>
               <div className="button-group">
-              <button type="button" onClick={onBook} className="button w-button">
+              <a href="/contact" className="button w-button">
                 Request a Meet &amp; Greet
-              </button>
+              </a>
               <a href="#services" className="button is-secondary w-button">
                 View services & pricing
               </a>

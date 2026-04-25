@@ -1,69 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import DailystrollsFaqSection from "./sections/DailystrollsFaqSection";
 import DailystrollsFeatureSection from "./sections/DailystrollsFeatureSection";
 import DailystrollsPricingSection from "./sections/DailystrollsPricingSection";
 import DailystrollsTestimonialsSection from "./sections/DailystrollsTestimonialsSection";
 import AboutSection from "./sections/AboutSection";
-import useServiceBooking from "../../../components/Pricing/useServiceBooking";
-import StickyBookingCta from "../../../components/StickyBookingCta";
-import { getPreferredChatUrl } from "../../../utils/chatLinks";
 
 const Dailystrolls = () => {
-  const [services, setServices] = useState([]);
-  const { openBooking, bookingOverlays } = useServiceBooking({
-    services,
-    defaultCta: "Send request",
-    chooserTitle: "Choose your stroll",
-    chooserDescription: "Pick the walk that matches your companion before sending your request.",
-  });
-
-  useEffect(() => {
-    async function loadServices() {
-      const res = await fetch(`/api/services?category=Daily Strolls`);
-      const data = await res.json();
-
-      const mapped = (data.services || []).map((service) => ({
-        id: service.slug,
-        title: service.title,
-        description: service.description || "",
-        category: service.category || "Daily Strolls",
-        price: service.price || "Tailored",
-        label: service.duration_minutes
-          ? `${service.duration_minutes}-Min Visit`
-          : "Tailored Visit",
-        duration: service.duration_minutes
-          ? `${service.duration_minutes}-Min Visit`
-          : "Custom Plan",
-        durationMinutes: service.duration_minutes || null,
-        allowRecurring: service.allow_recurring ?? true,
-        allowMultiDay: service.allow_multi_day ?? true,
-        ctaText:
-          service.price === null ? "Build a custom visit" : "Send request",
-        ...(service.price === null && {
-          ctaOptions: {
-            chatUrl: getPreferredChatUrl(),
-            formUrl: `/contact?service=${service.slug}`,
-            heading: "How would you like to plan your tailored stroll?",
-            description: "Tell us what you have in mind — WhatsApp or form.",
-          },
-        }),
-      }));
-
-      setServices(mapped);
-    }
-
-    loadServices();
-  }, []);
-
   return (
     <>
-      <DailystrollsFeatureSection onBook={openBooking} />
+      <DailystrollsFeatureSection />
       <AboutSection />
       <DailystrollsPricingSection />
       <DailystrollsFaqSection />
       <DailystrollsTestimonialsSection />
-      <StickyBookingCta label="Request a Meet &amp; Greet" />
-      {bookingOverlays}
     </>
   );
 };
