@@ -4,10 +4,7 @@ import Link from 'next/link';
 import { usePrefetchOnIntent } from '../../hooks/usePrefetchOnIntent';
 
 const Navbar = () => {
-  const [isMegaNavOpen, setIsMegaNavOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileNavOpen, setIsProfileNavOpen] = useState(false);
-  const dropdownRef = useRef(null);
   const navRef = useRef(null);
   const { getLinkProps } = usePrefetchOnIntent([
     '/about',
@@ -17,23 +14,13 @@ const Navbar = () => {
     '/services',
   ]);
 
-  const closeMegaNav = useCallback(() => {
-    setIsMegaNavOpen(false);
-  }, []);
-
-  const closeProfileNav = useCallback(() => {
-    setIsProfileNavOpen(false);
-  }, []);
-
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
   }, []);
 
   const closeAllMenus = useCallback(() => {
-    closeMegaNav();
-    closeProfileNav();
     closeMobileMenu();
-  }, [closeMegaNav, closeMobileMenu, closeProfileNav]);
+  }, [closeMobileMenu]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -64,22 +51,6 @@ const Navbar = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [closeAllMenus, closeMobileMenu]);
-
-  const toggleMegaNav = useCallback(() => {
-    setIsMegaNavOpen((prev) => {
-      if (!prev) {
-        closeProfileNav();
-      }
-      return !prev;
-    });
-  }, [closeProfileNav]);
-
-  const toggleProfileNav = useCallback(() => {
-    setIsProfileNavOpen((prev) => {
-      if (!prev) closeMegaNav();
-      return !prev;
-    });
-  }, [closeMegaNav]);
 
   const toggleMobileMenu = useCallback(() => {
     setIsMobileMenuOpen((prev) => !prev);
@@ -120,153 +91,14 @@ const Navbar = () => {
         >
           <ul className="nav_menu-list w-list-unstyled">
             <li className="nav_menu-list-item">
-              <div
-                ref={dropdownRef}
-                data-delay="0"
-                data-hover="false"
-                className={`nav_dropdown-menu w-dropdown${isMegaNavOpen ? ' w--open' : ''}`}
+              <Link
+                href="/services"
+                className="nav_link on-accent-primary w-inline-block"
+                onClick={closeAllMenus}
+                {...getLinkProps('/services')}
               >
-                <div
-                  className={`nav_link on-accent-primary w-dropdown-toggle${isMegaNavOpen ? ' w--open' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={isMegaNavOpen}
-                  onClick={toggleMegaNav}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      toggleMegaNav();
-                    }
-                  }}
-                >
-                  <div>Services</div>
-                  <div className="nav-caret w-icon-dropdown-toggle"></div>
-                </div>
-                <nav
-                  className={`mega-nav_dropdown-list w-dropdown-list${isMegaNavOpen ? ' w--open' : ''}`}
-                  aria-hidden={!isMegaNavOpen}
-                >
-                  <div className={`mega-nav_dropdown-list-wrapper${isMegaNavOpen ? ' w--open' : ''}`}>
-                    <ul className="grid_3-col tablet-1-col gap-medium margin-bottom_none w-list-unstyled">
-                      <li id="w-node-_61be48fd-08da-7879-1198-67c4146a0181-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc673e-93dc6729">
-                        <div className="w-layout-grid grid_3-col tablet-1-col gap-small">
-                          <div>
-                            <div className="eyebrow">Dog walking</div>
-                            <ul className="mega-nav_list w-list-unstyled">
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/daily-strolls"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a018c-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6749-93dc6729">
-                                    <div><strong>Daily strolls</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Tailored walks for your furry friend.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/solo-journeys"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a0197-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6754-93dc6729">
-                                    <div><strong>Solo journeys</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Dedicated care for your pet.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/group-adventures"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01a2-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc675f-93dc6729">
-                                    <div><strong>Group adventures</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Join friendly packs for social fun.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                          <div>
-                            <div className="eyebrow">Boarding</div>
-                            <ul className="mega-nav_list w-list-unstyled">
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/daytime-care"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01b1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc676e-93dc6729">
-                                    <div><strong>Daytime care</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Engaging and secure day care.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/home-check-ins"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01bc-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6779-93dc6729">
-                                    <div><strong>Home check-ins</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Quick visits for your pet&#x27;s needs.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/overnight-stays"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01c7-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc6784-93dc6729">
-                                    <div><strong>Overnight stays</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Safe and cozy nights.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                          <div>
-                            <div className="eyebrow">Other services</div>
-                            <ul className="mega-nav_list w-list-unstyled">
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/training-help"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01e1-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc679e-93dc6729">
-                                    <div><strong>Training help</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Guidance for training essentials.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                              <li className="margin-bottom_none">
-                                <Link
-                                  href="/services/custom-solutions"
-                                  className="mega-nav_link-item w-inline-block"
-                                  onClick={closeAllMenus}
-                                >
-                                  <div id="w-node-_61be48fd-08da-7879-1198-67c4146a01ec-d66a6ef8" className="w-node-_41e4cb1a-a620-245f-7f74-dc8693dc67a9-93dc6729">
-                                    <div><strong>Custom solutions</strong></div>
-                                    <div className="paragraph_small text-color_secondary">Personalized care plans.</div>
-                                  </div>
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </nav>
-              </div>
+                <div>Services</div>
+              </Link>
             </li>
             <li className="nav_menu-list-item">
               <Link
