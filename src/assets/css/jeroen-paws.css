@@ -7699,18 +7699,37 @@ html {
 }
 
 .services-showcase-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #dbe7df;
-  border-radius: 1.5rem;
-  background: #f9fbf8;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--jp-border);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(170deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01) 45%),
+    var(--jp-surface);
+  box-shadow: var(--jp-shadow-soft);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.services-showcase-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgba(124, 69, 243, 0.14), transparent 48%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
 .services-showcase-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 45px -30px rgba(20, 46, 35, 0.45);
+  transform: translateY(-6px);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 22px 55px rgba(5, 5, 15, 0.45);
+}
+
+.services-showcase-card:hover::before {
+  opacity: 1;
 }
 
 .services-showcase-media {
@@ -7718,25 +7737,38 @@ html {
   min-height: 240px;
 }
 
+.services-showcase-media::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 48%;
+  background: linear-gradient(to top, rgba(7, 7, 14, 0.55), transparent);
+  pointer-events: none;
+}
+
 .services-showcase-price {
   position: absolute;
   top: 1rem;
   right: 1rem;
   z-index: 2;
-  background: #ffffff;
-  color: #1a2d24;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(13, 10, 28, 0.78);
+  color: #ffffff;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 1rem;
-  padding: 0.6rem 1rem;
-  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.18);
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 0.92rem;
+  backdrop-filter: blur(6px);
 }
 
 .services-showcase-body {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  padding: 1.25rem;
+  padding: 1.3rem;
   flex: 1;
 }
 
@@ -7748,17 +7780,19 @@ html {
 
 .services-showcase-tag {
   border-radius: 999px;
-  background: #e8f0eb;
-  color: #355849;
-  font-size: 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--jp-muted);
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.35rem 0.75rem;
+  letter-spacing: 0.01em;
+  padding: 0.35rem 0.72rem;
 }
 
 .services-showcase-footer {
   margin-top: auto;
-  padding-top: 0.5rem;
-  border-top: 1px solid #dce7df;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 @media (max-width: 767px) {
@@ -7766,3 +7800,7 @@ html {
     min-height: 210px;
   }
 }
+
+.services-showcase-card:hover {
+    transform: translateY(-3px);
+  }

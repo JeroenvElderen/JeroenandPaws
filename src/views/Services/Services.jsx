@@ -9,8 +9,28 @@ const services = [
     description: "Personalised walks matched to your companion’s pace and routine.",
     imageSrc: "/images/dogs/lola/lola1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
-    priceLabel: "From £20",
+    priceLabel: "From €18",
     tags: ["Solo Walks", "Routine Friendly", "Photo Updates"],
+  },
+  {
+    path: "/services/home-check-ins",
+    title: "Home check-ins",
+    description:
+      "Comforting drop-ins that keep your companion relaxed and well looked after.",
+    imageSrc: "/images/dogs/Nola/nola2.jpg",
+    imageAlt: "Person greeting a dog inside a home",
+    priceLabel: "From €18",
+    tags: ["Feeding", "Fresh Water", "Home Comfort"],
+  },
+  {
+    path: "/services/training-help",
+    title: "Training help",
+    description:
+      "Supportive guidance to build good habits and boost your companion’s confidence.",
+    imageSrc: "/images/dogs/pancho/pancho2.jpeg",
+    imageAlt: "Trainer working with a dog",
+    priceLabel: "From €35",
+    tags: ["Positive Methods", "Behaviour Goals", "Owner Support"],
   },
   {
     path: "/services/solo-journeys",
@@ -19,7 +39,7 @@ const services = [
       "One-to-one walks that provide calm, focused attention just for your companion.",
     imageSrc: "/images/dogs/lakta/lakta1.jpg",
     imageAlt: "Dog sitting attentively on a trail",
-    priceLabel: "From £25",
+    priceLabel: "From €70",
     tags: ["1-to-1 Care", "Confidence Building", "Calm Pace"],
   },
   {
@@ -29,7 +49,7 @@ const services = [
       "Fun, confidence-building outings where companions explore and play together.",
     imageSrc: "/images/dogs/lakta/lakta2.jpg",
     imageAlt: "Group of dogs playing together outdoors",
-    priceLabel: "From £18",
+    priceLabel: "From €45",
     tags: ["Social Play", "Safe Packs", "Adventure Routes"],
   },
   {
@@ -39,18 +59,8 @@ const services = [
       "Stimulating, reassuring days perfect for companions who love company.",
     imageSrc: "/images/dogs/aslan/aslan.jpg",
     imageAlt: "Dog being cared for during daytime playtime",
-    priceLabel: "From £30",
+    priceLabel: "From €25",
     tags: ["Playtime", "Rest Breaks", "Structured Day"],
-  },
-  {
-    path: "/services/home-check-ins",
-    title: "Home check-ins",
-    description:
-      "Comforting drop-ins that keep your companion relaxed and well looked after.",
-    imageSrc: "/images/dogs/Nola/nola2.jpg",
-    imageAlt: "Person greeting a dog inside a home",
-    priceLabel: "From £15",
-    tags: ["Feeding", "Fresh Water", "Home Comfort"],
   },
   {
     path: "/services/overnight-stays",
@@ -58,18 +68,8 @@ const services = [
     description: "A homely stay where your companion rests comfortably and feels safe.",
     imageSrc: "/images/dogs/Johnny/Johnny.jpeg",
     imageAlt: "Dog resting comfortably indoors",
-    priceLabel: "From £55/night",
+    priceLabel: "From €70/night",
     tags: ["Overnight Care", "Cosy Spaces", "24/7 Presence"],
-  },
-  {
-    path: "/services/training-help",
-    title: "Training help",
-    description:
-      "Supportive guidance to build good habits and boost your companion’s confidence.",
-    imageSrc: "/images/dogs/pancho/pancho2.jpeg",
-    imageAlt: "Trainer working with a dog",
-    priceLabel: "From £35",
-    tags: ["Positive Methods", "Behaviour Goals", "Owner Support"],
   },
   {
     path: "/services/custom-solutions",
