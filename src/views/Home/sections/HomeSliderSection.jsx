@@ -229,12 +229,14 @@ export default function HomeSliderSection() {
           aria-label="Services"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endSwipe}
-          onPointerCancel={endSwipe}
         >
-          <div className="stage">
+          <div
+            className="stage"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endSwipe}
+            onPointerCancel={endSwipe}
+          >
             {visible.map(({ i, d, slide }) => {
               const abs = Math.abs(d);
               const side = Math.sign(d);
@@ -266,10 +268,16 @@ export default function HomeSliderSection() {
                     `,
                   }}
                 >
-                  <button
-                    type="button"
+                  <div
                     className="cardHit"
+                    role="button"
                     onClick={() => setActive(i)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setActive(i);
+                      }
+                    }}
                     aria-label={isActive ? "Current slide" : `Show ${slide.title}`}
                     tabIndex={isActive ? 0 : -1}
                   >
@@ -305,7 +313,7 @@ export default function HomeSliderSection() {
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 </article>
               );
             })}
@@ -432,6 +440,8 @@ export default function HomeSliderSection() {
           }
 
           .controls {
+            position: relative;
+            z-index: 300;
             margin-top: -1rem;
             display: flex;
             align-items: center;
