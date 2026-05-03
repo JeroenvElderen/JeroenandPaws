@@ -101,7 +101,7 @@ export default function HomeSliderSection() {
 
   const prev = useCallback(
     () => setActive((a) => (a - 1 + slides.length) % slides.length),
-    []
+    [],
   );
 
   const next = useCallback(() => setActive((a) => (a + 1) % slides.length), []);
@@ -139,6 +139,8 @@ export default function HomeSliderSection() {
   const onPointerDown = useCallback((e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
 
+    if (e.target.closest("a, button")) return;
+
     swipeRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -162,7 +164,10 @@ export default function HomeSliderSection() {
       const ady = Math.abs(dy);
 
       // Lock axis once movement is meaningful
-      if (!s.locked && (adx > AXIS_LOCK_THRESHOLD || ady > AXIS_LOCK_THRESHOLD)) {
+      if (
+        !s.locked &&
+        (adx > AXIS_LOCK_THRESHOLD || ady > AXIS_LOCK_THRESHOLD)
+      ) {
         s.locked = adx > ady ? "h" : "v";
       }
 
@@ -179,7 +184,7 @@ export default function HomeSliderSection() {
         }
       }
     },
-    [next, prev]
+    [next, prev],
   );
 
   const endSwipe = useCallback((e) => {
@@ -261,8 +266,8 @@ export default function HomeSliderSection() {
                     filter: `blur(${blur}px)`,
                     transform: `
                       translate3d(calc(${x} * var(--cf-spread)), ${
-                      abs ? "10px" : "0px"
-                    }, ${z}px)
+                        abs ? "10px" : "0px"
+                      }, ${z}px)
                       rotateY(${rotateY}deg)
                       scale(${scale})
                     `,
@@ -278,7 +283,9 @@ export default function HomeSliderSection() {
                         setActive(i);
                       }
                     }}
-                    aria-label={isActive ? "Current slide" : `Show ${slide.title}`}
+                    aria-label={
+                      isActive ? "Current slide" : `Show ${slide.title}`
+                    }
                     tabIndex={isActive ? 0 : -1}
                   >
                     <div className="card">
@@ -306,6 +313,7 @@ export default function HomeSliderSection() {
                           <Link
                             href={slide.href}
                             className="button w-button"
+                            onPointerDown={(e) => e.stopPropagation()}
                             onClick={(e) => e.stopPropagation()}
                           >
                             View service
@@ -369,8 +377,10 @@ export default function HomeSliderSection() {
             width: min(92vw, 560px);
             aspect-ratio: 16 / 10;
             transform-style: preserve-3d;
-            transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 380ms ease, filter 380ms ease;
+            transition:
+              transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 380ms ease,
+              filter 380ms ease;
             pointer-events: none;
           }
 
@@ -460,7 +470,9 @@ export default function HomeSliderSection() {
             line-height: 1;
             cursor: pointer;
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
-            transition: transform 160ms ease, background 160ms ease;
+            transition:
+              transform 160ms ease,
+              background 160ms ease;
           }
 
           .arrow:hover {
@@ -484,7 +496,7 @@ export default function HomeSliderSection() {
               aspect-ratio: 4 / 3;
             }
           }
-            
+
           @media (min-width: 768px) {
             .cf {
               --cf-spread: 220px;
