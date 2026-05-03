@@ -8,7 +8,27 @@ export const SERVICE_LABELS = {
   'custom-meet-greet': 'Custom meet and greet',
   'solo-journey-custom': 'Custom solo journey',
   'training-help-custom': 'Custom training help',
+
+  // Service slugs used in request links.
+  'daily-strolls': 'Daily strolls',
+  'daytime-care': 'Daytime care',
+  'home-check-ins': 'Home check-ins',
+  'group-adventures': 'Group adventures',
+  'solo-journeys': 'Solo journeys',
+  'overnight-stays': 'Overnight stays',
+  'training-help': 'Training help',
+  'custom-solutions': 'Custom solutions',
+  'meet-and-greet': 'Meet & greet',
 };
 
-export const getServiceLabel = (serviceId = '') =>
-  SERVICE_LABELS[serviceId] || 'Custom booking request';
+const toTitleFromSlug = (serviceId = '') =>
+  serviceId
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
+export const getServiceLabel = (serviceId = '') => {
+  if (!serviceId) return 'Custom booking request';
+  return SERVICE_LABELS[serviceId] || toTitleFromSlug(serviceId) || 'Custom booking request';
+};
