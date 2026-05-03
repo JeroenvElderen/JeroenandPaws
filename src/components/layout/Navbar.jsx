@@ -134,11 +134,19 @@ const Navbar = () => {
         </nav>
       </div>
       <div className="nav_right">
-        
+        <Link
+          href="/contact"
+          className="button is-secondary is-small"
+          onClick={closeAllMenus}
+          {...getLinkProps('/contact')}
+        >
+          Book now
+        </Link>
       </div>
       <div
         aria-controls="primary-navigation"
         aria-expanded={isMobileMenuOpen}
+        aria-label="Toggle navigation menu"
         className={`nav_mobile-menu-button w-nav-button${isMobileMenuOpen ? ' w--open' : ''}`}
         onClick={toggleMobileMenu}
         role="button"

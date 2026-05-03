@@ -46,7 +46,9 @@
     "lint:fix": "next lint --fix",
     "format": "npx --yes prettier --write .",
     "test": "next lint",
-    "typecheck": "npx --yes tsc --noEmit --project jsconfig.json"
+    "typecheck": "npx --yes tsc --noEmit --project jsconfig.json",
+    "sitemap:generate": "node scripts/generate-sitemap.mjs",
+    "postbuild": "npm run sitemap:generate"
   },
   "lint-staged": {
     "**/*.{js,jsx,ts,tsx}": [

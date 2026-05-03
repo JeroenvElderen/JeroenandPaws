@@ -1,5 +1,14 @@
 import Dailystrolls from '../../src/views/Services/Dailystrolls-service/Dailystrolls';
+import SeoMeta from '../../src/components/SeoMeta';
 
-const DailyStrollsPage = () => <Dailystrolls />;
+const DailystrollsPage = () => (
+  <>
+    <SeoMeta
+      title="Daily Strolls"
+      description="Professional daily strolls services tailored to your dog's routine and comfort."
+    />
+    <Dailystrolls />
+  </>
+);
 
-export default DailyStrollsPage;
+export default DailystrollsPage;
