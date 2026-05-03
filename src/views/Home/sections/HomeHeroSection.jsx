@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import styles from "./HomeSliderSection.module.css";
 
 const HomeHeroSection = () => (
   <header className="section padding_none text-color_on-overlay is-inverse">
@@ -43,8 +44,11 @@ const HomeHeroSection = () => (
               here, every companion is family.
             </p>
             <div className="button-group">
+              <Link href="/contact" className="button on-inverse w-button">
+                Book a meet & greet
+              </Link>
               <Link href="/services" className="button on-inverse w-button">
-                Discover more
+                Discover services
               </Link>
             </div>
           </div>

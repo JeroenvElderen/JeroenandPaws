@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +8,7 @@ const HomeCtaSection = () => (
       <div id="w-node-_05e54f8c-7d0c-01e1-5321-d818b7d69662-5ebb016a" className="position_relative w-node-_851fc987-fbf0-69dc-8fc4-d770671b8b0d-055fd1ce">
           <Image
             src="/images/background/bg4.jpg"
-            alt="Editing software displayed on a studio screen"
+            alt="Happy dogs playing in a calm outdoor care setting"
             fill
             sizes="100vw"
             className="image_cover position_absolute"
@@ -108,7 +106,7 @@ const HomeCtaSection = () => (
               <div className="image-ratio_auto">
                   <Image
                     src="/images/dogs/lola/lola1.jpeg"
-                    alt="Distillery community involvement"
+                    alt="Lola relaxing after a playful daycare session"
                     width={352}
                     height={289}
                     sizes="(min-width: 1024px) 352px, 80vw"

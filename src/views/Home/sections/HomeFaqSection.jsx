@@ -38,6 +38,26 @@ const faqs = [
       "Their favourite food, any medication, and a familiar item — such as a blanket or toy — help make their stay feel like home.",
   },
   {
+    question: "What areas do you serve?",
+    answer:
+      "We currently serve families across our local service area and nearby neighborhoods. Share your postcode in the contact form and I’ll confirm availability right away.",
+  },
+  {
+    question: "What is your cancellation policy?",
+    answer:
+      "Plans can change, and that’s okay. Please give as much notice as possible so I can offer your slot to another family and help keep scheduling fair for everyone.",
+  },
+  {
+    question: "How quickly do you respond to new enquiries?",
+    answer:
+      "Most enquiries receive a response within the same day, and always within 24 hours. If your request is urgent, mention that in your message so I can prioritise it.",
+  },
+  {
+    question: "How are emergencies handled during care?",
+    answer:
+      "If an emergency happens, I contact you immediately, follow your care preferences, and coordinate with your chosen vet or the nearest suitable clinic while keeping you updated throughout.",
+  },
+  {
     question: "How do you handle nervous or anxious dogs?",
     answer:
       "With patience, calm communication, and thoughtful pacing. I build trust step by step, helping anxious companions feel safe, seen, and supported.",
