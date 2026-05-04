@@ -2,6 +2,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseHostname = supabaseUrl
   ? supabaseUrl.replace(/^https?:\/\//, "")
   : null;
+
 const extraImageHostnames = process.env.NEXT_IMAGE_REMOTE_HOSTNAMES
   ? process.env.NEXT_IMAGE_REMOTE_HOSTNAMES.split(",")
       .map((hostname) => hostname.trim())
@@ -29,6 +30,9 @@ const contentSecurityPolicy = `
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+
   images: {
     deviceSizes: [320, 375, 414, 640, 768, 1024, 1280, 1536, 1920],
     imageSizes: [16, 24, 32, 48, 64, 96, 128, 256, 384],
@@ -49,46 +53,52 @@ const nextConfig = {
       })),
     ],
   },
-  poweredByHeader: false,
-  reactStrictMode: true,
+
   async headers() {
+    const isProduction = process.env.NODE_ENV === "production";
+
     return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/static/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/images/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/fonts/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
+      ...(isProduction
+        ? [
+            {
+              source: "/_next/static/(.*)",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+            {
+              source: "/static/(.*)",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+            {
+              source: "/images/(.*)",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+            {
+              source: "/fonts/(.*)",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+          ]
+        : []),
+
       {
         source: "/(.*)",
         headers: [
@@ -96,10 +106,14 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: contentSecurityPolicy,
           },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload",
-          },
+          ...(isProduction
+            ? [
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=63072000; includeSubDomains; preload",
+                },
+              ]
+            : []),
           {
             key: "X-Content-Type-Options",
             value: "nosniff",
