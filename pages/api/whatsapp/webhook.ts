@@ -25,7 +25,7 @@ export default withApi(async (req, res) => {
     const from = normalizePhone(String(body?.from ?? body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from ?? ''));
     const text = String(body?.text ?? body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body ?? '').trim().toLowerCase();
 
-    if (from !== allowed || text !== 'invoicing') {
+    if (from !== allowed || !['invoice', 'invoicing'].includes(text)) {
       return;
     }
 
@@ -33,7 +33,7 @@ export default withApi(async (req, res) => {
     const lines = preview.lines
       .map((line) => `Payment title: ${line.title}\nCategory: ${line.category}\nInvoice line: ${line.description}\nPrice: €${Number(line.price).toFixed(2)}`)
       .join('\n\n');
-    const message = `WhatsApp trigger: invoicing\nRange: ${preview.window.monday} -> ${preview.window.friday}\nTotal: €${preview.totalAmount.toFixed(2)}\n\n${lines}`;
+    const message = `WhatsApp trigger: invoice\nRange: ${preview.window.monday} -> ${preview.window.friday}\nTotal: €${preview.totalAmount.toFixed(2)}\n\n${lines}`;
     await sendInternalEmail('Invoicing trigger preview (WhatsApp)', message);
     return;
   }
