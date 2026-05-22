@@ -33,7 +33,12 @@
     "extra": {
       "eas": {
         "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
-      }
+      },
+      "supabaseUrl": "${EXPO_PUBLIC_SUPABASE_URL}",
+      "supabaseAnonKey": "${EXPO_PUBLIC_SUPABASE_ANON_KEY}",
+      "vercelBackendUrl": "${EXPO_PUBLIC_VERCEL_BACKEND_URL}",
+      "apiDryRunExternal": "${EXPO_PUBLIC_API_DRY_RUN_EXTERNAL}",
+      "apiDryRunEmailTo": "${EXPO_PUBLIC_API_DRY_RUN_EMAIL_TO}"
     },
     "owner": "REPLACE_WITH_EXPO_OWNER"
   }
