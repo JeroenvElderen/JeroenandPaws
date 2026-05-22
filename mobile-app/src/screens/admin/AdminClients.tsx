@@ -1,7 +1,12 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 
 export function AdminClientsScreen(): JSX.Element {
-  return <ScreenContainer title="Admin Clients"><Text>Admin-only business view. Connect to secure backend APIs hosted on Vercel.</Text></ScreenContainer>;
+  return <ScreenContainer title="Admin Clients"><Text style={styles.bodyText}>Admin-only business view. Connect to secure backend APIs hosted on Vercel.</Text></ScreenContainer>;
 }
+
+
+const styles = StyleSheet.create({
+  bodyText: { color: '#c9c5d8', fontSize: 15, lineHeight: 22 }
+});
