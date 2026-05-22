@@ -2,6 +2,7 @@
 create type public.app_role as enum ('admin', 'client');
 create type public.invite_code_status as enum ('pending', 'used', 'disabled');
 create type public.booking_status as enum ('requested', 'confirmed', 'completed', 'cancelled');
+create type public.booking_source as enum ('manual', 'outlook');
 create type public.invoice_status as enum ('draft', 'issued', 'paid', 'overdue', 'cancelled');
 create type public.payment_status as enum ('unpaid', 'partially_paid', 'paid', 'failed');
 
@@ -47,9 +48,15 @@ create table if not exists public.bookings (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients (id) on delete cascade,
   dog_id uuid references public.dogs (id) on delete set null,
+  outlook_event_id text unique,
   service_name text not null,
+  title text,
+  dog_names text[] not null default '{}',
+  outlook_categories text[] not null default '{}',
   starts_at timestamptz not null,
   ends_at timestamptz not null,
+  cancelled_at timestamptz,
+  source public.booking_source not null default 'manual',
   status public.booking_status not null default 'requested',
   notes text,
   created_at timestamptz not null default now()
@@ -175,6 +182,14 @@ for all using (
 
 create policy "client_own_bookings" on public.bookings
 for select using (
+  client_id = public.current_profile_client_id()
+);
+
+create policy "client_update_own_bookings" on public.bookings
+for update using (
+  client_id = public.current_profile_client_id()
+)
+with check (
   client_id = public.current_profile_client_id()
 );
 
