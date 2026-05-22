@@ -11,6 +11,23 @@ This folder is intentionally separate from the existing web app so you can distr
 - Secure backend function example for invite activation via Vercel.
 - Dogs are modeled as a separate table linked to clients (`1 client -> many dogs`).
 
+## Screen to Supabase mapping
+
+These are app screens, and yes, their data should come from Supabase tables/views:
+
+- **Welcome / Enter invite code** → `invite_codes`, `profiles`, `clients` (via secure backend activation).
+- **Client dashboard** → aggregate from `bookings`, `invoices`, `payment_links`, `dogs`.
+- **Client bookings** → `bookings`.
+- **Client unpaid payments** → `invoices` + `payment_links` where payment status is not paid.
+- **Client dogs** → `dogs`.
+- **Admin dashboard** → aggregate KPIs over all business tables.
+- **Admin bookings** → `bookings`.
+- **Admin clients** → `clients`, `profiles`.
+- **Admin invoices** → `invoices`, `payment_links`.
+- **Admin expenses** → `expenses`.
+- **Admin receipts** → `receipts`.
+- **Admin income dashboard** → aggregate paid `invoices` vs `expenses`.
+
 ## Architecture rules implemented
 
 1. **No public self-registration path for clients**.

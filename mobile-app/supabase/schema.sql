@@ -1,6 +1,9 @@
 -- Core access model with invite codes and role-based profiles.
 create type public.app_role as enum ('admin', 'client');
 create type public.invite_code_status as enum ('pending', 'used', 'disabled');
+create type public.booking_status as enum ('requested', 'confirmed', 'completed', 'cancelled');
+create type public.invoice_status as enum ('draft', 'issued', 'paid', 'overdue', 'cancelled');
+create type public.payment_status as enum ('unpaid', 'partially_paid', 'paid', 'failed');
 
 create table if not exists public.clients (
   id uuid primary key default gen_random_uuid(),
@@ -40,10 +43,70 @@ create table if not exists public.dogs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.bookings (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients (id) on delete cascade,
+  dog_id uuid references public.dogs (id) on delete set null,
+  service_name text not null,
+  starts_at timestamptz not null,
+  ends_at timestamptz not null,
+  status public.booking_status not null default 'requested',
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.invoices (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients (id) on delete cascade,
+  booking_id uuid references public.bookings (id) on delete set null,
+  invoice_number text unique not null,
+  amount_cents integer not null check (amount_cents >= 0),
+  currency text not null default 'EUR',
+  status public.invoice_status not null default 'issued',
+  due_date date,
+  issued_at timestamptz not null default now(),
+  paid_at timestamptz
+);
+
+create table if not exists public.payment_links (
+  id uuid primary key default gen_random_uuid(),
+  invoice_id uuid not null references public.invoices (id) on delete cascade,
+  provider text not null,
+  provider_reference text,
+  url text not null,
+  status public.payment_status not null default 'unpaid',
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.expenses (
+  id uuid primary key default gen_random_uuid(),
+  category text not null,
+  amount_cents integer not null check (amount_cents >= 0),
+  currency text not null default 'EUR',
+  spent_at timestamptz not null default now(),
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.receipts (
+  id uuid primary key default gen_random_uuid(),
+  expense_id uuid not null references public.expenses (id) on delete cascade,
+  file_url text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
 alter table public.clients enable row level security;
 alter table public.profiles enable row level security;
 alter table public.invite_codes enable row level security;
 alter table public.dogs enable row level security;
+alter table public.bookings enable row level security;
+alter table public.invoices enable row level security;
+alter table public.payment_links enable row level security;
+alter table public.expenses enable row level security;
+alter table public.receipts enable row level security;
 
 create policy "admin_all_clients" on public.clients
 for all using (
@@ -76,6 +139,51 @@ for all using (
 create policy "client_own_dogs" on public.dogs
 for select using (
   client_id = (select client_id from public.profiles where id = auth.uid())
+);
+
+create policy "admin_all_bookings" on public.bookings
+for all using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+create policy "client_own_bookings" on public.bookings
+for select using (
+  client_id = (select client_id from public.profiles where id = auth.uid())
+);
+
+create policy "admin_all_invoices" on public.invoices
+for all using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+create policy "client_own_invoices" on public.invoices
+for select using (
+  client_id = (select client_id from public.profiles where id = auth.uid())
+);
+
+create policy "admin_all_payment_links" on public.payment_links
+for all using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+create policy "client_own_payment_links" on public.payment_links
+for select using (
+  exists (
+    select 1
+    from public.invoices i
+    where i.id = payment_links.invoice_id
+      and i.client_id = (select client_id from public.profiles where id = auth.uid())
+  )
+);
+
+create policy "admin_all_expenses" on public.expenses
+for all using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+create policy "admin_all_receipts" on public.receipts
+for all using (
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- Invite activation should be done by secure function with service role key; no direct client writes.
