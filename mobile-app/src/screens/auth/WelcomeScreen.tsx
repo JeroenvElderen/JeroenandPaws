@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Text, TextInput } from 'react-native';
+import { Button, StyleSheet, Text, TextInput } from 'react-native';
 
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { useAuth } from '@/providers/AuthProvider';
@@ -13,7 +13,7 @@ export function WelcomeScreen(): JSX.Element {
 
   return (
     <ScreenContainer title="Welcome / Enter invite code">
-      <Text>Enter the invite code provided by admin to activate your account.</Text>
+      <Text style={styles.bodyText}>Enter the invite code provided by admin to activate your account.</Text>
       <TextInput value={code} onChangeText={setCode} placeholder="Invite code" autoCapitalize="characters" />
       <Button
         title="Activate"
@@ -22,10 +22,10 @@ export function WelcomeScreen(): JSX.Element {
           setMessage(result.message);
         }}
       />
-      {!!message && <Text>{message}</Text>}
+      {!!message && <Text style={styles.bodyText}>{message}</Text>}
 
-      <Text style={{ marginTop: 16, fontWeight: '600' }}>Admin login</Text>
-      <Text>If this is your admin account, sign in directly (no invite code needed).</Text>
+      <Text style={styles.sectionTitle}>Admin login</Text>
+      <Text style={styles.bodyText}>If this is your admin account, sign in directly (no invite code needed).</Text>
       <TextInput
         value={adminEmail}
         onChangeText={setAdminEmail}
@@ -54,3 +54,9 @@ export function WelcomeScreen(): JSX.Element {
     </ScreenContainer>
   );
 }
+
+
+const styles = StyleSheet.create({
+  bodyText: { color: '#c9c5d8', fontSize: 15, lineHeight: 22 },
+  sectionTitle: { marginTop: 16, fontWeight: '600', color: '#f4f2ff' }
+});

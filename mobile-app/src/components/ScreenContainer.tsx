@@ -13,8 +13,8 @@ export function ScreenContainer({ title, children }: { title: string; children?:
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f7f8fa' },
+  safe: { flex: 1, backgroundColor: '#0c081f' },
   content: { padding: 20, gap: 16 },
-  title: { fontSize: 26, fontWeight: '700' },
+  title: { fontSize: 26, fontWeight: '700', color: '#f4f2ff' },
   body: { gap: 12 }
 });
