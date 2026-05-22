@@ -15,8 +15,23 @@ import { AdminInvoicesScreen } from '@/screens/admin/AdminInvoices';
 import { AdminExpensesScreen } from '@/screens/admin/AdminExpenses';
 import { AdminReceiptsScreen } from '@/screens/admin/AdminReceipts';
 import { AdminIncomeScreen } from '@/screens/admin/AdminIncome';
+import { ScreenContainer } from '@/components/ScreenContainer';
+import { Text } from 'react-native';
 
 const Stack = createNativeStackNavigator();
+
+function UnsupportedRoleScreen({ role }: { role: string | null | undefined }): JSX.Element {
+  return (
+    <ScreenContainer title="Account setup needed">
+      <Text style={{ color: '#c9c5d8', fontSize: 15, lineHeight: 22 }}>
+        This account is signed in, but no mobile screens are configured for role: {role ?? 'none'}.
+      </Text>
+      <Text style={{ color: '#c9c5d8', fontSize: 15, lineHeight: 22 }}>
+        Ask an admin to set your profile role to either "client" or "admin" in the profiles table.
+      </Text>
+    </ScreenContainer>
+  );
+}
 
 export function AppNavigator(): JSX.Element {
   const { profile } = useAuth();
@@ -44,7 +59,15 @@ export function AppNavigator(): JSX.Element {
             <Stack.Screen name="Admin Expenses" component={AdminExpensesScreen} />
             <Stack.Screen name="Admin Receipts" component={AdminReceiptsScreen} />
             <Stack.Screen name="Admin Income Dashboard" component={AdminIncomeScreen} />
+            <Stack.Screen name="Client Dashboard" component={ClientDashboardScreen} />
+            <Stack.Screen name="Client Bookings" component={ClientBookingsScreen} />
+            <Stack.Screen name="Client Unpaid Payments" component={ClientPaymentsScreen} />
+            <Stack.Screen name="Client Dogs" component={ClientDogsScreen} />
           </>
+        )}
+
+        {profile && profile.role !== 'client' && profile.role !== 'admin' && (
+          <Stack.Screen name="Account Setup" component={() => <UnsupportedRoleScreen role={profile.role} />} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
