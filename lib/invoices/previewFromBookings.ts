@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { fetchWeeklyOutlookEvents, parseServiceFromEvent } from '@/lib/outlook/calendar';
 
 type PriceRow = { client_id: string; dog_id: string | null; service_type: string; duration: string; price: number };
-type ClientRow = { id: string; email: string | null; full_name: string | null };
+type ClientRow = { id: string; email: string | null; full_name: string | null; whatsapp_number: string | null };
 
 function normalizeDuration(duration: string): string {
   const d = duration.toLowerCase();
@@ -16,7 +16,7 @@ export async function buildWeeklyInvoicePreview() {
   const outlook = await fetchWeeklyOutlookEvents();
   const emailHints = [...new Set(outlook.events.map((e) => parseServiceFromEvent(e).emailHint).filter(Boolean) as string[])];
 
-  const { data: clients } = await supabaseAdmin.from('clients').select('id, email, full_name').in('email', emailHints.length ? emailHints : ['']);
+  const { data: clients } = await supabaseAdmin.from('clients').select('id, email, full_name, whatsapp_number').in('email', emailHints.length ? emailHints : ['']);
   const clientRows = (clients ?? []) as ClientRow[];
   const clientIds = clientRows.map((c) => c.id);
 
@@ -48,6 +48,8 @@ export async function buildWeeklyInvoicePreview() {
       duration,
       category: parsed.category,
       price,
+      whatsappNumber: client?.whatsapp_number ?? null,
+      clientName: client?.full_name ?? null,
     };
   });
 
