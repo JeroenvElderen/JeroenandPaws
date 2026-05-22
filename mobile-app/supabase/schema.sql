@@ -98,6 +98,33 @@ create table if not exists public.receipts (
   created_at timestamptz not null default now()
 );
 
+-- Helper functions to avoid RLS self-recursion in policies.
+create or replace function public.current_profile_role()
+returns public.app_role
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.role
+  from public.profiles p
+  where p.id = auth.uid()
+  limit 1;
+$$;
+
+create or replace function public.current_profile_client_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.client_id
+  from public.profiles p
+  where p.id = auth.uid()
+  limit 1;
+$$;
+
 alter table public.clients enable row level security;
 alter table public.profiles enable row level security;
 alter table public.invite_codes enable row level security;
@@ -110,17 +137,17 @@ alter table public.receipts enable row level security;
 
 create policy "admin_all_clients" on public.clients
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "client_own_client" on public.clients
 for select using (
-  id = (select client_id from public.profiles where id = auth.uid())
+  id = public.current_profile_client_id()
 );
 
 create policy "admin_all_profiles" on public.profiles
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "user_own_profile" on public.profiles
@@ -128,42 +155,42 @@ for select using (id = auth.uid());
 
 create policy "admin_manage_invites" on public.invite_codes
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "admin_all_dogs" on public.dogs
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "client_own_dogs" on public.dogs
 for select using (
-  client_id = (select client_id from public.profiles where id = auth.uid())
+  client_id = public.current_profile_client_id()
 );
 
 create policy "admin_all_bookings" on public.bookings
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "client_own_bookings" on public.bookings
 for select using (
-  client_id = (select client_id from public.profiles where id = auth.uid())
+  client_id = public.current_profile_client_id()
 );
 
 create policy "admin_all_invoices" on public.invoices
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "client_own_invoices" on public.invoices
 for select using (
-  client_id = (select client_id from public.profiles where id = auth.uid())
+  client_id = public.current_profile_client_id()
 );
 
 create policy "admin_all_payment_links" on public.payment_links
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "client_own_payment_links" on public.payment_links
@@ -172,19 +199,26 @@ for select using (
     select 1
     from public.invoices i
     where i.id = payment_links.invoice_id
-      and i.client_id = (select client_id from public.profiles where id = auth.uid())
+      and i.client_id = public.current_profile_client_id()
   )
 );
 
 create policy "admin_all_expenses" on public.expenses
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
 
 create policy "admin_all_receipts" on public.receipts
 for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  public.current_profile_role() = 'admin'
 );
+
+-- Bootstrap note:
+-- Your admin account is any auth user that has a row in public.profiles with role='admin'.
+-- Example (run once in Supabase SQL editor after creating the user in Auth):
+-- insert into public.profiles (id, role)
+-- values ('YOUR_AUTH_USER_UUID', 'admin')
+-- on conflict (id) do update set role = excluded.role, client_id = null;
 
 -- Invite activation should be done by secure function with service role key; no direct client writes.
 create policy "block_direct_client_invite_changes" on public.invite_codes

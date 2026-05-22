@@ -83,6 +83,36 @@ npm run android
 3. Enable Email auth provider (or provider you choose).
 4. Keep service-role key server-side only.
 
+### Which account is admin?
+
+Right now, **no admin is auto-created**.  
+Your admin account is whichever Supabase Auth user has `profiles.role = 'admin'`.
+
+After you create/sign in your own user once, get your `auth.users.id` UUID and run:
+
+```sql
+insert into public.profiles (id, role)
+values ('YOUR_AUTH_USER_UUID', 'admin')
+on conflict (id) do update
+set role = excluded.role,
+    client_id = null;
+```
+
+That user will then have full admin access through the RLS policies.
+
+### How do I log in as admin in the mobile app?
+
+Admin users do **not** use invite-code activation.
+
+1. Create/authenticate your admin user in Supabase Auth (for example `jeroen@jeroenandpaws.com`).
+2. Ensure that user has `profiles.role = 'admin'` using the SQL above.
+3. In the app Welcome screen, use **Admin login** and sign in with that email/password.
+
+If you sign in but still do not see admin screens, verify:
+- profile row exists in `public.profiles`
+- `role` is exactly `admin`
+- profile `id` exactly matches `auth.users.id`
+
 Helpful docs:
 - Auth: https://supabase.com/docs/guides/auth
 - RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
