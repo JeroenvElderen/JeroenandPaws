@@ -366,11 +366,11 @@ async function runDeltaSync(
 
 export async function POST(req: Request): Promise<Response> {
   const auth = req.headers.get('authorization') ?? '';
-  const cronHeader = req.headers.get('x-vercel-cron');
+  const userAgent = req.headers.get('user-agent') ?? '';
 
-  const authorized =
-    auth === `Bearer ${process.env.OUTLOOK_SYNC_SECRET}` ||
-    cronHeader === '1';
+const authorized =
+  auth === `Bearer ${process.env.OUTLOOK_SYNC_SECRET}` ||
+  userAgent.includes('vercel-cron');
 
   if (!authorized) {
     return new Response(
