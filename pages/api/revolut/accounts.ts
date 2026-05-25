@@ -5,7 +5,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    const token = process.env.REVOLUT_ACCESS_TOKEN?.trim();
+    const token = process.env.REVOLUT_ACCES_TOKEN?.trim();
 
     return res.status(200).json({
       exists: !!token,
