@@ -21,6 +21,7 @@
     "dotenv": "^17.2.3",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "jose": "^6.2.3",
     "lucide-react": "^0.555.0",
     "luxon": "^3.7.2",
     "next": "^16.1.6",
