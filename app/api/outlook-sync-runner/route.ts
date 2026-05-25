@@ -366,9 +366,20 @@ async function runDeltaSync(
 
 export async function POST(req: Request): Promise<Response> {
   const auth = req.headers.get('authorization') ?? '';
+  const cronHeader = req.headers.get('x-vercel-cron');
 
-  if (auth !== `Bearer ${process.env.OUTLOOK_SYNC_SECRET}`) {
-    return new Response(JSON.stringify({ ok: false, message: 'Unauthorized' }), { status: 401 });
+  const authorized =
+    auth === `Bearer ${process.env.OUTLOOK_SYNC_SECRET}` ||
+    cronHeader === '1';
+
+  if (!authorized) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        message: 'Unauthorized'
+      }),
+      { status: 401 }
+    );
   }
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -378,9 +389,14 @@ export async function POST(req: Request): Promise<Response> {
   };
 
   const clientId = body.clientId ?? null;
-  const calendarId = body.calendarId ?? process.env.OUTLOOK_CALENDAR_ID;
+
+  const calendarId =
+    body.calendarId ?? process.env.OUTLOOK_CALENDAR_ID;
+
   const graphUserId =
-    body.graphUserId ?? process.env.OUTLOOK_GRAPH_USER_ID ?? process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL;
+    body.graphUserId ??
+    process.env.OUTLOOK_GRAPH_USER_ID ??
+    process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL;
 
   if (!calendarId || !graphUserId) {
     return new Response(
@@ -394,11 +410,36 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   try {
-    const result = await runDeltaSync(clientId, calendarId, graphUserId);
-    return new Response(JSON.stringify({ ok: true, ...result }), { status: 200 });
+    const result = await runDeltaSync(
+      clientId,
+      calendarId,
+      graphUserId
+    );
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        ...result
+      }),
+      { status: 200 }
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Sync failed';
-    console.error('[outlook-sync-runner] request failed', { message });
-    return new Response(JSON.stringify({ ok: false, message }), { status: 500 });
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Sync failed';
+
+    console.error(
+      '[outlook-sync-runner] request failed',
+      { message }
+    );
+
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        message
+      }),
+      { status: 500 }
+    );
   }
 }

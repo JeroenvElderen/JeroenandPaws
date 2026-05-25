@@ -72,9 +72,12 @@ function parseClientAndDogsFromSubject(subject: string): { firstName: string | n
   const [left = '', ...rest] = subject.split('-').map((x) => x.trim()).filter(Boolean);
   const parsed = parseSubject(subject);
   const firstName = left ? normalizeName(left.split(/\s+/)[0] ?? '') : null;
-  const dogsFromRight = rest.join(' - ');
-  const dogNames = (dogsFromRight ? dogsFromRight.split(/[,&]/) : parsed.dogNames)
+  const dogsFromRight = rest
+    .flatMap((segment) => segment.split(/[,&]/))
     .map((name) => normalizeName(name))
+    .filter(Boolean)
+    .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.includes(kw)));
+const dogNames = (dogsFromRight.length > 0 ? dogsFromRight : parsed.dogNames.map((name) => normalizeName(name)))
     .filter(Boolean)
     .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.includes(kw)));
   return { firstName: firstName || null, dogNames, serviceName: parsed.serviceName };

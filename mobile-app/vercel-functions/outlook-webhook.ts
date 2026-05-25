@@ -9,7 +9,7 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ ok: false, message: 'Method not allowed' }), { status: 405 });
   }
 
-  const body = (await req.json()) as { value?: Array<{ clientState?: string }> };
+  const body = (await req.json().catch(() => ({}))) as { value?: Array<{ clientState?: string }> };
   const expectedState = process.env.OUTLOOK_WEBHOOK_CLIENT_STATE;
 
   const valid = (body.value ?? []).every((item) => item.clientState === expectedState);
@@ -17,6 +17,32 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ ok: false, message: 'Invalid clientState' }), { status: 401 });
   }
 
-  // Notification accepted. Your job/queue should invoke outlook-sync-runner next.
-  return new Response(JSON.stringify({ ok: true, accepted: true }), { status: 202 });
+  const runnerUrl = process.env.OUTLOOK_SYNC_RUNNER_URL;
+  if (!runnerUrl) {
+    console.error('[outlook-webhook] missing OUTLOOK_SYNC_RUNNER_URL');
+    return new Response(JSON.stringify({ ok: false, message: 'Missing OUTLOOK_SYNC_RUNNER_URL' }), { status: 500 });
+  }
+
+  const syncResponse = await fetch(runnerUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OUTLOOK_SYNC_SECRET ?? ''}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({})
+  });
+
+  const syncBodyText = await syncResponse.text();
+  if (!syncResponse.ok) {
+    console.error('[outlook-webhook] sync runner call failed', {
+      status: syncResponse.status,
+      body: syncBodyText
+    });
+    return new Response(JSON.stringify({ ok: false, message: 'Sync runner failed', status: syncResponse.status }), { status: 502 });
+  }
+
+  return new Response(
+    JSON.stringify({ ok: true, accepted: true, runnerStatus: syncResponse.status, runnerResponse: syncBodyText }),
+    { status: 202 }
+  );
 }
