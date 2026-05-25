@@ -3,16 +3,29 @@ import { importPKCS8, SignJWT } from "jose";
 
 const REVOLUT_TOKEN_URL = "https://b2b.revolut.com/api/1.0/auth/token";
 
+const REVOLUT_REDIRECT_URI =
+  process.env.REVOLUT_REDIRECT_URI ||
+  "https://www.jeroenandpaws.com/api/revolut/callback";
+
+const REVOLUT_JWT_ISSUER = "www.jeroenandpaws.com";
+
 async function createClientAssertion() {
-  const clientId = process.env.REVOLUT_CLIENT_ID!;
-  const privateKey = process.env.REVOLUT_PRIVATE_KEY!.replace(/\\n/g, "\n");
-  const redirectUri = process.env.REVOLUT_REDIRECT_URI!;
+  const clientId = process.env.REVOLUT_CLIENT_ID;
+  const privateKey = process.env.REVOLUT_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+  if (!clientId) {
+    throw new Error("Missing REVOLUT_CLIENT_ID");
+  }
+
+  if (!privateKey) {
+    throw new Error("Missing REVOLUT_PRIVATE_KEY");
+  }
 
   const key = await importPKCS8(privateKey, "RS256");
 
   return new SignJWT({})
     .setProtectedHeader({ alg: "RS256" })
-    .setIssuer(new URL(redirectUri).hostname)
+    .setIssuer(REVOLUT_JWT_ISSUER)
     .setSubject(clientId)
     .setAudience("https://revolut.com")
     .setIssuedAt()
@@ -20,12 +33,17 @@ async function createClientAssertion() {
     .sign(key);
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     const code = String(req.query.code || "");
 
     if (!code) {
-      return res.status(400).json({ error: "Missing Revolut authorization code" });
+      return res.status(400).json({
+        error: "Missing Revolut authorization code",
+      });
     }
 
     const clientAssertion = await createClientAssertion();
@@ -49,7 +67,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json(data);
+      return res.status(response.status).json({
+        success: false,
+        status: response.status,
+        revolut_error: data,
+      });
     }
 
     return res.status(200).json({
@@ -61,6 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (error: any) {
     return res.status(500).json({
+      success: false,
       error: error.message || "Token exchange failed",
     });
   }
