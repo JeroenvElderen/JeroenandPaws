@@ -16,12 +16,14 @@ type ClientRow = {
 };
 
 type DogRow = {
+  id: string;
   client_id: string;
   name: string;
 };
 
 type ResolvedClient = {
   clientId: string;
+  dogId: string | null;
   dogNames: string[];
   serviceName: string;
 };
@@ -64,25 +66,28 @@ function parseSubject(subject: string): { serviceName: string; dogNames: string[
 }
 
 function normalizeName(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '');
+  return value.trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
 }
 
-function parseClientAndDogsFromSubject(subject: string): { firstName: string | null; dogNames: string[]; serviceName: string } {
+function parseClientAndDogsFromSubject(subject: string): {
+  firstName: string | null;
+  dogNames: string[];
+  serviceName: string;
+} {
   const [left = '', ...rest] = subject.split('-').map((x) => x.trim()).filter(Boolean);
   const parsed = parseSubject(subject);
   const firstName = left ? normalizeName(left.split(/\s+/)[0] ?? '') : null;
+
   const dogsFromRight = rest
     .flatMap((segment) => segment.split(/[,&]/))
     .map((name) => normalizeName(name))
     .filter(Boolean)
     .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.includes(kw)));
+
   const dogNames = (dogsFromRight.length > 0 ? dogsFromRight : parsed.dogNames.map((name) => normalizeName(name)))
     .filter(Boolean)
     .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.includes(kw)));
+
   return { firstName: firstName || null, dogNames, serviceName: parsed.serviceName };
 }
 
@@ -91,8 +96,13 @@ async function resolveClientByNames(
   subject: string
 ): Promise<ResolvedClient | null> {
   const { firstName, dogNames, serviceName } = parseClientAndDogsFromSubject(subject);
+
   if (!firstName || dogNames.length === 0) {
-    console.warn('[outlook-sync-runner] skipped: cannot parse client/dogs from subject', { subject, firstName, dogNamesCount: dogNames.length });
+    console.warn('[outlook-sync-runner] skipped: cannot parse client/dogs from subject', {
+      subject,
+      firstName,
+      dogNamesCount: dogNames.length
+    });
     return null;
   }
 
@@ -109,26 +119,54 @@ async function resolveClientByNames(
     return null;
   }
 
-  const candidateIds = matchingClients.map((client: ClientRow) => client.id);
+  const candidateIds = matchingClients.map((client) => client.id);
+
   const { data: dogs, error: dogsError } = await supabase
     .from('dogs')
-    .select('client_id, name')
+    .select('id, client_id, name')
     .in('client_id', candidateIds);
+
   if (dogsError) throw new Error(`Failed loading dogs: ${dogsError.message}`);
 
-  const dogSet = new Set(dogNames);
-  const matches = candidateIds.filter((candidateId) => {
-    const ownedDogs = ((dogs ?? []) as DogRow[])
-      .filter((dog) => dog.client_id === candidateId)
-      .map((dog) => normalizeName(String(dog.name ?? '')));
-    return dogNames.every((name) => ownedDogs.includes(name)) && ownedDogs.some((name) => dogSet.has(name));
-  });
+  const dogRows = (dogs ?? []) as DogRow[];
+
+  const matches = candidateIds
+    .map((candidateId) => {
+      const ownedDogs = dogRows.filter((dog) => dog.client_id === candidateId);
+      const matchedDogs = ownedDogs.filter((dog) =>
+        dogNames.includes(normalizeName(String(dog.name ?? '')))
+      );
+
+      return {
+        clientId: candidateId,
+        matchedDogs,
+        ownedDogNames: ownedDogs.map((dog) => normalizeName(String(dog.name ?? '')))
+      };
+    })
+    .filter((match) => {
+      return (
+        dogNames.every((name) => match.ownedDogNames.includes(name)) &&
+        match.matchedDogs.length > 0
+      );
+    });
 
   if (matches.length !== 1) {
-    console.warn('[outlook-sync-runner] client resolution failed: ambiguous/no dog match', { subject, firstName, dogNames, candidateCount: matchingClients.length, resolvedMatches: matches.length });
+    console.warn('[outlook-sync-runner] client resolution failed: ambiguous/no dog match', {
+      subject,
+      firstName,
+      dogNames,
+      candidateCount: matchingClients.length,
+      resolvedMatches: matches.length
+    });
     return null;
   }
-  return { clientId: matches[0], dogNames, serviceName };
+
+  return {
+    clientId: matches[0].clientId,
+    dogId: matches[0].matchedDogs[0]?.id ?? null,
+    dogNames,
+    serviceName
+  };
 }
 
 async function getAppToken(): Promise<string> {
@@ -155,12 +193,18 @@ async function getAppToken(): Promise<string> {
   console.log('[outlook-sync-runner] token response', { ok: resp.ok, status: resp.status });
 
   if (!resp.ok) throw new Error(`Token request failed: ${resp.status} ${JSON.stringify(tokenBody)}`);
+
   const accessToken = (tokenBody as { access_token?: string }).access_token;
   if (!accessToken) throw new Error('Token response missing access_token');
+
   return accessToken;
 }
 
-async function runDeltaSync(clientId: string | null, calendarId: string, graphUserId: string): Promise<{ imported: number; cancelled: number }> {
+async function runDeltaSync(
+  clientId: string | null,
+  calendarId: string,
+  graphUserId: string
+): Promise<{ imported: number; cancelled: number }> {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -186,11 +230,27 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
 
   while (url) {
     const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const data = (await resp.json().catch(() => ({}))) as { value?: GraphEvent[]; '@odata.nextLink'?: string; '@odata.deltaLink'?: string; error?: unknown };
-    console.log('[outlook-sync-runner] graph delta response', { ok: resp.ok, status: resp.status, valueCount: data.value?.length ?? 0, hasNextLink: Boolean(data['@odata.nextLink']), hasDeltaLink: Boolean(data['@odata.deltaLink']) });
+
+    const data = (await resp.json().catch(() => ({}))) as {
+      value?: GraphEvent[];
+      '@odata.nextLink'?: string;
+      '@odata.deltaLink'?: string;
+      error?: unknown;
+    };
+
+    console.log('[outlook-sync-runner] graph delta response', {
+      ok: resp.ok,
+      status: resp.status,
+      valueCount: data.value?.length ?? 0,
+      hasNextLink: Boolean(data['@odata.nextLink']),
+      hasDeltaLink: Boolean(data['@odata.deltaLink'])
+    });
+
     if (!resp.ok) throw new Error(`Graph delta failed: ${resp.status} ${JSON.stringify(data.error ?? data)}`);
+
     collected.push(...(data.value ?? []));
     url = data['@odata.nextLink'] ?? '';
+
     if (data['@odata.deltaLink']) deltaLink = data['@odata.deltaLink'];
     if (!url) break;
   }
@@ -198,12 +258,15 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
   console.log('[outlook-sync-runner] collected events', { total: collected.length });
 
   const deletedEventIds = collected.filter((e) => Boolean(e['@removed'])).map((e) => e.id);
+
   const upsertRows = collected
     .filter((e) => !e['@removed'])
     .map((event) => {
       const parsed = parseSubject(event.subject ?? '');
+
       return {
         client_id: clientId,
+        dog_id: null as string | null,
         outlook_event_id: event.id,
         title: event.subject ?? null,
         service_name: parsed.serviceName,
@@ -218,35 +281,59 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
     })
     .filter((r) => {
       const valid = Boolean(r.starts_at && r.ends_at);
+
       if (!valid) {
-        console.warn('[outlook-sync-runner] skipped row: missing starts_at/ends_at', { eventId: r.outlook_event_id, starts_at: r.starts_at, ends_at: r.ends_at, title: r.title });
+        console.warn('[outlook-sync-runner] skipped row: missing starts_at/ends_at', {
+          eventId: r.outlook_event_id,
+          starts_at: r.starts_at,
+          ends_at: r.ends_at,
+          title: r.title
+        });
       }
+
       return valid;
     });
 
   const resolvedRows: typeof upsertRows = [];
+
   for (const row of upsertRows) {
     if (row.client_id) {
       resolvedRows.push(row);
       continue;
     }
+
     const resolved = await resolveClientByNames(supabase, row.title ?? '');
+
     if (!resolved) {
-      console.warn('[outlook-sync-runner] skipped row: unresolved client', { eventId: row.outlook_event_id, title: row.title });
+      console.warn('[outlook-sync-runner] skipped row: unresolved client', {
+        eventId: row.outlook_event_id,
+        title: row.title
+      });
       continue;
     }
+
     resolvedRows.push({
       ...row,
       client_id: resolved.clientId,
+      dog_id: resolved.dogId,
       dog_names: resolved.dogNames,
       service_name: row.service_name === 'unknown' ? resolved.serviceName : row.service_name
     });
   }
 
   if (resolvedRows.length > 0) {
-    const { error } = await supabase.from('bookings').upsert(resolvedRows, { onConflict: 'outlook_event_id' });
+    const { error } = await supabase.from('bookings').upsert(resolvedRows, {
+      onConflict: 'outlook_event_id'
+    });
+
     if (error) {
-      console.error('[outlook-sync-runner] supabase upsert error', { message: error.message, details: error.details, hint: error.hint, code: error.code });
+      console.error('[outlook-sync-runner] supabase upsert error', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+
       throw new Error(error.message);
     }
   }
@@ -258,13 +345,19 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
       .from('bookings')
       .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
       .in('outlook_event_id', deletedEventIds);
+
     const { error } = clientId ? await cancellationQuery.eq('client_id', clientId) : await cancellationQuery;
+
     if (error) throw new Error(error.message);
   }
 
   if (deltaLink && clientId) {
     const row: SyncCursorRow = { client_id: clientId, delta_link: deltaLink };
-    const { error } = await supabase.from('outlook_sync_cursors').upsert(row, { onConflict: 'client_id' });
+
+    const { error } = await supabase.from('outlook_sync_cursors').upsert(row, {
+      onConflict: 'client_id'
+    });
+
     if (error) throw new Error(error.message);
   }
 
@@ -273,7 +366,7 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
 
 export async function POST(req: Request): Promise<Response> {
   const auth = req.headers.get('authorization') ?? '';
-  
+
   if (auth !== `Bearer ${process.env.OUTLOOK_SYNC_SECRET}`) {
     return new Response(JSON.stringify({ ok: false, message: 'Unauthorized' }), { status: 401 });
   }
@@ -286,13 +379,15 @@ export async function POST(req: Request): Promise<Response> {
 
   const clientId = body.clientId ?? null;
   const calendarId = body.calendarId ?? process.env.OUTLOOK_CALENDAR_ID;
-  const graphUserId = body.graphUserId ?? process.env.OUTLOOK_GRAPH_USER_ID ?? process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL;
+  const graphUserId =
+    body.graphUserId ?? process.env.OUTLOOK_GRAPH_USER_ID ?? process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL;
 
   if (!calendarId || !graphUserId) {
     return new Response(
       JSON.stringify({
         ok: false,
-        message: 'Missing calendar config. Provide calendarId/graphUserId in body or OUTLOOK_CALENDAR_ID/OUTLOOK_GRAPH_USER_ID env vars.'
+        message:
+          'Missing calendar config. Provide calendarId/graphUserId in body or OUTLOOK_CALENDAR_ID/OUTLOOK_GRAPH_USER_ID env vars.'
       }),
       { status: 400 }
     );
