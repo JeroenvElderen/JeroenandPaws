@@ -51,7 +51,7 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ ok: false, message: 'Unauthorized' }), { status: 401 });
   }
 
-  const { clientId, events, deletedEventIds } = (await req.json()) as {
+  const { clientId, events, deletedEventIds } = (await req.json().catch(() => ({}))) as {
     clientId: string;
     events: IncomingEvent[];
     deletedEventIds?: string[];
@@ -60,7 +60,16 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ ok: false, message: 'Missing clientId or events array' }), { status: 400 });
   }
 
-  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return new Response(JSON.stringify({ ok: false, message: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }), { status: 500 });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+  console.log('[sync-outlook-bookings] incoming payload', { clientId, eventsCount: events.length, deletedCount: Array.isArray(deletedEventIds) ? deletedEventIds.length : 0 });
 
   const rows = events.map((event) => {
     const parsed = parseSubject(event.subject ?? '');
@@ -79,8 +88,17 @@ export default async function handler(req: Request): Promise<Response> {
     };
   });
 
-  const { error } = await supabase.from('bookings').upsert(rows, { onConflict: 'outlook_event_id' });
+  const validRows = rows.filter((row) => {
+    const valid = Boolean(row.starts_at && row.ends_at);
+    if (!valid) {
+      console.warn('[sync-outlook-bookings] skipped row: missing starts_at/ends_at', { eventId: row.outlook_event_id, title: row.title });
+    }
+    return valid;
+  });
+
+  const { error } = await supabase.from('bookings').upsert(validRows, { onConflict: 'outlook_event_id' });
   if (error) {
+    console.error('[sync-outlook-bookings] supabase upsert error', { message: error.message, details: error.details, hint: error.hint, code: error.code });
     return new Response(JSON.stringify({ ok: false, message: error.message }), { status: 500 });
   }
 
@@ -99,7 +117,7 @@ export default async function handler(req: Request): Promise<Response> {
   return new Response(
     JSON.stringify({
       ok: true,
-      imported: rows.length,
+      imported: validRows.length,
       cancelledFromDeletion: Array.isArray(deletedEventIds) ? deletedEventIds.length : 0
     }),
     { status: 200 }
