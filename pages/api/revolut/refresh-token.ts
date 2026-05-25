@@ -32,4 +32,36 @@ export default async function handler(
       process.env.REVOLUT_REFRESH_TOKEN ||
       process.env.REVOLUT_REFESH_TOKEN;
 
-    if
+    if (!refreshToken) {
+      return res.status(500).json({
+        error: "Missing REVOLUT_REFRESH_TOKEN",
+      });
+    }
+
+    const clientAssertion = await createClientAssertion();
+
+    const body = new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken.trim(),
+      client_assertion_type:
+        "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: clientAssertion,
+    });
+
+    const response = await fetch(REVOLUT_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+
+    const data = await response.json();
+
+    return res.status(response.status).json(data);
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error.message || "Refresh token failed",
+    });
+  }
+}
