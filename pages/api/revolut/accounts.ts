@@ -1,4 +1,3 @@
-// /pages/api/revolut/accounts.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFreshRevolutAccessToken } from "../../../lib/revolut/businessAuth";
 
@@ -12,6 +11,7 @@ export default async function handler(
     const accessToken = await getFreshRevolutAccessToken();
 
     const response = await fetch(ACCOUNTS_URL, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
@@ -19,20 +19,12 @@ export default async function handler(
     });
 
     const data = await response.json();
+
     return res.status(response.status).json(data);
   } catch (error: any) {
     return res.status(500).json({
       error: error.message || "Revolut accounts failed",
     });
   }
-}      response: {
-        status: response.status,
-        body: text,
-      },
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      error: error.message,
-    });
-  }
+}  }
 }
