@@ -95,6 +95,10 @@ export function AdminInvoicesScreen(): React.ReactElement {
       ? merchantData
       : Array.isArray(merchantData?.transactions)
         ? merchantData.transactions
+        : Array.isArray(merchantData?.data)
+          ? merchantData.data
+          : Array.isArray(merchantData?.items)
+            ? merchantData.items
         : [];
     setMerchantTransactions(rows as MerchantTransactionRow[]);
   }, []);
