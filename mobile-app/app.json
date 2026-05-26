@@ -32,9 +32,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "ae5df83e-c9ca-4bef-bfb3-75b3f5008cd7"
       }
     },
-    "owner": "REPLACE_WITH_EXPO_OWNER"
+    "owner": "jeroen-and-paws"
   }
 }
