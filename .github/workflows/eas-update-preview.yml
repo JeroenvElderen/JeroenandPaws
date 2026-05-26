@@ -6,11 +6,13 @@ on:
       - main
     paths:
       - 'mobile-app/**'
+      - '.github/workflows/eas-update-preview.yml'
 
 jobs:
   publish-ota-update:
     name: Publish OTA update to preview
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: mobile-app
@@ -35,5 +37,7 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Publish OTA update
+        run: eas update --branch preview --message "Automatic update from GitHub"
       - name: Publish OTA update
         run: eas update --branch preview --message "Automatic update from GitHub"
