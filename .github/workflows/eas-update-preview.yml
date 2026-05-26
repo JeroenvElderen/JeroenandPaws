@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'mobile-app/**'
-      - '.github/workflows/eas-update-preview.yml'
 
 jobs:
   publish-ota-update:
@@ -35,6 +32,10 @@ jobs:
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish OTA update
+        run: eas update --branch preview --message "Automatic update from GitHub"          eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publish OTA update
