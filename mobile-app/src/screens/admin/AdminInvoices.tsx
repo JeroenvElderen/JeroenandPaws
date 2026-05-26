@@ -52,6 +52,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLinkRow[]>([]);
   const [merchantTransactions, setMerchantTransactions] = useState<MerchantTransactionRow[]>([]);
+  const [merchantError, setMerchantError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -75,23 +76,29 @@ export function AdminInvoicesScreen(): React.ReactElement {
     setPaymentLinks((linksResult.data ?? []) as PaymentLinkRow[]);
 
     const shouldLoadMerchantFallback = (invoiceResult.data ?? []).length === 0;
+    setMerchantError(null);
     if (!shouldLoadMerchantFallback) {
       setMerchantTransactions([]);
+      setMerchantError(null);
       return;
     }
 
     if (!env.vercelBackendUrl) {
       setMerchantTransactions([]);
+      setMerchantError('Missing backend URL for merchant fallback.');
       return;
     }
 
-    const merchantResponse = await fetch(`${env.vercelBackendUrl}/api/revolut/merchant/transactions?count=50`);
-    const merchantData = await merchantResponse.json();
-    if (!merchantResponse.ok) {
-      throw new Error(merchantData?.error ?? 'Failed to load Revolut merchant transactions.');
-    }
+    try {
+      const merchantResponse = await fetch(`${env.vercelBackendUrl}/api/revolut/merchant/transactions?count=50`);
+      const merchantData = await merchantResponse.json();
+      if (!merchantResponse.ok) {
+        setMerchantError(merchantData?.error ?? 'Failed to load Revolut merchant transactions.');
+        setMerchantTransactions([]);
+        return;
+      }
 
-    const rows = Array.isArray(merchantData)
+      const rows = Array.isArray(merchantData)
       ? merchantData
       : Array.isArray(merchantData?.transactions)
         ? merchantData.transactions
@@ -100,7 +107,11 @@ export function AdminInvoicesScreen(): React.ReactElement {
           : Array.isArray(merchantData?.items)
             ? merchantData.items
         : [];
-    setMerchantTransactions(rows as MerchantTransactionRow[]);
+      setMerchantTransactions(rows as MerchantTransactionRow[]);
+    } catch (merchantFetchError: any) {
+      setMerchantTransactions([]);
+      setMerchantError(merchantFetchError?.message ?? 'Failed to load Revolut merchant transactions.');
+    }
   }, []);
 
   useEffect(() => {
@@ -188,6 +199,13 @@ export function AdminInvoicesScreen(): React.ReactElement {
               </View>
             ))}
           </View>
+
+          {invoices.length === 0 && merchantError ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorTitle}>Merchant fallback unavailable</Text>
+              <Text style={styles.body}>{merchantError}</Text>
+            </View>
+          ) : null}
 
           {invoices.length === 0 && merchantTransactions.length > 0 ? (
             <View style={styles.sectionCard}>

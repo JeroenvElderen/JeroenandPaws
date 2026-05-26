@@ -7,8 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const maxItems = typeof limit === 'string' ? limit : typeof count === 'string' ? count : '50';
 
     const { status, data } = await revolutMerchantGet('/api/orders', {
-      from_created_at: typeof from === 'string' ? from : undefined,
-      to_created_at: typeof to === 'string' ? to : undefined,
+      from: typeof from === 'string' ? from : undefined,
+      to: typeof to === 'string' ? to : undefined,
       limit: maxItems
     });
 
