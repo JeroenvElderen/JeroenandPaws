@@ -1,13 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { revolutGet } from '../../../../lib/revolut/proxy';
+import { revolutMerchantGet } from '../../../../lib/revolut/proxy';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { from, to, count } = req.query;
-    const { status, data } = await revolutGet('/api/merchant/1.0/transactions', {
-      from: typeof from === 'string' ? from : undefined,
-      to: typeof to === 'string' ? to : undefined,
-      count: typeof count === 'string' ? count : undefined
+    const { from, to, count, limit } = req.query;
+    const maxItems = typeof limit === 'string' ? limit : typeof count === 'string' ? count : '50';
+
+    const { status, data } = await revolutMerchantGet('/api/orders', {
+      from_created_at: typeof from === 'string' ? from : undefined,
+      to_created_at: typeof to === 'string' ? to : undefined,
+      limit: maxItems
     });
 
     return res.status(status).json(data);
