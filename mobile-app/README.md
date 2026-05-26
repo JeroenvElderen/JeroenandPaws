@@ -1,4 +1,4 @@
-# Jeroen & Paws Mobile (Expo React Native)
+# Jeroen & Paws Mobile app(Expo React Native)
 
 This folder is intentionally separate from the existing web app so you can distribute and release mobile builds independently.
 
