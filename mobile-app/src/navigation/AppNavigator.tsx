@@ -15,6 +15,7 @@ import { AdminInvoicesScreen } from '@/screens/admin/AdminInvoices';
 import { AdminExpensesScreen } from '@/screens/admin/AdminExpenses';
 import { AdminReceiptsScreen } from '@/screens/admin/AdminReceipts';
 import { AdminIncomeScreen } from '@/screens/admin/AdminIncome';
+import { AdminRevolutScreen } from '@/screens/admin/AdminRevolut';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { Text } from 'react-native';
 
@@ -59,6 +60,7 @@ export function AppNavigator(): JSX.Element {
             <Stack.Screen name="Admin Expenses" component={AdminExpensesScreen} />
             <Stack.Screen name="Admin Receipts" component={AdminReceiptsScreen} />
             <Stack.Screen name="Admin Income Dashboard" component={AdminIncomeScreen} />
+            <Stack.Screen name="Admin Revolut" component={AdminRevolutScreen} />
             <Stack.Screen name="Client Dashboard" component={ClientDashboardScreen} />
             <Stack.Screen name="Client Bookings" component={ClientBookingsScreen} />
             <Stack.Screen name="Client Unpaid Payments" component={ClientPaymentsScreen} />

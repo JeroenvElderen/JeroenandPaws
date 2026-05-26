@@ -9,7 +9,8 @@ const quickLinks = [
   { label: 'Invoices', route: 'Admin Invoices' },
   { label: 'Expenses', route: 'Admin Expenses' },
   { label: 'Receipts', route: 'Admin Receipts' },
-  { label: 'Income Dashboard', route: 'Admin Income Dashboard' }
+  { label: 'Income Dashboard', route: 'Admin Income Dashboard' },
+  { label: 'Revolut Hub', route: 'Admin Revolut' }
 ];
 
 export function AdminDashboardScreen(): JSX.Element {
