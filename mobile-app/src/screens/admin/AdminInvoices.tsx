@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
 
 type InvoiceStatus = 'draft' | 'issued' | 'open' | 'paid' | 'overdue' | 'cancelled';
-type PaymentStatus = 'unpaid' | 'partially_paid' | 'paid' | 'failed';
+type PaymentStatus = 'unpaid' | 'partially_paid' | 'active' | 'open' | 'completed' | 'paid' | 'failed' | string;
 
 type InvoiceRow = {
   id: string;
@@ -60,12 +60,14 @@ export function AdminInvoicesScreen(): React.ReactElement {
       supabase
         .from('invoices')
         .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at')
-        .in('status', ['draft', 'issued', 'open', 'overdue'])
+        .neq('status', 'paid')
+        .neq('status', 'cancelled')
         .order('issued_at', { ascending: false }),
       supabase
         .from('payment_links')
         .select('id, invoice_id, provider, provider_reference, url, status, expires_at, created_at')
-        .in('status', ['unpaid', 'partially_paid'])
+        .neq('status', 'paid')
+        .neq('status', 'failed')
         .order('created_at', { ascending: false })
     ]);
 
@@ -139,7 +141,12 @@ export function AdminInvoicesScreen(): React.ReactElement {
 
   const totals = useMemo(() => {
     const pendingInvoiceCents = invoices.reduce((sum, invoice) => sum + invoice.amount_cents, 0);
-    const overdueCount = invoices.filter((invoice) => invoice.status === 'overdue').length;
+    const now = new Date();
+    const overdueCount = invoices.filter((invoice) => {
+      if (invoice.status === 'overdue') return true;
+      if (!invoice.due_date) return false;
+      return new Date(invoice.due_date) < now;
+    }).length;
     return { pendingInvoiceCents, overdueCount };
   }, [invoices]);
 
