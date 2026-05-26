@@ -196,3 +196,9 @@ EAS docs:
 3. Add backend JWT verification on Vercel endpoints.
 4. Add audit logs for invite code reset/usage.
 5. Add push notifications and deep links.
+
+## Automatic OTA updates from GitHub
+
+- Every push to `main` that changes files under `mobile-app/**` automatically publishes an Expo OTA update to the `preview` branch via GitHub Actions.
+- This workflow publishes **OTA updates only** (JavaScript/UI/content changes) and does **not** trigger native APK/IPA rebuilds.
+- Native changes (Android/iOS folders, native modules, config plugins requiring native compile) still require a new APK/IPA build with EAS Build.
