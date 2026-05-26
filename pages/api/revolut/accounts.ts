@@ -26,5 +26,4 @@ export default async function handler(
       error: error.message || "Revolut accounts failed",
     });
   }
-}  }
 }
