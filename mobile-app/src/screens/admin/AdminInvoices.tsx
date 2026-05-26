@@ -60,14 +60,12 @@ export function AdminInvoicesScreen(): React.ReactElement {
       supabase
         .from('invoices')
         .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at')
-        .neq('status', 'paid')
-        .neq('status', 'cancelled')
+        .in('status', ['draft', 'issued', 'open', 'overdue', 'pending'])
         .order('issued_at', { ascending: false }),
       supabase
         .from('payment_links')
         .select('id, invoice_id, provider, provider_reference, url, status, expires_at, created_at')
-        .neq('status', 'paid')
-        .neq('status', 'failed')
+        .in('status', ['unpaid', 'partially_paid', 'active', 'open', 'pending'])
         .order('created_at', { ascending: false })
     ]);
 
