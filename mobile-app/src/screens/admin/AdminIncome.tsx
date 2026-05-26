@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { supabase } from '@/lib/supabase';
 
-type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled';
+type InvoiceStatus = 'draft' | 'issued' | 'open' | 'paid' | 'overdue' | 'cancelled';
 
 type InvoiceRow = {
   amount_cents: number;
@@ -81,7 +81,7 @@ function buildMonthSummary(invoices: InvoiceRow[], expenses: ExpenseRow[]): Mont
   });
 }
 
-export function AdminIncomeScreen(): JSX.Element {
+export function AdminIncomeScreen(): React.ReactElement {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -142,7 +142,7 @@ export function AdminIncomeScreen(): JSX.Element {
       .reduce((total, invoice) => total + invoice.amount_cents, 0);
 
     const outstanding = invoices
-      .filter((invoice) => invoice.status === 'issued' || invoice.status === 'overdue' || invoice.status === 'draft')
+      .filter((invoice) => invoice.status === 'issued' || invoice.status === 'open' || invoice.status === 'overdue' || invoice.status === 'draft')
       .reduce((total, invoice) => total + invoice.amount_cents, 0);
 
     const totalExpenses = expenses.reduce((total, expense) => total + expense.amount_cents, 0);

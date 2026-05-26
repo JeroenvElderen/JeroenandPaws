@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { supabase } from '@/lib/supabase';
+import { env } from '@/lib/env';
 
-type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled';
+type InvoiceStatus = 'draft' | 'issued' | 'open' | 'paid' | 'overdue' | 'cancelled';
 type PaymentStatus = 'unpaid' | 'partially_paid' | 'paid' | 'failed';
 
 type InvoiceRow = {
@@ -27,18 +28,30 @@ type PaymentLinkRow = {
   created_at: string;
 };
 
+type MerchantTransactionRow = {
+  id: string;
+  state?: string;
+  status?: string;
+  type?: string;
+  amount?: number;
+  currency?: string;
+  created_at?: string;
+  order_id?: string;
+};
+
 const money = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
 
 function formatAmount(amountCents: number): string {
   return money.format(amountCents / 100);
 }
 
-export function AdminInvoicesScreen(): JSX.Element {
+export function AdminInvoicesScreen(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLinkRow[]>([]);
+  const [merchantTransactions, setMerchantTransactions] = useState<MerchantTransactionRow[]>([]);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -46,7 +59,7 @@ export function AdminInvoicesScreen(): JSX.Element {
       supabase
         .from('invoices')
         .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at')
-        .in('status', ['draft', 'issued', 'overdue'])
+        .in('status', ['draft', 'issued', 'open', 'overdue'])
         .order('issued_at', { ascending: false }),
       supabase
         .from('payment_links')
@@ -60,6 +73,30 @@ export function AdminInvoicesScreen(): JSX.Element {
 
     setInvoices((invoiceResult.data ?? []) as InvoiceRow[]);
     setPaymentLinks((linksResult.data ?? []) as PaymentLinkRow[]);
+
+    const shouldLoadMerchantFallback = (invoiceResult.data ?? []).length === 0;
+    if (!shouldLoadMerchantFallback) {
+      setMerchantTransactions([]);
+      return;
+    }
+
+    if (!env.vercelBackendUrl) {
+      setMerchantTransactions([]);
+      return;
+    }
+
+    const merchantResponse = await fetch(`${env.vercelBackendUrl}/api/revolut/merchant/transactions?count=50`);
+    const merchantData = await merchantResponse.json();
+    if (!merchantResponse.ok) {
+      throw new Error(merchantData?.error ?? 'Failed to load Revolut merchant transactions.');
+    }
+
+    const rows = Array.isArray(merchantData)
+      ? merchantData
+      : Array.isArray(merchantData?.transactions)
+        ? merchantData.transactions
+        : [];
+    setMerchantTransactions(rows as MerchantTransactionRow[]);
   }, []);
 
   useEffect(() => {
@@ -109,6 +146,7 @@ export function AdminInvoicesScreen(): JSX.Element {
         <Text style={styles.body}>Unpaid invoices and active payment links are shown below.</Text>
         <Text style={styles.metric}>Open invoices: {invoices.length}</Text>
         <Text style={styles.metric}>Open payment links: {paymentLinks.length}</Text>
+        <Text style={styles.metric}>Merchant tx fallback: {merchantTransactions.length}</Text>
         <Text style={styles.metric}>Pending amount: {formatAmount(totals.pendingInvoiceCents)}</Text>
         <Text style={styles.metric}>Overdue invoices: {totals.overdueCount}</Text>
         <Pressable onPress={onRefresh} style={styles.refreshButton}>
@@ -146,6 +184,21 @@ export function AdminInvoicesScreen(): JSX.Element {
               </View>
             ))}
           </View>
+
+          {invoices.length === 0 && merchantTransactions.length > 0 ? (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Revolut merchant transactions (fallback)</Text>
+              <Text style={styles.body}>Supabase invoices are empty, so showing live merchant transactions instead.</Text>
+              {merchantTransactions.map((tx) => (
+                <View key={tx.id} style={styles.row}>
+                  <Text style={styles.rowTitle}>{(tx.state ?? tx.status ?? 'unknown').toUpperCase()} • {(tx.type ?? 'transaction').toUpperCase()}</Text>
+                  <Text style={styles.body}>Amount: {typeof tx.amount === 'number' ? money.format(tx.amount / 100) : '—'} {tx.currency ?? ''}</Text>
+                  <Text style={styles.body}>Order: {tx.order_id ?? '—'}</Text>
+                  <Text style={styles.body}>Created: {tx.created_at ? new Date(tx.created_at).toLocaleString('en-IE') : '—'}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </>
       )}
     </ScreenContainer>

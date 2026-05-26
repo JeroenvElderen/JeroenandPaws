@@ -41,7 +41,7 @@ export function AdminClientsScreen(): React.ReactElement {
       supabase.from('clients').select('id, full_name, email, created_at').order('full_name', { ascending: true }).limit(200),
       supabase.from('dogs').select('client_id'),
       supabase.from('bookings').select('client_id, starts_at, status').gte('starts_at', new Date().toISOString()),
-      supabase.from('invoices').select('client_id, status').in('status', ['issued', 'overdue', 'draft'])
+      supabase.from('invoices').select('client_id, status').in('status', ['issued', 'open', 'overdue', 'draft'])
     ]);
 
     const dogCountByClient = new Map<string, number>();

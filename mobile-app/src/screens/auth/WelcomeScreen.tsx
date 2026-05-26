@@ -4,7 +4,7 @@ import { Button, StyleSheet, Text, TextInput } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { useAuth } from '@/providers/AuthProvider';
 
-export function WelcomeScreen(): JSX.Element {
+export function WelcomeScreen(): React.ReactElement {
   const { activateInviteCode, signIn } = useAuth();
   const [code, setCode] = useState('');
   const [adminEmail, setAdminEmail] = useState('');

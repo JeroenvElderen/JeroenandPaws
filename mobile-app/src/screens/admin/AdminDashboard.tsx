@@ -13,7 +13,7 @@ const quickLinks = [
   { label: 'Revolut Hub', route: 'Admin Revolut' }
 ];
 
-export function AdminDashboardScreen(): JSX.Element {
+export function AdminDashboardScreen(): React.ReactElement {
   const navigation = useNavigation<any>();
 
   return (

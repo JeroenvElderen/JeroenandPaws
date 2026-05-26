@@ -52,3 +52,4 @@ coverage/
 *.swp
 *.swo
 *.swm
+mobile-app/dist/

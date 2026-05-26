@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 
-export function AdminReceiptsScreen(): JSX.Element {
+export function AdminReceiptsScreen(): React.ReactElement {
   return <ScreenContainer title="Admin Receipts"><Text style={styles.bodyText}>Admin-only business view. Connect to secure backend APIs hosted on Vercel.</Text></ScreenContainer>;
 }
 

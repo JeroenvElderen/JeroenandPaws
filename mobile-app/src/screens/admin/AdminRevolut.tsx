@@ -17,7 +17,7 @@ const endpoints: RevolutEndpoint[] = [
   { label: 'Merchant Transactions', path: '/api/revolut/merchant/transactions?count=20', description: 'Recent card/merchant payment activity.' }
 ];
 
-export function AdminRevolutScreen(): JSX.Element {
+export function AdminRevolutScreen(): React.ReactElement {
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [result, setResult] = useState<string>('Tap an endpoint to fetch live Revolut data.');
 
