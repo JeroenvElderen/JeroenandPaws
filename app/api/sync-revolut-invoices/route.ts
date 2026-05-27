@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
-import { revolutGet } from '@/lib/revolut/proxy';
+import { revolutMerchantGet } from '@/lib/revolut/proxy';
 
 export const runtime = 'nodejs';
 
@@ -75,7 +75,7 @@ function statusesMatch(invoiceStatus: string | null, linkStatus: string | null):
 
 async function loadInvoices(): Promise<ExternalInvoice[]> {
   const path = process.env.REVOLUT_INVOICES_PATH?.trim() || '/api/invoices';
-  const { status, data } = await revolutGet(path);
+  const { status, data } = await revolutMerchantGet(path);
 
   if (status >= 400) {
     throw new Error(`Invoice fetch failed (${status}): ${JSON.stringify(data)}`);
@@ -92,7 +92,7 @@ async function loadInvoices(): Promise<ExternalInvoice[]> {
 
 async function loadPaymentLinks(): Promise<ExternalPaymentLink[]> {
   const path = process.env.REVOLUT_PAYMENT_LINKS_PATH?.trim() || '/api/payment-links';
-  const { status, data } = await revolutGet(path);
+  const { status, data } = await revolutMerchantGet(path);
 
   if (status >= 400) {
     throw new Error(`Payment links fetch failed (${status}): ${JSON.stringify(data)}`);
