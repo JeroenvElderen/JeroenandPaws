@@ -5,8 +5,6 @@ import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
 
 type InvoiceStatus = 'draft' | 'issued' | 'open' | 'pending' | 'paid' | 'completed' | 'overdue' | 'cancelled';
-type PaymentStatus = 'unpaid' | 'partially_paid' | 'active' | 'open' | 'completed' | 'paid' | 'failed' | string;
-
 type InvoiceRow = {
   id: string;
   invoice_number: string;
@@ -15,17 +13,6 @@ type InvoiceRow = {
   status: InvoiceStatus;
   due_date: string | null;
   issued_at: string;
-};
-
-type PaymentLinkRow = {
-  id: string;
-  invoice_id: string;
-  provider: string;
-  provider_reference: string | null;
-  url: string;
-  status: PaymentStatus;
-  expires_at: string | null;
-  created_at: string;
 };
 
 type ClientRow = {
@@ -66,7 +53,6 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
-  const [paymentLinks, setPaymentLinks] = useState<PaymentLinkRow[]>([]);
   const [merchantTransactions, setMerchantTransactions] = useState<MerchantTransactionRow[]>([]);
   const [merchantError, setMerchantError] = useState<string | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -113,17 +99,12 @@ export function AdminInvoicesScreen(): React.ReactElement {
       }
     }
 
-    const [invoiceResult, linksResult, clientResult, dogResult] = await Promise.all([
+    const [invoiceResult, clientResult, dogResult] = await Promise.all([
       supabase
         .from('invoices')
         .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at')
         .in('status', ['draft', 'issued', 'open', 'overdue', 'pending', 'paid', 'completed', 'cancelled'])
         .order('issued_at', { ascending: false }),
-      supabase
-        .from('payment_links')
-        .select('id, invoice_id, provider, provider_reference, url, status, expires_at, created_at')
-        .in('status', ['unpaid', 'partially_paid', 'active', 'open', 'pending'])
-        .order('created_at', { ascending: false }),
       supabase
         .from('clients')
         .select('id, full_name')
@@ -134,12 +115,10 @@ export function AdminInvoicesScreen(): React.ReactElement {
         .order('name', { ascending: true })
     ]);
     if (invoiceResult.error) throw new Error(invoiceResult.error.message);
-    if (linksResult.error) throw new Error(linksResult.error.message);
     if (clientResult.error) throw new Error(clientResult.error.message);
     if (dogResult.error) throw new Error(dogResult.error.message);
 
     setInvoices((invoiceResult.data ?? []) as InvoiceRow[]);
-    setPaymentLinks((linksResult.data ?? []) as PaymentLinkRow[]);
     setClients((clientResult.data ?? []) as ClientRow[]);
     setDogs((dogResult.data ?? []) as DogRow[]);
   }, []);
@@ -165,11 +144,6 @@ export function AdminInvoicesScreen(): React.ReactElement {
     () => invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
     [invoices, selectedInvoiceId]
   );
-
-  const selectedInvoiceLinks = useMemo(() => {
-    if (!selectedInvoice) return [];
-    return paymentLinks.filter((link) => link.invoice_id === selectedInvoice.id);
-  }, [paymentLinks, selectedInvoice]);
 
   const invoiceStatusGroup = (invoice: InvoiceRow): 'overdue' | 'pending' | 'completed' | 'cancelled' => {
     if (invoice.status === 'cancelled') return 'cancelled';
@@ -332,19 +306,6 @@ export function AdminInvoicesScreen(): React.ReactElement {
                 <Text style={styles.body}>Issued: {new Date(selectedInvoice.issued_at).toLocaleString('en-IE')}</Text>
                 <Text style={styles.body}>Due: {selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
                 <Text style={styles.body}>Invoice ID: {selectedInvoice.id}</Text>
-                <Text style={styles.detailsSubTitle}>Related payment links</Text>
-                {selectedInvoiceLinks.length === 0 ? (
-                  <Text style={styles.body}>No active payment links for this invoice.</Text>
-                ) : (
-                  selectedInvoiceLinks.map((link) => (
-                    <View key={link.id} style={styles.detailsRow}>
-                      <Text style={styles.rowTitle}>{link.provider.toUpperCase()} • {link.status.toUpperCase()}</Text>
-                      <Text style={styles.body}>Reference: {link.provider_reference ?? '—'}</Text>
-                      <Text style={styles.body}>Expires: {link.expires_at ? new Date(link.expires_at).toLocaleString('en-IE') : 'No expiry'}</Text>
-                      <Text style={styles.body}>URL: {link.url}</Text>
-                    </View>
-                  ))
-                )}
               </View>
             </View>
           ) : null}
@@ -458,8 +419,6 @@ const styles = StyleSheet.create({
   invoiceMetaLabel: { color: '#a79fc3', fontSize: 13 },
   invoiceMetaValue: { color: '#ece8ff', fontSize: 13, fontWeight: '600' },
   detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10 },
-  detailsSubTitle: { color: '#f4f2ff', fontWeight: '700', marginTop: 10, marginBottom: 6 },
-  detailsRow: { borderTopWidth: 1, borderTopColor: '#302451', marginTop: 8, paddingTop: 8 },
   revolutCard: { marginTop: 10, borderWidth: 1, borderColor: '#3e2d75', borderRadius: 20, padding: 14, backgroundColor: '#070822' },
   revolutHeader: { flexDirection: 'row', alignItems: 'center' },
   checkCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#4dd3a5', alignItems: 'center', justifyContent: 'center' },

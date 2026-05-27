@@ -15,6 +15,7 @@ const adminLinks = [
   { label: 'Bookings', route: 'Admin Bookings' },
   { label: 'Clients', route: 'Admin Clients' },
   { label: 'Invoices', route: 'Admin Invoices' },
+  { label: 'Payment Links', route: 'Admin Payment Links' },
   { label: 'Expenses', route: 'Admin Expenses' },
   { label: 'Receipts', route: 'Admin Receipts' },
   { label: 'Income', route: 'Admin Income Dashboard' }

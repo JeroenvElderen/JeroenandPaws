@@ -12,6 +12,7 @@ import { AdminDashboardScreen } from '@/screens/admin/AdminDashboard';
 import { AdminBookingsScreen } from '@/screens/admin/AdminBookings';
 import { AdminClientsScreen } from '@/screens/admin/AdminClients';
 import { AdminInvoicesScreen } from '@/screens/admin/AdminInvoices';
+import { AdminPaymentLinksScreen } from '@/screens/admin/AdminPaymentLinks';
 import { AdminExpensesScreen } from '@/screens/admin/AdminExpenses';
 import { AdminReceiptsScreen } from '@/screens/admin/AdminReceipts';
 import { AdminIncomeScreen } from '@/screens/admin/AdminIncome';
@@ -21,7 +22,7 @@ import { Text } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
-function UnsupportedRoleScreen({ role }: { role: string | null | undefined }): JSX.Element {
+function UnsupportedRoleScreen({ role }: { role: string | null | undefined }): React.ReactElement {
   return (
     <ScreenContainer title="Account setup needed">
       <Text style={{ color: '#c9c5d8', fontSize: 15, lineHeight: 22 }}>
@@ -34,7 +35,7 @@ function UnsupportedRoleScreen({ role }: { role: string | null | undefined }): J
   );
 }
 
-export function AppNavigator(): JSX.Element {
+export function AppNavigator(): React.ReactElement {
   const { profile } = useAuth();
 
   return (
@@ -57,6 +58,7 @@ export function AppNavigator(): JSX.Element {
             <Stack.Screen name="Admin Bookings" component={AdminBookingsScreen} />
             <Stack.Screen name="Admin Clients" component={AdminClientsScreen} />
             <Stack.Screen name="Admin Invoices" component={AdminInvoicesScreen} />
+            <Stack.Screen name="Admin Payment Links" component={AdminPaymentLinksScreen} />
             <Stack.Screen name="Admin Expenses" component={AdminExpensesScreen} />
             <Stack.Screen name="Admin Receipts" component={AdminReceiptsScreen} />
             <Stack.Screen name="Admin Income Dashboard" component={AdminIncomeScreen} />
