@@ -4,15 +4,22 @@ import { revolutMerchantGet } from '@/lib/revolut/proxy';
 
 export const runtime = 'nodejs';
 
+type RevolutCustomer = {
+  id?: string;
+  email?: string;
+  full_name?: string;
+};
+
 type ExternalInvoice = {
   id: string;
   number?: string;
   customer_name?: string;
-  customer?: string;
+  customer?: string | RevolutCustomer;
   total_amount?: number;
   amount?: number;
   currency?: string;
   status?: string;
+  state?: string;
   due_date?: string;
   created_at?: string;
   issued_at?: string;
@@ -28,11 +35,7 @@ type RevolutOrder = {
   amount?: number;
   currency?: string;
   description?: string;
-  customer?: {
-    id?: string;
-    email?: string;
-    full_name?: string;
-  };
+  customer?: RevolutCustomer;
   merchant_order_data?: {
     reference?: string;
   };
@@ -45,6 +48,13 @@ function toCents(amount?: number): number {
 
 function normalizeName(v: string): string {
   return v.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function getCustomerName(customer?: string | RevolutCustomer, fallback?: string): string | null {
+  if (fallback) return fallback;
+  if (typeof customer === 'string') return customer;
+  if (customer?.full_name) return customer.full_name;
+  return null;
 }
 
 function parsePaymentLinkTitle(title?: string): {
@@ -184,7 +194,7 @@ export async function POST(req: NextRequest) {
     const invoiceRows: Array<Record<string, unknown>> = [];
 
     for (const invoice of extInvoices) {
-      const customerName = invoice.customer_name ?? invoice.customer ?? null;
+      const customerName = getCustomerName(invoice.customer, invoice.customer_name);
       const amountCents = toCents(invoice.total_amount ?? invoice.amount);
       const currency = (invoice.currency ?? 'EUR').toUpperCase();
       const issuedAt = invoice.issued_at ?? invoice.created_at ?? null;
@@ -197,7 +207,7 @@ export async function POST(req: NextRequest) {
         client_id: clientId,
         amount_cents: amountCents,
         currency,
-        status: (invoice.status ?? 'issued').toLowerCase(),
+        status: (invoice.status ?? invoice.state ?? 'issued').toLowerCase(),
         due_date: invoice.due_date ?? null,
         issued_at: issuedAt
       });
@@ -282,7 +292,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
-
     return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }
