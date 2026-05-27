@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
@@ -13,6 +13,8 @@ type InvoiceRow = {
   status: InvoiceStatus;
   due_date: string | null;
   issued_at: string;
+  external_invoice_id?: string | null;
+  customer_name?: string | null;
 };
 
 type ClientRow = {
@@ -46,6 +48,14 @@ const money = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR
 
 function formatAmount(amountCents: number): string {
   return money.format(amountCents / 100);
+}
+
+function normalizeInvoiceStatus(status: string | null | undefined): 'overdue' | 'pending' | 'completed' | 'cancelled' {
+  const normalized = (status ?? '').trim().toLowerCase();
+  if (normalized === 'paid' || normalized === 'completed') return 'completed';
+  if (normalized === 'overdue') return 'overdue';
+  if (normalized === 'cancelled' || normalized === 'canceled') return 'cancelled';
+  return 'pending';
 }
 
 export function AdminInvoicesScreen(): React.ReactElement {
@@ -102,8 +112,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
     const [invoiceResult, clientResult, dogResult] = await Promise.all([
       supabase
         .from('invoices')
-        .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at')
-        .in('status', ['draft', 'issued', 'open', 'overdue', 'pending', 'paid', 'completed', 'cancelled'])
+        .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at, external_invoice_id, customer_name')
         .order('issued_at', { ascending: false }),
       supabase
         .from('clients')
@@ -118,7 +127,12 @@ export function AdminInvoicesScreen(): React.ReactElement {
     if (clientResult.error) throw new Error(clientResult.error.message);
     if (dogResult.error) throw new Error(dogResult.error.message);
 
-    setInvoices((invoiceResult.data ?? []) as InvoiceRow[]);
+    setInvoices(
+      ((invoiceResult.data ?? []) as InvoiceRow[]).map((invoice) => ({
+        ...invoice,
+        status: normalizeInvoiceStatus(invoice.status)
+      }))
+    );
     setClients((clientResult.data ?? []) as ClientRow[]);
     setDogs((dogResult.data ?? []) as DogRow[]);
   }, []);
@@ -146,10 +160,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
   );
 
   const invoiceStatusGroup = (invoice: InvoiceRow): 'overdue' | 'pending' | 'completed' | 'cancelled' => {
-    if (invoice.status === 'cancelled') return 'cancelled';
-    if (invoice.status === 'paid' || invoice.status === 'completed') return 'completed';
-    if (invoice.status === 'overdue') return 'overdue';
-    return 'pending';
+    return normalizeInvoiceStatus(invoice.status);
   };
 
   const isPaymentLinkInvoice = (invoice: InvoiceRow): boolean => {
@@ -252,6 +263,12 @@ export function AdminInvoicesScreen(): React.ReactElement {
     const descMatches = dogs.filter((dog) => desc.includes(lower(dog.name))).map((dog) => dog.name);
     return descMatches.length > 0 ? descMatches.join(', ') : '—';
   };
+  const selectedInvoiceClient = selectedInvoice
+    ? clients.find((client) => lower(client.full_name) === lower(selectedInvoice.customer_name))
+    : null;
+  const selectedInvoiceDogNames = selectedInvoiceClient
+    ? dogs.filter((dog) => dog.client_id === selectedInvoiceClient.id).map((dog) => dog.name).join(', ')
+    : '—';
 
   return (
     <ScreenContainer title="Admin Invoices">
@@ -311,19 +328,6 @@ export function AdminInvoicesScreen(): React.ReactElement {
               );
             })}
           </View>
-
-          {selectedInvoice ? (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Invoice details #{selectedInvoice.invoice_number}</Text>
-              <View style={styles.detailsCard}>
-                <Text style={styles.body}>Status: {selectedInvoice.status.toUpperCase()}</Text>
-                <Text style={styles.body}>Amount: {formatAmount(selectedInvoice.amount_cents)}</Text>
-                <Text style={styles.body}>Issued: {new Date(selectedInvoice.issued_at).toLocaleString('en-IE')}</Text>
-                <Text style={styles.body}>Due: {selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
-                <Text style={styles.body}>Invoice ID: {selectedInvoice.id}</Text>
-              </View>
-            </View>
-          ) : null}
 
           {invoices.length === 0 && merchantError ? (
             <View style={styles.errorCard}>
@@ -390,6 +394,50 @@ export function AdminInvoicesScreen(): React.ReactElement {
           ) : null}
         </>
       )}
+      <Modal visible={Boolean(selectedInvoice)} transparent animationType="slide" onRequestClose={() => setSelectedInvoiceId(null)}>
+        {selectedInvoice ? (
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Invoice Details</Text>
+                <Pressable onPress={() => setSelectedInvoiceId(null)} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseText}>Close</Text>
+                </Pressable>
+              </View>
+              <ScrollView>
+                <View style={styles.revolutCard}>
+                  <View style={styles.revolutHeader}>
+                    <View style={styles.checkCircle}><Text style={styles.checkMark}>{invoiceStatusGroup(selectedInvoice) === 'completed' ? '✓' : '⌛'}</Text></View>
+                    <Text style={styles.revolutStatusTitle}>{invoiceStatusGroup(selectedInvoice).toUpperCase()}</Text>
+                    <View style={[styles.statusPill, invoiceStatusGroup(selectedInvoice) === 'completed' ? styles.statusPillDone : styles.statusPillPending]}>
+                      <Text style={[styles.statusPillText, invoiceStatusGroup(selectedInvoice) === 'completed' ? styles.statusPillTextDone : styles.statusPillTextPending]}>
+                        {invoiceStatusGroup(selectedInvoice) === 'completed' ? 'Completed' : 'Pending'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.revolutInfoRow}>
+                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>👤</Text><View><Text style={styles.infoLabel}>Customer</Text><Text style={styles.infoValue}>{selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '—'}</Text></View></View>
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>🐾</Text><View><Text style={styles.infoLabel}>Dog(s)</Text><Text style={styles.infoValue}>{selectedInvoiceDogNames || '—'}</Text></View></View>
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>€</Text><View><Text style={styles.infoLabel}>Amount</Text><Text style={styles.infoValue}>{formatAmount(selectedInvoice.amount_cents)} {selectedInvoice.currency}</Text></View></View>
+                  </View>
+                </View>
+                <View style={styles.detailsCard}>
+                  <Text style={styles.body}>Invoice ID: {selectedInvoice.external_invoice_id ?? selectedInvoice.id}</Text>
+                  <Text style={styles.body}>Status: {invoiceStatusGroup(selectedInvoice).toUpperCase()}</Text>
+                  <Text style={styles.body}>Issue Date: {new Date(selectedInvoice.issued_at).toLocaleString('en-IE')}</Text>
+                  <Text style={styles.body}>Due Date: {selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleString('en-IE') : 'No due date'}</Text>
+                  <Text style={styles.body}>Currency: {selectedInvoice.currency}</Text>
+                  <Text style={styles.body}>Customer: {selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '—'}</Text>
+                  <Text style={styles.body}>Dogs: {selectedInvoiceDogNames || '—'}</Text>
+                  <Text style={styles.body}>Total: {formatAmount(selectedInvoice.amount_cents)} {selectedInvoice.currency}</Text>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        ) : null}
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -433,7 +481,13 @@ const styles = StyleSheet.create({
   invoiceMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 3 },
   invoiceMetaLabel: { color: '#a79fc3', fontSize: 13 },
   invoiceMetaValue: { color: '#ece8ff', fontSize: 13, fontWeight: '600' },
-  detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10 },
+  detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10, marginTop: 10 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(3,3,14,0.85)', justifyContent: 'center', padding: 16 },
+  modalCard: { maxHeight: '90%', borderRadius: 18, borderWidth: 1, borderColor: '#2f2550', backgroundColor: '#09061c', padding: 14 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  modalTitle: { color: '#f4f2ff', fontWeight: '800', fontSize: 28 },
+  modalCloseButton: { paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#5f49a1', borderRadius: 10 },
+  modalCloseText: { color: '#ece8ff', fontWeight: '700' },
   revolutCard: { marginTop: 10, borderWidth: 1, borderColor: '#3e2d75', borderRadius: 20, padding: 14, backgroundColor: '#070822' },
   revolutHeader: { flexDirection: 'row', alignItems: 'center' },
   checkCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#4dd3a5', alignItems: 'center', justifyContent: 'center' },
