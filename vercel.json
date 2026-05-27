@@ -1,5 +1,16 @@
 {
   "framework": "nextjs",
+  "functions": {
+    "mobile-app/vercel-functions/*.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/sync-revolut-invoices",
+      "destination": "/mobile-app/vercel-functions/sync-revolut-invoices"
+    }
+  ],
   "crons": [
     {
       "path": "/api/outlook-sync-runner",

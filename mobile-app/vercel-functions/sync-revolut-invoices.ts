@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { revolutMerchantGet } from '../../lib/revolut/proxy';
 
 type ExternalInvoice = {
@@ -87,15 +88,24 @@ async function resolveClientIdByName(supabase: SupabaseClient, customerName: str
   return null;
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') return new Response(JSON.stringify({ ok: false, message: 'Method not allowed' }), { status: 405 });
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  if (req.method !== 'POST') {
+    res.status(405).json({ ok: false, message: 'Method not allowed' });
+    return;
+  }
 
-  const auth = req.headers.get('authorization') ?? '';
-  if (auth !== `Bearer ${process.env.REVOLUT_SYNC_SECRET}`) return new Response(JSON.stringify({ ok: false, message: 'Unauthorized' }), { status: 401 });
+  const authHeader = req.headers.authorization ?? '';
+  if (authHeader !== `Bearer ${process.env.REVOLUT_SYNC_SECRET}`) {
+    res.status(401).json({ ok: false, message: 'Unauthorized' });
+    return;
+  }
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceKey) return new Response(JSON.stringify({ ok: false, message: 'Missing supabase env' }), { status: 500 });
+  if (!supabaseUrl || !serviceKey) {
+    res.status(500).json({ ok: false, message: 'Missing supabase env' });
+    return;
+  }
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
@@ -167,9 +177,11 @@ export default async function handler(req: Request): Promise<Response> {
       if (error) throw new Error(`Payment links upsert failed: ${error.message}`);
     }
 
-    return new Response(JSON.stringify({ ok: true, invoicesImported: invoiceRows.length, paymentLinksImported: paymentRows.length }), { status: 200 });
+    res.status(200).json({ ok: true, invoicesImported: invoiceRows.length, paymentLinksImported: paymentRows.length });
+    return;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
-    return new Response(JSON.stringify({ ok: false, message }), { status: 500 });
+    res.status(500).json({ ok: false, message });
+    return;
   }
 }
