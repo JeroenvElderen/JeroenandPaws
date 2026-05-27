@@ -4,7 +4,7 @@ import { ScreenContainer } from '@/components/ScreenContainer';
 import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
 
-type InvoiceStatus = 'draft' | 'issued' | 'open' | 'paid' | 'overdue' | 'cancelled';
+type InvoiceStatus = 'draft' | 'issued' | 'open' | 'pending' | 'paid' | 'completed' | 'overdue' | 'cancelled';
 type PaymentStatus = 'unpaid' | 'partially_paid' | 'active' | 'open' | 'completed' | 'paid' | 'failed' | string;
 
 type InvoiceRow = {
@@ -72,6 +72,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [dogs, setDogs] = useState<DogRow[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'pending' | 'completed' | 'cancelled'>('all');
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -116,7 +117,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
       supabase
         .from('invoices')
         .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at')
-        .in('status', ['draft', 'issued', 'open', 'overdue', 'pending'])
+        .in('status', ['draft', 'issued', 'open', 'overdue', 'pending', 'paid', 'completed', 'cancelled'])
         .order('issued_at', { ascending: false }),
       supabase
         .from('payment_links')
@@ -160,12 +161,6 @@ export function AdminInvoicesScreen(): React.ReactElement {
     };
   }, [fetchData]);
 
-  const linkCountByInvoice = useMemo(() => {
-    const map = new Map<string, number>();
-    paymentLinks.forEach((link) => map.set(link.invoice_id, (map.get(link.invoice_id) ?? 0) + 1));
-    return map;
-  }, [paymentLinks]);
-
   const selectedInvoice = useMemo(
     () => invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
     [invoices, selectedInvoiceId]
@@ -176,15 +171,46 @@ export function AdminInvoicesScreen(): React.ReactElement {
     return paymentLinks.filter((link) => link.invoice_id === selectedInvoice.id);
   }, [paymentLinks, selectedInvoice]);
 
+  const invoiceStatusGroup = (invoice: InvoiceRow): 'overdue' | 'pending' | 'completed' | 'cancelled' => {
+    if (invoice.status === 'cancelled') return 'cancelled';
+    if (invoice.status === 'paid' || invoice.status === 'completed') return 'completed';
+    if (invoice.status === 'overdue') return 'overdue';
+    return 'pending';
+  };
+
+  const sortedInvoices = useMemo(() => {
+    const orderRank: Record<'overdue' | 'pending' | 'completed' | 'cancelled', number> = {
+      overdue: 0,
+      pending: 1,
+      completed: 2,
+      cancelled: 3
+    };
+    return [...invoices].sort((a, b) => {
+      const rankDelta = orderRank[invoiceStatusGroup(a)] - orderRank[invoiceStatusGroup(b)];
+      if (rankDelta !== 0) return rankDelta;
+      return new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime();
+    });
+  }, [invoices]);
+
+  const filteredInvoices = useMemo(() => {
+    if (statusFilter === 'all') return sortedInvoices;
+    return sortedInvoices.filter((invoice) => invoiceStatusGroup(invoice) === statusFilter);
+  }, [sortedInvoices, statusFilter]);
+
   const totals = useMemo(() => {
-    const pendingInvoiceCents = invoices.reduce((sum, invoice) => sum + invoice.amount_cents, 0);
+    const dueToBePaidCents = invoices
+      .filter((invoice) => {
+        const group = invoiceStatusGroup(invoice);
+        return group === 'overdue' || group === 'pending';
+      })
+      .reduce((sum, invoice) => sum + invoice.amount_cents, 0);
     const now = new Date();
     const overdueCount = invoices.filter((invoice) => {
       if (invoice.status === 'overdue') return true;
       if (!invoice.due_date) return false;
       return new Date(invoice.due_date) < now;
     }).length;
-    return { pendingInvoiceCents, overdueCount };
+    return { dueToBePaidCents, overdueCount };
   }, [invoices]);
 
   const onRefresh = async () => {
@@ -239,15 +265,12 @@ export function AdminInvoicesScreen(): React.ReactElement {
   };
 
   return (
-    <ScreenContainer title="Admin Invoices & Pending Payments">
+    <ScreenContainer title="Admin Invoices">
       <View style={styles.summaryCard}>
-        <Text style={styles.heading}>Pending payment overview</Text>
-        <Text style={styles.body}>Unpaid invoices and active payment links are shown below.</Text>
-        <Text style={styles.metric}>Open invoices: {invoices.length}</Text>
-        <Text style={styles.metric}>Open payment links: {paymentLinks.length}</Text>
-        <Text style={styles.metric}>Merchant tx fallback: {merchantTransactions.length}</Text>
-        <Text style={styles.metric}>Pending amount: {formatAmount(totals.pendingInvoiceCents)}</Text>
-        <Text style={styles.metric}>Overdue invoices: {totals.overdueCount}</Text>
+        <Text style={styles.heading}>Total due to be paid</Text>
+        <Text style={styles.body}>Includes overdue + sent (pending) invoices.</Text>
+        <Text style={styles.metric}>{formatAmount(totals.dueToBePaidCents)}</Text>
+        <Text style={styles.metricSmall}>Overdue invoices: {totals.overdueCount}</Text>
         <Pressable onPress={onRefresh} style={styles.refreshButton}>
           <Text style={styles.refreshText}>{refreshing ? 'Refreshing…' : 'Refresh'}</Text>
         </Pressable>
@@ -260,23 +283,40 @@ export function AdminInvoicesScreen(): React.ReactElement {
       ) : (
         <>
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Invoices sent but not paid</Text>
-            {invoices.length === 0 ? <Text style={styles.body}>No pending invoices right now.</Text> : invoices.map((invoice) => {
+            <Text style={styles.sectionTitle}>Invoices</Text>
+            <View style={styles.filterRow}>
+              {[
+                { key: 'overdue', label: 'Overdue' },
+                { key: 'pending', label: 'Pending' },
+                { key: 'completed', label: 'Completed' },
+                { key: 'cancelled', label: 'Cancelled' }
+              ].map((filter) => (
+                <Pressable
+                  key={filter.key}
+                  onPress={() => setStatusFilter(filter.key as 'overdue' | 'pending' | 'completed' | 'cancelled')}
+                  style={[styles.filterChip, statusFilter === filter.key ? styles.filterChipActive : null]}
+                >
+                  <Text style={[styles.filterChipText, statusFilter === filter.key ? styles.filterChipTextActive : null]}>{filter.label}</Text>
+                </Pressable>
+              ))}
+              <Pressable onPress={() => setStatusFilter('all')} style={[styles.filterChip, statusFilter === 'all' ? styles.filterChipActive : null]}>
+                <Text style={[styles.filterChipText, statusFilter === 'all' ? styles.filterChipTextActive : null]}>All</Text>
+              </Pressable>
+            </View>
+            {filteredInvoices.length === 0 ? <Text style={styles.body}>No invoices in this filter.</Text> : filteredInvoices.map((invoice) => {
               const isSelected = selectedInvoiceId === invoice.id;
+              const group = invoiceStatusGroup(invoice);
+              const label = group === 'pending' ? 'SENT (PENDING)' : group.toUpperCase();
               return (
                 <Pressable key={invoice.id} onPress={() => setSelectedInvoiceId(invoice.id)} style={[styles.invoiceCard, isSelected ? styles.invoiceCardActive : null]}>
                   <View style={styles.invoiceCardTop}>
                     <Text style={styles.invoiceNumber}>#{invoice.invoice_number}</Text>
-                    <Text style={styles.invoiceStatus}>{invoice.status.toUpperCase()}</Text>
+                    <Text style={styles.invoiceStatus}>{label}</Text>
                   </View>
                   <Text style={styles.invoiceAmount}>{formatAmount(invoice.amount_cents)}</Text>
                   <View style={styles.invoiceMetaRow}>
                     <Text style={styles.invoiceMetaLabel}>Due</Text>
                     <Text style={styles.invoiceMetaValue}>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
-                  </View>
-                  <View style={styles.invoiceMetaRow}>
-                    <Text style={styles.invoiceMetaLabel}>Open links</Text>
-                    <Text style={styles.invoiceMetaValue}>{linkCountByInvoice.get(invoice.id) ?? 0}</Text>
                   </View>
                 </Pressable>
               );
@@ -308,18 +348,6 @@ export function AdminInvoicesScreen(): React.ReactElement {
               </View>
             </View>
           ) : null}
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Payment links not paid yet</Text>
-            {paymentLinks.length === 0 ? <Text style={styles.body}>No pending payment links right now.</Text> : paymentLinks.map((link) => (
-              <View key={link.id} style={styles.row}>
-                <Text style={styles.rowTitle}>{link.provider.toUpperCase()} • {link.status.toUpperCase()}</Text>
-                <Text style={styles.body}>Invoice ID: {link.invoice_id}</Text>
-                <Text style={styles.body}>Reference: {link.provider_reference ?? '—'}</Text>
-                <Text style={styles.body}>Expires: {link.expires_at ? new Date(link.expires_at).toLocaleString('en-IE') : 'No expiry'}</Text>
-              </View>
-            ))}
-          </View>
 
           {invoices.length === 0 && merchantError ? (
             <View style={styles.errorCard}>
@@ -395,6 +423,7 @@ const styles = StyleSheet.create({
   heading: { color: '#f4f2ff', fontWeight: '700', fontSize: 18, marginBottom: 6 },
   body: { color: '#c9c5d8', fontSize: 14, lineHeight: 20 },
   metric: { color: '#f4f2ff', fontSize: 14, marginTop: 6 },
+  metricSmall: { color: '#c9c5d8', fontSize: 13, marginTop: 6 },
   refreshButton: { marginTop: 10, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: '#7c45f3' },
   refreshText: { color: '#f4f2ff', fontWeight: '600' },
   centered: { gap: 10, alignItems: 'center', paddingVertical: 20 },
@@ -402,6 +431,11 @@ const styles = StyleSheet.create({
   errorTitle: { color: '#ffd3e2', fontWeight: '700', marginBottom: 6 },
   sectionCard: { borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#302451', backgroundColor: '#120d23' },
   sectionTitle: { color: '#f4f2ff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
+  filterChip: { borderRadius: 999, borderWidth: 1, borderColor: '#4a3a74', paddingVertical: 6, paddingHorizontal: 10 },
+  filterChipActive: { backgroundColor: '#7c45f3', borderColor: '#7c45f3' },
+  filterChipText: { color: '#cec7eb', fontWeight: '600', fontSize: 12 },
+  filterChipTextActive: { color: '#ffffff' },
   row: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 8, marginTop: 8 },
   rowTitle: { color: '#f4f2ff', fontWeight: '600', marginBottom: 4 },
   invoiceCard: {
