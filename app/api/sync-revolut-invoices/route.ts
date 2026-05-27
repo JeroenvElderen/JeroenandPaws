@@ -18,19 +18,29 @@ type ExternalInvoice = {
   issued_at?: string;
 };
 
-type ExternalPaymentLink = {
+type RevolutOrder = {
   id: string;
-  title?: string;
+  token?: string;
+  type?: string;
+  state?: string;
+  created_at?: string;
+  updated_at?: string;
   amount?: number;
   currency?: string;
-  status?: string;
-  created_at?: string;
-  url?: string;
+  description?: string;
+  customer?: {
+    id?: string;
+    email?: string;
+    full_name?: string;
+  };
+  merchant_order_data?: {
+    reference?: string;
+  };
 };
 
 function toCents(amount?: number): number {
   if (typeof amount !== 'number' || Number.isNaN(amount)) return 0;
-  return Math.round(amount * 100);
+  return Math.round(amount);
 }
 
 function normalizeName(v: string): string {
@@ -68,13 +78,18 @@ function parsePaymentLinkTitle(title?: string): {
 
 function statusesMatch(invoiceStatus: string | null, linkStatus: string | null): boolean {
   if (!invoiceStatus || !linkStatus) return true;
-  if (invoiceStatus === 'paid' && linkStatus === 'paid') return true;
-  if (invoiceStatus !== 'paid' && linkStatus !== 'paid') return true;
+
+  const invoicePaid = invoiceStatus === 'paid' || invoiceStatus === 'completed';
+  const linkPaid = linkStatus === 'paid' || linkStatus === 'completed';
+
+  if (invoicePaid && linkPaid) return true;
+  if (!invoicePaid && !linkPaid) return true;
+
   return false;
 }
 
 async function loadInvoices(): Promise<ExternalInvoice[]> {
-  const path = process.env.REVOLUT_INVOICES_PATH?.trim() || '/api/invoices';
+  const path = process.env.REVOLUT_INVOICES_PATH?.trim() || '/api/orders';
   const { status, data } = await revolutMerchantGet(path);
 
   if (status >= 400) {
@@ -87,21 +102,29 @@ async function loadInvoices(): Promise<ExternalInvoice[]> {
     return (data as { invoices: ExternalInvoice[] }).invoices;
   }
 
+  if (Array.isArray((data as { orders?: unknown[] })?.orders)) {
+    return (data as { orders: ExternalInvoice[] }).orders;
+  }
+
   return [];
 }
 
-async function loadPaymentLinks(): Promise<ExternalPaymentLink[]> {
-  const path = process.env.REVOLUT_PAYMENT_LINKS_PATH?.trim() || '/api/payment-links';
+async function loadPaymentLinks(): Promise<RevolutOrder[]> {
+  const path = process.env.REVOLUT_PAYMENT_LINKS_PATH?.trim() || '/api/orders';
   const { status, data } = await revolutMerchantGet(path);
 
   if (status >= 400) {
     throw new Error(`Payment links fetch failed (${status}): ${JSON.stringify(data)}`);
   }
 
-  if (Array.isArray(data)) return data as ExternalPaymentLink[];
+  if (Array.isArray(data)) return data as RevolutOrder[];
+
+  if (Array.isArray((data as { orders?: unknown[] })?.orders)) {
+    return (data as { orders: RevolutOrder[] }).orders;
+  }
 
   if (Array.isArray((data as { payment_links?: unknown[] })?.payment_links)) {
-    return (data as { payment_links: ExternalPaymentLink[] }).payment_links;
+    return (data as { payment_links: RevolutOrder[] }).payment_links;
   }
 
   return [];
@@ -140,20 +163,14 @@ export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization') ?? '';
 
   if (authHeader !== `Bearer ${process.env.REVOLUT_SYNC_SECRET}`) {
-    return NextResponse.json(
-      { ok: false, message: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    return NextResponse.json(
-      { ok: false, message: 'Missing supabase env' },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message: 'Missing supabase env' }, { status: 500 });
   }
 
   const supabase = createClient(supabaseUrl, serviceKey);
@@ -191,9 +208,7 @@ export async function POST(req: NextRequest) {
         .from('invoices')
         .upsert(invoiceRows, { onConflict: 'external_invoice_id' });
 
-      if (error) {
-        throw new Error(`Invoices upsert failed: ${error.message}`);
-      }
+      if (error) throw new Error(`Invoices upsert failed: ${error.message}`);
     }
 
     const { data: dbInvoices, error: dbErr } = await supabase
@@ -205,9 +220,9 @@ export async function POST(req: NextRequest) {
     const paymentRows: Array<Record<string, unknown>> = [];
 
     for (const link of extLinks) {
-      const parsed = parsePaymentLinkTitle(link.title);
+      const parsed = parsePaymentLinkTitle(link.description);
       const linkAmountCents = toCents(link.amount);
-      const linkStatus = (link.status ?? 'unpaid').toLowerCase();
+      const linkStatus = (link.state ?? 'pending').toLowerCase();
       const createdAt = link.created_at ?? null;
 
       const candidates = (dbInvoices ?? [])
@@ -236,12 +251,12 @@ export async function POST(req: NextRequest) {
         invoice_id: matched?.id ?? null,
         provider: 'revolut',
         provider_reference: link.id,
-        url: link.url ?? '',
+        url: link.token ? `https://checkout.revolut.com/payment-link/${link.token}` : '',
         status: linkStatus,
         created_at: createdAt,
         amount_cents: linkAmountCents,
         currency: (link.currency ?? 'EUR').toUpperCase(),
-        title: link.title ?? null,
+        title: link.description ?? null,
         dog_names: parsed.dog_names,
         service_type: parsed.service_type,
         duration_minutes: parsed.duration_minutes,
@@ -257,9 +272,7 @@ export async function POST(req: NextRequest) {
         .from('payment_links')
         .upsert(paymentRows, { onConflict: 'provider_reference' });
 
-      if (error) {
-        throw new Error(`Payment links upsert failed: ${error.message}`);
-      }
+      if (error) throw new Error(`Payment links upsert failed: ${error.message}`);
     }
 
     return NextResponse.json({
@@ -270,9 +283,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
 
-    return NextResponse.json(
-      { ok: false, message },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }
