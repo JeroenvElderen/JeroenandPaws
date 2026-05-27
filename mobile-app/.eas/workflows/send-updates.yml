@@ -1,0 +1,11 @@
+on:
+  push:
+    branches: [main]
+
+jobs:
+  send_updates:
+    name: Publish OTA update to production
+    type: update
+    params:
+      channel: production
+      message: "Automatic update from main"
