@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { revolutMerchantGet } from '../../lib/revolut/proxy';
+import { NextResponse, type NextRequest } from 'next/server';
+import { revolutMerchantGet } from '@/lib/revolut/proxy';
 
 type ExternalInvoice = {
   id: string;
@@ -24,13 +25,6 @@ type ExternalPaymentLink = {
   created_at?: string;
   url?: string;
 };
-
-function jsonResponse(status: number, body: Record<string, unknown>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' }
-  });
-}
 
 function toCents(amount?: number): number {
   if (typeof amount !== 'number' || Number.isNaN(amount)) return 0;
@@ -94,20 +88,16 @@ async function resolveClientIdByName(supabase: SupabaseClient, customerName: str
   return null;
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') {
-    return jsonResponse(405, { ok: false, message: 'Method not allowed' });
-  }
-
+export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization') ?? '';
   if (authHeader !== `Bearer ${process.env.REVOLUT_SYNC_SECRET}`) {
-    return jsonResponse(401, { ok: false, message: 'Unauthorized' });
+    return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) {
-    return jsonResponse(500, { ok: false, message: 'Missing supabase env' });
+    return NextResponse.json({ ok: false, message: 'Missing supabase env' }, { status: 500 });
   }
   const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -142,6 +132,7 @@ export default async function handler(req: Request): Promise<Response> {
 
     const { data: dbInvoices, error: dbErr } = await supabase.from('invoices').select('id, external_invoice_id, amount_cents, issued_at, status');
     if (dbErr) throw new Error(dbErr.message);
+
     const paymentRows = [] as Array<Record<string, unknown>>;
     for (const link of extLinks) {
       const parsed = parsePaymentLinkTitle(link.title);
@@ -179,9 +170,9 @@ export default async function handler(req: Request): Promise<Response> {
       if (error) throw new Error(`Payment links upsert failed: ${error.message}`);
     }
 
-    return jsonResponse(200, { ok: true, invoicesImported: invoiceRows.length, paymentLinksImported: paymentRows.length });
+    return NextResponse.json({ ok: true, invoicesImported: invoiceRows.length, paymentLinksImported: paymentRows.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
-    return jsonResponse(500, { ok: false, message });
+    return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }
