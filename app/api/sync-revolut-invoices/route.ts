@@ -2,6 +2,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { revolutMerchantGet } from '@/lib/revolut/proxy';
 
+export const runtime = 'nodejs';
+
 type ExternalInvoice = {
   id: string;
   number?: string;
