@@ -1,10 +1,5 @@
 {
   "framework": "nextjs",
-  "functions": {
-    "mobile-app/vercel-functions/*.ts": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/sync-revolut-invoices",
