@@ -54,6 +54,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const [paymentLinks, setPaymentLinks] = useState<PaymentLinkRow[]>([]);
   const [merchantTransactions, setMerchantTransactions] = useState<MerchantTransactionRow[]>([]);
   const [merchantError, setMerchantError] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -146,6 +147,16 @@ export function AdminInvoicesScreen(): React.ReactElement {
     return map;
   }, [paymentLinks]);
 
+  const selectedInvoice = useMemo(
+    () => invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
+    [invoices, selectedInvoiceId]
+  );
+
+  const selectedInvoiceLinks = useMemo(() => {
+    if (!selectedInvoice) return [];
+    return paymentLinks.filter((link) => link.invoice_id === selectedInvoice.id);
+  }, [paymentLinks, selectedInvoice]);
+
   const totals = useMemo(() => {
     const pendingInvoiceCents = invoices.reduce((sum, invoice) => sum + invoice.amount_cents, 0);
     const now = new Date();
@@ -191,16 +202,53 @@ export function AdminInvoicesScreen(): React.ReactElement {
         <>
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Invoices sent but not paid</Text>
-            {invoices.length === 0 ? <Text style={styles.body}>No pending invoices right now.</Text> : invoices.map((invoice) => (
-              <View key={invoice.id} style={styles.row}>
-                <Text style={styles.rowTitle}>#{invoice.invoice_number} • {invoice.status.toUpperCase()}</Text>
-                <Text style={styles.body}>Amount: {formatAmount(invoice.amount_cents)}</Text>
-                <Text style={styles.body}>Issued: {new Date(invoice.issued_at).toLocaleDateString('en-IE')}</Text>
-                <Text style={styles.body}>Due: {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
-                <Text style={styles.body}>Open links: {linkCountByInvoice.get(invoice.id) ?? 0}</Text>
-              </View>
-            ))}
+            {invoices.length === 0 ? <Text style={styles.body}>No pending invoices right now.</Text> : invoices.map((invoice) => {
+              const isSelected = selectedInvoiceId === invoice.id;
+              return (
+                <Pressable key={invoice.id} onPress={() => setSelectedInvoiceId(invoice.id)} style={[styles.invoiceCard, isSelected ? styles.invoiceCardActive : null]}>
+                  <View style={styles.invoiceCardTop}>
+                    <Text style={styles.invoiceNumber}>#{invoice.invoice_number}</Text>
+                    <Text style={styles.invoiceStatus}>{invoice.status.toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.invoiceAmount}>{formatAmount(invoice.amount_cents)}</Text>
+                  <View style={styles.invoiceMetaRow}>
+                    <Text style={styles.invoiceMetaLabel}>Due</Text>
+                    <Text style={styles.invoiceMetaValue}>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
+                  </View>
+                  <View style={styles.invoiceMetaRow}>
+                    <Text style={styles.invoiceMetaLabel}>Open links</Text>
+                    <Text style={styles.invoiceMetaValue}>{linkCountByInvoice.get(invoice.id) ?? 0}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
+
+          {selectedInvoice ? (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Invoice details #{selectedInvoice.invoice_number}</Text>
+              <View style={styles.detailsCard}>
+                <Text style={styles.body}>Status: {selectedInvoice.status.toUpperCase()}</Text>
+                <Text style={styles.body}>Amount: {formatAmount(selectedInvoice.amount_cents)}</Text>
+                <Text style={styles.body}>Issued: {new Date(selectedInvoice.issued_at).toLocaleString('en-IE')}</Text>
+                <Text style={styles.body}>Due: {selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
+                <Text style={styles.body}>Invoice ID: {selectedInvoice.id}</Text>
+                <Text style={styles.detailsSubTitle}>Related payment links</Text>
+                {selectedInvoiceLinks.length === 0 ? (
+                  <Text style={styles.body}>No active payment links for this invoice.</Text>
+                ) : (
+                  selectedInvoiceLinks.map((link) => (
+                    <View key={link.id} style={styles.detailsRow}>
+                      <Text style={styles.rowTitle}>{link.provider.toUpperCase()} • {link.status.toUpperCase()}</Text>
+                      <Text style={styles.body}>Reference: {link.provider_reference ?? '—'}</Text>
+                      <Text style={styles.body}>Expires: {link.expires_at ? new Date(link.expires_at).toLocaleString('en-IE') : 'No expiry'}</Text>
+                      <Text style={styles.body}>URL: {link.url}</Text>
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Payment links not paid yet</Text>
@@ -254,5 +302,27 @@ const styles = StyleSheet.create({
   sectionCard: { borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#302451', backgroundColor: '#120d23' },
   sectionTitle: { color: '#f4f2ff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
   row: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 8, marginTop: 8 },
-  rowTitle: { color: '#f4f2ff', fontWeight: '600', marginBottom: 4 }
+  rowTitle: { color: '#f4f2ff', fontWeight: '600', marginBottom: 4 },
+  invoiceCard: {
+    backgroundColor: '#17112b',
+    borderWidth: 1,
+    borderColor: '#2f2550',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10
+  },
+  invoiceCardActive: {
+    borderColor: '#7c45f3',
+    backgroundColor: '#20163b'
+  },
+  invoiceCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  invoiceNumber: { color: '#f4f2ff', fontWeight: '700', fontSize: 15 },
+  invoiceStatus: { color: '#cfc6ff', fontSize: 12, fontWeight: '700' },
+  invoiceAmount: { color: '#ffffff', fontWeight: '700', fontSize: 24, marginTop: 6, marginBottom: 8 },
+  invoiceMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 3 },
+  invoiceMetaLabel: { color: '#a79fc3', fontSize: 13 },
+  invoiceMetaValue: { color: '#ece8ff', fontSize: 13, fontWeight: '600' },
+  detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10 },
+  detailsSubTitle: { color: '#f4f2ff', fontWeight: '700', marginTop: 10, marginBottom: 6 },
+  detailsRow: { borderTopWidth: 1, borderTopColor: '#302451', marginTop: 8, paddingTop: 8 }
 });
