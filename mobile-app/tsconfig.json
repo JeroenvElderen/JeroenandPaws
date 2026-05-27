@@ -12,5 +12,5 @@
   "include": [
     "**/*.ts",
     "**/*.tsx"
-  ]
+, "../pages/api/sync-revolut-invoices.ts"  ]
 }
