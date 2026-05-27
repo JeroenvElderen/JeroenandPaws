@@ -65,7 +65,8 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [merchantTransactions, setMerchantTransactions] = useState<MerchantTransactionRow[]>([]);
   const [merchantError, setMerchantError] = useState<string | null>(null);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<MerchantTransactionRow | null>(null);
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [dogs, setDogs] = useState<DogRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'pending' | 'completed' | 'cancelled'>('all');
@@ -154,13 +155,13 @@ export function AdminInvoicesScreen(): React.ReactElement {
     };
   }, [fetchData]);
 
-  const selectedInvoice = useMemo(
-    () => invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
-    [invoices, selectedInvoiceId]
-  );
-
   const invoiceStatusGroup = (invoice: InvoiceRow): 'overdue' | 'pending' | 'completed' | 'cancelled' => {
-    return normalizeInvoiceStatus(invoice.status);
+    const normalized = normalizeInvoiceStatus(invoice.status);
+    if (normalized !== 'pending') return normalized;
+    if (!invoice.due_date) return normalized;
+    const dueAt = new Date(invoice.due_date).getTime();
+    if (Number.isNaN(dueAt)) return normalized;
+    return dueAt < Date.now() ? 'overdue' : 'pending';
   };
 
   const isPaymentLinkInvoice = (invoice: InvoiceRow): boolean => {
@@ -269,6 +270,8 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const selectedInvoiceDogNames = selectedInvoiceClient
     ? dogs.filter((dog) => dog.client_id === selectedInvoiceClient.id).map((dog) => dog.name).join(', ')
     : '—';
+  const selectedTransactionCustomerName = selectedTransaction ? findCustomerName(selectedTransaction) : '—';
+  const selectedTransactionDogNames = selectedTransaction ? findDogNames(selectedTransaction, selectedTransactionCustomerName) : '—';
 
   return (
     <ScreenContainer title="Admin Invoices">
@@ -310,11 +313,11 @@ export function AdminInvoicesScreen(): React.ReactElement {
               </Pressable>
             </View>
             {filteredInvoices.length === 0 ? <Text style={styles.body}>No invoices in this filter.</Text> : filteredInvoices.map((invoice) => {
-              const isSelected = selectedInvoiceId === invoice.id;
+              const isSelected = String(selectedInvoice?.id ?? '') === String(invoice.id);
               const group = invoiceStatusGroup(invoice);
               const label = group === 'pending' ? 'SENT (PENDING)' : group.toUpperCase();
               return (
-                <Pressable key={invoice.id} onPress={() => setSelectedInvoiceId(invoice.id)} style={[styles.invoiceCard, isSelected ? styles.invoiceCardActive : null]}>
+                <Pressable key={invoice.id} onPress={() => setSelectedInvoice(invoice)} style={[styles.invoiceCard, isSelected ? styles.invoiceCardActive : null]}>
                   <View style={styles.invoiceCardTop}>
                     <Text style={styles.invoiceNumber}>#{invoice.invoice_number}</Text>
                     <Text style={styles.invoiceStatus}>{label}</Text>
@@ -346,7 +349,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
                 const customerName = findCustomerName(tx);
                 const dogNames = findDogNames(tx, customerName);
                 return (
-                  <View key={tx.id} style={styles.revolutCard}>
+                  <Pressable key={tx.id} style={styles.revolutCard} onPress={() => setSelectedTransaction(tx)}>
                     <View style={styles.revolutHeader}>
                       <View style={styles.checkCircle}>
                         <Text style={styles.checkMark}>{completed ? '✓' : '⌛'}</Text>
@@ -372,7 +375,7 @@ export function AdminInvoicesScreen(): React.ReactElement {
                         <View><Text style={styles.infoLabel}>Amount</Text><Text style={styles.infoValue}>{typeof tx.amount === 'number' ? money.format(tx.amount / 100) : '—'} {tx.currency ?? 'EUR'}</Text></View>
                       </View>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>
@@ -394,13 +397,13 @@ export function AdminInvoicesScreen(): React.ReactElement {
           ) : null}
         </>
       )}
-      <Modal visible={Boolean(selectedInvoice)} transparent animationType="slide" onRequestClose={() => setSelectedInvoiceId(null)}>
+      <Modal visible={Boolean(selectedInvoice)} transparent animationType="slide" onRequestClose={() => setSelectedInvoice(null)}>
         {selectedInvoice ? (
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Invoice Details</Text>
-                <Pressable onPress={() => setSelectedInvoiceId(null)} style={styles.modalCloseButton}>
+                <Pressable onPress={() => setSelectedInvoice(null)} style={styles.modalCloseButton}>
                   <Text style={styles.modalCloseText}>Close</Text>
                 </Pressable>
               </View>
@@ -432,6 +435,50 @@ export function AdminInvoicesScreen(): React.ReactElement {
                   <Text style={styles.body}>Customer: {selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '—'}</Text>
                   <Text style={styles.body}>Dogs: {selectedInvoiceDogNames || '—'}</Text>
                   <Text style={styles.body}>Total: {formatAmount(selectedInvoice.amount_cents)} {selectedInvoice.currency}</Text>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        ) : null}
+      </Modal>
+      <Modal visible={Boolean(selectedTransaction)} transparent animationType="slide" onRequestClose={() => setSelectedTransaction(null)}>
+        {selectedTransaction ? (
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Invoice Details</Text>
+                <Pressable onPress={() => setSelectedTransaction(null)} style={styles.modalCloseButton}>
+                  <Text style={styles.modalCloseText}>Close</Text>
+                </Pressable>
+              </View>
+              <ScrollView>
+                <View style={styles.revolutCard}>
+                  <View style={styles.revolutHeader}>
+                    <View style={styles.checkCircle}><Text style={styles.checkMark}>{(selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? '✓' : '⌛'}</Text></View>
+                    <Text style={styles.revolutStatusTitle}>{((selectedTransaction.state ?? selectedTransaction.status ?? 'unknown').toUpperCase())}</Text>
+                    <View style={[styles.statusPill, (selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? styles.statusPillDone : styles.statusPillPending]}>
+                      <Text style={[styles.statusPillText, (selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? styles.statusPillTextDone : styles.statusPillTextPending]}>
+                        {(selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? 'Completed' : 'Pending'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.revolutInfoRow}>
+                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>👤</Text><View><Text style={styles.infoLabel}>Customer</Text><Text style={styles.infoValue}>{selectedTransactionCustomerName}</Text></View></View>
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>🐾</Text><View><Text style={styles.infoLabel}>Dog(s)</Text><Text style={styles.infoValue}>{selectedTransactionDogNames}</Text></View></View>
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>€</Text><View><Text style={styles.infoLabel}>Amount</Text><Text style={styles.infoValue}>{typeof selectedTransaction.amount === 'number' ? money.format(selectedTransaction.amount / 100) : '—'} {selectedTransaction.currency ?? 'EUR'}</Text></View></View>
+                  </View>
+                </View>
+                <View style={styles.detailsCard}>
+                  <Text style={styles.body}>Status: {(selectedTransaction.state ?? selectedTransaction.status ?? 'unknown').toUpperCase()}</Text>
+                  <Text style={styles.body}>Customer: {selectedTransactionCustomerName}</Text>
+                  <Text style={styles.body}>Dogs: {selectedTransactionDogNames}</Text>
+                  <Text style={styles.body}>Amount: {typeof selectedTransaction.amount === 'number' ? money.format(selectedTransaction.amount / 100) : '—'}</Text>
+                  <Text style={styles.body}>Currency: {selectedTransaction.currency ?? 'EUR'}</Text>
+                  <Text style={styles.body}>Order ID: {selectedTransaction.order_id ?? selectedTransaction.id ?? '—'}</Text>
+                  <Text style={styles.body}>Created: {selectedTransaction.created_at ? new Date(selectedTransaction.created_at).toLocaleString('en-IE') : '—'}</Text>
+                  {selectedTransaction.description ? <Text style={styles.body}>Description: {selectedTransaction.description}</Text> : null}
                 </View>
               </ScrollView>
             </View>
