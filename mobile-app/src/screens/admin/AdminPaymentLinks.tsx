@@ -27,6 +27,13 @@ type BookingLookupRow = {
   id: string;
   title: string | null;
   service_name: string | null;
+  dog_names: string[];
+  client_id: string;
+};
+
+type ClientLookupRow = {
+  id: string;
+  full_name: string;
 };
 
 export function AdminPaymentLinksScreen(): React.ReactElement {
@@ -38,6 +45,7 @@ export function AdminPaymentLinksScreen(): React.ReactElement {
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [invoiceLookup, setInvoiceLookup] = useState<Record<string, InvoiceLookupRow>>({});
   const [bookingLookup, setBookingLookup] = useState<Record<string, BookingLookupRow>>({});
+  const [clientLookup, setClientLookup] = useState<Record<string, ClientLookupRow>>({});
 
   const fetchLinks = useCallback(async () => {
     setError(null);
@@ -54,6 +62,7 @@ export function AdminPaymentLinksScreen(): React.ReactElement {
     if (invoiceIds.length === 0) {
       setInvoiceLookup({});
       setBookingLookup({});
+      setClientLookup({});
       return;
     }
 
@@ -68,15 +77,30 @@ export function AdminPaymentLinksScreen(): React.ReactElement {
     const bookingIds = Array.from(new Set(invoices.map((invoice) => invoice.booking_id).filter(Boolean)));
     if (bookingIds.length === 0) {
       setBookingLookup({});
+      setClientLookup({});
       return;
     }
     const { data: bookingsData, error: bookingsError } = await supabase
       .from('bookings')
-      .select('id, title, service_name')
+      .select('id, title, service_name, dog_names, client_id')
       .in('id', bookingIds as string[]);
     if (bookingsError) throw new Error(bookingsError.message);
     const bookings = (bookingsData ?? []) as BookingLookupRow[];
     setBookingLookup(Object.fromEntries(bookings.map((booking) => [booking.id, booking])));
+
+    const clientIds = Array.from(new Set(bookings.map((booking) => booking.client_id).filter(Boolean)));
+    if (clientIds.length === 0) {
+      setClientLookup({});
+      return;
+    }
+
+    const { data: clientsData, error: clientsError } = await supabase
+      .from('clients')
+      .select('id, full_name')
+      .in('id', clientIds);
+    if (clientsError) throw new Error(clientsError.message);
+    const clients = (clientsData ?? []) as ClientLookupRow[];
+    setClientLookup(Object.fromEntries(clients.map((client) => [client.id, client])));
   }, []);
 
   useEffect(() => {
@@ -174,7 +198,6 @@ export function AdminPaymentLinksScreen(): React.ReactElement {
           <View style={styles.filterRow}>
             {[
               { key: 'open', label: 'Open' },
-              { key: 'partially_paid', label: 'Partially Paid' },
               { key: 'paid', label: 'Paid' },
               { key: 'failed', label: 'Failed' }
             ].map((filter) => (
@@ -195,30 +218,17 @@ export function AdminPaymentLinksScreen(): React.ReactElement {
                   <Text style={styles.invoiceNumber}>
                     {bookingLookup[invoiceLookup[link.invoice_id]?.booking_id ?? '']?.title
                       ?? bookingLookup[invoiceLookup[link.invoice_id]?.booking_id ?? '']?.service_name
-                      ?? `Invoice #${invoiceLookup[link.invoice_id]?.invoice_number ?? '—'}`}
+                      ?? `Payment link #${invoiceLookup[link.invoice_id]?.invoice_number ?? '—'}`}
                   </Text>
-                  <Text style={styles.invoiceStatus}>{linkStateGroup(link).toUpperCase()}</Text>
                 </View>
-                <View style={styles.revolutHeader}>
-                  <View style={[styles.checkCircle, linkStateGroup(link) === 'completed' ? styles.checkCircleDone : linkStateGroup(link) === 'overdue' ? styles.checkCircleOverdue : styles.checkCirclePending]}>
-                    <Text style={[styles.checkMark, linkStateGroup(link) === 'completed' ? styles.checkMarkDone : linkStateGroup(link) === 'overdue' ? styles.checkMarkOverdue : styles.checkMarkPending]}>
-                      {linkStateGroup(link) === 'completed' ? '✓' : linkStateGroup(link) === 'overdue' ? '!' : '⌛'}
-                    </Text>
-                  </View>
-                  <Text style={styles.revolutStatusTitle}>{link.provider.toUpperCase()}</Text>
-                  <View style={[styles.statusPill, linkStateGroup(link) === 'completed' ? styles.statusPillDone : linkStateGroup(link) === 'overdue' ? styles.statusPillOverdue : styles.statusPillPending]}>
-                    <Text style={[styles.statusPillText, linkStateGroup(link) === 'completed' ? styles.statusPillTextDone : linkStateGroup(link) === 'overdue' ? styles.statusPillTextOverdue : styles.statusPillTextPending]}>
-                      {linkStateGroup(link).toUpperCase()}
-                    </Text>
-                  </View>
+                <Text style={styles.invoiceStatusDetail}>{linkStateGroup(link).toUpperCase()}</Text>
+                <View style={styles.invoiceMetaRow}>
+                  <Text style={styles.invoiceMetaLabel}>Client</Text>
+                  <Text style={styles.invoiceMetaValue}>{clientLookup[bookingLookup[invoiceLookup[link.invoice_id]?.booking_id ?? '']?.client_id ?? '']?.full_name ?? '—'}</Text>
                 </View>
                 <View style={styles.invoiceMetaRow}>
-                  <Text style={styles.invoiceMetaLabel}>Created</Text>
-                  <Text style={styles.invoiceMetaValue}>{new Date(link.created_at).toLocaleDateString('en-IE')}</Text>
-                </View>
-                <View style={styles.invoiceMetaRow}>
-                  <Text style={styles.invoiceMetaLabel}>Expires</Text>
-                  <Text style={styles.invoiceMetaValue}>{link.expires_at ? new Date(link.expires_at).toLocaleDateString('en-IE') : 'No expiry'}</Text>
+                  <Text style={styles.invoiceMetaLabel}>Dog(s)</Text>
+                  <Text style={styles.invoiceMetaValue}>{(bookingLookup[invoiceLookup[link.invoice_id]?.booking_id ?? '']?.dog_names ?? []).join(', ') || '—'}</Text>
                 </View>
               </Pressable>
             );
@@ -265,27 +275,10 @@ const styles = StyleSheet.create({
   invoiceCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   invoiceNumber: { color: '#f4f2ff', fontWeight: '700', fontSize: 15 },
   invoiceStatus: { color: '#cfc6ff', fontSize: 12, fontWeight: '700' },
+  invoiceStatusDetail: { color: '#cfc6ff', fontSize: 12, fontWeight: '700', marginTop: 6, marginBottom: 8 },
   invoiceAmount: { color: '#ffffff', fontWeight: '700', fontSize: 24, marginTop: 6, marginBottom: 8 },
   invoiceMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 3 },
   invoiceMetaLabel: { color: '#a79fc3', fontSize: 13 },
   invoiceMetaValue: { color: '#ece8ff', fontSize: 13, fontWeight: '600' },
-  detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10 },
-  revolutHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 6, marginBottom: 8 },
-  checkCircle: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  checkCircleDone: { borderColor: '#4dd3a5' },
-  checkCirclePending: { borderColor: '#f5d78e' },
-  checkCircleOverdue: { borderColor: '#ff8d8d' },
-  checkMark: { fontSize: 16, fontWeight: '700' },
-  checkMarkDone: { color: '#4dd3a5' },
-  checkMarkPending: { color: '#f5d78e' },
-  checkMarkOverdue: { color: '#ff8d8d' },
-  revolutStatusTitle: { color: '#f2f3ff', marginLeft: 10, fontWeight: '800', fontSize: 16, letterSpacing: 0.8 },
-  statusPill: { marginLeft: 'auto', borderRadius: 16, paddingVertical: 7, paddingHorizontal: 14 },
-  statusPillDone: { backgroundColor: '#143c35' },
-  statusPillPending: { backgroundColor: '#49361a' },
-  statusPillOverdue: { backgroundColor: '#4a1f2b' },
-  statusPillText: { fontSize: 13, fontWeight: '700' },
-  statusPillTextDone: { color: '#62e1b8' },
-  statusPillTextPending: { color: '#f5d78e' },
-  statusPillTextOverdue: { color: '#ffb3c7' }
+  detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10 }
 });

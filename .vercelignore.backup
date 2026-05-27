@@ -1,0 +1,12 @@
+mobile-app
+node_modules
+.next
+.git
+dist
+build
+.cache
+coverage
+*.log
+.DS_Store
+.env
+.env.local

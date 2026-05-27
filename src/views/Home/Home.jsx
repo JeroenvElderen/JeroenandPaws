@@ -13,7 +13,6 @@ const Home = () => (
   <main>
     <HomeHeroSection />
     <HomeIntroSection />
-    <HomeSliderSection />
     <HomeAboutSection />
     <HomeTestimonialsSection />
     <HomeCtaSection />
