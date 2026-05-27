@@ -34,6 +34,7 @@ type MerchantTransactionRow = {
   status?: string;
   type?: string;
   amount?: number;
+  outstanding_amount?: number;
   currency?: string;
   created_at?: string;
   order_id?: string;
@@ -100,6 +101,8 @@ export function AdminInvoicesScreen(): React.ReactElement {
 
       const rows = Array.isArray(merchantData)
       ? merchantData
+      : Array.isArray(merchantData?.orders)
+        ? merchantData.orders
       : Array.isArray(merchantData?.transactions)
         ? merchantData.transactions
         : Array.isArray(merchantData?.data)
@@ -107,7 +110,13 @@ export function AdminInvoicesScreen(): React.ReactElement {
           : Array.isArray(merchantData?.items)
             ? merchantData.items
         : [];
-      setMerchantTransactions(rows as MerchantTransactionRow[]);
+      const normalizedRows = (rows as MerchantTransactionRow[]).map((row) => ({
+        ...row,
+        order_id: row.order_id ?? row.id,
+        amount: typeof row.outstanding_amount === 'number' ? row.outstanding_amount : row.amount,
+        status: row.status ?? row.state
+      }));
+      setMerchantTransactions(normalizedRows);
     } catch (merchantFetchError: any) {
       setMerchantTransactions([]);
       setMerchantError(merchantFetchError?.message ?? 'Failed to load Revolut merchant transactions.');
