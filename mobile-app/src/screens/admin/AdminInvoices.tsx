@@ -152,6 +152,14 @@ export function AdminInvoicesScreen(): React.ReactElement {
     return 'pending';
   };
 
+  const isPaymentLinkInvoice = (invoice: InvoiceRow): boolean => {
+    const invoiceNumber = (invoice.invoice_number ?? '').toLowerCase();
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(invoiceNumber);
+    return looksLikeUuid || invoiceNumber.includes('payment link') || invoiceNumber.includes('payment-link') || invoiceNumber.startsWith('plink_');
+  };
+
+  const displayInvoices = useMemo(() => invoices.filter((invoice) => !isPaymentLinkInvoice(invoice)), [invoices]);
+
   const sortedInvoices = useMemo(() => {
     const orderRank: Record<'overdue' | 'pending' | 'completed' | 'cancelled', number> = {
       overdue: 0,
@@ -159,12 +167,19 @@ export function AdminInvoicesScreen(): React.ReactElement {
       completed: 2,
       cancelled: 3
     };
-    return [...invoices].sort((a, b) => {
-      const rankDelta = orderRank[invoiceStatusGroup(a)] - orderRank[invoiceStatusGroup(b)];
+    return [...displayInvoices].sort((a, b) => {
+      const aGroup = invoiceStatusGroup(a);
+      const bGroup = invoiceStatusGroup(b);
+      const rankDelta = orderRank[aGroup] - orderRank[bGroup];
       if (rankDelta !== 0) return rankDelta;
+      if ((aGroup === 'overdue' || aGroup === 'pending') && (bGroup === 'overdue' || bGroup === 'pending')) {
+        const aDue = a.due_date ? new Date(a.due_date).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.due_date ? new Date(b.due_date).getTime() : Number.POSITIVE_INFINITY;
+        if (aDue !== bDue) return aDue - bDue;
+      }
       return new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime();
     });
-  }, [invoices]);
+  }, [displayInvoices]);
 
   const filteredInvoices = useMemo(() => {
     if (statusFilter === 'all') return sortedInvoices;
@@ -172,20 +187,20 @@ export function AdminInvoicesScreen(): React.ReactElement {
   }, [sortedInvoices, statusFilter]);
 
   const totals = useMemo(() => {
-    const dueToBePaidCents = invoices
+    const dueToBePaidCents = displayInvoices
       .filter((invoice) => {
         const group = invoiceStatusGroup(invoice);
         return group === 'overdue' || group === 'pending';
       })
       .reduce((sum, invoice) => sum + invoice.amount_cents, 0);
     const now = new Date();
-    const overdueCount = invoices.filter((invoice) => {
+    const overdueCount = displayInvoices.filter((invoice) => {
       if (invoice.status === 'overdue') return true;
       if (!invoice.due_date) return false;
       return new Date(invoice.due_date) < now;
     }).length;
     return { dueToBePaidCents, overdueCount };
-  }, [invoices]);
+  }, [displayInvoices]);
 
   const onRefresh = async () => {
     setRefreshing(true);
