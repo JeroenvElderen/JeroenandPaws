@@ -50,6 +50,65 @@ function formatAmount(amountCents: number): string {
   return money.format(amountCents / 100);
 }
 
+function dash(value?: string | number | null): string {
+  if (value === undefined || value === null || value === '') return '-';
+  return String(value);
+}
+
+function formatAmountWithCurrency(amountCents?: number | null, currency = 'EUR'): string {
+  if (typeof amountCents !== 'number' || Number.isNaN(amountCents)) return '-';
+  return `${money.format(amountCents / 100)} ${currency || 'EUR'}`;
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('en-IE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function titleCase(value?: string | null): string {
+  const normalized = dash(value).toLowerCase();
+  if (normalized === '-') return '-';
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function statusLabel(status: 'overdue' | 'pending' | 'completed' | 'cancelled'): string {
+  if (status === 'completed') return 'Completed';
+  if (status === 'cancelled') return 'Cancelled';
+  if (status === 'overdue') return 'Overdue';
+  return 'Pending';
+}
+
+function DetailRow({
+  label,
+  value,
+  pill
+}: {
+  label: string;
+  value?: string | number | null;
+  pill?: boolean;
+}): React.ReactElement {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      {pill ? (
+        <View style={styles.smallStatusPill}>
+          <Text style={styles.smallStatusText}>{dash(value)}</Text>
+        </View>
+      ) : (
+        <Text style={styles.detailValue}>{dash(value)}</Text>
+      )}
+    </View>
+  );
+}
+
 function normalizeInvoiceStatus(status: string | null | undefined): 'overdue' | 'pending' | 'completed' | 'cancelled' {
   const normalized = (status ?? '').trim().toLowerCase();
   if (normalized === 'paid' || normalized === 'completed') return 'completed';
@@ -273,6 +332,97 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const selectedTransactionCustomerName = selectedTransaction ? findCustomerName(selectedTransaction) : '—';
   const selectedTransactionDogNames = selectedTransaction ? findDogNames(selectedTransaction, selectedTransactionCustomerName) : '—';
 
+  const selectedDetail = useMemo(() => {
+    if (selectedInvoice) {
+      const status = invoiceStatusGroup(selectedInvoice);
+      return {
+        status,
+        invoiceId: selectedInvoice.external_invoice_id ?? selectedInvoice.id,
+        issueDate: selectedInvoice.issued_at,
+        dueDate: selectedInvoice.due_date,
+        currency: selectedInvoice.currency || 'EUR',
+        customerName: selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '-',
+        customerEmail: '-',
+        dogNames: selectedInvoiceDogNames || '-',
+        amountCents: selectedInvoice.amount_cents,
+        subtotalCents: selectedInvoice.amount_cents,
+        taxCents: 0,
+        notes: '-',
+        items: [
+          {
+            label: 'Invoice total',
+            amountCents: selectedInvoice.amount_cents
+          }
+        ]
+      };
+    }
+
+    if (selectedTransaction) {
+      const status = normalizeInvoiceStatus(selectedTransaction.state ?? selectedTransaction.status);
+      const metadata = selectedTransaction.metadata ?? {};
+      const customerEmail = typeof metadata.customer_email === 'string'
+        ? metadata.customer_email
+        : typeof metadata.email === 'string'
+          ? metadata.email
+          : '-';
+      const notes = typeof metadata.notes === 'string'
+        ? metadata.notes
+        : typeof metadata.note === 'string'
+          ? metadata.note
+          : '-';
+      const rawItems = Array.isArray(metadata.invoice_items)
+        ? metadata.invoice_items
+        : Array.isArray(metadata.items)
+          ? metadata.items
+          : [];
+      const items = rawItems.length > 0
+        ? rawItems.map((item: any) => ({
+            label: item?.label ?? item?.name ?? item?.description ?? '-',
+            amountCents: typeof item?.amount_cents === 'number'
+              ? item.amount_cents
+              : typeof item?.amount === 'number'
+                ? item.amount
+                : null
+          }))
+        : [
+            {
+              label: selectedTransaction.description ?? 'Payment request',
+              amountCents: selectedTransaction.amount ?? null
+            }
+          ];
+
+      return {
+        status,
+        invoiceId: selectedTransaction.order_id ?? selectedTransaction.id ?? '-',
+        issueDate: selectedTransaction.created_at ?? null,
+        dueDate: typeof metadata.due_date === 'string' ? metadata.due_date : null,
+        currency: selectedTransaction.currency ?? 'EUR',
+        customerName: selectedTransactionCustomerName || '-',
+        customerEmail,
+        dogNames: selectedTransactionDogNames || '-',
+        amountCents: selectedTransaction.amount ?? null,
+        subtotalCents: selectedTransaction.amount ?? null,
+        taxCents: 0,
+        notes,
+        items
+      };
+    }
+
+    return null;
+  }, [
+    selectedInvoice,
+    selectedTransaction,
+    selectedInvoiceClient,
+    selectedInvoiceDogNames,
+    selectedTransactionCustomerName,
+    selectedTransactionDogNames
+  ]);
+
+  const closeDetailModal = () => {
+    setSelectedInvoice(null);
+    setSelectedTransaction(null);
+  };
+
   return (
     <ScreenContainer title="Admin Invoices">
       <View style={styles.summaryCard}>
@@ -397,94 +547,168 @@ export function AdminInvoicesScreen(): React.ReactElement {
           ) : null}
         </>
       )}
-      <Modal visible={Boolean(selectedInvoice)} transparent animationType="slide" onRequestClose={() => setSelectedInvoice(null)}>
-        {selectedInvoice ? (
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Invoice Details</Text>
-                <Pressable onPress={() => setSelectedInvoice(null)} style={styles.modalCloseButton}>
-                  <Text style={styles.modalCloseText}>Close</Text>
-                </Pressable>
-              </View>
-              <ScrollView>
-                <View style={styles.revolutCard}>
-                  <View style={styles.revolutHeader}>
-                    <View style={styles.checkCircle}><Text style={styles.checkMark}>{invoiceStatusGroup(selectedInvoice) === 'completed' ? '✓' : '⌛'}</Text></View>
-                    <Text style={styles.revolutStatusTitle}>{invoiceStatusGroup(selectedInvoice).toUpperCase()}</Text>
-                    <View style={[styles.statusPill, invoiceStatusGroup(selectedInvoice) === 'completed' ? styles.statusPillDone : styles.statusPillPending]}>
-                      <Text style={[styles.statusPillText, invoiceStatusGroup(selectedInvoice) === 'completed' ? styles.statusPillTextDone : styles.statusPillTextPending]}>
-                        {invoiceStatusGroup(selectedInvoice) === 'completed' ? 'Completed' : 'Pending'}
+      <Modal visible={Boolean(selectedDetail)} transparent animationType="slide" onRequestClose={closeDetailModal}>
+        {selectedDetail ? (
+          <View style={styles.invoiceModalScreen}>
+            <View style={styles.modalTopBar}>
+              <Pressable onPress={closeDetailModal} hitSlop={12}>
+                <Text style={styles.backIcon}>‹</Text>
+              </Pressable>
+              <Text style={styles.invoiceModalTitle}>Invoice Details</Text>
+              <View style={styles.topBarSpacer} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.invoiceModalScroll}>
+              <View style={styles.invoiceHeroCard}>
+                <View style={styles.revolutHeader}>
+                  <View style={[
+                    styles.checkCircle,
+                    selectedDetail.status === 'completed' ? styles.checkCircleDone : styles.checkCirclePending
+                  ]}>
+                    <Text style={[
+                      styles.checkMark,
+                      selectedDetail.status === 'completed' ? styles.checkMarkDone : styles.checkMarkPending
+                    ]}>
+                      {selectedDetail.status === 'completed' ? '✓' : '⌛'}
+                    </Text>
+                  </View>
+                  <Text style={[
+                    styles.revolutStatusTitle,
+                    selectedDetail.status === 'completed' ? styles.statusTitleDone : styles.statusTitlePending
+                  ]}>
+                    {selectedDetail.status.toUpperCase()}
+                  </Text>
+                  <View style={[
+                    styles.statusPill,
+                    selectedDetail.status === 'completed' ? styles.statusPillDone : styles.statusPillPending
+                  ]}>
+                    <Text style={[
+                      styles.statusPillText,
+                      selectedDetail.status === 'completed' ? styles.statusPillTextDone : styles.statusPillTextPending
+                    ]}>
+                      {statusLabel(selectedDetail.status)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.revolutInfoRow}>
+                  <View style={styles.infoBlock}>
+                    <View style={styles.infoIconBox}><Text style={styles.infoIcon}>👤</Text></View>
+                    <View style={styles.infoTextWrap}>
+                      <Text style={styles.infoLabel}>Customer</Text>
+                      <Text style={styles.infoValue} numberOfLines={2}>{dash(selectedDetail.customerName)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.infoDivider} />
+                  <View style={styles.infoBlock}>
+                    <View style={styles.infoIconBox}><Text style={styles.infoIcon}>🐾</Text></View>
+                    <View style={styles.infoTextWrap}>
+                      <Text style={styles.infoLabel}>Dog(s)</Text>
+                      <Text style={styles.infoValue} numberOfLines={2}>{dash(selectedDetail.dogNames)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.infoDivider} />
+                  <View style={styles.infoBlock}>
+                    <View style={styles.infoIconBox}><Text style={styles.infoIcon}>€</Text></View>
+                    <View style={styles.infoTextWrap}>
+                      <Text style={styles.infoLabel}>Amount</Text>
+                      <Text style={styles.infoValue} numberOfLines={2}>
+                        {formatAmountWithCurrency(selectedDetail.amountCents, selectedDetail.currency)}
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.revolutInfoRow}>
-                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>👤</Text><View><Text style={styles.infoLabel}>Customer</Text><Text style={styles.infoValue}>{selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '—'}</Text></View></View>
-                    <View style={styles.infoDivider} />
-                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>🐾</Text><View><Text style={styles.infoLabel}>Dog(s)</Text><Text style={styles.infoValue}>{selectedInvoiceDogNames || '—'}</Text></View></View>
-                    <View style={styles.infoDivider} />
-                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>€</Text><View><Text style={styles.infoLabel}>Amount</Text><Text style={styles.infoValue}>{formatAmount(selectedInvoice.amount_cents)} {selectedInvoice.currency}</Text></View></View>
-                  </View>
                 </View>
-                <View style={styles.detailsCard}>
-                  <Text style={styles.body}>Invoice ID: {selectedInvoice.external_invoice_id ?? selectedInvoice.id}</Text>
-                  <Text style={styles.body}>Status: {invoiceStatusGroup(selectedInvoice).toUpperCase()}</Text>
-                  <Text style={styles.body}>Issue Date: {new Date(selectedInvoice.issued_at).toLocaleString('en-IE')}</Text>
-                  <Text style={styles.body}>Due Date: {selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleString('en-IE') : 'No due date'}</Text>
-                  <Text style={styles.body}>Currency: {selectedInvoice.currency}</Text>
-                  <Text style={styles.body}>Customer: {selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '—'}</Text>
-                  <Text style={styles.body}>Dogs: {selectedInvoiceDogNames || '—'}</Text>
-                  <Text style={styles.body}>Total: {formatAmount(selectedInvoice.amount_cents)} {selectedInvoice.currency}</Text>
-                </View>
-              </ScrollView>
-            </View>
-          </View>
-        ) : null}
-      </Modal>
-      <Modal visible={Boolean(selectedTransaction)} transparent animationType="slide" onRequestClose={() => setSelectedTransaction(null)}>
-        {selectedTransaction ? (
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Invoice Details</Text>
-                <Pressable onPress={() => setSelectedTransaction(null)} style={styles.modalCloseButton}>
-                  <Text style={styles.modalCloseText}>Close</Text>
-                </Pressable>
               </View>
-              <ScrollView>
-                <View style={styles.revolutCard}>
-                  <View style={styles.revolutHeader}>
-                    <View style={styles.checkCircle}><Text style={styles.checkMark}>{(selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? '✓' : '⌛'}</Text></View>
-                    <Text style={styles.revolutStatusTitle}>{((selectedTransaction.state ?? selectedTransaction.status ?? 'unknown').toUpperCase())}</Text>
-                    <View style={[styles.statusPill, (selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? styles.statusPillDone : styles.statusPillPending]}>
-                      <Text style={[styles.statusPillText, (selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? styles.statusPillTextDone : styles.statusPillTextPending]}>
-                        {(selectedTransaction.state ?? selectedTransaction.status ?? '').toLowerCase() === 'completed' ? 'Completed' : 'Pending'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.revolutInfoRow}>
-                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>👤</Text><View><Text style={styles.infoLabel}>Customer</Text><Text style={styles.infoValue}>{selectedTransactionCustomerName}</Text></View></View>
-                    <View style={styles.infoDivider} />
-                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>🐾</Text><View><Text style={styles.infoLabel}>Dog(s)</Text><Text style={styles.infoValue}>{selectedTransactionDogNames}</Text></View></View>
-                    <View style={styles.infoDivider} />
-                    <View style={styles.infoBlock}><Text style={styles.infoIcon}>€</Text><View><Text style={styles.infoLabel}>Amount</Text><Text style={styles.infoValue}>{typeof selectedTransaction.amount === 'number' ? money.format(selectedTransaction.amount / 100) : '—'} {selectedTransaction.currency ?? 'EUR'}</Text></View></View>
-                  </View>
+
+              <View style={styles.invoiceDetailsPanel}>
+                <Text style={styles.modalSectionTitle}>Invoice Information</Text>
+                <DetailRow label="Invoice ID" value={selectedDetail.invoiceId} />
+                <DetailRow label="Status" value={statusLabel(selectedDetail.status)} pill />
+                <DetailRow label="Issue Date" value={formatDateTime(selectedDetail.issueDate)} />
+                <DetailRow label="Due Date" value={formatDateTime(selectedDetail.dueDate)} />
+                <DetailRow label="Currency" value={selectedDetail.currency} />
+
+                <View style={styles.separator} />
+
+                <Text style={styles.modalSectionTitle}>Customer Information</Text>
+                <DetailRow label="Name" value={selectedDetail.customerName} />
+                <DetailRow label="Email" value={selectedDetail.customerEmail} />
+
+                <View style={styles.separator} />
+
+                <Text style={styles.modalSectionTitle}>Dogs</Text>
+                <View style={styles.dogsBox}>
+                  {(dash(selectedDetail.dogNames) === '-' ? ['-'] : dash(selectedDetail.dogNames).split(','))
+                    .map((dog) => dog.trim())
+                    .filter(Boolean)
+                    .map((dog, index) => (
+                      <View key={`${dog}-${index}`} style={[
+                        styles.dogRow,
+                        index === (dash(selectedDetail.dogNames) === '-' ? ['-'] : dash(selectedDetail.dogNames).split(',')).length - 1
+                          ? styles.dogRowLast
+                          : null
+                      ]}>
+                        <View style={styles.dogAvatar}>
+                          <Text style={styles.dogAvatarText}>🐶</Text>
+                        </View>
+                        <Text style={styles.dogName}>{dog}</Text>
+                        <Text style={styles.breedPill}>-</Text>
+                      </View>
+                    ))}
                 </View>
-                <View style={styles.detailsCard}>
-                  <Text style={styles.body}>Status: {(selectedTransaction.state ?? selectedTransaction.status ?? 'unknown').toUpperCase()}</Text>
-                  <Text style={styles.body}>Customer: {selectedTransactionCustomerName}</Text>
-                  <Text style={styles.body}>Dogs: {selectedTransactionDogNames}</Text>
-                  <Text style={styles.body}>Amount: {typeof selectedTransaction.amount === 'number' ? money.format(selectedTransaction.amount / 100) : '—'}</Text>
-                  <Text style={styles.body}>Currency: {selectedTransaction.currency ?? 'EUR'}</Text>
-                  <Text style={styles.body}>Order ID: {selectedTransaction.order_id ?? selectedTransaction.id ?? '—'}</Text>
-                  <Text style={styles.body}>Created: {selectedTransaction.created_at ? new Date(selectedTransaction.created_at).toLocaleString('en-IE') : '—'}</Text>
-                  {selectedTransaction.description ? <Text style={styles.body}>Description: {selectedTransaction.description}</Text> : null}
+
+                <View style={styles.separator} />
+
+                <Text style={styles.modalSectionTitle}>Invoice Items</Text>
+                <View style={styles.itemsHeader}>
+                  <Text style={styles.muted}>Item</Text>
+                  <Text style={styles.muted}>Amount</Text>
                 </View>
-              </ScrollView>
-            </View>
+                {selectedDetail.items.map((item, index) => (
+                  <View key={`${item.label}-${index}`} style={styles.itemRow}>
+                    <Text style={styles.itemText}>{dash(item.label)}</Text>
+                    <Text style={styles.itemAmount}>
+                      {formatAmountWithCurrency(item.amountCents, selectedDetail.currency)}
+                    </Text>
+                  </View>
+                ))}
+
+                <View style={styles.itemSeparator} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Subtotal</Text>
+                  <Text style={styles.subtleValue}>
+                    {formatAmountWithCurrency(selectedDetail.subtotalCents, selectedDetail.currency)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Tax (0%)</Text>
+                  <Text style={styles.subtleValue}>
+                    {formatAmountWithCurrency(selectedDetail.taxCents, selectedDetail.currency)}
+                  </Text>
+                </View>
+
+                <View style={styles.itemSeparator} />
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>
+                    {formatAmountWithCurrency(selectedDetail.amountCents, selectedDetail.currency)}
+                  </Text>
+                </View>
+
+                <View style={styles.separator} />
+
+                <Text style={styles.modalSectionTitle}>Notes</Text>
+                <Text style={styles.notesText}>{dash(selectedDetail.notes)}</Text>
+              </View>
+
+              <Pressable style={styles.downloadButton}>
+                <Text style={styles.downloadText}>↓  Download Invoice PDF</Text>
+              </Pressable>
+            </ScrollView>
           </View>
         ) : null}
       </Modal>
+
     </ScreenContainer>
   );
 }
@@ -551,5 +775,239 @@ const styles = StyleSheet.create({
   infoIcon: { color: '#ad8aff', fontSize: 20, minWidth: 18, textAlign: 'center' },
   infoLabel: { color: '#aaa3d5', fontSize: 10 },
   infoValue: { color: '#f2f3ff', fontSize: 11, fontWeight: '700' },
-  infoDivider: { width: 1, backgroundColor: '#35285f', marginHorizontal: 10 }
+  infoDivider: { width: 1, backgroundColor: '#35285f', marginHorizontal: 10 },
+
+  invoiceModalScreen: {
+    flex: 1,
+    backgroundColor: '#050414',
+    paddingTop: 34,
+    paddingHorizontal: 24
+  },
+  modalTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18
+  },
+  backIcon: {
+    color: '#f4f2ff',
+    fontSize: 42,
+    lineHeight: 42,
+    fontWeight: '300'
+  },
+  invoiceModalTitle: {
+    color: '#f4f2ff',
+    fontWeight: '800',
+    fontSize: 24
+  },
+  topBarSpacer: {
+    width: 34
+  },
+  invoiceModalScroll: {
+    paddingBottom: 28
+  },
+  invoiceHeroCard: {
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#2f2550',
+    backgroundColor: '#100b25',
+    marginBottom: 14
+  },
+  checkCircleDone: {
+    borderColor: '#4dd3a5'
+  },
+  checkCirclePending: {
+    borderColor: '#f5d78e'
+  },
+  checkMarkDone: {
+    color: '#4dd3a5'
+  },
+  checkMarkPending: {
+    color: '#f5d78e',
+    fontSize: 18
+  },
+  statusTitleDone: {
+    color: '#50e6a8'
+  },
+  statusTitlePending: {
+    color: '#f5d78e'
+  },
+  infoIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#241447'
+  },
+  infoTextWrap: {
+    flex: 1
+  },
+  invoiceDetailsPanel: {
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#2f2550',
+    backgroundColor: '#0c0820'
+  },
+  modalSectionTitle: {
+    color: '#f4f2ff',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 8
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 15
+  },
+  detailLabel: {
+    color: '#aaa3d5',
+    fontSize: 16
+  },
+  detailValue: {
+    color: '#f4f2ff',
+    fontSize: 16,
+    fontWeight: '600',
+    flexShrink: 1,
+    textAlign: 'right'
+  },
+  smallStatusPill: {
+    backgroundColor: '#143c35',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12
+  },
+  smallStatusText: {
+    color: '#62e1b8',
+    fontWeight: '700',
+    fontSize: 14
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#302451',
+    marginVertical: 20
+  },
+  dogsBox: {
+    borderWidth: 1,
+    borderColor: '#302451',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: 8
+  },
+  dogRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#241b42'
+  },
+  dogRowLast: {
+    borderBottomWidth: 0
+  },
+  dogAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#211742',
+    marginRight: 14
+  },
+  dogAvatarText: {
+    fontSize: 24
+  },
+  dogName: {
+    color: '#f4f2ff',
+    fontSize: 17,
+    fontWeight: '700',
+    flex: 1
+  },
+  breedPill: {
+    color: '#b88cff',
+    backgroundColor: '#241447',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    overflow: 'hidden',
+    fontWeight: '700'
+  },
+  itemsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 12
+  },
+  muted: {
+    color: '#aaa3d5',
+    fontSize: 15
+  },
+  itemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginBottom: 12
+  },
+  itemText: {
+    color: '#f4f2ff',
+    fontSize: 16,
+    fontWeight: '500',
+    flex: 1
+  },
+  itemAmount: {
+    color: '#f4f2ff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'right'
+  },
+  itemSeparator: {
+    height: 1,
+    backgroundColor: '#302451',
+    marginVertical: 12
+  },
+  subtleValue: {
+    color: '#aaa3d5',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  totalLabel: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '900'
+  },
+  totalValue: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '900'
+  },
+  notesText: {
+    color: '#c9c5d8',
+    fontSize: 16,
+    lineHeight: 22,
+    marginTop: 8
+  },
+  downloadButton: {
+    marginTop: 14,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    backgroundColor: '#1c123c',
+    borderWidth: 1,
+    borderColor: '#3d2b77'
+  },
+  downloadText: {
+    color: '#b88cff',
+    fontSize: 17,
+    fontWeight: '800'
+  },
+
 });
