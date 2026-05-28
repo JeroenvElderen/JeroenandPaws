@@ -514,10 +514,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (invoicePublicUrlRows.length > 0) {
+    const uniqueInvoicePublicUrlRows = Array.from(
+      new Map(
+        invoicePublicUrlRows.map((row) => [row.id, row.revolut_public_url]),
+      ),
+      ([id, revolut_public_url]) => ({ id, revolut_public_url }),
+    );
+
+    for (const row of uniqueInvoicePublicUrlRows) {
       const { error } = await supabase
         .from("invoices")
-        .upsert(invoicePublicUrlRows, { onConflict: "id" });
+        .update({ revolut_public_url: row.revolut_public_url })
+        .eq("id", row.id);
 
       if (error) {
         throw new Error(`Invoice public URL update failed: ${error.message}`);
