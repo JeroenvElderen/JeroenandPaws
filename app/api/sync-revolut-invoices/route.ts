@@ -4,6 +4,9 @@ import { revolutMerchantGet } from "@/lib/revolut/proxy";
 
 export const runtime = "nodejs";
 
+const PDF_BUCKET =
+  process.env.SUPABASE_INVOICE_PDF_BUCKET?.trim() || "invoice-pdfs";
+
 type RevolutCustomer = {
   id?: string;
   email?: string;
@@ -65,6 +68,82 @@ function findFirstString(...values: unknown[]): string | null {
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return null;
+}
+
+function storagePathForInvoice(
+  invoiceId: string,
+  externalInvoiceId?: string | null,
+): string {
+  const safeExternalId = (externalInvoiceId?.trim() || invoiceId).replace(
+    /[^A-Za-z0-9_.-]+/g,
+    "-",
+  );
+  return `revolut/${invoiceId}/${safeExternalId}.pdf`;
+}
+
+async function fetchOfficialPdf(revolutPdfUrl: string): Promise<Response> {
+  const merchantKey = process.env.REVOLUT_MERCHANT_API_KEY;
+  const apiVersion =
+    process.env.REVOLUT_MERCHANT_API_VERSION?.trim() || "2024-09-01";
+  const headers: Record<string, string> = {
+    Accept: "application/pdf",
+    "Revolut-Api-Version": apiVersion,
+  };
+
+  if (merchantKey) {
+    headers.Authorization = `Bearer ${merchantKey}`;
+  }
+
+  return fetch(revolutPdfUrl, { headers });
+}
+
+type SyncedInvoiceRow = {
+  id: string;
+  external_invoice_id: string | null;
+  revolut_pdf_url: string | null;
+  revolut_pdf_storage_path: string | null;
+};
+
+async function cacheInvoicePdf(
+  supabase: SupabaseClient,
+  invoice: SyncedInvoiceRow,
+): Promise<boolean> {
+  if (invoice.revolut_pdf_storage_path || !invoice.revolut_pdf_url) {
+    return false;
+  }
+
+  const upstream = await fetchOfficialPdf(invoice.revolut_pdf_url);
+  if (!upstream.ok) {
+    throw new Error(`PDF fetch failed (${upstream.status})`);
+  }
+
+  const storagePath = storagePathForInvoice(
+    invoice.id,
+    invoice.external_invoice_id,
+  );
+  const bytes = Buffer.from(await upstream.arrayBuffer());
+  const contentType = upstream.headers.get("content-type") || "application/pdf";
+  const { error: uploadError } = await supabase.storage
+    .from(PDF_BUCKET)
+    .upload(storagePath, bytes, {
+      contentType,
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { error: updateError } = await supabase
+    .from("invoices")
+    .update({ revolut_pdf_storage_path: storagePath })
+    .eq("id", invoice.id);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  return true;
 }
 
 function getCustomerName(
@@ -312,13 +391,36 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    let pdfsCached = 0;
+    const pdfCacheFailures: Array<{ invoiceId: string; message: string }> = [];
+
     if (invoiceRows.length > 0) {
-      const { error } = await supabase.from("invoices").upsert(invoiceRows, {
-        onConflict: "external_invoice_id",
-      });
+      const { data: syncedInvoices, error } = await supabase
+        .from("invoices")
+        .upsert(invoiceRows, {
+          onConflict: "external_invoice_id",
+        })
+        .select(
+          "id, external_invoice_id, revolut_pdf_url, revolut_pdf_storage_path",
+        );
 
       if (error) {
         throw new Error(`Invoices upsert failed: ${error.message}`);
+      }
+
+      for (const invoice of (syncedInvoices ?? []) as SyncedInvoiceRow[]) {
+        try {
+          const cached = await cacheInvoicePdf(supabase, invoice);
+          if (cached) {
+            pdfsCached += 1;
+          }
+        } catch (pdfError) {
+          pdfCacheFailures.push({
+            invoiceId: invoice.id,
+            message:
+              pdfError instanceof Error ? pdfError.message : "PDF cache failed",
+          });
+        }
       }
     }
 
@@ -426,6 +528,8 @@ export async function POST(req: NextRequest) {
       ok: true,
       invoicesImported: invoiceRows.length,
       paymentLinksImported: paymentRows.length,
+      pdfsCached,
+      pdfCacheFailures,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";

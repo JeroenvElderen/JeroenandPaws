@@ -75,13 +75,20 @@ create table if not exists public.invoices (
   paid_at timestamptz,
   revolut_invoice_number text,
   revolut_pdf_url text,
-  revolut_public_url text
+  revolut_public_url text,
+  revolut_pdf_storage_path text
 );
 
 alter table public.invoices
   add column if not exists revolut_invoice_number text,
   add column if not exists revolut_pdf_url text,
-  add column if not exists revolut_public_url text;
+  add column if not exists revolut_public_url text,
+  add column if not exists revolut_pdf_storage_path text;
+
+-- Private bucket used by the API to cache official Revolut PDFs before serving them to the app.
+insert into storage.buckets (id, name, public)
+values ('invoice-pdfs', 'invoice-pdfs', false)
+on conflict (id) do update set public = excluded.public;
 
 create table if not exists public.payment_links (
   id uuid primary key default gen_random_uuid(),
