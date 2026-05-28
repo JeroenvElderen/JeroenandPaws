@@ -395,12 +395,22 @@ export default async function handler(req: Request): Promise<Response> {
         throw new Error(`Payment links upsert failed: ${error.message}`);
     }
 
-    if (invoicePublicUrlRows.length > 0) {
+    const uniqueInvoicePublicUrlRows = Array.from(
+      new Map(
+        invoicePublicUrlRows.map((row) => [row.id, row.revolut_public_url]),
+      ),
+      ([id, revolut_public_url]) => ({ id, revolut_public_url }),
+    );
+
+    for (const row of uniqueInvoicePublicUrlRows) {
       const { error } = await supabase
         .from("invoices")
-        .upsert(invoicePublicUrlRows, { onConflict: "id" });
-      if (error)
+        .update({ revolut_public_url: row.revolut_public_url })
+        .eq("id", row.id);
+
+      if (error) {
         throw new Error(`Invoice public URL update failed: ${error.message}`);
+      }
     }
 
     return jsonResponse(200, {
