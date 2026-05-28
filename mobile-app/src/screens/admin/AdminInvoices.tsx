@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 type InvoiceStatus = 'draft' | 'issued' | 'open' | 'pending' | 'paid' | 'completed' | 'overdue' | 'cancelled';
 type InvoiceRow = {
@@ -418,6 +420,45 @@ export function AdminInvoicesScreen(): React.ReactElement {
     selectedTransactionDogNames
   ]);
 
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadInvoicePdf = useCallback(async () => {
+    if (!selectedDetail?.invoiceId) {
+      Alert.alert('Missing invoice ID', 'No order ID was found for this invoice.');
+      return;
+    }
+    if (!env.vercelBackendUrl) {
+      Alert.alert('Missing backend URL', 'Cannot download invoice PDF because backend URL is not configured.');
+      return;
+    }
+
+    try {
+      setDownloadingPdf(true);
+      const safeOrderId = encodeURIComponent(selectedDetail.invoiceId);
+      const remoteUrl = `${env.vercelBackendUrl}/api/revolut/invoice-pdf?orderId=${safeOrderId}`;
+      const destination = `${FileSystem.cacheDirectory}invoice-${selectedDetail.invoiceId}.pdf`;
+      const result = await FileSystem.downloadAsync(remoteUrl, destination);
+
+      if (result.status !== 200) {
+        throw new Error(`Download failed with status ${result.status}`);
+      }
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert('Download complete', `Saved PDF to ${result.uri}`);
+        return;
+      }
+      await Sharing.shareAsync(result.uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share invoice PDF',
+        UTI: 'com.adobe.pdf'
+      });
+    } catch (downloadError: any) {
+      Alert.alert('Invoice PDF failed', downloadError?.message ?? 'Could not download invoice PDF.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }, [selectedDetail]);
+
   const closeDetailModal = () => {
     setSelectedInvoice(null);
     setSelectedTransaction(null);
@@ -701,8 +742,8 @@ export function AdminInvoicesScreen(): React.ReactElement {
                 <Text style={styles.notesText}>{dash(selectedDetail.notes)}</Text>
               </View>
 
-              <Pressable style={styles.downloadButton}>
-                <Text style={styles.downloadText}>↓  Download Invoice PDF</Text>
+              <Pressable style={[styles.downloadButton, downloadingPdf ? styles.downloadButtonDisabled : null]} onPress={handleDownloadInvoicePdf} disabled={downloadingPdf}>
+                {downloadingPdf ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.downloadText}>↓  Download Invoice PDF</Text>}
               </Pressable>
             </ScrollView>
           </View>
@@ -782,6 +823,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#050414',
     paddingTop: 34,
     paddingHorizontal: 24
+  },
+  downloadButtonDisabled: {
+    opacity: 0.7
   },
   modalTopBar: {
     flexDirection: 'row',
