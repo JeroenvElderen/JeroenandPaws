@@ -1,8 +1,8 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { NextResponse, type NextRequest } from 'next/server';
-import { revolutMerchantGet } from '@/lib/revolut/proxy';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { NextResponse, type NextRequest } from "next/server";
+import { revolutMerchantGet } from "@/lib/revolut/proxy";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 type RevolutCustomer = {
   id?: string;
@@ -23,6 +23,16 @@ type ExternalInvoice = {
   due_date?: string;
   created_at?: string;
   issued_at?: string;
+  invoice_url?: string;
+  receipt_url?: string;
+  document_url?: string;
+  public_url?: string;
+  payment_url?: string;
+  url?: string;
+  hosted_invoice_url?: string;
+  documents?: Array<{ url?: string }>;
+  receipts?: Array<{ url?: string }>;
+  invoice?: { pdf_url?: string; public_url?: string; number?: string };
 };
 
 type RevolutOrder = {
@@ -42,42 +52,50 @@ type RevolutOrder = {
 };
 
 function toCents(amount?: number): number {
-  if (typeof amount !== 'number' || Number.isNaN(amount)) return 0;
+  if (typeof amount !== "number" || Number.isNaN(amount)) return 0;
   return Math.round(amount);
 }
 
 function normalizeName(v: string): string {
-  return v.trim().toLowerCase().replace(/\s+/g, ' ');
+  return v.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function findFirstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
 }
 
 function getCustomerName(
   customer?: string | RevolutCustomer,
-  fallback?: string
+  fallback?: string,
 ): string | null {
   if (fallback) return fallback;
-  if (typeof customer === 'string') return customer;
+  if (typeof customer === "string") return customer;
   if (customer?.full_name) return customer.full_name;
   return null;
 }
 
 function mapInvoiceStatus(status?: string): string {
-  const s = (status ?? '').toLowerCase();
+  const s = (status ?? "").toLowerCase();
 
-  if (s === 'completed' || s === 'paid') return 'paid';
-  if (s === 'cancelled' || s === 'canceled' || s === 'failed') return 'cancelled';
-  if (s === 'pending') return 'issued';
+  if (s === "completed" || s === "paid") return "paid";
+  if (s === "cancelled" || s === "canceled" || s === "failed")
+    return "cancelled";
+  if (s === "pending") return "issued";
 
-  return 'issued';
+  return "issued";
 }
 
 function mapPaymentStatus(status?: string): string {
-  const s = (status ?? '').toLowerCase();
+  const s = (status ?? "").toLowerCase();
 
-  if (s === 'completed' || s === 'paid') return 'paid';
-  if (s === 'cancelled' || s === 'canceled' || s === 'failed') return 'failed';
-  if (s === 'pending') return 'unpaid';
+  if (s === "completed" || s === "paid") return "paid";
+  if (s === "cancelled" || s === "canceled" || s === "failed") return "failed";
+  if (s === "pending") return "unpaid";
 
-  return 'unpaid';
+  return "unpaid";
 }
 
 function parsePaymentLinkTitle(title?: string): {
@@ -91,14 +109,17 @@ function parsePaymentLinkTitle(title?: string): {
       dog_names: [],
       service_type: null,
       duration_minutes: null,
-      day_count: null
+      day_count: null,
     };
   }
 
-  const parts = title.split('-').map((s) => s.trim()).filter(Boolean);
+  const parts = title
+    .split("-")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-  const dogNames = (parts[0] ?? '')
-    .split('&')
+  const dogNames = (parts[0] ?? "")
+    .split("&")
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -111,18 +132,18 @@ function parsePaymentLinkTitle(title?: string): {
     dog_names: dogNames,
     service_type: serviceType,
     duration_minutes: minutesMatch ? Number(minutesMatch[1]) : null,
-    day_count: daysMatch ? Number(daysMatch[1]) : null
+    day_count: daysMatch ? Number(daysMatch[1]) : null,
   };
 }
 
 function statusesMatch(
   invoiceStatus: string | null,
-  linkStatus: string | null
+  linkStatus: string | null,
 ): boolean {
   if (!invoiceStatus || !linkStatus) return true;
 
-  const invoicePaid = invoiceStatus === 'paid';
-  const linkPaid = linkStatus === 'paid';
+  const invoicePaid = invoiceStatus === "paid";
+  const linkPaid = linkStatus === "paid";
 
   if (invoicePaid && linkPaid) return true;
   if (!invoicePaid && !linkPaid) return true;
@@ -131,14 +152,13 @@ function statusesMatch(
 }
 
 async function loadInvoices(): Promise<ExternalInvoice[]> {
-  const path =
-    process.env.REVOLUT_INVOICES_PATH?.trim() || '/api/orders';
+  const path = process.env.REVOLUT_INVOICES_PATH?.trim() || "/api/orders";
 
   const { status, data } = await revolutMerchantGet(path);
 
   if (status >= 400) {
     throw new Error(
-      `Invoice fetch failed (${status}): ${JSON.stringify(data)}`
+      `Invoice fetch failed (${status}): ${JSON.stringify(data)}`,
     );
   }
 
@@ -158,14 +178,13 @@ async function loadInvoices(): Promise<ExternalInvoice[]> {
 }
 
 async function loadPaymentLinks(): Promise<RevolutOrder[]> {
-  const path =
-    process.env.REVOLUT_PAYMENT_LINKS_PATH?.trim() || '/api/orders';
+  const path = process.env.REVOLUT_PAYMENT_LINKS_PATH?.trim() || "/api/orders";
 
   const { status, data } = await revolutMerchantGet(path);
 
   if (status >= 400) {
     throw new Error(
-      `Payment links fetch failed (${status}): ${JSON.stringify(data)}`
+      `Payment links fetch failed (${status}): ${JSON.stringify(data)}`,
     );
   }
 
@@ -182,29 +201,28 @@ async function loadPaymentLinks(): Promise<RevolutOrder[]> {
 
 async function resolveClientIdByName(
   supabase: SupabaseClient,
-  customerName: string | null
+  customerName: string | null,
 ): Promise<string | null> {
   if (!customerName) return null;
 
   const { data, error } = await supabase
-    .from('clients')
-    .select('id, full_name');
+    .from("clients")
+    .select("id, full_name");
 
   if (error) throw new Error(error.message);
 
   const normalized = normalizeName(customerName);
 
   const exact = (data ?? []).find(
-    (row) =>
-      normalizeName(String(row.full_name ?? '')) === normalized
+    (row) => normalizeName(String(row.full_name ?? "")) === normalized,
   );
 
   if (exact) return String(exact.id);
 
-  const firstName = normalized.split(' ')[0];
+  const firstName = normalized.split(" ")[0];
 
   const firstMatches = (data ?? []).filter((row) => {
-    const fullName = normalizeName(String(row.full_name ?? ''));
+    const fullName = normalizeName(String(row.full_name ?? ""));
     return fullName.startsWith(`${firstName} `) || fullName === firstName;
   });
 
@@ -216,12 +234,12 @@ async function resolveClientIdByName(
 }
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get('authorization') ?? '';
+  const authHeader = req.headers.get("authorization") ?? "";
 
   if (authHeader !== `Bearer ${process.env.REVOLUT_SYNC_SECRET}`) {
     return NextResponse.json(
-      { ok: false, message: 'Unauthorized' },
-      { status: 401 }
+      { ok: false, message: "Unauthorized" },
+      { status: 401 },
     );
   }
 
@@ -230,8 +248,8 @@ export async function POST(req: NextRequest) {
 
   if (!supabaseUrl || !serviceKey) {
     return NextResponse.json(
-      { ok: false, message: 'Missing supabase env' },
-      { status: 500 }
+      { ok: false, message: "Missing supabase env" },
+      { status: 500 },
     );
   }
 
@@ -240,7 +258,7 @@ export async function POST(req: NextRequest) {
   try {
     const [extInvoices, extLinks] = await Promise.all([
       loadInvoices(),
-      loadPaymentLinks()
+      loadPaymentLinks(),
     ]);
 
     const invoiceRows: Array<Record<string, unknown>> = [];
@@ -248,61 +266,73 @@ export async function POST(req: NextRequest) {
     for (const invoice of extInvoices) {
       const customerName = getCustomerName(
         invoice.customer,
-        invoice.customer_name
+        invoice.customer_name,
       );
 
-      const amountCents = toCents(
-        invoice.total_amount ?? invoice.amount
+      const amountCents = toCents(invoice.total_amount ?? invoice.amount);
+
+      const currency = (invoice.currency ?? "EUR").toUpperCase();
+
+      const issuedAt = invoice.issued_at ?? invoice.created_at ?? null;
+
+      const clientId = await resolveClientIdByName(supabase, customerName);
+      const revolutInvoiceNumber = findFirstString(
+        invoice.number,
+        invoice.invoice?.number,
       );
-
-      const currency = (invoice.currency ?? 'EUR').toUpperCase();
-
-      const issuedAt =
-        invoice.issued_at ?? invoice.created_at ?? null;
-
-      const clientId = await resolveClientIdByName(
-        supabase,
-        customerName
+      const revolutPdfUrl = findFirstString(
+        invoice.invoice_url,
+        invoice.receipt_url,
+        invoice.document_url,
+        invoice.documents?.[0]?.url,
+        invoice.receipts?.[0]?.url,
+        invoice.invoice?.pdf_url,
+      );
+      const revolutPublicUrl = findFirstString(
+        invoice.public_url,
+        invoice.payment_url,
+        invoice.url,
+        invoice.hosted_invoice_url,
+        invoice.invoice?.public_url,
       );
 
       invoiceRows.push({
-        invoice_number: invoice.number ?? invoice.id,
+        invoice_number: revolutInvoiceNumber ?? invoice.id,
         external_invoice_id: invoice.id,
         customer_name: customerName,
         client_id: clientId,
         amount_cents: amountCents,
         currency,
-        status: mapInvoiceStatus(
-          invoice.status ?? invoice.state
-        ),
+        status: mapInvoiceStatus(invoice.status ?? invoice.state),
         due_date: invoice.due_date ?? null,
-        issued_at: issuedAt
+        issued_at: issuedAt,
+        revolut_invoice_number: revolutInvoiceNumber,
+        revolut_pdf_url: revolutPdfUrl,
+        revolut_public_url: revolutPublicUrl,
       });
     }
 
     if (invoiceRows.length > 0) {
-      const { error } = await supabase
-        .from('invoices')
-        .upsert(invoiceRows, {
-          onConflict: 'external_invoice_id'
-        });
+      const { error } = await supabase.from("invoices").upsert(invoiceRows, {
+        onConflict: "external_invoice_id",
+      });
 
       if (error) {
-        throw new Error(
-          `Invoices upsert failed: ${error.message}`
-        );
+        throw new Error(`Invoices upsert failed: ${error.message}`);
       }
     }
 
     const { data: dbInvoices, error: dbErr } = await supabase
-      .from('invoices')
-      .select(
-        'id, external_invoice_id, amount_cents, issued_at, status'
-      );
+      .from("invoices")
+      .select("id, external_invoice_id, amount_cents, issued_at, status");
 
     if (dbErr) throw new Error(dbErr.message);
 
     const paymentRows: Array<Record<string, unknown>> = [];
+    const invoicePublicUrlRows: Array<{
+      id: string;
+      revolut_public_url: string;
+    }> = [];
 
     for (const link of extLinks) {
       const parsed = parsePaymentLinkTitle(link.description);
@@ -326,30 +356,39 @@ export async function POST(req: NextRequest) {
         .sort(
           (a, b) =>
             new Date(b.issued_at ?? 0).getTime() -
-            new Date(a.issued_at ?? 0).getTime()
+            new Date(a.issued_at ?? 0).getTime(),
         );
 
       const matched =
         candidates.find((candidate) =>
           statusesMatch(
-            String(candidate.status ?? '').toLowerCase(),
-            linkStatus
-          )
+            String(candidate.status ?? "").toLowerCase(),
+            linkStatus,
+          ),
         ) ??
         candidates[0] ??
         null;
 
+      const linkUrl = link.token
+        ? `https://checkout.revolut.com/payment-link/${link.token}`
+        : "";
+
+      if (matched?.id && linkUrl) {
+        invoicePublicUrlRows.push({
+          id: String(matched.id),
+          revolut_public_url: linkUrl,
+        });
+      }
+
       paymentRows.push({
         invoice_id: matched?.id ?? null,
-        provider: 'revolut',
+        provider: "revolut",
         provider_reference: link.id,
-        url: link.token
-          ? `https://checkout.revolut.com/payment-link/${link.token}`
-          : '',
+        url: linkUrl,
         status: linkStatus,
         created_at: createdAt,
         amount_cents: linkAmountCents,
-        currency: (link.currency ?? 'EUR').toUpperCase(),
+        currency: (link.currency ?? "EUR").toUpperCase(),
         title: link.description ?? null,
         dog_names: parsed.dog_names,
         service_type: parsed.service_type,
@@ -357,36 +396,40 @@ export async function POST(req: NextRequest) {
         day_count: parsed.day_count,
         amount_matches_invoice: matched
           ? Number(matched.amount_cents) === linkAmountCents
-          : false
+          : false,
       });
     }
 
     if (paymentRows.length > 0) {
       const { error } = await supabase
-        .from('payment_links')
+        .from("payment_links")
         .upsert(paymentRows, {
-          onConflict: 'provider_reference'
+          onConflict: "provider_reference",
         });
 
       if (error) {
-        throw new Error(
-          `Payment links upsert failed: ${error.message}`
-        );
+        throw new Error(`Payment links upsert failed: ${error.message}`);
+      }
+    }
+
+    if (invoicePublicUrlRows.length > 0) {
+      const { error } = await supabase
+        .from("invoices")
+        .upsert(invoicePublicUrlRows, { onConflict: "id" });
+
+      if (error) {
+        throw new Error(`Invoice public URL update failed: ${error.message}`);
       }
     }
 
     return NextResponse.json({
       ok: true,
       invoicesImported: invoiceRows.length,
-      paymentLinksImported: paymentRows.length
+      paymentLinksImported: paymentRows.length,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Sync failed';
+    const message = error instanceof Error ? error.message : "Sync failed";
 
-    return NextResponse.json(
-      { ok: false, message },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }

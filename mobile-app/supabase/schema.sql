@@ -72,8 +72,16 @@ create table if not exists public.invoices (
   status public.invoice_status not null default 'issued',
   due_date date,
   issued_at timestamptz not null default now(),
-  paid_at timestamptz
+  paid_at timestamptz,
+  revolut_invoice_number text,
+  revolut_pdf_url text,
+  revolut_public_url text
 );
+
+alter table public.invoices
+  add column if not exists revolut_invoice_number text,
+  add column if not exists revolut_pdf_url text,
+  add column if not exists revolut_public_url text;
 
 create table if not exists public.payment_links (
   id uuid primary key default gen_random_uuid(),

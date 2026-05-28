@@ -1,12 +1,29 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ScreenContainer } from '@/components/ScreenContainer';
-import { supabase } from '@/lib/supabase';
-import { env } from '@/lib/env';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { ScreenContainer } from "@/components/ScreenContainer";
+import { supabase } from "@/lib/supabase";
+import { env } from "@/lib/env";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
-type InvoiceStatus = 'draft' | 'issued' | 'open' | 'pending' | 'paid' | 'completed' | 'overdue' | 'cancelled';
+type InvoiceStatus =
+  | "draft"
+  | "issued"
+  | "open"
+  | "pending"
+  | "paid"
+  | "completed"
+  | "overdue"
+  | "cancelled";
 type InvoiceRow = {
   id: string;
   invoice_number: string;
@@ -16,6 +33,9 @@ type InvoiceRow = {
   due_date: string | null;
   issued_at: string;
   external_invoice_id?: string | null;
+  revolut_invoice_number?: string | null;
+  revolut_pdf_url?: string | null;
+  revolut_public_url?: string | null;
   customer_name?: string | null;
 };
 
@@ -46,52 +66,60 @@ type MerchantTransactionRow = {
   metadata?: Record<string, any>;
 };
 
-const money = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
+const money = new Intl.NumberFormat("en-IE", {
+  style: "currency",
+  currency: "EUR",
+});
 
 function formatAmount(amountCents: number): string {
   return money.format(amountCents / 100);
 }
 
 function dash(value?: string | number | null): string {
-  if (value === undefined || value === null || value === '') return '-';
+  if (value === undefined || value === null || value === "") return "-";
   return String(value);
 }
 
-function formatAmountWithCurrency(amountCents?: number | null, currency = 'EUR'): string {
-  if (typeof amountCents !== 'number' || Number.isNaN(amountCents)) return '-';
-  return `${money.format(amountCents / 100)} ${currency || 'EUR'}`;
+function formatAmountWithCurrency(
+  amountCents?: number | null,
+  currency = "EUR",
+): string {
+  if (typeof amountCents !== "number" || Number.isNaN(amountCents)) return "-";
+  return `${money.format(amountCents / 100)} ${currency || "EUR"}`;
 }
 
 function formatDateTime(value?: string | null): string {
-  if (!value) return '-';
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString('en-IE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("en-IE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function titleCase(value?: string | null): string {
   const normalized = dash(value).toLowerCase();
-  if (normalized === '-') return '-';
+  if (normalized === "-") return "-";
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-function statusLabel(status: 'overdue' | 'pending' | 'completed' | 'cancelled'): string {
-  if (status === 'completed') return 'Completed';
-  if (status === 'cancelled') return 'Cancelled';
-  if (status === 'overdue') return 'Overdue';
-  return 'Pending';
+function statusLabel(
+  status: "overdue" | "pending" | "completed" | "cancelled",
+): string {
+  if (status === "completed") return "Completed";
+  if (status === "cancelled") return "Cancelled";
+  if (status === "overdue") return "Overdue";
+  return "Pending";
 }
 
 function DetailRow({
   label,
   value,
-  pill
+  pill,
 }: {
   label: string;
   value?: string | number | null;
@@ -111,12 +139,15 @@ function DetailRow({
   );
 }
 
-function normalizeInvoiceStatus(status: string | null | undefined): 'overdue' | 'pending' | 'completed' | 'cancelled' {
-  const normalized = (status ?? '').trim().toLowerCase();
-  if (normalized === 'paid' || normalized === 'completed') return 'completed';
-  if (normalized === 'overdue') return 'overdue';
-  if (normalized === 'cancelled' || normalized === 'canceled') return 'cancelled';
-  return 'pending';
+function normalizeInvoiceStatus(
+  status: string | null | undefined,
+): "overdue" | "pending" | "completed" | "cancelled" {
+  const normalized = (status ?? "").trim().toLowerCase();
+  if (normalized === "paid" || normalized === "completed") return "completed";
+  if (normalized === "overdue") return "overdue";
+  if (normalized === "cancelled" || normalized === "canceled")
+    return "cancelled";
+  return "pending";
 }
 
 export function AdminInvoicesScreen(): React.ReactElement {
@@ -124,26 +155,38 @@ export function AdminInvoicesScreen(): React.ReactElement {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
-  const [merchantTransactions, setMerchantTransactions] = useState<MerchantTransactionRow[]>([]);
+  const [merchantTransactions, setMerchantTransactions] = useState<
+    MerchantTransactionRow[]
+  >([]);
   const [merchantError, setMerchantError] = useState<string | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
-  const [selectedTransaction, setSelectedTransaction] = useState<MerchantTransactionRow | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(
+    null,
+  );
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<MerchantTransactionRow | null>(null);
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [dogs, setDogs] = useState<DogRow[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'pending' | 'completed' | 'cancelled'>('all');
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "overdue" | "pending" | "completed" | "cancelled"
+  >("all");
 
   const fetchData = useCallback(async () => {
     setError(null);
     setMerchantError(null);
     if (!env.vercelBackendUrl) {
       setMerchantTransactions([]);
-      setMerchantError('Missing backend URL for merchant fallback.');
+      setMerchantError("Missing backend URL for merchant fallback.");
     } else {
       try {
-        const merchantResponse = await fetch(`${env.vercelBackendUrl}/api/revolut/merchant/transactions?count=50`);
+        const merchantResponse = await fetch(
+          `${env.vercelBackendUrl}/api/revolut/merchant/transactions?count=50`,
+        );
         const merchantData = await merchantResponse.json();
         if (!merchantResponse.ok) {
-          setMerchantError(merchantData?.error ?? 'Failed to load Revolut merchant transactions.');
+          setMerchantError(
+            merchantData?.error ??
+              "Failed to load Revolut merchant transactions.",
+          );
           setMerchantTransactions([]);
         } else {
           const rows = Array.isArray(merchantData)
@@ -157,33 +200,43 @@ export function AdminInvoicesScreen(): React.ReactElement {
                   : Array.isArray(merchantData?.items)
                     ? merchantData.items
                     : [];
-          const normalizedRows = (rows as MerchantTransactionRow[]).map((row) => ({
-            ...row,
-            order_id: row.order_id ?? row.id,
-            amount: typeof row.outstanding_amount === 'number' ? row.outstanding_amount : row.amount,
-            status: row.status ?? row.state
-          }));
+          const normalizedRows = (rows as MerchantTransactionRow[]).map(
+            (row) => ({
+              ...row,
+              order_id: row.order_id ?? row.id,
+              amount:
+                typeof row.outstanding_amount === "number"
+                  ? row.outstanding_amount
+                  : row.amount,
+              status: row.status ?? row.state,
+            }),
+          );
           setMerchantTransactions(normalizedRows);
         }
       } catch (merchantFetchError: any) {
         setMerchantTransactions([]);
-        setMerchantError(merchantFetchError?.message ?? 'Failed to load Revolut merchant transactions.');
+        setMerchantError(
+          merchantFetchError?.message ??
+            "Failed to load Revolut merchant transactions.",
+        );
       }
     }
 
     const [invoiceResult, clientResult, dogResult] = await Promise.all([
       supabase
-        .from('invoices')
-        .select('id, invoice_number, amount_cents, currency, status, due_date, issued_at, external_invoice_id, customer_name')
-        .order('issued_at', { ascending: false }),
+        .from("invoices")
+        .select(
+          "id, invoice_number, amount_cents, currency, status, due_date, issued_at, external_invoice_id, revolut_invoice_number, revolut_pdf_url, revolut_public_url, customer_name",
+        )
+        .order("issued_at", { ascending: false }),
       supabase
-        .from('clients')
-        .select('id, full_name')
-        .order('full_name', { ascending: true }),
+        .from("clients")
+        .select("id, full_name")
+        .order("full_name", { ascending: true }),
       supabase
-        .from('dogs')
-        .select('id, name, client_id')
-        .order('name', { ascending: true })
+        .from("dogs")
+        .select("id, name, client_id")
+        .order("name", { ascending: true }),
     ]);
     if (invoiceResult.error) throw new Error(invoiceResult.error.message);
     if (clientResult.error) throw new Error(clientResult.error.message);
@@ -192,8 +245,8 @@ export function AdminInvoicesScreen(): React.ReactElement {
     setInvoices(
       ((invoiceResult.data ?? []) as InvoiceRow[]).map((invoice) => ({
         ...invoice,
-        status: normalizeInvoiceStatus(invoice.status)
-      }))
+        status: normalizeInvoiceStatus(invoice.status),
+      })),
     );
     setClients((clientResult.data ?? []) as ClientRow[]);
     setDogs((dogResult.data ?? []) as DogRow[]);
@@ -205,7 +258,8 @@ export function AdminInvoicesScreen(): React.ReactElement {
       try {
         await fetchData();
       } catch (e: any) {
-        if (mounted) setError(e?.message ?? 'Failed to load pending invoice data.');
+        if (mounted)
+          setError(e?.message ?? "Failed to load pending invoice data.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -216,38 +270,61 @@ export function AdminInvoicesScreen(): React.ReactElement {
     };
   }, [fetchData]);
 
-  const invoiceStatusGroup = (invoice: InvoiceRow): 'overdue' | 'pending' | 'completed' | 'cancelled' => {
+  const invoiceStatusGroup = (
+    invoice: InvoiceRow,
+  ): "overdue" | "pending" | "completed" | "cancelled" => {
     const normalized = normalizeInvoiceStatus(invoice.status);
-    if (normalized !== 'pending') return normalized;
+    if (normalized !== "pending") return normalized;
     if (!invoice.due_date) return normalized;
     const dueAt = new Date(invoice.due_date).getTime();
     if (Number.isNaN(dueAt)) return normalized;
-    return dueAt < Date.now() ? 'overdue' : 'pending';
+    return dueAt < Date.now() ? "overdue" : "pending";
   };
 
   const isPaymentLinkInvoice = (invoice: InvoiceRow): boolean => {
-    const invoiceNumber = (invoice.invoice_number ?? '').toLowerCase();
-    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(invoiceNumber);
-    return looksLikeUuid || invoiceNumber.includes('payment link') || invoiceNumber.includes('payment-link') || invoiceNumber.startsWith('plink_');
+    const invoiceNumber = (invoice.invoice_number ?? "").toLowerCase();
+    const looksLikeUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+        invoiceNumber,
+      );
+    return (
+      looksLikeUuid ||
+      invoiceNumber.includes("payment link") ||
+      invoiceNumber.includes("payment-link") ||
+      invoiceNumber.startsWith("plink_")
+    );
   };
 
-  const displayInvoices = useMemo(() => invoices.filter((invoice) => !isPaymentLinkInvoice(invoice)), [invoices]);
+  const displayInvoices = useMemo(
+    () => invoices.filter((invoice) => !isPaymentLinkInvoice(invoice)),
+    [invoices],
+  );
 
   const sortedInvoices = useMemo(() => {
-    const orderRank: Record<'overdue' | 'pending' | 'completed' | 'cancelled', number> = {
+    const orderRank: Record<
+      "overdue" | "pending" | "completed" | "cancelled",
+      number
+    > = {
       overdue: 0,
       pending: 1,
       completed: 2,
-      cancelled: 3
+      cancelled: 3,
     };
     return [...displayInvoices].sort((a, b) => {
       const aGroup = invoiceStatusGroup(a);
       const bGroup = invoiceStatusGroup(b);
       const rankDelta = orderRank[aGroup] - orderRank[bGroup];
       if (rankDelta !== 0) return rankDelta;
-      if ((aGroup === 'overdue' || aGroup === 'pending') && (bGroup === 'overdue' || bGroup === 'pending')) {
-        const aDue = a.due_date ? new Date(a.due_date).getTime() : Number.POSITIVE_INFINITY;
-        const bDue = b.due_date ? new Date(b.due_date).getTime() : Number.POSITIVE_INFINITY;
+      if (
+        (aGroup === "overdue" || aGroup === "pending") &&
+        (bGroup === "overdue" || bGroup === "pending")
+      ) {
+        const aDue = a.due_date
+          ? new Date(a.due_date).getTime()
+          : Number.POSITIVE_INFINITY;
+        const bDue = b.due_date
+          ? new Date(b.due_date).getTime()
+          : Number.POSITIVE_INFINITY;
         if (aDue !== bDue) return aDue - bDue;
       }
       return new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime();
@@ -255,20 +332,22 @@ export function AdminInvoicesScreen(): React.ReactElement {
   }, [displayInvoices]);
 
   const filteredInvoices = useMemo(() => {
-    if (statusFilter === 'all') return sortedInvoices;
-    return sortedInvoices.filter((invoice) => invoiceStatusGroup(invoice) === statusFilter);
+    if (statusFilter === "all") return sortedInvoices;
+    return sortedInvoices.filter(
+      (invoice) => invoiceStatusGroup(invoice) === statusFilter,
+    );
   }, [sortedInvoices, statusFilter]);
 
   const totals = useMemo(() => {
     const dueToBePaidCents = displayInvoices
       .filter((invoice) => {
         const group = invoiceStatusGroup(invoice);
-        return group === 'overdue' || group === 'pending';
+        return group === "overdue" || group === "pending";
       })
       .reduce((sum, invoice) => sum + invoice.amount_cents, 0);
     const now = new Date();
     const overdueCount = displayInvoices.filter((invoice) => {
-      if (invoice.status === 'overdue') return true;
+      if (invoice.status === "overdue") return true;
       if (!invoice.due_date) return false;
       return new Date(invoice.due_date) < now;
     }).length;
@@ -280,133 +359,185 @@ export function AdminInvoicesScreen(): React.ReactElement {
     try {
       await fetchData();
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to refresh pending invoice data.');
+      setError(e?.message ?? "Failed to refresh pending invoice data.");
     } finally {
       setRefreshing(false);
     }
   };
 
-  const revolutPaymentRequests = useMemo(() => merchantTransactions.filter((tx) => (tx.type ?? '').toUpperCase() === 'PAYMENT_REQUEST'), [merchantTransactions]);
-  const lower = (value?: string | null) => (value ?? '').trim().toLowerCase();
+  const revolutPaymentRequests = useMemo(
+    () =>
+      merchantTransactions.filter(
+        (tx) => (tx.type ?? "").toUpperCase() === "PAYMENT_REQUEST",
+      ),
+    [merchantTransactions],
+  );
+  const lower = (value?: string | null) => (value ?? "").trim().toLowerCase();
   const findCustomerName = (tx: MerchantTransactionRow): string => {
     const candidate = lower(
-      tx.customer_name
-      ?? tx.customer?.name
-      ?? (typeof tx.metadata?.customer_name === 'string' ? tx.metadata.customer_name : '')
-      ?? (typeof tx.metadata?.client_name === 'string' ? tx.metadata.client_name : '')
+      tx.customer_name ??
+        tx.customer?.name ??
+        (typeof tx.metadata?.customer_name === "string"
+          ? tx.metadata.customer_name
+          : "") ??
+        (typeof tx.metadata?.client_name === "string"
+          ? tx.metadata.client_name
+          : ""),
     );
     if (candidate) {
-      const match = clients.find((client) => lower(client.full_name) === candidate);
+      const match = clients.find(
+        (client) => lower(client.full_name) === candidate,
+      );
       if (match) return match.full_name;
     }
     const desc = lower(tx.description);
-    const partial = clients.find((client) => desc.includes(lower(client.full_name)));
-    return partial?.full_name ?? (candidate ? (tx.customer_name ?? tx.customer?.name ?? 'Unknown customer') : 'Unknown customer');
+    const partial = clients.find((client) =>
+      desc.includes(lower(client.full_name)),
+    );
+    return (
+      partial?.full_name ??
+      (candidate
+        ? (tx.customer_name ?? tx.customer?.name ?? "Unknown customer")
+        : "Unknown customer")
+    );
   };
-  const findDogNames = (tx: MerchantTransactionRow, resolvedCustomerName: string): string => {
+  const findDogNames = (
+    tx: MerchantTransactionRow,
+    resolvedCustomerName: string,
+  ): string => {
     const explicitDogNames = Array.isArray(tx.metadata?.dog_names)
       ? tx.metadata?.dog_names
-      : typeof tx.metadata?.dog_names === 'string'
-        ? tx.metadata.dog_names.split(',').map((name: string) => name.trim()).filter(Boolean)
+      : typeof tx.metadata?.dog_names === "string"
+        ? tx.metadata.dog_names
+            .split(",")
+            .map((name: string) => name.trim())
+            .filter(Boolean)
         : [];
     if (explicitDogNames.length > 0) {
       const canonical = explicitDogNames.map((name: string) => {
         const match = dogs.find((dog) => lower(dog.name) === lower(name));
         return match?.name ?? name;
       });
-      return canonical.join(', ');
+      return canonical.join(", ");
     }
-    const customer = clients.find((client) => lower(client.full_name) === lower(resolvedCustomerName));
+    const customer = clients.find(
+      (client) => lower(client.full_name) === lower(resolvedCustomerName),
+    );
     if (customer) {
-      const customerDogs = dogs.filter((dog) => dog.client_id === customer.id).map((dog) => dog.name);
-      if (customerDogs.length > 0) return customerDogs.join(', ');
+      const customerDogs = dogs
+        .filter((dog) => dog.client_id === customer.id)
+        .map((dog) => dog.name);
+      if (customerDogs.length > 0) return customerDogs.join(", ");
     }
     const desc = lower(tx.description);
-    const descMatches = dogs.filter((dog) => desc.includes(lower(dog.name))).map((dog) => dog.name);
-    return descMatches.length > 0 ? descMatches.join(', ') : '—';
+    const descMatches = dogs
+      .filter((dog) => desc.includes(lower(dog.name)))
+      .map((dog) => dog.name);
+    return descMatches.length > 0 ? descMatches.join(", ") : "—";
   };
   const selectedInvoiceClient = selectedInvoice
-    ? clients.find((client) => lower(client.full_name) === lower(selectedInvoice.customer_name))
+    ? clients.find(
+        (client) =>
+          lower(client.full_name) === lower(selectedInvoice.customer_name),
+      )
     : null;
   const selectedInvoiceDogNames = selectedInvoiceClient
-    ? dogs.filter((dog) => dog.client_id === selectedInvoiceClient.id).map((dog) => dog.name).join(', ')
-    : '—';
-  const selectedTransactionCustomerName = selectedTransaction ? findCustomerName(selectedTransaction) : '—';
-  const selectedTransactionDogNames = selectedTransaction ? findDogNames(selectedTransaction, selectedTransactionCustomerName) : '—';
+    ? dogs
+        .filter((dog) => dog.client_id === selectedInvoiceClient.id)
+        .map((dog) => dog.name)
+        .join(", ")
+    : "—";
+  const selectedTransactionCustomerName = selectedTransaction
+    ? findCustomerName(selectedTransaction)
+    : "—";
+  const selectedTransactionDogNames = selectedTransaction
+    ? findDogNames(selectedTransaction, selectedTransactionCustomerName)
+    : "—";
 
   const selectedDetail = useMemo(() => {
     if (selectedInvoice) {
       const status = invoiceStatusGroup(selectedInvoice);
       return {
         status,
-        invoiceId: selectedInvoice.external_invoice_id ?? selectedInvoice.id,
+        invoiceId: selectedInvoice.id,
         issueDate: selectedInvoice.issued_at,
         dueDate: selectedInvoice.due_date,
-        currency: selectedInvoice.currency || 'EUR',
-        customerName: selectedInvoiceClient?.full_name ?? selectedInvoice.customer_name ?? '-',
-        customerEmail: '-',
-        dogNames: selectedInvoiceDogNames || '-',
+        currency: selectedInvoice.currency || "EUR",
+        customerName:
+          selectedInvoiceClient?.full_name ??
+          selectedInvoice.customer_name ??
+          "-",
+        customerEmail: "-",
+        dogNames: selectedInvoiceDogNames || "-",
         amountCents: selectedInvoice.amount_cents,
         subtotalCents: selectedInvoice.amount_cents,
         taxCents: 0,
-        notes: '-',
+        notes: "-",
         items: [
           {
-            label: 'Invoice total',
-            amountCents: selectedInvoice.amount_cents
-          }
-        ]
+            label: "Invoice total",
+            amountCents: selectedInvoice.amount_cents,
+          },
+        ],
       };
     }
 
     if (selectedTransaction) {
-      const status = normalizeInvoiceStatus(selectedTransaction.state ?? selectedTransaction.status);
+      const status = normalizeInvoiceStatus(
+        selectedTransaction.state ?? selectedTransaction.status,
+      );
       const metadata = selectedTransaction.metadata ?? {};
-      const customerEmail = typeof metadata.customer_email === 'string'
-        ? metadata.customer_email
-        : typeof metadata.email === 'string'
-          ? metadata.email
-          : '-';
-      const notes = typeof metadata.notes === 'string'
-        ? metadata.notes
-        : typeof metadata.note === 'string'
-          ? metadata.note
-          : '-';
+      const customerEmail =
+        typeof metadata.customer_email === "string"
+          ? metadata.customer_email
+          : typeof metadata.email === "string"
+            ? metadata.email
+            : "-";
+      const notes =
+        typeof metadata.notes === "string"
+          ? metadata.notes
+          : typeof metadata.note === "string"
+            ? metadata.note
+            : "-";
       const rawItems = Array.isArray(metadata.invoice_items)
         ? metadata.invoice_items
         : Array.isArray(metadata.items)
           ? metadata.items
           : [];
-      const items = rawItems.length > 0
-        ? rawItems.map((item: any) => ({
-            label: item?.label ?? item?.name ?? item?.description ?? '-',
-            amountCents: typeof item?.amount_cents === 'number'
-              ? item.amount_cents
-              : typeof item?.amount === 'number'
-                ? item.amount
-                : null
-          }))
-        : [
-            {
-              label: selectedTransaction.description ?? 'Payment request',
-              amountCents: selectedTransaction.amount ?? null
-            }
-          ];
+      const items =
+        rawItems.length > 0
+          ? rawItems.map((item: any) => ({
+              label: item?.label ?? item?.name ?? item?.description ?? "-",
+              amountCents:
+                typeof item?.amount_cents === "number"
+                  ? item.amount_cents
+                  : typeof item?.amount === "number"
+                    ? item.amount
+                    : null,
+            }))
+          : [
+              {
+                label: selectedTransaction.description ?? "Payment request",
+                amountCents: selectedTransaction.amount ?? null,
+              },
+            ];
 
       return {
         status,
-        invoiceId: selectedTransaction.order_id ?? selectedTransaction.id ?? '-',
+        invoiceId:
+          selectedTransaction.order_id ?? selectedTransaction.id ?? "-",
         issueDate: selectedTransaction.created_at ?? null,
-        dueDate: typeof metadata.due_date === 'string' ? metadata.due_date : null,
-        currency: selectedTransaction.currency ?? 'EUR',
-        customerName: selectedTransactionCustomerName || '-',
+        dueDate:
+          typeof metadata.due_date === "string" ? metadata.due_date : null,
+        currency: selectedTransaction.currency ?? "EUR",
+        customerName: selectedTransactionCustomerName || "-",
         customerEmail,
-        dogNames: selectedTransactionDogNames || '-',
+        dogNames: selectedTransactionDogNames || "-",
         amountCents: selectedTransaction.amount ?? null,
         subtotalCents: selectedTransaction.amount ?? null,
         taxCents: 0,
         notes,
-        items
+        items,
       };
     }
 
@@ -417,25 +548,31 @@ export function AdminInvoicesScreen(): React.ReactElement {
     selectedInvoiceClient,
     selectedInvoiceDogNames,
     selectedTransactionCustomerName,
-    selectedTransactionDogNames
+    selectedTransactionDogNames,
   ]);
 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const handleDownloadInvoicePdf = useCallback(async () => {
     if (!selectedDetail?.invoiceId) {
-      Alert.alert('Missing invoice ID', 'No order ID was found for this invoice.');
+      Alert.alert(
+        "Missing invoice ID",
+        "No invoice row ID was found for this invoice.",
+      );
       return;
     }
     if (!env.vercelBackendUrl) {
-      Alert.alert('Missing backend URL', 'Cannot download invoice PDF because backend URL is not configured.');
+      Alert.alert(
+        "Missing backend URL",
+        "Cannot download invoice PDF because backend URL is not configured.",
+      );
       return;
     }
 
     try {
       setDownloadingPdf(true);
-      const safeOrderId = encodeURIComponent(selectedDetail.invoiceId);
-      const remoteUrl = `${env.vercelBackendUrl}/api/revolut/invoice-pdf?orderId=${safeOrderId}`;
+      const safeInvoiceId = encodeURIComponent(selectedDetail.invoiceId);
+      const remoteUrl = `${env.vercelBackendUrl}/api/revolut/invoice-pdf?id=${safeInvoiceId}`;
       const destination = `${FileSystem.cacheDirectory}invoice-${selectedDetail.invoiceId}.pdf`;
       const result = await FileSystem.downloadAsync(remoteUrl, destination);
 
@@ -444,16 +581,19 @@ export function AdminInvoicesScreen(): React.ReactElement {
       }
       const available = await Sharing.isAvailableAsync();
       if (!available) {
-        Alert.alert('Download complete', `Saved PDF to ${result.uri}`);
+        Alert.alert("Download complete", `Saved PDF to ${result.uri}`);
         return;
       }
       await Sharing.shareAsync(result.uri, {
-        mimeType: 'application/pdf',
-        dialogTitle: 'Share invoice PDF',
-        UTI: 'com.adobe.pdf'
+        mimeType: "application/pdf",
+        dialogTitle: "Share invoice PDF",
+        UTI: "com.adobe.pdf",
       });
     } catch (downloadError: any) {
-      Alert.alert('Invoice PDF failed', downloadError?.message ?? 'Could not download invoice PDF.');
+      Alert.alert(
+        "Invoice PDF failed",
+        downloadError?.message ?? "Could not download invoice PDF.",
+      );
     } finally {
       setDownloadingPdf(false);
     }
@@ -468,64 +608,138 @@ export function AdminInvoicesScreen(): React.ReactElement {
     <ScreenContainer title="Admin Invoices">
       <View style={styles.summaryCard}>
         <Text style={styles.heading}>Total due to be paid</Text>
-        <Text style={styles.body}>Includes overdue + sent (pending) invoices.</Text>
-        <Text style={styles.metric}>{formatAmount(totals.dueToBePaidCents)}</Text>
-        <Text style={styles.metricSmall}>Overdue invoices: {totals.overdueCount}</Text>
+        <Text style={styles.body}>
+          Includes overdue + sent (pending) invoices.
+        </Text>
+        <Text style={styles.metric}>
+          {formatAmount(totals.dueToBePaidCents)}
+        </Text>
+        <Text style={styles.metricSmall}>
+          Overdue invoices: {totals.overdueCount}
+        </Text>
         <Pressable onPress={onRefresh} style={styles.refreshButton}>
-          <Text style={styles.refreshText}>{refreshing ? 'Refreshing…' : 'Refresh'}</Text>
+          <Text style={styles.refreshText}>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </Text>
         </Pressable>
       </View>
 
       {loading ? (
-        <View style={styles.centered}><ActivityIndicator color="#7c45f3" /><Text style={styles.body}>Loading…</Text></View>
+        <View style={styles.centered}>
+          <ActivityIndicator color="#7c45f3" />
+          <Text style={styles.body}>Loading…</Text>
+        </View>
       ) : error ? (
-        <View style={styles.errorCard}><Text style={styles.errorTitle}>Could not load invoices</Text><Text style={styles.body}>{error}</Text></View>
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Could not load invoices</Text>
+          <Text style={styles.body}>{error}</Text>
+        </View>
       ) : (
         <>
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Invoices</Text>
             <View style={styles.filterRow}>
               {[
-                { key: 'overdue', label: 'Overdue' },
-                { key: 'pending', label: 'Pending' },
-                { key: 'completed', label: 'Completed' },
-                { key: 'cancelled', label: 'Cancelled' }
+                { key: "overdue", label: "Overdue" },
+                { key: "pending", label: "Pending" },
+                { key: "completed", label: "Completed" },
+                { key: "cancelled", label: "Cancelled" },
               ].map((filter) => (
                 <Pressable
                   key={filter.key}
-                  onPress={() => setStatusFilter(filter.key as 'overdue' | 'pending' | 'completed' | 'cancelled')}
-                  style={[styles.filterChip, statusFilter === filter.key ? styles.filterChipActive : null]}
+                  onPress={() =>
+                    setStatusFilter(
+                      filter.key as
+                        | "overdue"
+                        | "pending"
+                        | "completed"
+                        | "cancelled",
+                    )
+                  }
+                  style={[
+                    styles.filterChip,
+                    statusFilter === filter.key
+                      ? styles.filterChipActive
+                      : null,
+                  ]}
                 >
-                  <Text style={[styles.filterChipText, statusFilter === filter.key ? styles.filterChipTextActive : null]}>{filter.label}</Text>
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      statusFilter === filter.key
+                        ? styles.filterChipTextActive
+                        : null,
+                    ]}
+                  >
+                    {filter.label}
+                  </Text>
                 </Pressable>
               ))}
-              <Pressable onPress={() => setStatusFilter('all')} style={[styles.filterChip, statusFilter === 'all' ? styles.filterChipActive : null]}>
-                <Text style={[styles.filterChipText, statusFilter === 'all' ? styles.filterChipTextActive : null]}>All</Text>
+              <Pressable
+                onPress={() => setStatusFilter("all")}
+                style={[
+                  styles.filterChip,
+                  statusFilter === "all" ? styles.filterChipActive : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    statusFilter === "all" ? styles.filterChipTextActive : null,
+                  ]}
+                >
+                  All
+                </Text>
               </Pressable>
             </View>
-            {filteredInvoices.length === 0 ? <Text style={styles.body}>No invoices in this filter.</Text> : filteredInvoices.map((invoice) => {
-              const isSelected = String(selectedInvoice?.id ?? '') === String(invoice.id);
-              const group = invoiceStatusGroup(invoice);
-              const label = group === 'pending' ? 'SENT (PENDING)' : group.toUpperCase();
-              return (
-                <Pressable key={invoice.id} onPress={() => setSelectedInvoice(invoice)} style={[styles.invoiceCard, isSelected ? styles.invoiceCardActive : null]}>
-                  <View style={styles.invoiceCardTop}>
-                    <Text style={styles.invoiceNumber}>#{invoice.invoice_number}</Text>
-                    <Text style={styles.invoiceStatus}>{label}</Text>
-                  </View>
-                  <Text style={styles.invoiceAmount}>{formatAmount(invoice.amount_cents)}</Text>
-                  <View style={styles.invoiceMetaRow}>
-                    <Text style={styles.invoiceMetaLabel}>Due</Text>
-                    <Text style={styles.invoiceMetaValue}>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IE') : 'No due date'}</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
+            {filteredInvoices.length === 0 ? (
+              <Text style={styles.body}>No invoices in this filter.</Text>
+            ) : (
+              filteredInvoices.map((invoice) => {
+                const isSelected =
+                  String(selectedInvoice?.id ?? "") === String(invoice.id);
+                const group = invoiceStatusGroup(invoice);
+                const label =
+                  group === "pending" ? "SENT (PENDING)" : group.toUpperCase();
+                return (
+                  <Pressable
+                    key={invoice.id}
+                    onPress={() => setSelectedInvoice(invoice)}
+                    style={[
+                      styles.invoiceCard,
+                      isSelected ? styles.invoiceCardActive : null,
+                    ]}
+                  >
+                    <View style={styles.invoiceCardTop}>
+                      <Text style={styles.invoiceNumber}>
+                        #{invoice.invoice_number}
+                      </Text>
+                      <Text style={styles.invoiceStatus}>{label}</Text>
+                    </View>
+                    <Text style={styles.invoiceAmount}>
+                      {formatAmount(invoice.amount_cents)}
+                    </Text>
+                    <View style={styles.invoiceMetaRow}>
+                      <Text style={styles.invoiceMetaLabel}>Due</Text>
+                      <Text style={styles.invoiceMetaValue}>
+                        {invoice.due_date
+                          ? new Date(invoice.due_date).toLocaleDateString(
+                              "en-IE",
+                            )
+                          : "No due date"}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })
+            )}
           </View>
 
           {invoices.length === 0 && merchantError ? (
             <View style={styles.errorCard}>
-              <Text style={styles.errorTitle}>Merchant fallback unavailable</Text>
+              <Text style={styles.errorTitle}>
+                Merchant fallback unavailable
+              </Text>
               <Text style={styles.body}>{merchantError}</Text>
             </View>
           ) : null}
@@ -534,36 +748,78 @@ export function AdminInvoicesScreen(): React.ReactElement {
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Revolut payment requests</Text>
               {revolutPaymentRequests.map((tx) => {
-                const status = (tx.state ?? tx.status ?? 'unknown').toLowerCase();
-                const completed = status === 'completed';
-                const badgeLabel = completed ? 'Completed' : 'Pending';
+                const status = (
+                  tx.state ??
+                  tx.status ??
+                  "unknown"
+                ).toLowerCase();
+                const completed = status === "completed";
+                const badgeLabel = completed ? "Completed" : "Pending";
                 const customerName = findCustomerName(tx);
                 const dogNames = findDogNames(tx, customerName);
                 return (
-                  <Pressable key={tx.id} style={styles.revolutCard} onPress={() => setSelectedTransaction(tx)}>
+                  <Pressable
+                    key={tx.id}
+                    style={styles.revolutCard}
+                    onPress={() => setSelectedTransaction(tx)}
+                  >
                     <View style={styles.revolutHeader}>
                       <View style={styles.checkCircle}>
-                        <Text style={styles.checkMark}>{completed ? '✓' : '⌛'}</Text>
+                        <Text style={styles.checkMark}>
+                          {completed ? "✓" : "⌛"}
+                        </Text>
                       </View>
-                      <Text style={styles.revolutStatusTitle}>{(completed ? 'COMPLETED' : 'PENDING')}</Text>
-                      <View style={[styles.statusPill, completed ? styles.statusPillDone : styles.statusPillPending]}>
-                        <Text style={[styles.statusPillText, completed ? styles.statusPillTextDone : styles.statusPillTextPending]}>{badgeLabel}</Text>
+                      <Text style={styles.revolutStatusTitle}>
+                        {completed ? "COMPLETED" : "PENDING"}
+                      </Text>
+                      <View
+                        style={[
+                          styles.statusPill,
+                          completed
+                            ? styles.statusPillDone
+                            : styles.statusPillPending,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusPillText,
+                            completed
+                              ? styles.statusPillTextDone
+                              : styles.statusPillTextPending,
+                          ]}
+                        >
+                          {badgeLabel}
+                        </Text>
                       </View>
                     </View>
                     <View style={styles.revolutInfoRow}>
                       <View style={styles.infoBlock}>
                         <Text style={styles.infoIcon}>👤</Text>
-                        <View><Text style={styles.infoLabel}>Customer</Text><Text style={styles.infoValue}>{customerName}</Text></View>
+                        <View>
+                          <Text style={styles.infoLabel}>Customer</Text>
+                          <Text style={styles.infoValue}>{customerName}</Text>
+                        </View>
                       </View>
                       <View style={styles.infoDivider} />
                       <View style={styles.infoBlock}>
                         <Text style={styles.infoIcon}>D</Text>
-                        <View><Text style={styles.infoLabel}>Dog(s)</Text><Text style={styles.infoValue}>{dogNames}</Text></View>
+                        <View>
+                          <Text style={styles.infoLabel}>Dog(s)</Text>
+                          <Text style={styles.infoValue}>{dogNames}</Text>
+                        </View>
                       </View>
                       <View style={styles.infoDivider} />
                       <View style={styles.infoBlock}>
                         <Text style={styles.infoIcon}>€</Text>
-                        <View><Text style={styles.infoLabel}>Amount</Text><Text style={styles.infoValue}>{typeof tx.amount === 'number' ? money.format(tx.amount / 100) : '—'} {tx.currency ?? 'EUR'}</Text></View>
+                        <View>
+                          <Text style={styles.infoLabel}>Amount</Text>
+                          <Text style={styles.infoValue}>
+                            {typeof tx.amount === "number"
+                              ? money.format(tx.amount / 100)
+                              : "—"}{" "}
+                            {tx.currency ?? "EUR"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   </Pressable>
@@ -574,21 +830,45 @@ export function AdminInvoicesScreen(): React.ReactElement {
 
           {invoices.length === 0 && merchantTransactions.length > 0 ? (
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Revolut merchant transactions (fallback)</Text>
-              <Text style={styles.body}>Supabase invoices are empty, so showing live merchant transactions instead.</Text>
+              <Text style={styles.sectionTitle}>
+                Revolut merchant transactions (fallback)
+              </Text>
+              <Text style={styles.body}>
+                Supabase invoices are empty, so showing live merchant
+                transactions instead.
+              </Text>
               {merchantTransactions.map((tx) => (
                 <View key={tx.id} style={styles.row}>
-                  <Text style={styles.rowTitle}>{(tx.state ?? tx.status ?? 'unknown').toUpperCase()} • {(tx.type ?? 'transaction').toUpperCase()}</Text>
-                  <Text style={styles.body}>Amount: {typeof tx.amount === 'number' ? money.format(tx.amount / 100) : '—'} {tx.currency ?? ''}</Text>
-                  <Text style={styles.body}>Order: {tx.order_id ?? '—'}</Text>
-                  <Text style={styles.body}>Created: {tx.created_at ? new Date(tx.created_at).toLocaleString('en-IE') : '—'}</Text>
+                  <Text style={styles.rowTitle}>
+                    {(tx.state ?? tx.status ?? "unknown").toUpperCase()} •{" "}
+                    {(tx.type ?? "transaction").toUpperCase()}
+                  </Text>
+                  <Text style={styles.body}>
+                    Amount:{" "}
+                    {typeof tx.amount === "number"
+                      ? money.format(tx.amount / 100)
+                      : "—"}{" "}
+                    {tx.currency ?? ""}
+                  </Text>
+                  <Text style={styles.body}>Order: {tx.order_id ?? "—"}</Text>
+                  <Text style={styles.body}>
+                    Created:{" "}
+                    {tx.created_at
+                      ? new Date(tx.created_at).toLocaleString("en-IE")
+                      : "—"}
+                  </Text>
                 </View>
               ))}
             </View>
           ) : null}
         </>
       )}
-      <Modal visible={Boolean(selectedDetail)} transparent animationType="slide" onRequestClose={closeDetailModal}>
+      <Modal
+        visible={Boolean(selectedDetail)}
+        transparent
+        animationType="slide"
+        onRequestClose={closeDetailModal}
+      >
         {selectedDetail ? (
           <View style={styles.invoiceModalScreen}>
             <View style={styles.modalTopBar}>
@@ -599,34 +879,57 @@ export function AdminInvoicesScreen(): React.ReactElement {
               <View style={styles.topBarSpacer} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.invoiceModalScroll}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.invoiceModalScroll}
+            >
               <View style={styles.invoiceHeroCard}>
                 <View style={styles.revolutHeader}>
-                  <View style={[
-                    styles.checkCircle,
-                    selectedDetail.status === 'completed' ? styles.checkCircleDone : styles.checkCirclePending
-                  ]}>
-                    <Text style={[
-                      styles.checkMark,
-                      selectedDetail.status === 'completed' ? styles.checkMarkDone : styles.checkMarkPending
-                    ]}>
-                      {selectedDetail.status === 'completed' ? '✓' : '⌛'}
+                  <View
+                    style={[
+                      styles.checkCircle,
+                      selectedDetail.status === "completed"
+                        ? styles.checkCircleDone
+                        : styles.checkCirclePending,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.checkMark,
+                        selectedDetail.status === "completed"
+                          ? styles.checkMarkDone
+                          : styles.checkMarkPending,
+                      ]}
+                    >
+                      {selectedDetail.status === "completed" ? "✓" : "⌛"}
                     </Text>
                   </View>
-                  <Text style={[
-                    styles.revolutStatusTitle,
-                    selectedDetail.status === 'completed' ? styles.statusTitleDone : styles.statusTitlePending
-                  ]}>
+                  <Text
+                    style={[
+                      styles.revolutStatusTitle,
+                      selectedDetail.status === "completed"
+                        ? styles.statusTitleDone
+                        : styles.statusTitlePending,
+                    ]}
+                  >
                     {selectedDetail.status.toUpperCase()}
                   </Text>
-                  <View style={[
-                    styles.statusPill,
-                    selectedDetail.status === 'completed' ? styles.statusPillDone : styles.statusPillPending
-                  ]}>
-                    <Text style={[
-                      styles.statusPillText,
-                      selectedDetail.status === 'completed' ? styles.statusPillTextDone : styles.statusPillTextPending
-                    ]}>
+                  <View
+                    style={[
+                      styles.statusPill,
+                      selectedDetail.status === "completed"
+                        ? styles.statusPillDone
+                        : styles.statusPillPending,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        selectedDetail.status === "completed"
+                          ? styles.statusPillTextDone
+                          : styles.statusPillTextPending,
+                      ]}
+                    >
                       {statusLabel(selectedDetail.status)}
                     </Text>
                   </View>
@@ -634,27 +937,40 @@ export function AdminInvoicesScreen(): React.ReactElement {
 
                 <View style={styles.revolutInfoRow}>
                   <View style={styles.infoBlock}>
-                    <View style={styles.infoIconBox}><Text style={styles.infoIcon}>👤</Text></View>
+                    <View style={styles.infoIconBox}>
+                      <Text style={styles.infoIcon}>👤</Text>
+                    </View>
                     <View style={styles.infoTextWrap}>
                       <Text style={styles.infoLabel}>Customer</Text>
-                      <Text style={styles.infoValue} numberOfLines={2}>{dash(selectedDetail.customerName)}</Text>
+                      <Text style={styles.infoValue} numberOfLines={2}>
+                        {dash(selectedDetail.customerName)}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.infoDivider} />
                   <View style={styles.infoBlock}>
-                    <View style={styles.infoIconBox}><Text style={styles.infoIcon}>🐾</Text></View>
+                    <View style={styles.infoIconBox}>
+                      <Text style={styles.infoIcon}>🐾</Text>
+                    </View>
                     <View style={styles.infoTextWrap}>
                       <Text style={styles.infoLabel}>Dog(s)</Text>
-                      <Text style={styles.infoValue} numberOfLines={2}>{dash(selectedDetail.dogNames)}</Text>
+                      <Text style={styles.infoValue} numberOfLines={2}>
+                        {dash(selectedDetail.dogNames)}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.infoDivider} />
                   <View style={styles.infoBlock}>
-                    <View style={styles.infoIconBox}><Text style={styles.infoIcon}>€</Text></View>
+                    <View style={styles.infoIconBox}>
+                      <Text style={styles.infoIcon}>€</Text>
+                    </View>
                     <View style={styles.infoTextWrap}>
                       <Text style={styles.infoLabel}>Amount</Text>
                       <Text style={styles.infoValue} numberOfLines={2}>
-                        {formatAmountWithCurrency(selectedDetail.amountCents, selectedDetail.currency)}
+                        {formatAmountWithCurrency(
+                          selectedDetail.amountCents,
+                          selectedDetail.currency,
+                        )}
                       </Text>
                     </View>
                   </View>
@@ -662,16 +978,33 @@ export function AdminInvoicesScreen(): React.ReactElement {
               </View>
 
               <View style={styles.invoiceDetailsPanel}>
-                <Text style={styles.modalSectionTitle}>Invoice Information</Text>
-                <DetailRow label="Invoice ID" value={selectedDetail.invoiceId} />
-                <DetailRow label="Status" value={statusLabel(selectedDetail.status)} pill />
-                <DetailRow label="Issue Date" value={formatDateTime(selectedDetail.issueDate)} />
-                <DetailRow label="Due Date" value={formatDateTime(selectedDetail.dueDate)} />
+                <Text style={styles.modalSectionTitle}>
+                  Invoice Information
+                </Text>
+                <DetailRow
+                  label="Invoice ID"
+                  value={selectedDetail.invoiceId}
+                />
+                <DetailRow
+                  label="Status"
+                  value={statusLabel(selectedDetail.status)}
+                  pill
+                />
+                <DetailRow
+                  label="Issue Date"
+                  value={formatDateTime(selectedDetail.issueDate)}
+                />
+                <DetailRow
+                  label="Due Date"
+                  value={formatDateTime(selectedDetail.dueDate)}
+                />
                 <DetailRow label="Currency" value={selectedDetail.currency} />
 
                 <View style={styles.separator} />
 
-                <Text style={styles.modalSectionTitle}>Customer Information</Text>
+                <Text style={styles.modalSectionTitle}>
+                  Customer Information
+                </Text>
                 <DetailRow label="Name" value={selectedDetail.customerName} />
                 <DetailRow label="Email" value={selectedDetail.customerEmail} />
 
@@ -679,16 +1012,27 @@ export function AdminInvoicesScreen(): React.ReactElement {
 
                 <Text style={styles.modalSectionTitle}>Dogs</Text>
                 <View style={styles.dogsBox}>
-                  {(dash(selectedDetail.dogNames) === '-' ? ['-'] : dash(selectedDetail.dogNames).split(','))
+                  {(dash(selectedDetail.dogNames) === "-"
+                    ? ["-"]
+                    : dash(selectedDetail.dogNames).split(",")
+                  )
                     .map((dog) => dog.trim())
                     .filter(Boolean)
                     .map((dog, index) => (
-                      <View key={`${dog}-${index}`} style={[
-                        styles.dogRow,
-                        index === (dash(selectedDetail.dogNames) === '-' ? ['-'] : dash(selectedDetail.dogNames).split(',')).length - 1
-                          ? styles.dogRowLast
-                          : null
-                      ]}>
+                      <View
+                        key={`${dog}-${index}`}
+                        style={[
+                          styles.dogRow,
+                          index ===
+                          (dash(selectedDetail.dogNames) === "-"
+                            ? ["-"]
+                            : dash(selectedDetail.dogNames).split(",")
+                          ).length -
+                            1
+                            ? styles.dogRowLast
+                            : null,
+                        ]}
+                      >
                         <View style={styles.dogAvatar}>
                           <Text style={styles.dogAvatarText}>🐶</Text>
                         </View>
@@ -709,7 +1053,10 @@ export function AdminInvoicesScreen(): React.ReactElement {
                   <View key={`${item.label}-${index}`} style={styles.itemRow}>
                     <Text style={styles.itemText}>{dash(item.label)}</Text>
                     <Text style={styles.itemAmount}>
-                      {formatAmountWithCurrency(item.amountCents, selectedDetail.currency)}
+                      {formatAmountWithCurrency(
+                        item.amountCents,
+                        selectedDetail.currency,
+                      )}
                     </Text>
                   </View>
                 ))}
@@ -718,13 +1065,19 @@ export function AdminInvoicesScreen(): React.ReactElement {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Subtotal</Text>
                   <Text style={styles.subtleValue}>
-                    {formatAmountWithCurrency(selectedDetail.subtotalCents, selectedDetail.currency)}
+                    {formatAmountWithCurrency(
+                      selectedDetail.subtotalCents,
+                      selectedDetail.currency,
+                    )}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Tax (0%)</Text>
                   <Text style={styles.subtleValue}>
-                    {formatAmountWithCurrency(selectedDetail.taxCents, selectedDetail.currency)}
+                    {formatAmountWithCurrency(
+                      selectedDetail.taxCents,
+                      selectedDetail.currency,
+                    )}
                   </Text>
                 </View>
 
@@ -732,326 +1085,471 @@ export function AdminInvoicesScreen(): React.ReactElement {
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Total</Text>
                   <Text style={styles.totalValue}>
-                    {formatAmountWithCurrency(selectedDetail.amountCents, selectedDetail.currency)}
+                    {formatAmountWithCurrency(
+                      selectedDetail.amountCents,
+                      selectedDetail.currency,
+                    )}
                   </Text>
                 </View>
 
                 <View style={styles.separator} />
 
                 <Text style={styles.modalSectionTitle}>Notes</Text>
-                <Text style={styles.notesText}>{dash(selectedDetail.notes)}</Text>
+                <Text style={styles.notesText}>
+                  {dash(selectedDetail.notes)}
+                </Text>
               </View>
 
-              <Pressable style={[styles.downloadButton, downloadingPdf ? styles.downloadButtonDisabled : null]} onPress={handleDownloadInvoicePdf} disabled={downloadingPdf}>
-                {downloadingPdf ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.downloadText}>↓  Download Invoice PDF</Text>}
+              <Pressable
+                style={[
+                  styles.downloadButton,
+                  downloadingPdf ? styles.downloadButtonDisabled : null,
+                ]}
+                onPress={handleDownloadInvoicePdf}
+                disabled={downloadingPdf}
+              >
+                {downloadingPdf ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.downloadText}>
+                    ↓ Download Invoice PDF
+                  </Text>
+                )}
               </Pressable>
             </ScrollView>
           </View>
         ) : null}
       </Modal>
-
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  summaryCard: { borderRadius: 14, padding: 14, backgroundColor: '#120d23', borderWidth: 1, borderColor: '#302451' },
-  heading: { color: '#f4f2ff', fontWeight: '700', fontSize: 18, marginBottom: 6 },
-  body: { color: '#c9c5d8', fontSize: 14, lineHeight: 20 },
-  metric: { color: '#f4f2ff', fontSize: 14, marginTop: 6 },
-  metricSmall: { color: '#c9c5d8', fontSize: 13, marginTop: 6 },
-  refreshButton: { marginTop: 10, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: '#7c45f3' },
-  refreshText: { color: '#f4f2ff', fontWeight: '600' },
-  centered: { gap: 10, alignItems: 'center', paddingVertical: 20 },
-  errorCard: { borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#7a2f4e', backgroundColor: '#2a1320' },
-  errorTitle: { color: '#ffd3e2', fontWeight: '700', marginBottom: 6 },
-  sectionCard: { borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#302451', backgroundColor: '#120d23' },
-  sectionTitle: { color: '#f4f2ff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
-  filterChip: { borderRadius: 999, borderWidth: 1, borderColor: '#4a3a74', paddingVertical: 6, paddingHorizontal: 10 },
-  filterChipActive: { backgroundColor: '#7c45f3', borderColor: '#7c45f3' },
-  filterChipText: { color: '#cec7eb', fontWeight: '600', fontSize: 12 },
-  filterChipTextActive: { color: '#ffffff' },
-  row: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 8, marginTop: 8 },
-  rowTitle: { color: '#f4f2ff', fontWeight: '600', marginBottom: 4 },
-  invoiceCard: {
-    backgroundColor: '#17112b',
+  summaryCard: {
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: "#120d23",
     borderWidth: 1,
-    borderColor: '#2f2550',
+    borderColor: "#302451",
+  },
+  heading: {
+    color: "#f4f2ff",
+    fontWeight: "700",
+    fontSize: 18,
+    marginBottom: 6,
+  },
+  body: { color: "#c9c5d8", fontSize: 14, lineHeight: 20 },
+  metric: { color: "#f4f2ff", fontSize: 14, marginTop: 6 },
+  metricSmall: { color: "#c9c5d8", fontSize: 13, marginTop: 6 },
+  refreshButton: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#7c45f3",
+  },
+  refreshText: { color: "#f4f2ff", fontWeight: "600" },
+  centered: { gap: 10, alignItems: "center", paddingVertical: 20 },
+  errorCard: {
     borderRadius: 12,
     padding: 12,
-    marginTop: 10
+    borderWidth: 1,
+    borderColor: "#7a2f4e",
+    backgroundColor: "#2a1320",
+  },
+  errorTitle: { color: "#ffd3e2", fontWeight: "700", marginBottom: 6 },
+  sectionCard: {
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#302451",
+    backgroundColor: "#120d23",
+  },
+  sectionTitle: {
+    color: "#f4f2ff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  filterRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 6,
+  },
+  filterChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#4a3a74",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  filterChipActive: { backgroundColor: "#7c45f3", borderColor: "#7c45f3" },
+  filterChipText: { color: "#cec7eb", fontWeight: "600", fontSize: 12 },
+  filterChipTextActive: { color: "#ffffff" },
+  row: {
+    borderTopWidth: 1,
+    borderTopColor: "#302451",
+    paddingTop: 8,
+    marginTop: 8,
+  },
+  rowTitle: { color: "#f4f2ff", fontWeight: "600", marginBottom: 4 },
+  invoiceCard: {
+    backgroundColor: "#17112b",
+    borderWidth: 1,
+    borderColor: "#2f2550",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
   },
   invoiceCardActive: {
-    borderColor: '#7c45f3',
-    backgroundColor: '#20163b'
+    borderColor: "#7c45f3",
+    backgroundColor: "#20163b",
   },
-  invoiceCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  invoiceNumber: { color: '#f4f2ff', fontWeight: '700', fontSize: 15 },
-  invoiceStatus: { color: '#cfc6ff', fontSize: 12, fontWeight: '700' },
-  invoiceAmount: { color: '#ffffff', fontWeight: '700', fontSize: 24, marginTop: 6, marginBottom: 8 },
-  invoiceMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 3 },
-  invoiceMetaLabel: { color: '#a79fc3', fontSize: 13 },
-  invoiceMetaValue: { color: '#ece8ff', fontSize: 13, fontWeight: '600' },
-  detailsCard: { borderTopWidth: 1, borderTopColor: '#302451', paddingTop: 10, marginTop: 10 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(3,3,14,0.85)', justifyContent: 'center', padding: 16 },
-  modalCard: { maxHeight: '90%', borderRadius: 18, borderWidth: 1, borderColor: '#2f2550', backgroundColor: '#09061c', padding: 14 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  modalTitle: { color: '#f4f2ff', fontWeight: '800', fontSize: 28 },
-  modalCloseButton: { paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#5f49a1', borderRadius: 10 },
-  modalCloseText: { color: '#ece8ff', fontWeight: '700' },
-  revolutCard: { marginTop: 10, borderWidth: 1, borderColor: '#3e2d75', borderRadius: 20, padding: 14, backgroundColor: '#070822' },
-  revolutHeader: { flexDirection: 'row', alignItems: 'center' },
-  checkCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#4dd3a5', alignItems: 'center', justifyContent: 'center' },
-  checkMark: { color: '#4dd3a5', fontSize: 20, fontWeight: '700' },
-  revolutStatusTitle: { color: '#f2f3ff', marginLeft: 10, fontWeight: '800', fontSize: 16, letterSpacing: 0.8 },
-  statusPill: { marginLeft: 'auto', borderRadius: 16, paddingVertical: 7, paddingHorizontal: 14 },
-  statusPillDone: { backgroundColor: '#143c35' },
-  statusPillPending: { backgroundColor: '#49361a' },
-  statusPillText: { fontSize: 13, fontWeight: '700' },
-  statusPillTextDone: { color: '#62e1b8' },
-  statusPillTextPending: { color: '#f5d78e' },
-  revolutInfoRow: { marginTop: 12, flexDirection: 'row', alignItems: 'stretch' },
-  infoBlock: { flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center' },
-  infoIcon: { color: '#ad8aff', fontSize: 20, minWidth: 18, textAlign: 'center' },
-  infoLabel: { color: '#aaa3d5', fontSize: 10 },
-  infoValue: { color: '#f2f3ff', fontSize: 11, fontWeight: '700' },
-  infoDivider: { width: 1, backgroundColor: '#35285f', marginHorizontal: 10 },
+  invoiceCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  invoiceNumber: { color: "#f4f2ff", fontWeight: "700", fontSize: 15 },
+  invoiceStatus: { color: "#cfc6ff", fontSize: 12, fontWeight: "700" },
+  invoiceAmount: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 24,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  invoiceMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 3,
+  },
+  invoiceMetaLabel: { color: "#a79fc3", fontSize: 13 },
+  invoiceMetaValue: { color: "#ece8ff", fontSize: 13, fontWeight: "600" },
+  detailsCard: {
+    borderTopWidth: 1,
+    borderTopColor: "#302451",
+    paddingTop: 10,
+    marginTop: 10,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(3,3,14,0.85)",
+    justifyContent: "center",
+    padding: 16,
+  },
+  modalCard: {
+    maxHeight: "90%",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#2f2550",
+    backgroundColor: "#09061c",
+    padding: 14,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  modalTitle: { color: "#f4f2ff", fontWeight: "800", fontSize: 28 },
+  modalCloseButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#5f49a1",
+    borderRadius: 10,
+  },
+  modalCloseText: { color: "#ece8ff", fontWeight: "700" },
+  revolutCard: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#3e2d75",
+    borderRadius: 20,
+    padding: 14,
+    backgroundColor: "#070822",
+  },
+  revolutHeader: { flexDirection: "row", alignItems: "center" },
+  checkCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: "#4dd3a5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkMark: { color: "#4dd3a5", fontSize: 20, fontWeight: "700" },
+  revolutStatusTitle: {
+    color: "#f2f3ff",
+    marginLeft: 10,
+    fontWeight: "800",
+    fontSize: 16,
+    letterSpacing: 0.8,
+  },
+  statusPill: {
+    marginLeft: "auto",
+    borderRadius: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+  },
+  statusPillDone: { backgroundColor: "#143c35" },
+  statusPillPending: { backgroundColor: "#49361a" },
+  statusPillText: { fontSize: 13, fontWeight: "700" },
+  statusPillTextDone: { color: "#62e1b8" },
+  statusPillTextPending: { color: "#f5d78e" },
+  revolutInfoRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  infoBlock: { flex: 1, flexDirection: "row", gap: 8, alignItems: "center" },
+  infoIcon: {
+    color: "#ad8aff",
+    fontSize: 20,
+    minWidth: 18,
+    textAlign: "center",
+  },
+  infoLabel: { color: "#aaa3d5", fontSize: 10 },
+  infoValue: { color: "#f2f3ff", fontSize: 11, fontWeight: "700" },
+  infoDivider: { width: 1, backgroundColor: "#35285f", marginHorizontal: 10 },
 
   invoiceModalScreen: {
     flex: 1,
-    backgroundColor: '#050414',
+    backgroundColor: "#050414",
     paddingTop: 34,
-    paddingHorizontal: 24
+    paddingHorizontal: 24,
   },
   downloadButtonDisabled: {
-    opacity: 0.7
+    opacity: 0.7,
   },
   modalTopBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 18
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 18,
   },
   backIcon: {
-    color: '#f4f2ff',
+    color: "#f4f2ff",
     fontSize: 42,
     lineHeight: 42,
-    fontWeight: '300'
+    fontWeight: "300",
   },
   invoiceModalTitle: {
-    color: '#f4f2ff',
-    fontWeight: '800',
-    fontSize: 24
+    color: "#f4f2ff",
+    fontWeight: "800",
+    fontSize: 24,
   },
   topBarSpacer: {
-    width: 34
+    width: 34,
   },
   invoiceModalScroll: {
-    paddingBottom: 28
+    paddingBottom: 28,
   },
   invoiceHeroCard: {
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#2f2550',
-    backgroundColor: '#100b25',
-    marginBottom: 14
+    borderColor: "#2f2550",
+    backgroundColor: "#100b25",
+    marginBottom: 14,
   },
   checkCircleDone: {
-    borderColor: '#4dd3a5'
+    borderColor: "#4dd3a5",
   },
   checkCirclePending: {
-    borderColor: '#f5d78e'
+    borderColor: "#f5d78e",
   },
   checkMarkDone: {
-    color: '#4dd3a5'
+    color: "#4dd3a5",
   },
   checkMarkPending: {
-    color: '#f5d78e',
-    fontSize: 18
+    color: "#f5d78e",
+    fontSize: 18,
   },
   statusTitleDone: {
-    color: '#50e6a8'
+    color: "#50e6a8",
   },
   statusTitlePending: {
-    color: '#f5d78e'
+    color: "#f5d78e",
   },
   infoIconBox: {
     width: 42,
     height: 42,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#241447'
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#241447",
   },
   infoTextWrap: {
-    flex: 1
+    flex: 1,
   },
   invoiceDetailsPanel: {
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#2f2550',
-    backgroundColor: '#0c0820'
+    borderColor: "#2f2550",
+    backgroundColor: "#0c0820",
   },
   modalSectionTitle: {
-    color: '#f4f2ff',
+    color: "#f4f2ff",
     fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 8
+    fontWeight: "800",
+    marginBottom: 8,
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     gap: 16,
-    marginTop: 15
+    marginTop: 15,
   },
   detailLabel: {
-    color: '#aaa3d5',
-    fontSize: 16
+    color: "#aaa3d5",
+    fontSize: 16,
   },
   detailValue: {
-    color: '#f4f2ff',
+    color: "#f4f2ff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     flexShrink: 1,
-    textAlign: 'right'
+    textAlign: "right",
   },
   smallStatusPill: {
-    backgroundColor: '#143c35',
+    backgroundColor: "#143c35",
     borderRadius: 12,
     paddingVertical: 6,
-    paddingHorizontal: 12
+    paddingHorizontal: 12,
   },
   smallStatusText: {
-    color: '#62e1b8',
-    fontWeight: '700',
-    fontSize: 14
+    color: "#62e1b8",
+    fontWeight: "700",
+    fontSize: 14,
   },
   separator: {
     height: 1,
-    backgroundColor: '#302451',
-    marginVertical: 20
+    backgroundColor: "#302451",
+    marginVertical: 20,
   },
   dogsBox: {
     borderWidth: 1,
-    borderColor: '#302451',
+    borderColor: "#302451",
     borderRadius: 14,
-    overflow: 'hidden',
-    marginTop: 8
+    overflow: "hidden",
+    marginTop: 8,
   },
   dogRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#241b42'
+    borderBottomColor: "#241b42",
   },
   dogRowLast: {
-    borderBottomWidth: 0
+    borderBottomWidth: 0,
   },
   dogAvatar: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#211742',
-    marginRight: 14
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#211742",
+    marginRight: 14,
   },
   dogAvatarText: {
-    fontSize: 24
+    fontSize: 24,
   },
   dogName: {
-    color: '#f4f2ff',
+    color: "#f4f2ff",
     fontSize: 17,
-    fontWeight: '700',
-    flex: 1
+    fontWeight: "700",
+    flex: 1,
   },
   breedPill: {
-    color: '#b88cff',
-    backgroundColor: '#241447',
+    color: "#b88cff",
+    backgroundColor: "#241447",
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 10,
-    overflow: 'hidden',
-    fontWeight: '700'
+    overflow: "hidden",
+    fontWeight: "700",
   },
   itemsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 8,
-    marginBottom: 12
+    marginBottom: 12,
   },
   muted: {
-    color: '#aaa3d5',
-    fontSize: 15
+    color: "#aaa3d5",
+    fontSize: 15,
   },
   itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     gap: 14,
-    marginBottom: 12
+    marginBottom: 12,
   },
   itemText: {
-    color: '#f4f2ff',
+    color: "#f4f2ff",
     fontSize: 16,
-    fontWeight: '500',
-    flex: 1
+    fontWeight: "500",
+    flex: 1,
   },
   itemAmount: {
-    color: '#f4f2ff',
+    color: "#f4f2ff",
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'right'
+    fontWeight: "600",
+    textAlign: "right",
   },
   itemSeparator: {
     height: 1,
-    backgroundColor: '#302451',
-    marginVertical: 12
+    backgroundColor: "#302451",
+    marginVertical: 12,
   },
   subtleValue: {
-    color: '#aaa3d5',
+    color: "#aaa3d5",
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: "600",
   },
   totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   totalLabel: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 22,
-    fontWeight: '900'
+    fontWeight: "900",
   },
   totalValue: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 20,
-    fontWeight: '900'
+    fontWeight: "900",
   },
   notesText: {
-    color: '#c9c5d8',
+    color: "#c9c5d8",
     fontSize: 16,
     lineHeight: 22,
-    marginTop: 8
+    marginTop: 8,
   },
   downloadButton: {
     marginTop: 14,
     borderRadius: 14,
     paddingVertical: 16,
-    alignItems: 'center',
-    backgroundColor: '#1c123c',
+    alignItems: "center",
+    backgroundColor: "#1c123c",
     borderWidth: 1,
-    borderColor: '#3d2b77'
+    borderColor: "#3d2b77",
   },
   downloadText: {
-    color: '#b88cff',
+    color: "#b88cff",
     fontSize: 17,
-    fontWeight: '800'
+    fontWeight: "800",
   },
-
 });
