@@ -70,6 +70,64 @@ function findFirstString(...values: unknown[]): string | null {
   return null;
 }
 
+function findFirstPdfLikeUrl(value: unknown): string | null {
+  const seen = new Set<unknown>();
+  const queue: unknown[] = [value];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || seen.has(current)) {
+      continue;
+    }
+    seen.add(current);
+
+    if (Array.isArray(current)) {
+      queue.push(...current);
+      continue;
+    }
+
+    if (typeof current !== "object") {
+      continue;
+    }
+
+    for (const [key, nestedValue] of Object.entries(current)) {
+      if (
+        typeof nestedValue === "string" &&
+        /^https?:\/\//i.test(nestedValue)
+      ) {
+        const normalizedKey = key.toLowerCase();
+        const normalizedValue = nestedValue.toLowerCase();
+        if (
+          normalizedKey.includes("pdf") ||
+          normalizedKey.includes("invoice") ||
+          normalizedKey.includes("document") ||
+          normalizedKey.includes("receipt") ||
+          normalizedValue.includes(".pdf")
+        ) {
+          return nestedValue.trim();
+        }
+      } else if (nestedValue && typeof nestedValue === "object") {
+        queue.push(nestedValue);
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractPdfUrl(invoice: ExternalInvoice): string | null {
+  return (
+    findFirstString(
+      invoice.invoice_url,
+      invoice.receipt_url,
+      invoice.document_url,
+      invoice.documents?.[0]?.url,
+      invoice.receipts?.[0]?.url,
+      invoice.invoice?.pdf_url,
+    ) ?? findFirstPdfLikeUrl(invoice)
+  );
+}
+
 function storagePathForInvoice(
   invoiceId: string,
   externalInvoiceId?: string | null,
@@ -81,12 +139,84 @@ function storagePathForInvoice(
   return `revolut/${invoiceId}/${safeExternalId}.pdf`;
 }
 
+function isPdfResponse(response: Response): boolean {
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  const disposition =
+    response.headers.get("content-disposition")?.toLowerCase() || "";
+  const url = response.url.toLowerCase();
+
+  return (
+    contentType.includes("application/pdf") ||
+    disposition.includes(".pdf") ||
+    url.includes(".pdf")
+  );
+}
+
+function absoluteHttpUrl(baseUrl: string, href: string): string | null {
+  const trimmed = href.trim();
+
+  if (!trimmed || /^(javascript|mailto|tel):/i.test(trimmed)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmed, baseUrl);
+    return /^https?:$/i.test(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractDownloadUrlFromHtml(
+  html: string,
+  baseUrl: string,
+): string | null {
+  const candidates: string[] = [];
+  const attributePattern =
+    /(?:href|src|data-url|data-href|download-url)=["']([^"']+)["']/gi;
+  const scriptUrlPattern =
+    /["']([^"']*(?:pdf|download|invoice|document|receipt)[^"']*)["']/gi;
+
+  for (const match of html.matchAll(attributePattern)) {
+    if (match[1]) {
+      candidates.push(match[1]);
+    }
+  }
+
+  for (const match of html.matchAll(scriptUrlPattern)) {
+    if (match[1]) {
+      candidates.push(match[1]);
+    }
+  }
+
+  for (const candidate of candidates) {
+    const lowerCandidate = candidate.toLowerCase();
+
+    if (
+      !lowerCandidate.includes("pdf") &&
+      !lowerCandidate.includes("download") &&
+      !lowerCandidate.includes("invoice") &&
+      !lowerCandidate.includes("document") &&
+      !lowerCandidate.includes("receipt")
+    ) {
+      continue;
+    }
+
+    const absoluteUrl = absoluteHttpUrl(baseUrl, candidate);
+    if (absoluteUrl) {
+      return absoluteUrl;
+    }
+  }
+
+  return null;
+}
+
 async function fetchOfficialPdf(revolutPdfUrl: string): Promise<Response> {
   const merchantKey = process.env.REVOLUT_MERCHANT_API_KEY;
   const apiVersion =
     process.env.REVOLUT_MERCHANT_API_VERSION?.trim() || "2024-09-01";
   const headers: Record<string, string> = {
-    Accept: "application/pdf",
+    Accept: "application/pdf,text/html;q=0.9,*/*;q=0.8",
     "Revolut-Api-Version": apiVersion,
   };
 
@@ -94,7 +224,32 @@ async function fetchOfficialPdf(revolutPdfUrl: string): Promise<Response> {
     headers.Authorization = `Bearer ${merchantKey}`;
   }
 
-  return fetch(revolutPdfUrl, { headers });
+  const initialResponse = await fetch(revolutPdfUrl, {
+    headers,
+    redirect: "follow",
+  });
+
+  if (!initialResponse.ok || isPdfResponse(initialResponse)) {
+    return initialResponse;
+  }
+
+  const contentType = initialResponse.headers.get("content-type") || "";
+
+  if (!/html|text\/plain/i.test(contentType)) {
+    return initialResponse;
+  }
+
+  const html = await initialResponse.clone().text();
+  const downloadUrl = extractDownloadUrlFromHtml(
+    html,
+    initialResponse.url || revolutPdfUrl,
+  );
+
+  if (!downloadUrl || downloadUrl === initialResponse.url) {
+    return initialResponse;
+  }
+
+  return fetch(downloadUrl, { headers, redirect: "follow" });
 }
 
 type SyncedInvoiceRow = {
@@ -104,25 +259,61 @@ type SyncedInvoiceRow = {
   revolut_pdf_storage_path: string | null;
 };
 
+async function storageObjectExists(
+  supabase: SupabaseClient,
+  storagePath: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.storage
+    .from(PDF_BUCKET)
+    .download(storagePath);
+
+  return !error && Boolean(data);
+}
+
+async function ensurePdfBucket(supabase: SupabaseClient): Promise<void> {
+  const { data: bucket } = await supabase.storage.getBucket(PDF_BUCKET);
+
+  if (bucket) {
+    return;
+  }
+
+  const { error } = await supabase.storage.createBucket(PDF_BUCKET, {
+    public: false,
+  });
+
+  if (error && !/already exists|already owned/i.test(error.message)) {
+    throw new Error(`Supabase PDF bucket failed: ${error.message}`);
+  }
+}
+
 async function cacheInvoicePdf(
   supabase: SupabaseClient,
   invoice: SyncedInvoiceRow,
 ): Promise<boolean> {
-  if (invoice.revolut_pdf_storage_path || !invoice.revolut_pdf_url) {
+  if (!invoice.revolut_pdf_url) {
+    return false;
+  }
+
+  const existingStoragePath = invoice.revolut_pdf_storage_path?.trim();
+  if (
+    existingStoragePath &&
+    (await storageObjectExists(supabase, existingStoragePath))
+  ) {
     return false;
   }
 
   const upstream = await fetchOfficialPdf(invoice.revolut_pdf_url);
-  if (!upstream.ok) {
+  if (!upstream.ok || !isPdfResponse(upstream)) {
     throw new Error(`PDF fetch failed (${upstream.status})`);
   }
 
-  const storagePath = storagePathForInvoice(
-    invoice.id,
-    invoice.external_invoice_id,
-  );
+  const storagePath =
+    existingStoragePath ||
+    storagePathForInvoice(invoice.id, invoice.external_invoice_id);
   const bytes = Buffer.from(await upstream.arrayBuffer());
   const contentType = upstream.headers.get("content-type") || "application/pdf";
+  await ensurePdfBucket(supabase);
+
   const { error: uploadError } = await supabase.storage
     .from(PDF_BUCKET)
     .upload(storagePath, bytes, {
@@ -256,6 +447,40 @@ async function loadInvoices(): Promise<ExternalInvoice[]> {
   return [];
 }
 
+async function fetchRevolutInvoiceDetails(
+  externalInvoiceId: string,
+): Promise<ExternalInvoice | null> {
+  const invoicesPath =
+    process.env.REVOLUT_INVOICES_PATH?.trim() || "/api/orders";
+  const normalizedInvoicesPath = invoicesPath.replace(/\/+$/, "");
+  const encodedId = encodeURIComponent(externalInvoiceId);
+
+  const detailPaths = Array.from(
+    new Set([
+      `${normalizedInvoicesPath}/${encodedId}`,
+      `/api/orders/${encodedId}`,
+    ]),
+  );
+
+  for (const path of detailPaths) {
+    const { status, data } = await revolutMerchantGet(path);
+
+    if (status === 404) {
+      continue;
+    }
+
+    if (status >= 400) {
+      throw new Error(
+        `Invoice detail fetch failed (${status}): ${JSON.stringify(data)}`,
+      );
+    }
+
+    return data as ExternalInvoice;
+  }
+
+  return null;
+}
+
 async function loadPaymentLinks(): Promise<RevolutOrder[]> {
   const path = process.env.REVOLUT_PAYMENT_LINKS_PATH?.trim() || "/api/orders";
 
@@ -355,17 +580,19 @@ export async function POST(req: NextRequest) {
       const issuedAt = invoice.issued_at ?? invoice.created_at ?? null;
 
       const clientId = await resolveClientIdByName(supabase, customerName);
+      let detailedInvoice: ExternalInvoice | null = null;
+      let revolutPdfUrl = extractPdfUrl(invoice);
+
+      if (!revolutPdfUrl) {
+        detailedInvoice = await fetchRevolutInvoiceDetails(invoice.id);
+        revolutPdfUrl = detailedInvoice ? extractPdfUrl(detailedInvoice) : null;
+      }
+
       const revolutInvoiceNumber = findFirstString(
         invoice.number,
         invoice.invoice?.number,
-      );
-      const revolutPdfUrl = findFirstString(
-        invoice.invoice_url,
-        invoice.receipt_url,
-        invoice.document_url,
-        invoice.documents?.[0]?.url,
-        invoice.receipts?.[0]?.url,
-        invoice.invoice?.pdf_url,
+        detailedInvoice?.number,
+        detailedInvoice?.invoice?.number,
       );
       const revolutPublicUrl = findFirstString(
         invoice.public_url,
@@ -373,6 +600,11 @@ export async function POST(req: NextRequest) {
         invoice.url,
         invoice.hosted_invoice_url,
         invoice.invoice?.public_url,
+        detailedInvoice?.public_url,
+        detailedInvoice?.payment_url,
+        detailedInvoice?.url,
+        detailedInvoice?.hosted_invoice_url,
+        detailedInvoice?.invoice?.public_url,
       );
 
       invoiceRows.push({
