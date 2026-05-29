@@ -158,12 +158,84 @@ function extractInvoiceNumber(revolutInvoice: any): string | null {
   );
 }
 
+function isPdfResponse(response: Response): boolean {
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  const disposition =
+    response.headers.get("content-disposition")?.toLowerCase() || "";
+  const url = response.url.toLowerCase();
+
+  return (
+    contentType.includes("application/pdf") ||
+    disposition.includes(".pdf") ||
+    url.includes(".pdf")
+  );
+}
+
+function absoluteHttpUrl(baseUrl: string, href: string): string | null {
+  const trimmed = href.trim();
+
+  if (!trimmed || /^(javascript|mailto|tel):/i.test(trimmed)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmed, baseUrl);
+    return /^https?:$/i.test(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractDownloadUrlFromHtml(
+  html: string,
+  baseUrl: string,
+): string | null {
+  const candidates: string[] = [];
+  const attributePattern =
+    /(?:href|src|data-url|data-href|download-url)=["']([^"']+)["']/gi;
+  const scriptUrlPattern =
+    /["']([^"']*(?:pdf|download|invoice|document|receipt)[^"']*)["']/gi;
+
+  for (const match of html.matchAll(attributePattern)) {
+    if (match[1]) {
+      candidates.push(match[1]);
+    }
+  }
+
+  for (const match of html.matchAll(scriptUrlPattern)) {
+    if (match[1]) {
+      candidates.push(match[1]);
+    }
+  }
+
+  for (const candidate of candidates) {
+    const lowerCandidate = candidate.toLowerCase();
+
+    if (
+      !lowerCandidate.includes("pdf") &&
+      !lowerCandidate.includes("download") &&
+      !lowerCandidate.includes("invoice") &&
+      !lowerCandidate.includes("document") &&
+      !lowerCandidate.includes("receipt")
+    ) {
+      continue;
+    }
+
+    const absoluteUrl = absoluteHttpUrl(baseUrl, candidate);
+    if (absoluteUrl) {
+      return absoluteUrl;
+    }
+  }
+
+  return null;
+}
+
 async function fetchOfficialPdf(revolutPdfUrl: string): Promise<Response> {
   const merchantKey = process.env.REVOLUT_MERCHANT_API_KEY;
   const apiVersion =
     process.env.REVOLUT_MERCHANT_API_VERSION?.trim() || "2024-09-01";
   const headers: Record<string, string> = {
-    Accept: "application/pdf",
+    Accept: "application/pdf,text/html;q=0.9,*/*;q=0.8",
     "Revolut-Api-Version": apiVersion,
   };
 
@@ -171,7 +243,32 @@ async function fetchOfficialPdf(revolutPdfUrl: string): Promise<Response> {
     headers.Authorization = `Bearer ${merchantKey}`;
   }
 
-  return fetch(revolutPdfUrl, { headers });
+  const initialResponse = await fetch(revolutPdfUrl, {
+    headers,
+    redirect: "follow",
+  });
+
+  if (!initialResponse.ok || isPdfResponse(initialResponse)) {
+    return initialResponse;
+  }
+
+  const contentType = initialResponse.headers.get("content-type") || "";
+
+  if (!/html|text\/plain/i.test(contentType)) {
+    return initialResponse;
+  }
+
+  const html = await initialResponse.clone().text();
+  const downloadUrl = extractDownloadUrlFromHtml(
+    html,
+    initialResponse.url || revolutPdfUrl,
+  );
+
+  if (!downloadUrl || downloadUrl === initialResponse.url) {
+    return initialResponse;
+  }
+
+  return fetch(downloadUrl, { headers, redirect: "follow" });
 }
 
 async function downloadFromStorage(
@@ -192,11 +289,29 @@ async function downloadFromStorage(
   };
 }
 
+async function ensurePdfBucket(supabase: SupabaseClient): Promise<void> {
+  const { data: bucket } = await supabase.storage.getBucket(PDF_BUCKET);
+
+  if (bucket) {
+    return;
+  }
+
+  const { error } = await supabase.storage.createBucket(PDF_BUCKET, {
+    public: false,
+  });
+
+  if (error && !/already exists|already owned/i.test(error.message)) {
+    throw new Error(`Supabase PDF bucket failed: ${error.message}`);
+  }
+}
+
 async function uploadPdfToStorage(
   supabase: SupabaseClient,
   storagePath: string,
   payload: PdfPayload,
 ): Promise<void> {
+  await ensurePdfBucket(supabase);
+
   const { error } = await supabase.storage
     .from(PDF_BUCKET)
     .upload(storagePath, payload.bytes, {
@@ -216,7 +331,7 @@ async function loadAndCacheOfficialPdf(
   revolutPdfUrl: string,
 ): Promise<PdfPayload> {
   const upstream = await fetchOfficialPdf(revolutPdfUrl);
-  if (!upstream.ok) {
+  if (!upstream.ok || !isPdfResponse(upstream)) {
     throw new Error("Official Revolut PDF not found");
   }
 
@@ -230,10 +345,16 @@ async function loadAndCacheOfficialPdf(
   };
 
   await uploadPdfToStorage(supabase, storagePath, payload);
-  await supabase
+  const { error: updateError } = await supabase
     .from("invoices")
     .update({ revolut_pdf_storage_path: storagePath })
     .eq("id", invoiceId);
+
+  if (updateError) {
+    throw new Error(
+      `Invoice PDF storage path update failed: ${updateError.message}`,
+    );
+  }
 
   const storedPayload = await downloadFromStorage(supabase, storagePath);
 
