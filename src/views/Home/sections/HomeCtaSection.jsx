@@ -105,8 +105,8 @@ const HomeCtaSection = () => (
               </div>
               <div className="image-ratio_auto">
                   <Image
-                    src="/images/dogs/lola/lola1.jpeg"
-                    alt="Lola relaxing after a playful daycare session"
+                    src="/images/dogs/ollie/ollie1.jpeg"
+                    alt="Ollie relaxing after a playful daycare session"
                     width={352}
                     height={289}
                     sizes="(min-width: 1024px) 352px, 80vw"

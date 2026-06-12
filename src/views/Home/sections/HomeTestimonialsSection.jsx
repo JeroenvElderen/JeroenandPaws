@@ -30,7 +30,7 @@ const HomeTestimonialsSection = () => (
                     width={64}
                     height={64}
                     alt="Headshot of a customer interacting with their pet"
-                    src="/images/dogs/lola/lola1.jpeg"
+                    src="/images/dogs/ollie/ollie1.jpeg"
                     className="image_cover"
                     sizes="64px"
                   />

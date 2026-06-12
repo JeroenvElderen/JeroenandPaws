@@ -4,12 +4,7 @@ import Link from 'next/link';
 import { usePrefetchOnIntent } from '../../hooks/usePrefetchOnIntent';
 
 const Footer = () => {
-  const { getLinkProps } = usePrefetchOnIntent([
-    '/about',
-        '/contact',
-    '/faq',
-    '/services',
-  ]);
+  const { getLinkProps } = usePrefetchOnIntent();
 
   return (
     <footer className="footer is-inverse">

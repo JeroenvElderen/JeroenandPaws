@@ -16,7 +16,7 @@ const slides = [
     description:
       "Personalised walks matched to your companion’s pace and routine.",
     href: "/services/daily-strolls",
-    imageSrc: "/images/dogs/lola/lola1.jpeg",
+    imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
     objectPosition: "50% 40%",
   },
