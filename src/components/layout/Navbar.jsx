@@ -6,13 +6,7 @@ import { usePrefetchOnIntent } from '../../hooks/usePrefetchOnIntent';
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navRef = useRef(null);
-  const { getLinkProps } = usePrefetchOnIntent([
-    '/about',
-    '/gallery',
-    '/faq',
-        '/contact',
-    '/services',
-  ]);
+  const { getLinkProps } = usePrefetchOnIntent();
 
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);

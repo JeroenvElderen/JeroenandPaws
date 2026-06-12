@@ -7,7 +7,7 @@ const services = [
     path: "/services/daily-strolls",
     title: "Daily strolls",
     description: "Personalised walks matched to your companion’s pace and routine.",
-    imageSrc: "/images/dogs/lola/lola1.jpeg",
+    imageSrc: "/images/dogs/ollie/ollie1.jpeg",
     imageAlt: "Dog enjoying a neighborhood walk",
     priceLabel: "From €18",
     tags: ["Solo Walks", "Routine Friendly", "Photo Updates"],

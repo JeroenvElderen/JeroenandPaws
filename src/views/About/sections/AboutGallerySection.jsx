@@ -36,8 +36,8 @@ const AboutGallerySection = () => (
             <img
               width="1216"
               height="832"
-              alt="Animal adoption event"
-              src="/images/dogs/lola/lola1.jpeg"
+              alt="Dog companion enjoying outdoor care"
+              src="/images/dogs/ollie/ollie1.jpeg"
               loading="lazy"
               data-aisg-image-id="13d4797b-11aa-4ae2-8ef2-12ddb0a79c39"
               className="image_cover"
@@ -72,8 +72,8 @@ const AboutGallerySection = () => (
             <img
               width="1216"
               height="832"
-              alt="Kitchen staff cooking in an Italian restaurant"
-              src="/images/dogs/compass/compass1.JPG"
+              alt="Dog companion relaxing during care"
+              src="/images/dogs/Johnny/Johnny.jpeg"
               loading="lazy"
               data-aisg-image-id="6f48bee3-b533-4e30-9caf-377456ed2e0a"
               className="image_cover"

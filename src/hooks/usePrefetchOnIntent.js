@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { useRouter } from "next/router";
-
-const DEFAULT_IDLE_TIMEOUT = 2000;
-const DEFAULT_FALLBACK_DELAY = 1500;
 
 const getPrefetchableHref = (href) => {
   if (!href) {
@@ -20,7 +17,7 @@ const getPrefetchableHref = (href) => {
   return null;
 };
 
-export const usePrefetchOnIntent = (prefetchTargets = []) => {
+export const usePrefetchOnIntent = () => {
   const router = useRouter();
   const prefetchedRoutes = useRef(new Set());
 
@@ -45,31 +42,6 @@ export const usePrefetchOnIntent = (prefetchTargets = []) => {
     }),
     [prefetchRoute]
   );
-
-  useEffect(() => {
-    if (typeof window === "undefined" || prefetchTargets.length === 0) {
-      return;
-    }
-
-    const runPrefetch = () => {
-      prefetchTargets.forEach((href) => prefetchRoute(href));
-    };
-
-    if ("requestIdleCallback" in window) {
-      const handle = window.requestIdleCallback(runPrefetch, {
-        timeout: DEFAULT_IDLE_TIMEOUT,
-      });
-
-      return () => {
-        if ("cancelIdleCallback" in window) {
-          window.cancelIdleCallback(handle);
-        }
-      };
-    }
-
-    const timeout = window.setTimeout(runPrefetch, DEFAULT_FALLBACK_DELAY);
-    return () => window.clearTimeout(timeout);
-  }, [prefetchRoute, prefetchTargets]);
 
   return { getLinkProps, prefetchRoute };
 };
