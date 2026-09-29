@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { parseOutlookSubject } from './_lib/outlookSubject';
 
 type GraphEvent = {
   id: string;
@@ -31,38 +32,6 @@ type SyncCursorRow = {
   delta_link: string | null;
 };
 
-const SERVICE_KEYWORDS = ['walk', 'training', 'boarding', 'daycare', 'home check-in', 'group'];
-
-function parseSubject(subject: string): { serviceName: string; dogNames: string[] } {
-  const normalized = subject.trim();
-  const parts = normalized.split('-').map((x) => x.trim()).filter(Boolean);
-  let serviceName = 'unknown';
-  let dogsPart = normalized;
-
-  for (const part of parts) {
-    const lower = part.toLowerCase();
-    if (SERVICE_KEYWORDS.some((kw) => lower.includes(kw))) {
-      serviceName = part;
-      dogsPart = parts.filter((p) => p !== part).join(' ');
-      break;
-    }
-  }
-
-  if (serviceName === 'unknown') {
-    const lower = normalized.toLowerCase();
-    const found = SERVICE_KEYWORDS.find((kw) => lower.includes(kw));
-    if (found) serviceName = found;
-  }
-
-  const dogNames = dogsPart
-    .split('&')
-    .map((x) => x.trim())
-    .filter(Boolean)
-    .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.toLowerCase().includes(kw)));
-
-  return { serviceName, dogNames };
-}
-
 function normalizeName(value: string): string {
   return value
     .trim()
@@ -72,17 +41,11 @@ function normalizeName(value: string): string {
 }
 
 function parseClientAndDogsFromSubject(subject: string): { firstName: string | null; dogNames: string[]; serviceName: string } {
-  const [left = '', ...rest] = subject.split('-').map((x) => x.trim()).filter(Boolean);
-  const parsed = parseSubject(subject);
-  const firstName = left ? normalizeName(left.split(/\s+/)[0] ?? '') : null;
-  const dogsFromRight = rest
-    .flatMap((segment) => segment.split(/[,&]/))
-    .map((name) => normalizeName(name))
-    .filter(Boolean)
-    .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.includes(kw)));
-  const dogNames = (dogsFromRight.length > 0 ? dogsFromRight : parsed.dogNames.map((name) => normalizeName(name)))
-    .filter(Boolean)
-    .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.includes(kw)));
+  const parsed = parseOutlookSubject(subject);
+  const firstName = parsed.clientName
+    ? normalizeName(parsed.clientName.split(/\s+/)[0] ?? '')
+    : null;
+  const dogNames = parsed.dogNames.map((name) => normalizeName(name)).filter(Boolean);
   return { firstName: firstName || null, dogNames, serviceName: parsed.serviceName };
 }
 
@@ -201,7 +164,7 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
   const upsertRows = collected
     .filter((e) => !e['@removed'])
     .map((event) => {
-      const parsed = parseSubject(event.subject ?? '');
+      const parsed = parseOutlookSubject(event.subject ?? '');
       return {
         client_id: clientId,
         outlook_event_id: event.id,
