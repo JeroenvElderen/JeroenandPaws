@@ -163,7 +163,8 @@ async function getAppToken(): Promise<string> {
 async function runDeltaSync(
   clientId: string | null,
   calendarId: string,
-  graphUserId: string
+  graphUserId: string,
+  forceFullSync: boolean
 ): Promise<{ imported: number; cancelled: number }> {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -182,7 +183,7 @@ async function runDeltaSync(
     .maybeSingle();
 
   let url =
-    cursor?.delta_link ||
+    (!forceFullSync && cursor?.delta_link) ||
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(graphUserId)}/calendars/${encodeURIComponent(calendarId)}/events/delta?$select=id,subject,start,end,categories,isCancelled`;
 
   const collected: GraphEvent[] = [];
@@ -346,6 +347,7 @@ const authorized =
     clientId?: string;
     calendarId?: string;
     graphUserId?: string;
+    forceFullSync?: boolean;
   };
 
   const clientId = body.clientId ?? null;
@@ -373,7 +375,8 @@ const authorized =
     const result = await runDeltaSync(
       clientId,
       calendarId,
-      graphUserId
+      graphUserId,
+      body.forceFullSync === true
     );
 
     return new Response(
