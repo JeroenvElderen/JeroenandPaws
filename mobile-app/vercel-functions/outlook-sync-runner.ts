@@ -123,7 +123,12 @@ async function getAppToken(): Promise<string> {
   return accessToken;
 }
 
-async function runDeltaSync(clientId: string | null, calendarId: string, graphUserId: string): Promise<{ imported: number; cancelled: number }> {
+async function runDeltaSync(
+  clientId: string | null,
+  calendarId: string,
+  graphUserId: string,
+  forceFullSync: boolean
+): Promise<{ imported: number; cancelled: number }> {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -141,7 +146,7 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
     .maybeSingle();
 
   let url =
-    cursor?.delta_link ||
+    (!forceFullSync && cursor?.delta_link) ||
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(graphUserId)}/calendars/${encodeURIComponent(calendarId)}/events/delta?$select=id,subject,start,end,categories,isCancelled`;
 
   const collected: GraphEvent[] = [];
@@ -248,6 +253,7 @@ export default async function handler(req: Request): Promise<Response> {
     clientId?: string;
     calendarId?: string;
     graphUserId?: string;
+    forceFullSync?: boolean;
   };
 
   const clientId = body.clientId ?? null;
@@ -265,7 +271,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const result = await runDeltaSync(clientId, calendarId, graphUserId);
+    const result = await runDeltaSync(clientId, calendarId, graphUserId, body.forceFullSync === true);
     return new Response(JSON.stringify({ ok: true, ...result }), { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';

@@ -125,7 +125,12 @@ async function getAppToken(): Promise<string> {
   return accessToken;
 }
 
-async function runDeltaSync(clientId: string | null, calendarId: string, graphUserId: string): Promise<{ imported: number; cancelled: number }> {
+async function runDeltaSync(
+  clientId: string | null,
+  calendarId: string,
+  graphUserId: string,
+  forceFullSync: boolean
+): Promise<{ imported: number; cancelled: number }> {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -139,7 +144,7 @@ async function runDeltaSync(clientId: string | null, calendarId: string, graphUs
   const { data: cursor } = await supabase.from('outlook_sync_cursors').select('client_id, delta_link').eq('client_id', clientId ?? '__unresolved__').maybeSingle();
 
   let url =
-    cursor?.delta_link ||
+    (!forceFullSync && cursor?.delta_link) ||
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(graphUserId)}/calendars/${encodeURIComponent(calendarId)}/events/delta?$select=id,subject,start,end,categories,isCancelled`;
 
   const collected: GraphEvent[] = [];
@@ -251,7 +256,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return json({ ok: false, message: 'Unauthorized' }, 401);
   }
 
-  const body = (await req.json().catch(() => ({}))) as { clientId?: string; calendarId?: string; graphUserId?: string };
+  const body = (await req.json().catch(() => ({}))) as {
+    clientId?: string;
+    calendarId?: string;
+    graphUserId?: string;
+    forceFullSync?: boolean;
+  };
   const clientId = body.clientId ?? null;
   const calendarId = body.calendarId ?? process.env.OUTLOOK_CALENDAR_ID;
   const graphUserId = body.graphUserId ?? process.env.OUTLOOK_GRAPH_USER_ID ?? process.env.NEXT_PUBLIC_OUTLOOK_CALENDAR_EMAIL;
@@ -261,8 +271,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const result = await runDeltaSync(clientId, calendarId, graphUserId);
-    return json({ ok: true, ...result }, 200);
+    // This endpoint is used for manual imports. Re-read the complete calendar by
+    // default so a corrected subject parser also repairs rows imported earlier.
+    const forceFullSync = body.forceFullSync !== false;
+    const result = await runDeltaSync(clientId, calendarId, graphUserId, forceFullSync);
+    return json({ ok: true, forceFullSync, ...result }, 200);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
     console.error('[outlook-sync] request failed', { message });
