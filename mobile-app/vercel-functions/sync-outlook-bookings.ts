@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { parseOutlookSubject } from './_lib/outlookSubject';
 
 type IncomingEvent = {
   id: string;
@@ -8,38 +9,6 @@ type IncomingEvent = {
   categories?: string[];
   isCancelled?: boolean;
 };
-
-const SERVICE_KEYWORDS = ['walk', 'training', 'boarding', 'daycare', 'home check-in', 'group'];
-
-function parseSubject(subject: string): { serviceName: string; dogNames: string[] } {
-  const normalized = subject.trim();
-  const parts = normalized.split('-').map((x) => x.trim()).filter(Boolean);
-  let serviceName = 'unknown';
-  let dogsPart = normalized;
-
-  for (const part of parts) {
-    const lower = part.toLowerCase();
-    if (SERVICE_KEYWORDS.some((kw) => lower.includes(kw))) {
-      serviceName = part;
-      dogsPart = parts.filter((p) => p !== part).join(' ');
-      break;
-    }
-  }
-
-  if (serviceName === 'unknown') {
-    const lower = normalized.toLowerCase();
-    const found = SERVICE_KEYWORDS.find((kw) => lower.includes(kw));
-    if (found) serviceName = found;
-  }
-
-  const dogNames = dogsPart
-    .split('&')
-    .map((x) => x.trim())
-    .filter(Boolean)
-    .filter((name) => !SERVICE_KEYWORDS.some((kw) => name.toLowerCase().includes(kw)));
-
-  return { serviceName, dogNames };
-}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -72,7 +41,7 @@ export default async function handler(req: Request): Promise<Response> {
   console.log('[sync-outlook-bookings] incoming payload', { clientId, eventsCount: events.length, deletedCount: Array.isArray(deletedEventIds) ? deletedEventIds.length : 0 });
 
   const rows = events.map((event) => {
-    const parsed = parseSubject(event.subject ?? '');
+    const parsed = parseOutlookSubject(event.subject ?? '');
     return {
       client_id: clientId,
       outlook_event_id: event.id,
